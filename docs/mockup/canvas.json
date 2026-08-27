@@ -1,0 +1,33 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",   "title": "A — Drop",  "x": 0,    "y": 0,   "w": 390, "h": 844 },
+    { "file": "AHasil.dc.html", "title": "A — Cari",  "x": 0,    "y": 964, "w": 390, "h": 844 },
+    { "file": "BDrop.dc.html",  "title": "B — Drop",  "x": 470,  "y": 0,   "w": 390, "h": 844 },
+    { "file": "BHasil.dc.html", "title": "B — Cari",  "x": 470,  "y": 964, "w": 390, "h": 844 },
+    { "file": "CDrop.dc.html",  "title": "C — Drop",  "x": 940,  "y": 0,   "w": 390, "h": 844 },
+    { "file": "CHasil.dc.html", "title": "C — Cari",  "x": 940,  "y": 964, "w": 390, "h": 844 }
+  ],
+  "annotations": [
+    {
+      "id": "opsi-a",
+      "x": 0, "y": -250, "w": 390,
+      "text": "OPSI A — Satu Kotak\n\nPersis seperti yang kamu tulis. Satu kotak, dua tombol, kategori diketik sendiri dengan #.\n\nUntung: paling sedikit yang bergerak. Sangat predictable — tidak ada yang menebak, tidak ada yang berubah di belakangmu.\n\nRugi: kategori diketik tiap kali. Kalau lagi buru-buru, kamu akan mengosongkannya."
+    },
+    {
+      "id": "opsi-b",
+      "x": 470, "y": -250, "w": 390,
+      "text": "OPSI B — Tebak Otomatis\n\nBegitu ditempel: judul link diambil sendiri, kategori sudah terisi sebagai usulan, salah ketik dibetulkan (apps desig -> apps design).\n\nUntung: effort mendekati nol. Ini yang paling menjawab \"minimum effort\".\n\nRugi: tebakannya bisa meleset, dan meleset terasa tidak predictable. Butuh Gemini + tarik judul halaman."
+    },
+    {
+      "id": "opsi-c",
+      "x": 940, "y": -250, "w": 390,
+      "text": "OPSI C — Rak\n\nKategori tidak diketik, tapi diketuk. 7 rak yang paling sering dipakai naik sendiri ke atas.\n\nUntung: satu ketukan, tidak ada salah ketik, dan tidak ada yang perlu diingat.\n\nRugi: makan ruang layar, dan mulai berat kalau rak aktifmu lebih dari 12."
+    },
+    {
+      "id": "sama-semua",
+      "x": 0, "y": 1870, "w": 1330,
+      "text": "Sama di ketiganya: layar depan kosong (tidak ada dinding kartu) · hasil = judul + link bersih yang tinggal diklik + ikon salin · hasil banyak turun ke bawah sebagai daftar · tombol minimal 44px · warna dan huruf ikut editor-mu yang sekarang (Plus Jakarta Sans, emas #CBA158)."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}
