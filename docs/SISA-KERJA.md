@@ -80,12 +80,18 @@ teknis — melainkan sistemnya tidak bertahan sebulan seperti pendahulunya.
 
 ---
 
+## Sudah diputuskan
+
+**Prompt draf: cukup versi terakhir saja.** Dijawab pemiliknya, 27 Agustus 2026.
+Riwayat cuma perlu menjawab "mana yang terakhir" — **jangan** bangun
+pembandingan antar versi berdampingan. Bentuk yang sekarang (daftar sederhana
++ tombol "pulihkan") sudah cukup dan sudah selesai. Menambah pembandingan
+berarti menambah keputusan yang harus diambil tiap kali membuka riwayat, dan
+itu persis ongkos yang aplikasi ini dibangun untuk menghapusnya.
+
+---
+
 ## Yang belum diputuskan
 
-- **Prompt draf: cukup versi terakhir, atau perlu membandingkan antar versi?**
-  Belum terjawab. Sekarang riwayat dibuat sebagai daftar sederhana + tombol
-  "pulihkan" — cukup untuk menjawab "mana yang terakhir", belum menjawab
-  "mana yang paling berhasil". Tanyakan sebelum membangun pembandingan
-  berdampingan.
 - Peran mana yang diisi lebih dulu. Rancangannya menampung semuanya sejak
   awal, tapi pengisiannya sebaiknya mulai dari satu.
