@@ -1,5 +1,5 @@
 /* ============================================================================
-   T-Note — pelabel (satu-satunya bagian yang memakai AI)
+   Drop Note — pelabel (satu-satunya bagian yang memakai AI)
    ============================================================================
    Tugasnya satu kalimat: memberi judul dan kata kunci yang MEMAKAI KATA YANG
    NANTI DIPAKAI UNTUK MENCARI - bukan kata yang kebetulan ada di isinya.
@@ -145,7 +145,7 @@
     }).catch(function (err) {
       /* Sengaja diam. Gagal melabeli bukan kabar buruk buat pemakainya -
          entrinya tersimpan, pencariannya jalan, antrean dicoba lagi nanti. */
-      if (global.console && console.debug) console.debug('[T-Note] pelabelan tertunda:', err.message);
+      if (global.console && console.debug) console.debug('[Drop Note] pelabelan tertunda:', err.message);
       return 0;
     }).then(function (n) { jalan = false; return n; },
             function () { jalan = false; return 0; });

@@ -1,4 +1,4 @@
-# T-Note — catatan untuk Claude berikutnya
+# Drop Note — catatan untuk Claude berikutnya
 
 Baca berkas ini sampai habis sebelum menyentuh kode. Berkas ini menjelaskan
 **kenapa** aplikasi ini berbentuk seperti sekarang. Tanpa itu, hampir setiap
@@ -15,7 +15,7 @@ konten, customer service, dan lainnya — dan catatannya selama ini tersebar di
 Google Keep, sekitar 50 grup WhatsApp berisi dirinya sendiri, dan aplikasi
 Notes. Semuanya menumpuk sampai tidak bisa dicari lagi.
 
-T-Note menggantikan semua itu dengan satu pintu masuk dan satu pencarian.
+Drop Note menggantikan semua itu dengan satu pintu masuk dan satu pencarian.
 
 ## Yang harus kamu pahami dulu, sebelum kode
 
@@ -46,7 +46,7 @@ satu-satunya tugas AI di sini (lihat `public/pelabel.js`).
 
 **4. Sesak datang dari TAMPILAN, bukan dari jumlah.**
 Google Keep memaksa melihat dinding kartu tiap kali dibuka. Karena itu layar
-depan T-Note **kosong** — cuma kotak dan tombol. Timbunan yang tidak terlihat
+depan Drop Note **kosong** — cuma kotak dan tombol. Timbunan yang tidak terlihat
 tidak menyesakkan, mau sepuluh ribu sekalipun. **Jangan pernah menambahkan
 daftar catatan terbaru di layar depan.** Itu perbaikan yang paling sering
 terpikir, dan itu membatalkan seluruh gunanya.
@@ -68,13 +68,13 @@ terpikir, dan itu membatalkan seluruh gunanya.
 
 ```
 public/index.html   kerangka semua layar (utama, hasil, catat, setelan)
-public/tnote.css    gaya; gelap dulu, terang lewat prefers-color-scheme
+public/dropnote.css    gaya; gelap dulu, terang lewat prefers-color-scheme
 public/simpan.js    IndexedDB — entri, berkas (blob), setelan, cadangan
 public/otak.js      SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
                     alamat, betulkan kategori salah ketik, tarik kata kunci,
                     nilai hasil pencarian
 public/pelabel.js   satu-satunya bagian ber-AI (Gemini / proxy Apps Script)
-public/tnote.js     BELUM ADA — alur UI. Ini yang berikutnya dikerjakan.
+public/dropnote.js     BELUM ADA — alur UI. Ini yang berikutnya dikerjakan.
 docs/RANCANGAN.md   alasan di balik rancangannya
 docs/SISA-KERJA.md  yang belum dikerjakan, cukup rinci untuk langsung jalan
 docs/mockup/        sumber mockup UI (3 arah; yang dipilih pemiliknya: B)
@@ -83,7 +83,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih pemiliknya: B)
 ## Keadaan sekarang
 
 **Aplikasinya belum bisa dijalankan.** `public/index.html` memanggil
-`tnote.js` yang belum ada, jadi membuka `public/index.html` sekarang hanya
+`dropnote.js` yang belum ada, jadi membuka `public/index.html` sekarang hanya
 menampilkan layar diam tanpa satu pun tombol yang bekerja.
 
 Yang sudah jadi: kerangka HTML, gaya lengkap, lapis penyimpanan, dan seluruh

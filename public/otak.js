@@ -1,5 +1,5 @@
 /* ============================================================================
-   T-Note — otak
+   Drop Note — otak
    ============================================================================
    Semua yang "menebak" ada di berkas ini, dan hampir seluruhnya LOGIC BIASA:
    membaca jenis, menyusun judul dari alamat, membetulkan kategori salah ketik,

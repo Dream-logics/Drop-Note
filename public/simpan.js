@@ -1,5 +1,5 @@
 /* ============================================================================
-   T-Note — lapis penyimpanan
+   Drop Note — lapis penyimpanan
    ============================================================================
    DUA LAPIS, dan urutannya yang penting:
 
@@ -17,7 +17,7 @@
 (function (global) {
   'use strict';
 
-  var NAMA = 'tnote';
+  var NAMA = 'dropnote';
   var VERSI = 1;
   var db = null;
 
@@ -113,7 +113,7 @@
         setelanAman[k] = r[1][k];
       });
       return {
-        aplikasi: 'T-Note',
+        aplikasi: 'Drop Note',
         versi: 1,
         waktu: new Date().toISOString(),
         entri: r[0].map(function (e) {

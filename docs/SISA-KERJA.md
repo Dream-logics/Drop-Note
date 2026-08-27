@@ -5,7 +5,7 @@ hidup; sisanya penyempurnaan.
 
 ---
 
-## 1. `public/tnote.js` — alur UI *(belum ada; ini penghalang utama)*
+## 1. `public/dropnote.js` — alur UI *(belum ada; ini penghalang utama)*
 
 `index.html` sudah memanggilnya dan semua id-nya sudah terpasang. Yang belum
 ada cuma penghubungnya.
@@ -182,7 +182,7 @@ ImageMagick maupun PIL di lingkungan ini — pakai Playwright + Chromium
 
 ## 5. Uji terima
 
-`uji/uji-tnote.mjs`, pola sama seperti repo editor. Yang paling perlu dijaga:
+`uji/uji-dropnote.mjs`, pola sama seperti repo editor. Yang paling perlu dijaga:
 
 - `TOtak.benahiKategori('apps desig', ['apps design'])` → `apps design`,
   `dibetulkan: true`

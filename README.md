@@ -1,4 +1,4 @@
-# T-Note
+# Drop Note
 
 Satu kotak untuk menimbun catatan, satu pencarian untuk mengambilnya kembali.
 
@@ -7,7 +7,7 @@ perangkat (IndexedDB) — nol detik, jalan tanpa sinyal.
 
 ## Keadaan
 
-**Belum bisa dijalankan.** `public/tnote.js` (alur UI) belum ada.
+**Belum bisa dijalankan.** `public/dropnote.js` (alur UI) belum ada.
 Lihat `docs/SISA-KERJA.md`.
 
 Sudah jadi: kerangka HTML, gaya, lapis penyimpanan, dan seluruh otak

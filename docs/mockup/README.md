@@ -1,4 +1,4 @@
-# Mockup — Timbunan (note app)
+# Mockup — Drop Note (note app)
 
 Berkas sumber artboard untuk kanvas desain.
 Berkas hasil rakitan (~2 MB) sengaja tidak disimpan di sini — dia
