@@ -74,7 +74,10 @@ public/otak.js      SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
                     alamat, betulkan kategori salah ketik, tarik kata kunci,
                     nilai hasil pencarian
 public/pelabel.js   satu-satunya bagian ber-AI (Gemini / proxy Apps Script)
-public/dropnote.js     BELUM ADA — alur UI. Ini yang berikutnya dikerjakan.
+public/dropnote.js  alur UI — semua layar, drop, cari, catat, setelan
+public/sw.js        service worker — singgahan kerangka + penerima "Bagikan"
+public/manifest.webmanifest   supaya bisa dipasang di HP
+uji/uji-dropnote.mjs          uji terima (Playwright)
 docs/RANCANGAN.md   alasan di balik rancangannya
 docs/SISA-KERJA.md  yang belum dikerjakan, cukup rinci untuk langsung jalan
 docs/mockup/        sumber mockup UI (3 arah; yang dipilih pemiliknya: B)
@@ -82,16 +85,16 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih pemiliknya: B)
 
 ## Keadaan sekarang
 
-**Aplikasinya belum bisa dijalankan.** `public/index.html` memanggil
-`dropnote.js` yang belum ada, jadi membuka `public/index.html` sekarang hanya
-menampilkan layar diam tanpa satu pun tombol yang bekerja.
+**Aplikasinya sudah jalan**, dan sudah benar-benar dijalankan di Chromium —
+bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
+menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Yang sudah jadi: kerangka HTML, gaya lengkap, lapis penyimpanan, dan seluruh
-otak (deteksi, judul, koreksi kategori, label, pencarian) — semuanya sudah
-lolos `node --check` tapi **belum pernah dijalankan sama sekali di browser**.
-Anggap belum teruji sampai kamu benar-benar menjalankannya.
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-dropnote.mjs` (31 lulus).
+Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
+bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
-Selebihnya ada di `docs/SISA-KERJA.md`.
+Yang belum: sinkron ke Google Sheets, pencocokan makna, dan naik otomatis ke
+pintasan keyboard. Selebihnya ada di `docs/SISA-KERJA.md`.
 
 ## Konvensi
 

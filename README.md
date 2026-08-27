@@ -7,11 +7,11 @@ perangkat (IndexedDB) — nol detik, jalan tanpa sinyal.
 
 ## Keadaan
 
-**Belum bisa dijalankan.** `public/dropnote.js` (alur UI) belum ada.
-Lihat `docs/SISA-KERJA.md`.
+**Jalan.** Empat layar hidup (utama, hasil, catat, setelan), bisa dipasang
+di HP, menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa
+sinyal. Uji terima: `node uji/uji-dropnote.mjs` — 31 lulus.
 
-Sudah jadi: kerangka HTML, gaya, lapis penyimpanan, dan seluruh otak
-(deteksi jenis, judul dari alamat, koreksi kategori, kata kunci, pencarian).
+Sisanya penyempurnaan, ada di `docs/SISA-KERJA.md`.
 
 ## Menjalankan
 
@@ -32,3 +32,14 @@ berjalan di sana.
 | `docs/RANCANGAN.md` | alasan di balik rancangannya |
 | `docs/SISA-KERJA.md` | yang belum dikerjakan, cukup rinci untuk langsung jalan |
 | `docs/mockup/` | sumber mockup UI — tiga arah, yang dipilih: B |
+
+## Uji terima
+
+```
+node uji/uji-dropnote.mjs
+```
+
+Butuh Playwright + Chromium. Yang dijaga bukan kerapian kode, melainkan
+empat janji: drop → cari → ketemu **dengan jaringan mati total**, layar depan
+tanpa satu pun kartu, salah ketik kategori mendarat di rak yang sudah ada,
+dan merevisi memperbarui baris yang sama dengan versi lama tetap tersimpan.

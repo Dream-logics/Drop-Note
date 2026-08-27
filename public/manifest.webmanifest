@@ -1,0 +1,28 @@
+{
+  "name": "Drop Note",
+  "short_name": "Drop",
+  "description": "Satu kotak untuk menimbun catatan, satu pencarian untuk mengambilnya kembali.",
+  "lang": "id",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115",
+  "icons": [
+    { "src": "ikon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "ikon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "ikon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "share_target": {
+    "action": "./bagikan",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "judul",
+      "text": "teks",
+      "url": "tautan",
+      "files": [{ "name": "berkas", "accept": ["image/*", "*/*"] }]
+    }
+  }
+}
