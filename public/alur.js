@@ -711,7 +711,7 @@
      catatan ini. Yang tidak boleh banyak adalah yang TERLIHAT: sepuluh sudah
      memenuhi dua baris di HP, dan sesak datang dari tampilan, bukan dari
      jumlah. Sisanya ada, tinggal diminta. */
-  var TAG_TAMPIL = 10;
+  var TAG_TAMPIL = 8;
 
   function tagHtml(e) {
     var tag = e.tag || [];

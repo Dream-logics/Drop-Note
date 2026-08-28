@@ -410,9 +410,26 @@ console.log('\ntag: label yang kelihatan dan bisa ditekan');
       /class="kartu-waktu"/.test(kartu) &&
       kartu.indexOf('kartu-waktu') < kartu.indexOf('kartu-rinci'));
 
+  /* Daftar, bukan tumpukan kartu: yang memisahkan cukup garis rambut. Kalau
+     tiap hasil dikotaki lagi, beratnya kembali dan yang muat tinggal dua. */
+  const gaya = fs.readFileSync(path.join(AKAR, 'gaya.css'), 'utf8');
+  const aturanKartu = gaya.slice(gaya.indexOf('.kartu{'), gaya.indexOf('.kartu:last-child'));
+  cek('hasil digambar sebagai daftar, bukan kotak berlatar',
+      /background:none/.test(aturanKartu) && /border:none/.test(aturanKartu) &&
+      /border-bottom:1px/.test(aturanKartu), aturanKartu.replace(/\s+/g, ' '));
+  /* Ikonnya mikro, tapi area sentuhnya tidak: tombol yang jarang dipakai tetap
+     harus kena sekali tekan waktu akhirnya dipakai. */
+  const aturanAksi = gaya.slice(gaya.indexOf('.aksi{'), gaya.indexOf('.aksi:active'));
+  cek('ikon aksi mikro tanpa kotak', /border:none/.test(aturanAksi) &&
+      /\.aksi \.ik\{width:15px/.test(gaya));
+  cek('area sentuhnya tetap selebar jempol', /width:40px;height:40px/.test(aturanAksi),
+      aturanAksi.replace(/\s+/g, ' '));
+
+  /* Delapan dulu; sisanya terlipat. Batasnya soal TAMPILAN - simpanannya
+     tetap sampai 30, dan yang terlipat tetap bekerja sebagai pancingan. */
   const terlipat = (kartu.match(/tag terlipat/g) || []).length;
-  cek('cuma sepuluh tag yang langsung terlihat', terlipat === 2, String(terlipat));
-  cek('sisanya ditawarkan, bukan dibuang', /data-tag-lagi>\+2</.test(kartu));
+  cek('cuma delapan tag yang langsung terlihat', terlipat === 4, String(terlipat));
+  cek('sisanya ditawarkan, bukan dibuang', /data-tag-lagi>\+4</.test(kartu));
   /* Yang terlipat tetap ada di HTML - jadi tidak ada permintaan baru saat
      dibuka, dan pencarian tetap menemukannya. */
   cek('yang terlipat tetap ikut tergambar', /data-tag="duabelas"/.test(kartu));
