@@ -152,9 +152,16 @@
       '   Kalau memang tidak ada yang menonjol, kembalikan elemen kosong. Itu jawaban yang sah:',
       '   berarti catatan itu utuh sebagai catatan. JANGAN mengarang elemen supaya tidak kosong.',
       '',
-      '3. TAG. 2 sampai 5 tag, satu kata masing-masing (boleh gabungan tanpa spasi).',
-      '   Hanya yang relevansinya TINGGI - bukan yang sekadar mungkin berhubungan.',
-      '   Setiap entri WAJIB dapat minimal 2 tag. Tidak boleh ada satu pun yang pulang tanpa tag:',
+      '3. TAG. 8 sampai 20 tag, satu kata masing-masing (boleh gabungan tanpa spasi).',
+      '   Anggap seperti tagar di bawah satu unggahan Instagram: banyak, dan tiap satunya',
+      '   PANCINGAN - satu kemungkinan kata yang nanti diketik orangnya waktu mencari.',
+      '   Karena itu sengaja dari beberapa sudut sekaligus, bukan satu sudut diulang-ulang:',
+      '   nama proyek atau klien, jenis barangnya, orang yang terlibat, tempat, keadaan',
+      '   (mendesak/rutin/sekali pakai), dan sebutan sehari-hari yang mungkin dia pakai',
+      '   walaupun tidak tertulis di catatannya.',
+      '   Yang dilarang cuma satu: tag yang TIDAK nyangkut sama sekali. Tag yang tepat tidak',
+      '   pernah jadi sampah - dia satu pintu lagi menuju catatan yang sama.',
+      '   Setiap entri WAJIB dapat minimal 8 tag. Tidak boleh ada satu pun yang pulang tanpa tag:',
       '   orangnya sedang kehabisan tenaga, dan menyusun tag itu memang tugasmu, bukan tugasnya.',
       '',
       '   Daftar di bawah adalah rak yang SUDAH ADA - bukan daftar tertutup, bukan pilihan terbatas.',
@@ -236,7 +243,10 @@
     (tambahan || []).map(bersihTag).filter(Boolean).forEach(function (t) {
       if (!gabung.some(function (x) { return samaTag(x, t); })) gabung.push(t);
     });
-    return gabung.slice(0, 8);
+    /* Batasnya lebar. Tag yang tepat tidak pernah jadi sampah - dia cuma
+       menambah satu pintu lagi menuju catatan yang sama. Yang perlu dibatasi
+       itu TAMPILANNYA, dan itu urusan kartu, bukan urusan penyimpanan. */
+    return gabung.slice(0, 30);
   }
 
   /* Tag andalan disebut LEBIH DULU daripada yang pernah dipakai: itu rak yang
@@ -284,7 +294,8 @@
       '- elemen: nomor, kode, nama pihak, tanggal, dan jumlah yang nanti akan dia SALIN dari',
       '  dokumen ini - nomor KTP, nomor faktur, nominal, nama apotek, dosis obat. Persis apa adanya.',
       '  Beri "nama" pendek untuk tiap elemen. Kosongkan kalau memang tidak ada yang menonjol.',
-      '- tag: 2 sampai 5, satu kata masing-masing. Minimal 2, tidak boleh kosong.',
+      '- tag: 8 sampai 20, satu kata masing-masing, seperti tagar di bawah unggahan Instagram:',
+      '  tiap satunya pancingan, satu kemungkinan kata yang nanti diketik saat mencari.',
       '  Daftar di bawah rak yang sudah ada, bukan daftar tertutup: pakai ulang kalau maknanya sama',
       '  (salin persis penulisannya), buat baru tanpa ragu kalau tidak ada yang cocok.',
       daftar ? '  Rak yang sudah ada: ' + daftar : '  Belum ada rak sama sekali; susun sendiri dari nol.',

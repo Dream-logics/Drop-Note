@@ -201,6 +201,9 @@ a.elemen-nilai{color:var(--a);text-decoration:none;display:block}
   background:color-mix(in srgb, var(--a) 12%, transparent);border:none;cursor:pointer;
   white-space:nowrap;
 }
+/* Ada, tapi belum diminta. Bukan dibuang - sekali ditekan, semuanya muncul. */
+.tag.terlipat{display:none}
+.tag.lagi{background:none;border:1px solid var(--l);color:var(--m);font-weight:700}
 .kartu-tanggal{font-size:11px;color:var(--m);white-space:nowrap;margin-left:auto}
 
 /* --- kepala kelompok saat diurut per tag --- */

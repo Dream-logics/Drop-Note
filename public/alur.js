@@ -680,12 +680,26 @@
            '<div class="kartu-penuh sembunyi">' + H(isi) + '</div>';
   }
 
+  /* Tagnya boleh banyak - tiap tag yang tepat adalah satu pintu lagi menuju
+     catatan ini. Yang tidak boleh banyak adalah yang TERLIHAT: sepuluh sudah
+     memenuhi dua baris di HP, dan sesak datang dari tampilan, bukan dari
+     jumlah. Sisanya ada, tinggal diminta. */
+  var TAG_TAMPIL = 10;
+
   function tagHtml(e) {
-    var tag = (e.tag || []).slice(0, 8);
+    var tag = e.tag || [];
     if (!tag.length) return '';
-    return '<div class="tag-baris">' + tag.map(function (t) {
-      return '<button class="tag" data-tag="' + H(t) + '">#' + H(t) + '</button>';
-    }).join('') + '</div>';
+    var sisa = tag.length - TAG_TAMPIL;
+
+    var isi = tag.map(function (t, i) {
+      return '<button class="tag' + (i >= TAG_TAMPIL ? ' terlipat' : '') +
+             '" data-tag="' + H(t) + '">#' + H(t) + '</button>';
+    }).join('');
+
+    if (sisa > 0) {
+      isi += '<button class="tag lagi" data-tag-lagi>+' + sisa + '</button>';
+    }
+    return '<div class="tag-baris">' + isi + '</div>';
   }
 
   function pasangGambarKartu(akar) {
@@ -1723,6 +1737,15 @@
       jalankanCari();
     });
     $('#hasil').addEventListener('click', function (ev) {
+      /* Membuka lipatan tag: bukan mencari, bukan membuka kartunya. */
+      var lipat = ev.target.closest('[data-tag-lagi]');
+      if (lipat) {
+        var kotakTag = lipat.parentNode;
+        $$('.tag.terlipat', kotakTag).forEach(function (t) { t.classList.remove('terlipat'); });
+        lipat.remove();
+        return;
+      }
+
       /* Tag dibaca lebih dulu, sebelum kartunya: menekan tag berarti
          "carikan yang lain seperti ini", bukan "buka yang ini". */
       var cipTag = ev.target.closest('[data-tag]');
@@ -1909,7 +1932,7 @@
     keHasil: keHasil, keCatat: keCatat, drop: drop,
     gambarMulai: gambarMulai, gambarSetelan: gambarSetelan,
     alihKeyword: alihKeyword, perbaruiUsulKategori: perbaruiUsulKategori,
-    keSemua: keSemua, uraiTagFavorit: uraiTagFavorit,
+    keSemua: keSemua, uraiTagFavorit: uraiTagFavorit, kartuHtmlUji: kartuHtml,
     /* Cuma untuk uji: memindah layar tanpa lewat tombol. */
     keLayarUji: keLayar,
     semuaEntri: function () { return semuaEntri; }
