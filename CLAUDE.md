@@ -69,6 +69,10 @@ terpikir, dan itu membatalkan seluruh gunanya.
 6. **Judul yang diketik sendiri tidak pernah ditimpa AI** (`judulManual`).
 7. **Swalayan.** Folder Drive dan spreadsheet dibuat aplikasi, bukan pemakainya.
    Satu-satunya yang diminta darinya: kunci Gemini, dan itu pun boleh dilewati.
+   **Client ID Google tidak pernah ditanyakan ke pemakai** — itu ditanam sekali
+   di `bawaan.js` oleh pembuatnya, dan isiannya cuma muncul kalau masih kosong.
+   Kalau pemasangan sampai meminta sesuatu yang berbau konfigurasi teknis,
+   pemasangannya sudah gagal sebelum dimulai.
 8. **Nama aplikasi cuma di `bawaan.js`.** Jangan pernah menuliskannya di berkas
    lain, dan jangan pernah menurunkan nama basis data atau kunci setelan dari
    nama itu — data pemakainya ikut hilang kalau namanya berganti.

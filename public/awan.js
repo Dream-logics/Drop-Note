@@ -108,7 +108,14 @@
     tokenSampai = 0;
   }
 
-  function masuk(setelan) { return ambilToken(setelan, false); }
+  /* Coba diam dulu. Kalau pemakainya sudah pernah mengizinkan - dan setelah
+     sekali, dia selalu sudah - tidak ada satu pun layar yang muncul. Layar
+     izin Google cuma keluar saat memang belum pernah diberikan. */
+  function masuk(setelan) {
+    return ambilToken(setelan, true).catch(function () {
+      return ambilToken(setelan, false);
+    });
+  }
   function punyaToken() { return !!token && Date.now() < tokenSampai; }
 
   /* ------------------------------------------------------------------ dasar */

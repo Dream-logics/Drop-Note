@@ -836,40 +836,47 @@
   function gambarMulai() {
     var s = setelanSaat;
     var tersambung = !!s.sheetId;
+    /* Client ID itu urusan PEMBUAT, sekali seumur proyek - bukan urusan
+       pemakai. Tidak ada aplikasi yang meminta hal seperti itu saat dipasang,
+       dan kalau sampai muncul di sini, pemasangannya sudah gagal sebelum
+       dimulai. Isiannya cuma tampil kalau bawaan.js memang belum diisi, yaitu
+       hanya di mesin pengembangnya. */
+    var modePengembang = !TBawaan.clientId;
 
     $('#mulai-isi').innerHTML = [
-      '<div class="set-kotak">',
-      '<div class="set-judul">' + H(TBawaan.nama) + '</div>',
-      '<div class="set-ket">' + H(TBawaan.tagline) + ' Semua tersimpan di HP ini dan bisa dipakai tanpa sinyal. Dua langkah di bawah cuma menambah — <b>boleh dilewati sekarang</b>, dan bisa dipasang kapan saja dari Setelan.</div>',
+      '<div class="mulai-sambut">',
+      '<div class="mulai-judul">' + H(TBawaan.nama) + '</div>',
+      '<div class="mulai-tagline">' + H(TBawaan.tagline) + '</div>',
       '</div>',
 
-      '<div class="set-bagian">1 · Brankas di Google-mu</div>',
       '<div class="set-kotak">',
-      '<div class="set-judul">' + (tersambung ? 'Sudah tersambung' : 'Hubungkan Google') + '</div>',
-      '<div class="set-ket">Aplikasi ini akan membuat sendiri satu folder <b>' + H(TBawaan.nama) +
-        '</b> di Drive-mu, berisi satu spreadsheet cadangan dan satu folder berkas. ' +
-        'Kamu tidak perlu membuat apa pun.<br><br>' +
-        'Izin yang diminta cuma <b>berkas yang dibuat aplikasi ini sendiri</b> — isi Drive-mu yang lain tidak terlihat sama sekali.</div>',
-      (s.clientId || TBawaan.clientId) ? '' :
-        '<input class="set-input" id="mulai-client" placeholder="OAuth Client ID Google" value="">',
+      '<div class="set-judul">' + (tersambung ? 'Cadangan aktif' : 'Cadangkan ke Google-mu') + '</div>',
+      '<div class="set-ket">' + (tersambung
+        ? 'Folder <b>' + H(TBawaan.nama) + '</b> sudah dibuat di Drive-mu. Catatanmu tidak akan hilang bersama HP ini.'
+        : 'Tanpa ini, catatanmu cuma ada di HP ini. Aplikasi membuat sendiri folder di Drive-mu — kamu tidak perlu menyiapkan apa pun.') + '</div>',
+      modePengembang
+        ? '<input class="set-input" id="mulai-client" placeholder="OAuth Client ID (khusus pengembang)" value="">' : '',
       '<button class="set-tbl' + (tersambung ? '' : ' emas') + '" id="b-mulai-google">' +
-        (tersambung ? 'Sambungkan ulang' : 'Hubungkan Google') + '</button>',
-      '<div class="set-ket" id="mulai-google-ket">' +
-        (tersambung ? 'Folder dan spreadsheet sudah dibuat.' : '') + '</div>',
+        (tersambung ? 'Tersambung' : 'Hubungkan Google') + '</button>',
+      '<div class="set-ket" id="mulai-google-ket"></div>',
       '</div>',
 
-      '<div class="set-bagian">2 · Bantuan AI</div>',
       '<div class="set-kotak">',
-      '<div class="set-judul">Supaya yang lahir setengah tetap ketemu</div>',
-      '<div class="set-ket">Catatan lahir dalam tiga detik, jadi konteksnya tidak ikut tertulis — dan foto dokumen tidak punya kata sama sekali. AI menuliskannya sekali di belakang layar, supaya pencarian biasa bisa menemukannya bertahun-tahun kemudian.<br><br>' +
-        'Tempel kunci Gemini-mu. Model bawaan <b>' + H(TBawaan.model) + '</b>.</div>',
-      '<input class="set-input" id="mulai-kunci" type="password" placeholder="Kunci Gemini" value="' + H(s.kunciGemini || '') + '">',
-      '<button class="set-tbl" id="b-mulai-uji">Uji kunci</button>',
+      '<div class="set-judul">Biar yang lahir setengah tetap ketemu</div>',
+      '<div class="set-ket">Foto dokumen tidak punya kata sama sekali. AI menuliskannya sekali di belakang layar, supaya bisa dicari bertahun-tahun kemudian. ' +
+        '<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Ambil kunci Gemini</a> — gratis.</div>',
+      '<input class="set-input" id="mulai-kunci" type="password" placeholder="Kunci Gemini (boleh nanti)" value="' + H(s.kunciGemini || '') + '">',
       '<div class="set-ket" id="mulai-ai-ket"></div>',
       '</div>',
 
-      '<button class="set-tbl emas" id="b-mulai-selesai" style="margin-top:22px">Mulai pakai</button>',
-      '<button class="set-tbl" id="b-mulai-lewati">Lewati, atur nanti</button>'
+      /* SATU tombol. Dua tombol "Mulai" dan "Lewati" yang sama-sama menutup
+         layar ini adalah keputusan yang tidak perlu diadakan - dan tiap
+         keputusan yang tidak perlu adalah tagihan pada dompet yang kosong. */
+      /* Emas cuma satu di layar ini, dan dia berpindah: selama Google belum
+         tersambung, yang bernilai adalah menyambungkannya. Setelah tersambung,
+         yang bernilai adalah mulai memakai. */
+      '<button class="set-tbl' + (tersambung ? ' emas' : '') + '" id="b-mulai-selesai">Mulai</button>',
+      '<div class="kaki">Dua-duanya boleh dilewati. Aplikasinya jalan penuh tanpa keduanya, dan bisa dipasang kapan saja dari Setelan.</div>'
     ].join('');
 
     pasangMulai();
@@ -880,46 +887,47 @@
 
     $('#b-mulai-google').addEventListener('click', function () {
       var isian = $('#mulai-client');
-      var simpan = isian ? simpanSetelan('clientId', isian.value.trim()) : Promise.resolve();
-      ket.textContent = 'Membuka izin Google…';
+      var simpan = isian && isian.value.trim()
+        ? simpanSetelan('clientId', isian.value.trim()) : Promise.resolve();
+      ket.textContent = 'Menyiapkan…';
       simpan.then(function () {
         return TAwan.masuk(setelanSaat);
       }).then(function () {
-        ket.textContent = 'Menyiapkan folder dan spreadsheet…';
         return TSinkron.rumah(setelanSaat);
       }).then(function () {
         return simpanSetelan('cadanganNyala', true);
       }).then(function () {
-        ket.innerHTML = '<b>Selesai.</b> Folder <b>' + H(TBawaan.nama) + '</b> dan cadangannya sudah dibuat di Drive-mu.';
+        ket.innerHTML = '<b>Selesai.</b> Folder <b>' + H(TBawaan.nama) + '</b> dibuat di Drive-mu.';
+        $('#b-mulai-google').textContent = 'Tersambung';
+        $('#b-mulai-google').classList.remove('emas');
+        $('#b-mulai-selesai').classList.add('emas');
       }).catch(function (err) {
         ket.textContent = 'Gagal: ' + err.message;
       });
     });
 
+    /* Kuncinya diuji sendiri saat ditempel. Menyuruh orang menekan "Uji"
+       setelah menempel itu satu langkah yang mesin bisa kerjakan sendiri. */
     var kunci = $('#mulai-kunci');
-    kunci.addEventListener('change', function () { simpanSetelan('kunciGemini', kunci.value.trim()); });
-
-    $('#b-mulai-uji').addEventListener('click', function () {
-      var k = $('#mulai-ai-ket');
-      k.textContent = 'Mencoba…';
-      simpanSetelan('kunciGemini', kunci.value.trim())
+    var k = $('#mulai-ai-ket');
+    kunci.addEventListener('change', function () {
+      var nilai = kunci.value.trim();
+      if (!nilai) return;
+      k.textContent = 'Memeriksa kunci…';
+      simpanSetelan('kunciGemini', nilai)
         .then(function () { return simpanSetelan('modeAI', 'penuh'); })
         .then(function () { return TPelabel.coba(setelanSaat); })
-        .then(function (h) {
-          k.innerHTML = 'Tersambung. Contoh judul: <b>' + H(h.judul || '') + '</b>';
-        }, function (err) {
-          k.textContent = 'Gagal: ' + err.message;
-        });
+        .then(function () { k.innerHTML = '<b>Kuncinya jalan.</b> AI akan bekerja di belakang layar.'; },
+              function (err) { k.textContent = 'Kunci ditolak: ' + err.message; });
     });
 
-    function selesai() {
+    $('#b-mulai-selesai').addEventListener('click', function () {
       simpanSetelan('dipasang', true).then(function () {
         tampilkanLayar('l-utama');
+        $('#kotak').focus();
         muatSemua().then(function () { perbaruiUsulKategori(); });
       });
-    }
-    $('#b-mulai-selesai').addEventListener('click', selesai);
-    $('#b-mulai-lewati').addEventListener('click', selesai);
+    });
   }
 
   /* ===================== layar setelan ===================== */
@@ -962,8 +970,8 @@
       '<div class="set-ket">' + (tersambung
         ? 'Folder <b>' + H(TBawaan.nama) + '</b> berisi cadangan dan berkasmu. Cadangan berjalan saat aplikasi dibuka, di belakang layar, dan <b>tidak pernah</b> di jalur drop.'
         : 'Catatanmu cuma ada di HP ini. Menghapus “cookies and site data” akan menghapus semuanya.') + '</div>',
-      (s.clientId || TBawaan.clientId) ? '' :
-        '<input class="set-input" id="set-client" placeholder="OAuth Client ID Google" value="' + H(s.clientId || '') + '">',
+      TBawaan.clientId ? '' :
+        '<input class="set-input" id="set-client" placeholder="OAuth Client ID (khusus pengembang)" value="' + H(s.clientId || '') + '">',
       '<div class="set-pilih" id="set-cadangan">',
       '<button class="cip' + (s.cadanganNyala ? '' : ' nyala') + '" data-cadangan="mati">Mati</button>',
       '<button class="cip' + (s.cadanganNyala ? ' nyala' : '') + '" data-cadangan="nyala">Nyala</button>',
@@ -1488,7 +1496,7 @@
 
   /* Dibuka untuk uji terima; aplikasinya sendiri tidak memakainya. */
   global.TAlur = {
-    keHasil: keHasil, keCatat: keCatat, drop: drop,
+    keHasil: keHasil, keCatat: keCatat, drop: drop, gambarMulai: gambarMulai,
     semuaEntri: function () { return semuaEntri; }
   };
 })(window);

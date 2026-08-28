@@ -7,8 +7,19 @@ menempel kode ke mana pun, tidak men-deploy apa pun.
 Tapi ada satu langkah yang tidak bisa dihilangkan siapa pun, dan itu langkah
 **pembuat aplikasi**, bukan pemakainya: OAuth tidak ada tanpa Client ID.
 
-Dikerjakan **sekali**, lalu semua pemakai (kamu, staf, siapa pun) cukup menekan
-satu tombol **Hubungkan Google**.
+Dikerjakan **sekali seumur proyek**, ditanam di `public/bawaan.js`, lalu
+**tidak ada satu pun pemakai yang pernah melihatnya**.
+
+## Apa yang dilihat pemakai
+
+Satu tombol **Hubungkan Google**, lalu layar izin Google yang biasa — "Aplikasi
+ini ingin melihat, mengedit, membuat, dan menghapus berkas Drive miliknya
+sendiri". Tekan Izinkan, selesai. Sama persis seperti aplikasi lain yang pernah
+dia pasang.
+
+Isian Client ID di layar pemasangan hanya muncul kalau `clientId` di
+`bawaan.js` masih kosong — artinya hanya di mesin pengembangnya. Begitu diisi,
+isian itu hilang untuk semua orang.
 
 ---
 

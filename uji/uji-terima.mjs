@@ -94,7 +94,25 @@ console.log('\npemasangan swalayan');
      innerText mengembalikan yang terlihat, bukan yang tertulis. */
   cek('namanya dituliskan dari satu tempat',
       (await hal.locator('#merek-mulai').textContent()) === 'Drop Memory');
-  cek('boleh dilewati', await hal.locator('#b-mulai-lewati').count() === 1);
+  /* Satu tombol saja yang menutup layar ini. Dua tombol yang sama-sama
+     menutupnya adalah keputusan yang tidak perlu diadakan. */
+  cek('cuma satu tombol yang menutup pemasangan',
+      (await hal.locator('#mulai-isi .set-tbl.emas').count()) === 1);
+  cek('boleh dilewati tanpa mengisi apa pun',
+      (await hal.locator('#b-mulai-selesai').count()) === 1);
+
+  /* Yang paling penting di bagian ini: pemakai biasa TIDAK PERNAH melihat
+     Client ID. Itu urusan pembuatnya, sekali seumur proyek. */
+  const adaIsianKlien = await hal.evaluate(() => {
+    const asli = TBawaan.clientId;
+    TBawaan.clientId = 'sudah-ditanam.apps.googleusercontent.com';
+    TAlur.gambarMulai();
+    const ada = !!document.querySelector('#mulai-client');
+    TBawaan.clientId = asli;
+    TAlur.gambarMulai();
+    return ada;
+  });
+  cek('Client ID tidak pernah ditanyakan ke pemakai', adaIsianKlien === false);
 
   await hal.fill('#mulai-client', 'klien-uji.apps.googleusercontent.com');
   await hal.click('#b-mulai-google');
