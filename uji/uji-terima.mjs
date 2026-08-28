@@ -572,6 +572,20 @@ console.log('\ntag andalan: rak yang sudah diputuskan sendiri');
   const arahan = await hal.evaluate(() => window.__arahan);
   cek('tag andalan ikut dikirim ke AI, di depan', /Ngoffee/.test(arahan) && /AmaraLiving/.test(arahan));
   cek('huruf besarnya diminta disalin persis', /huruf besar-kecil/.test(arahan));
+
+  /* Ini yang paling menentukan: daftar andalan itu BANTUAN, bukan kandang.
+     Kalau AI cuma boleh memilih dari daftar, orang yang sedang kehabisan
+     tenaga - dan karena itu daftarnya pendek - malah dapat tag yang meleset. */
+  cek('daftar andalan bukan daftar tertutup', /bukan daftar tertutup/.test(arahan));
+  cek('AI disuruh membuat tag baru kalau tidak ada yang cocok',
+      /BUAT TAG BARU/.test(arahan));
+  cek('tidak boleh ada catatan yang pulang tanpa tag',
+      /WAJIB dapat minimal 2 tag/.test(arahan));
+
+  /* Dan tanpa satu pun tag andalan pun, AI tetap harus menyusun sendiri. */
+  const kosong = await hal.evaluate(() => TPelabel.arahanUji({ tagFavorit: [], hashtag: [] }));
+  cek('tanpa daftar sama sekali, AI tetap disuruh menyusun dari nol',
+      /susun sendiri dari nol/.test(kosong));
 }
 
 console.log('\nnama cuma kulit');
