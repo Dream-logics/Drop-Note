@@ -562,6 +562,15 @@ console.log('\nAI: kunci milik pembuat, pemakai tinggal pakai');
       /SUBJEK/.test(proxyAI.arahanTerakhir) && /ELEMEN/.test(proxyAI.arahanTerakhir) &&
       /TAG/.test(proxyAI.arahanTerakhir));
 
+  /* Judul yang menuntut ketukan kedua tidak pernah terisi - itu pelajaran dari
+     Google Keep. Jadi baris pertama YANG ITU judulnya, bukan bahan tafsiran. */
+  cek('baris pertama diperlakukan sebagai judul',
+      /BARIS PERTAMA/.test(proxyAI.arahanTerakhir));
+  cek('AI dilarang menggantinya dengan tafsiran sendiri',
+      /JANGAN menggantinya/.test(proxyAI.arahanTerakhir));
+  cek('boleh dirapikan, tapi tidak dipanjangkan',
+      /jangan memanjangkannya/.test(proxyAI.arahanTerakhir));
+
   const berlabel = await hal.evaluate(() => TSimpan.semua().then(
     (a) => a.filter((e) => e.diLabeliAI)[0]));
   cek('elemen dari layanan ikut tersimpan',
