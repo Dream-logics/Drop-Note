@@ -108,6 +108,21 @@
     tokenSampai = 0;
   }
 
+  /* Email pemakainya dipakai untuk satu hal saja: ditunjukkan kembali
+     kepadanya di layar Setelan, supaya jelas akun mana yang dipakai. Yang
+     memutuskan dia terdaftar atau tidak adalah proxy, bukan aplikasi ini -
+     kalau keputusan itu diambil di sini, siapa pun bisa mengubahnya. */
+  function siapa(setelan) {
+    return ambilToken(setelan, true).then(function (t) {
+      return fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: 'Bearer ' + t }
+      });
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Tidak bisa membaca akun');
+      return r.json();
+    }).then(function (j) { return (j && j.email) || ''; });
+  }
+
   /* Coba diam dulu. Kalau pemakainya sudah pernah mengizinkan - dan setelah
      sekali, dia selalu sudah - tidak ada satu pun layar yang muncul. Layar
      izin Google cuma keluar saat memang belum pernah diberikan. */
@@ -331,6 +346,7 @@
 
   global.TAwan = {
     masuk: masuk, keluar: keluar, punyaToken: punyaToken, ambilToken: ambilToken,
+    siapa: siapa,
     siapkanRumah: siapkanRumah,
     tulisBaris: tulisBaris, bacaSemuaBaris: bacaSemuaBaris, hapusBaris: hapusBaris,
     unggahBerkas: unggahBerkas, unduhBerkas: unduhBerkas, hapusBerkas: hapusBerkas,

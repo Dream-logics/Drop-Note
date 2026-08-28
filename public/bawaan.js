@@ -22,8 +22,17 @@
 
     /* Model Gemini. Flash-Lite dipilih bukan karena murah saja: tugasnya cuma
        memberi judul dan kata kunci, dan model terkecil sudah cukup untuk itu.
-       Boleh diganti dari layar Setelan. */
+       Yang memakainya adalah proxy, bukan aplikasi ini. */
     model: 'gemini-3.5-flash-lite',
+
+    /* Alamat proxy AI milik PEMBUAT aplikasi (Apps Script /exec).
+       Kunci Gemini tinggal di sana, tidak pernah di perangkat siapa pun.
+       Pemakai tidak membawa kunci, tidak membeli kunci, tidak tahu ada kunci -
+       dia cuma dikenali dari email Google-nya, lalu dilayani atau tidak.
+
+       Kosong di sini berarti aplikasinya jalan tanpa AI sama sekali. Itu
+       keadaan yang sah dan lengkap, bukan keadaan rusak. */
+    alamatAI: '',
 
     /* OAuth Client ID Google. Ini BUKAN rahasia - dia memang terbaca di semua
        aplikasi browser, dan yang menjaganya adalah daftar origin yang kamu
@@ -31,10 +40,12 @@
        menempelkannya sendiri sekali di layar Setelan. */
     clientId: '',
 
-    /* Hanya drive.file: aplikasi ini cuma bisa menyentuh berkas yang DIA
-       sendiri buat. Google tidak menganggapnya cakupan sensitif, jadi tidak
-       perlu peninjauan - dan pemakainya tidak perlu menyerahkan seluruh
-       Drive-nya cuma untuk mencadangkan catatan. */
-    lingkup: 'https://www.googleapis.com/auth/drive.file'
+    /* drive.file: aplikasi cuma bisa menyentuh berkas yang DIA sendiri buat -
+       isi Drive pemakai yang lain tidak terlihat sama sekali.
+       userinfo.email: supaya proxy AI bisa memastikan siapa yang memanggil.
+       Keduanya tidak dianggap sensitif oleh Google, jadi tidak perlu
+       peninjauan dan layar izinnya tidak menakutkan. */
+    lingkup: 'https://www.googleapis.com/auth/drive.file ' +
+             'https://www.googleapis.com/auth/userinfo.email'
   };
 })(window);

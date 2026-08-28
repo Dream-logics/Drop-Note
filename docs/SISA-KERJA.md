@@ -20,14 +20,17 @@ rinci, cukup untuk langsung jalan.
 - **Hapus permanen** — nisan (`dihapus`) naik ke awan, barisnya di Sheet dan
   berkasnya di Drive dihapus, baru entrinya dibuang dari HP. Tekan lama pada
   tombol buang; ketuk biasa tetap memensiunkan.
-- **AI langsung ke Gemini** (`pelabel.js`), model `gemini-3.5-flash-lite`.
+- **AI lewat layanan pembuat** (`pelabel.js`), model `gemini-3.5-flash-lite`.
+  Kunci tinggal di proxy, tidak pernah di perangkat pemakai; yang memutuskan
+  seseorang terdaftar adalah proxy. Mode kunci-sendiri tetap ada untuk
+  pengembang, dan hilang begitu `alamatAI` ditanam.
   Hemat = judul + kata kunci. Penuh = juga membaca isi foto dan PDF (OCR),
   hasilnya masuk ke `isi` supaya pencarian yang sudah ada langsung menemukannya.
 - **Layar pemasangan** — muncul sekali, dua langkah, keduanya boleh dilewati.
 - **Penyimpanan permanen** — `navigator.storage.persist()`.
 - **Nama sebagai kulit** — hanya di `bawaan.js`, judul `index.html`, dan
   manifest. Dijaga uji.
-- **Uji terima** — `node uji/uji-terima.mjs`, 51 lulus.
+- **Uji terima** — `node uji/uji-terima.mjs`, 60 lulus.
 
 ---
 
@@ -96,5 +99,11 @@ akhir, saat sudah jelas aplikasinya bertahan.
 
 ## Yang perlu dipasang sekali oleh pembuatnya
 
-OAuth Client ID Google — langkahnya di [`GOOGLE.md`](GOOGLE.md). Itu satu-satunya
-langkah teknis yang tersisa, dan itu pun cuma sekali seumur proyek.
+Dua, dan dua-duanya sekali seumur proyek:
+
+1. **OAuth Client ID Google** — [`GOOGLE.md`](GOOGLE.md).
+2. **Proxy AI + daftar pengguna terdaftar** — [`PROXY-AI.md`](PROXY-AI.md).
+   Ini juga yang jadi dasar berlangganan nanti: menambah pelanggan = menambah
+   satu baris di Sheet, bisa dari HP.
+
+Setelah keduanya ditanam di `public/bawaan.js`, pemakai tidak mengisi apa pun.

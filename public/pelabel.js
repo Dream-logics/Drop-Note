@@ -38,13 +38,60 @@
     return ((setelan && setelan.model) || '').trim() || TBawaan.model;
   }
 
+  /* DUA JALAN, DAN YANG PERTAMA YANG NORMAL.
+
+     1. LEWAT PROXY (bawaan, untuk semua pemakai). Kunci Gemini tinggal di
+        proxy milik pembuat aplikasi. Pemakai tidak membawa kunci, tidak
+        membeli kunci, tidak tahu ada kunci - dia dikenali dari token Google
+        yang sudah dia berikan untuk cadangan, lalu dilayani atau tidak.
+        Yang memutuskan itu proxy, bukan aplikasi ini.
+
+     2. LANGSUNG (khusus pengembang). Kunci di perangkat sendiri, untuk
+        mencoba-coba tanpa proxy. Isiannya cuma muncul kalau alamat proxy
+        memang belum ditanam di bawaan.js. */
+  function lewatProxy(setelan) { return !setelan.kunciGemini && !!TBawaan.alamatAI; }
+
   function siap(setelan) {
-    return !!(setelan && setelan.modeAI && setelan.modeAI !== 'mati' && setelan.kunciGemini);
+    if (!setelan || !setelan.modeAI || setelan.modeAI === 'mati') return false;
+    return !!setelan.kunciGemini || !!TBawaan.alamatAI;
   }
 
-  /* Satu pintu ke Gemini. Bentuk permintaannya mengikuti REST v1beta:
-     POST .../models/<model>:generateContent dengan kunci di header. */
+  function ambilJawab(j) {
+    var p = j && j.candidates && j.candidates[0] && j.candidates[0].content &&
+            j.candidates[0].content.parts && j.candidates[0].content.parts[0];
+    return urai(p && p.text);
+  }
+
   function tanya(setelan, bagian, arahan) {
+    return lewatProxy(setelan) ? tanyaProxy(setelan, bagian, arahan)
+                               : tanyaLangsung(setelan, bagian, arahan);
+  }
+
+  /* Token Google-nya ikut dikirim supaya proxy bisa memastikan sendiri siapa
+     yang memanggil - bukan percaya pada apa yang ditulis aplikasi. */
+  function tanyaProxy(setelan, bagian, arahan) {
+    return TAwan.ambilToken(setelan, true).then(function (token) {
+      return fetch(TBawaan.alamatAI, {
+        method: 'POST',
+        /* text/plain sengaja: bikin permintaan ini "sederhana" menurut CORS,
+           jadi tidak ada preflight OPTIONS - yang tidak dijawab Apps Script. */
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ token: token, arahan: arahan, bagian: bagian })
+      });
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Layanan AI menjawab ' + r.status);
+      return r.text();
+    }).then(function (t) {
+      var j;
+      try { j = JSON.parse(t); } catch (e) { throw new Error('Jawaban tidak dikenali'); }
+      if (j && j.galat) throw new Error(j.galat);
+      return ambilJawab(j);
+    });
+  }
+
+  /* Bentuk permintaannya mengikuti REST v1beta:
+     POST .../models/<model>:generateContent dengan kunci di header. */
+  function tanyaLangsung(setelan, bagian, arahan) {
     return fetch(AKAR + encodeURIComponent(model(setelan)) + ':generateContent', {
       method: 'POST',
       headers: {
@@ -61,11 +108,7 @@
         if (!r.ok) throw new Error((j && j.error && j.error.message) || ('Gemini menjawab ' + r.status));
         return j;
       });
-    }).then(function (j) {
-      var p = j && j.candidates && j.candidates[0] && j.candidates[0].content &&
-              j.candidates[0].content.parts && j.candidates[0].content.parts[0];
-      return urai(p && p.text);
-    });
+    }).then(ambilJawab);
   }
 
   function urai(teks) {
@@ -219,7 +262,13 @@
         total += n;
         return setelan.modeAI === 'penuh' ? bacaBerkas(setelan, semua) : 0;
       }).then(function (n) { total += n; });
+    }).then(function () {
+      return TSimpan.setel('aiGalat', '');
     }).catch(function (err) {
+      /* Tetap diam di layar utama - tapi sebabnya disimpan, karena satu
+         kegagalan di sini punya arti yang perlu dibaca pemakainya:
+         "belum terdaftar" bukan gangguan, itu jawaban. */
+      TSimpan.setel('aiGalat', err.message);
       if (global.console && console.debug) console.debug('[pelabelan tertunda]', err.message);
     }).then(function () { jalan = false; return total; },
             function () { jalan = false; return total; });
@@ -234,5 +283,7 @@
     });
   }
 
-  global.TPelabel = { putaran: putaran, coba: coba, siap: siap, model: model };
+  global.TPelabel = {
+    putaran: putaran, coba: coba, siap: siap, model: model, lewatProxy: lewatProxy
+  };
 })(window);

@@ -861,13 +861,25 @@
       '<div class="set-ket" id="mulai-google-ket"></div>',
       '</div>',
 
-      '<div class="set-kotak">',
-      '<div class="set-judul">Biar yang lahir setengah tetap ketemu</div>',
-      '<div class="set-ket">Foto dokumen tidak punya kata sama sekali. AI menuliskannya sekali di belakang layar, supaya bisa dicari bertahun-tahun kemudian. ' +
-        '<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Ambil kunci Gemini</a> — gratis.</div>',
-      '<input class="set-input" id="mulai-kunci" type="password" placeholder="Kunci Gemini (boleh nanti)" value="' + H(s.kunciGemini || '') + '">',
-      '<div class="set-ket" id="mulai-ai-ket"></div>',
-      '</div>',
+      /* Pemakai tidak diminta apa pun untuk AI - tidak ada kunci, tidak ada
+         pendaftaran di sini. Dia sudah dikenali dari akun Google yang tadi
+         disambungkan; sisanya urusan layanan. */
+      TBawaan.alamatAI ? [
+        '<div class="set-kotak">',
+        '<div class="set-judul">Biar yang lahir setengah tetap ketemu</div>',
+        '<div class="set-ket">Foto dokumen tidak punya kata sama sekali. AI menuliskannya sekali di belakang layar, supaya bisa dicari bertahun-tahun kemudian.<br><br>' +
+          'Aktif sendiri untuk pengguna terdaftar — tidak ada yang perlu kamu isi.</div>',
+        '<div class="set-ket" id="mulai-ai-ket"></div>',
+        '</div>'
+      ].join('') : [
+        '<div class="set-kotak">',
+        '<div class="set-judul">Bantuan AI</div>',
+        '<div class="set-ket">Layanan AI belum ditanam di aplikasi ini. Untuk mencoba sendiri, tempel kunci Gemini-mu — ' +
+          '<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">ambil di AI Studio</a>, gratis. (khusus pengembang)</div>',
+        '<input class="set-input" id="mulai-kunci" type="password" placeholder="Kunci Gemini" value="' + H(s.kunciGemini || '') + '">',
+        '<div class="set-ket" id="mulai-ai-ket"></div>',
+        '</div>'
+      ].join(''),
 
       /* SATU tombol. Dua tombol "Mulai" dan "Lewati" yang sama-sama menutup
          layar ini adalah keputusan yang tidak perlu diadakan - dan tiap
@@ -883,6 +895,7 @@
   }
 
   function pasangMulai() {
+    pasangSelesaiMulai();
     var ket = $('#mulai-google-ket');
 
     $('#b-mulai-google').addEventListener('click', function () {
@@ -910,6 +923,7 @@
        setelah menempel itu satu langkah yang mesin bisa kerjakan sendiri. */
     var kunci = $('#mulai-kunci');
     var k = $('#mulai-ai-ket');
+    if (!kunci) return;
     kunci.addEventListener('change', function () {
       var nilai = kunci.value.trim();
       if (!nilai) return;
@@ -921,6 +935,9 @@
               function (err) { k.textContent = 'Kunci ditolak: ' + err.message; });
     });
 
+  }
+
+  function pasangSelesaiMulai() {
     $('#b-mulai-selesai').addEventListener('click', function () {
       simpanSetelan('dipasang', true).then(function () {
         tampilkanLayar('l-utama');
@@ -1002,17 +1019,24 @@
           m.charAt(0).toUpperCase() + m.slice(1) + '</button>';
       }).join(''),
       '</div>',
-      mode !== 'mati' ? '<input class="set-input" id="set-kunci" type="password" placeholder="Kunci Gemini" value="' + H(s.kunciGemini || '') + '">' : '',
-      mode !== 'mati' ? '<input class="set-input" id="set-model" placeholder="' + H(TBawaan.model) + '" value="' + H(s.model || '') + '">' : '',
-      mode !== 'mati' ? '<button class="set-tbl" id="b-uji">Uji kunci</button><div class="set-ket" id="uji-hasil"></div>' : '',
+      mode !== 'mati' ? '<div class="set-ket" id="ai-status">…</div>' : '',
+      /* Isian kunci cuma untuk pengembang, dan cuma kalau layanannya memang
+         belum ditanam. Pemakai tidak pernah memegang kunci. */
+      (mode !== 'mati' && !TBawaan.alamatAI)
+        ? '<input class="set-input" id="set-kunci" type="password" placeholder="Kunci Gemini (khusus pengembang)" value="' + H(s.kunciGemini || '') + '">' +
+          '<input class="set-input" id="set-model" placeholder="' + H(TBawaan.model) + '" value="' + H(s.model || '') + '">' +
+          '<button class="set-tbl" id="b-uji">Uji kunci</button><div class="set-ket" id="uji-hasil"></div>'
+        : '',
       '</div>',
 
-      /* Pertanyaannya pernah ditanyakan langsung, jadi dijawab jujur di sini
-         juga - bukan disamarkan jadi UI yang seolah-olah aman. */
-      mode !== 'mati' ? '<div class="set-kotak awas"><div class="set-judul">Kunci di HP tidak bisa disembunyikan</div>' +
-        '<div class="set-ket">Di aplikasi yang seluruhnya jalan di browser, <b>kunci API tidak bisa benar-benar disembunyikan</b>. ' +
-        'Siapa pun yang memegang HP ini bisa membacanya. Itu kunci <b>milikmu sendiri</b>, jadi risikonya juga milikmu — ' +
-        'batasi kuncinya di Google AI Studio dan cabut kalau HP-nya hilang.</div></div>' : '',
+      /* Kunci di perangkat memang tidak bisa disembunyikan - tapi itu cuma
+         berlaku di mode pengembang. Pemakai biasa tidak membawa kunci sama
+         sekali, jadi peringatan ini tidak perlu ditunjukkan kepadanya. */
+      (mode !== 'mati' && !TBawaan.alamatAI && s.kunciGemini)
+        ? '<div class="set-kotak awas"><div class="set-judul">Kunci di HP tidak bisa disembunyikan</div>' +
+          '<div class="set-ket">Di aplikasi yang seluruhnya jalan di browser, <b>kunci API tidak bisa benar-benar disembunyikan</b>. ' +
+          'Ini mode pengembang — untuk pemakai biasa, kuncinya tinggal di layanan dan tidak pernah sampai ke perangkat.</div></div>'
+        : '',
 
       '<div class="set-bagian">Cadangan manual</div>',
       '<div class="set-kotak">',
@@ -1046,6 +1070,27 @@
           kotak.innerHTML = 'Terakhir berhasil: <b>' + H(waktuPanjang(s.cadanganBerhasil)) + '</b>' +
             ' · belum terkirim: <b>' + n + '</b>' +
             (s.cadanganGalat ? '<br>Percobaan terakhir gagal: ' + H(s.cadanganGalat) : '');
+        });
+      }
+    }
+
+    var ai = $('#ai-status');
+    if (ai) {
+      if (!TPelabel.lewatProxy(setelanSaat)) {
+        ai.textContent = setelanSaat.kunciGemini
+          ? 'Mode pengembang: memakai kunci di perangkat ini.'
+          : 'Layanan AI belum ditanam di aplikasi ini.';
+      } else if (/belum-terdaftar/i.test(setelanSaat.aiGalat || '')) {
+        /* Ini satu-satunya kegagalan AI yang perlu dibaca: bukan gangguan,
+           melainkan jawaban. */
+        ai.innerHTML = '<b>Akun ini belum terdaftar</b> untuk bantuan AI. ' +
+          'Semua yang lain tetap jalan seperti biasa.';
+      } else {
+        TAwan.siapa(setelanSaat).then(function (email) {
+          ai.innerHTML = 'Aktif untuk <b>' + H(email) + '</b>. Kuncinya ada di layanan, tidak pernah di HP ini.' +
+            (setelanSaat.aiGalat ? '<br>Percobaan terakhir gagal: ' + H(setelanSaat.aiGalat) : '');
+        }, function () {
+          ai.textContent = 'Hubungkan Google dulu supaya bantuan AI bisa mengenalimu.';
         });
       }
     }
@@ -1496,7 +1541,8 @@
 
   /* Dibuka untuk uji terima; aplikasinya sendiri tidak memakainya. */
   global.TAlur = {
-    keHasil: keHasil, keCatat: keCatat, drop: drop, gambarMulai: gambarMulai,
+    keHasil: keHasil, keCatat: keCatat, drop: drop,
+    gambarMulai: gambarMulai, gambarSetelan: gambarSetelan,
     semuaEntri: function () { return semuaEntri; }
   };
 })(window);

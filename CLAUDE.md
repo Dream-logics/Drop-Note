@@ -61,7 +61,10 @@ terpikir, dan itu membatalkan seluruh gunanya.
    IndexedDB dan selesai. Tidak ada jaringan di jalur masuk. Tidak pernah.
    Begitu nge-drop terasa berat, kebiasaannya mati dan aplikasinya ikut mati.
 2. **Pelabelan AI menyusul di belakang**, borongan, dan boleh gagal diam-diam.
-   Aplikasi harus jalan penuh tanpa AI sama sekali.
+   Aplikasi harus jalan penuh tanpa AI sama sekali. **Kuncinya milik pembuat,
+   di proxy** — pemakai tidak pernah memegang, membeli, atau menempel kunci.
+   Yang memutuskan seseorang berhak itu proxy, bukan aplikasi; kalau keputusan
+   itu pindah ke sisi klien, siapa pun bisa mengubahnya.
 3. **Pencarian tanpa jaringan.** Berjalan di atas salinan lokal. Ini tindakan
    yang paling sering dilakukan, jadi harus yang paling murah.
 4. **Tidak ada yang benar-benar terhapus.** Yang basi tenggelam.
@@ -89,7 +92,8 @@ public/otak.js      SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
                     nilai hasil pencarian
 public/awan.js      Google Drive & Sheets langsung — folder dan spreadsheet
                     dibuat SENDIRI oleh aplikasi; cakupan cuma drive.file
-public/pelabel.js   satu-satunya bagian ber-AI (Gemini langsung): label + OCR
+public/pelabel.js   satu-satunya bagian ber-AI: label + OCR. Lewat proxy milik
+                    PEMBUAT; kunci tidak pernah ada di perangkat pemakai
 public/sinkron.js   cadangan satu arah ke Drive; tidak pernah di jalur drop
 public/alur.js      alur UI — semua layar, drop, cari, catat, setelan
 public/sw.js        service worker — singgahan kerangka + penerima "Bagikan"
@@ -98,7 +102,8 @@ uji/uji-terima.mjs            uji terima (Playwright)
 uji/palsu-google.mjs          tiruan Drive+Sheets di memori untuk uji
 docs/RANCANGAN.md   alasan di balik rancangannya
 docs/PROPOSAL-V2.md rencana bertahap yang sedang dikerjakan
-docs/GOOGLE.md      satu langkah pembuat (OAuth Client ID) + kunci Gemini
+docs/GOOGLE.md      satu langkah pembuat: OAuth Client ID
+docs/PROXY-AI.md    layanan AI + daftar pengguna terdaftar; kodenya lengkap
 docs/SISA-KERJA.md  yang belum dikerjakan, cukup rinci untuk langsung jalan
 docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 ```
@@ -109,7 +114,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (51 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (60 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

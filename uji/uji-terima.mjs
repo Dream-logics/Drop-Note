@@ -42,6 +42,7 @@ function layani() {
   return new Promise((terima) => {
     const s = http.createServer((req, res) => {
       const nama = decodeURIComponent(req.url.split('?')[0]);
+      if (nama === '/palsu-ai') return tiruProxyAI(req, res);
       const berkas = path.join(AKAR, nama === '/' ? 'index.html' : nama);
       if (!berkas.startsWith(AKAR) || !fs.existsSync(berkas) || fs.statSync(berkas).isDirectory()) {
         res.writeHead(404); res.end('tidak ada'); return;
@@ -50,6 +51,28 @@ function layani() {
       res.end(fs.readFileSync(berkas));
     });
     s.listen(0, '127.0.0.1', () => terima({ server: s, port: s.address().port }));
+  });
+}
+
+/* Tiruan proxy AI milik pembuat aplikasi. Yang diuji di sini bukan Gemini-nya,
+   melainkan dua hal yang menentukan modelnya: token pemakai benar-benar ikut
+   dikirim, dan penolakan "belum terdaftar" ditangani tanpa merusak apa pun. */
+const proxyAI = { panggilan: 0, tokenTerakhir: null, tolak: false };
+function tiruProxyAI(req, res) {
+  let badan = '';
+  req.on('data', (p) => { badan += p; });
+  req.on('end', () => {
+    proxyAI.panggilan++;
+    let j = {};
+    try { j = JSON.parse(badan); } catch (e) { /* biarkan */ }
+    proxyAI.tokenTerakhir = j.token || null;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    if (proxyAI.tolak) return res.end(JSON.stringify({ galat: 'belum-terdaftar' }));
+    res.end(JSON.stringify({
+      candidates: [{ content: { parts: [{
+        text: JSON.stringify({ hasil: [{ i: 0, judul: 'Judul dari layanan', label: ['apps', 'uji'] }] })
+      }] } }]
+    }));
   });
 }
 
@@ -303,6 +326,53 @@ console.log('\nsetelan & pwa');
   cek('share_target lewat POST + berkas',
       manifes.share_target.method === 'POST' && Array.isArray(manifes.share_target.params.files));
   cek('nama aplikasi ikut satu sumber', manifes.name === 'Drop Memory');
+}
+
+console.log('\nAI: kunci milik pembuat, pemakai tinggal pakai');
+{
+  const alamatAI = 'http://127.0.0.1:' + port + '/palsu-ai';
+
+  /* Begitu layanan ditanam, pemakai tidak pernah diminta kunci - tidak di
+     layar pemasangan, tidak di Setelan. */
+  const dimintaKunci = await hal.evaluate((a) => {
+    TBawaan.alamatAI = a;
+    TAlur.gambarMulai();
+    return !!document.querySelector('#mulai-kunci');
+  }, alamatAI);
+  cek('kunci AI tidak pernah diminta ke pemakai', dimintaKunci === false);
+
+  const adaDiSetelan = await hal.evaluate(() => {
+    TAlur.gambarSetelan();
+    return !!document.querySelector('#set-kunci');
+  });
+  cek('isian kunci juga tidak ada di Setelan', adaDiSetelan === false);
+
+  await hal.evaluate(() => Promise.all([
+    TSimpan.setel('modeAI', 'hemat'),
+    TSimpan.setel('kunciGemini', '')
+  ]));
+
+  const sebelum = proxyAI.panggilan;
+  const n = await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TPelabel.putaran(s)));
+  cek('pelabelan berjalan lewat layanan pembuat', proxyAI.panggilan > sebelum && n > 0, 'naik: ' + n);
+  cek('token Google pemakai ikut dikirim supaya bisa diperiksa',
+      proxyAI.tokenTerakhir === 'token-palsu', String(proxyAI.tokenTerakhir));
+
+  const judul = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => e.diLabeliAI).map((e) => e.judul).join(' | ')));
+  cek('judul dari layanan benar-benar tersimpan', /Judul dari layanan/.test(judul), judul);
+
+  /* Belum terdaftar itu jawaban, bukan gangguan: tidak merusak apa pun,
+     tapi harus bisa dibaca di Setelan. */
+  proxyAI.tolak = true;
+  await hal.evaluate(() => TSimpan.semua().then((a) => Promise.all(
+    a.map((e) => { e.diLabeliAI = false; return TSimpan.taruh(e); }))));
+  await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TPelabel.putaran(s)));
+  const sebab = await hal.evaluate(() => TSimpan.setelan('aiGalat'));
+  cek('penolakan disimpan apa adanya', /belum-terdaftar/.test(sebab || ''), String(sebab));
+  const jumlah = await hal.evaluate(() => TSimpan.jumlah());
+  cek('ditolak layanan tidak merusak apa pun', jumlah >= 1);
+  proxyAI.tolak = false;
 }
 
 console.log('\nnama cuma kulit');

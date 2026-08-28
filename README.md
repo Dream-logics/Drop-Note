@@ -12,10 +12,11 @@ di HP, menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinya
 
 Cadangan ke Google Drive **swalayan**: folder dan spreadsheet dibuat sendiri oleh
 aplikasi, pemakainya cukup menekan satu tombol. Berkas naik ke Drive dan
-thumbnail-nya tinggal di HP. AI (Gemini `gemini-3.5-flash-lite`) memberi judul,
-kata kunci, dan membaca isi foto/PDF supaya bisa dicari.
+thumbnail-nya tinggal di HP. AI (Gemini `gemini-3.5-flash-lite`) memberi judul, kata kunci, dan membaca isi
+foto/PDF supaya bisa dicari — lewat layanan milik pembuat, untuk pengguna
+terdaftar. Pemakai tidak pernah memegang kunci API.
 
-Uji terima: `node uji/uji-terima.mjs` — 51 lulus.
+Uji terima: `node uji/uji-terima.mjs` — 60 lulus.
 
 Sisanya penyempurnaan, ada di `docs/SISA-KERJA.md`.
 
@@ -37,7 +38,8 @@ berjalan di sana.
 | `CLAUDE.md` | **baca ini dulu** — kenapa bentuknya begini, dan apa yang tidak boleh dilanggar |
 | `docs/RANCANGAN.md` | alasan di balik rancangannya |
 | `docs/SISA-KERJA.md` | yang belum dikerjakan, cukup rinci untuk langsung jalan |
-| `docs/GOOGLE.md` | satu langkah pembuat (OAuth Client ID) + kunci Gemini |
+| `docs/GOOGLE.md` | satu langkah pembuat: OAuth Client ID |
+| `docs/PROXY-AI.md` | layanan AI + daftar pengguna terdaftar, kodenya lengkap |
 | `docs/PROPOSAL-V2.md` | rencana bertahap yang sedang dikerjakan |
 | `docs/mockup/` | sumber mockup UI — tiga arah, yang dipilih: B |
 
