@@ -388,6 +388,21 @@ console.log('\ntag: label yang kelihatan dan bisa ditekan');
 
   const tgl = await hal.evaluate(() => TOtak.tanggalIndo(new Date(2026, 2, 9, 7, 5).getTime()));
   cek('tanggal ditulis dengan bulan Indonesia', /9 Maret 2026/.test(tgl), tgl);
+
+  /* Tag boleh banyak - tiap tag yang tepat satu pintu lagi. Yang dibatasi
+     tampilannya, bukan simpanannya. */
+  const kartu = await hal.evaluate(() => TAlur.kartuHtmlUji({
+    id: 'z', jenis: 'teks', judul: 'banyak tag', isi: '', label: [], elemen: [],
+    tag: ['satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan',
+          'sembilan', 'sepuluh', 'sebelas', 'duabelas'],
+    diubah: Date.now()
+  }));
+  const terlipat = (kartu.match(/tag terlipat/g) || []).length;
+  cek('cuma sepuluh tag yang langsung terlihat', terlipat === 2, String(terlipat));
+  cek('sisanya ditawarkan, bukan dibuang', /data-tag-lagi>\+2</.test(kartu));
+  /* Yang terlipat tetap ada di HTML - jadi tidak ada permintaan baru saat
+     dibuka, dan pencarian tetap menemukannya. */
+  cek('yang terlipat tetap ikut tergambar', /data-tag="duabelas"/.test(kartu));
 }
 
 console.log('\nkeyword: dicentang, bukan diketik');
@@ -580,7 +595,7 @@ console.log('\ntag andalan: rak yang sudah diputuskan sendiri');
   cek('AI disuruh membuat tag baru kalau tidak ada yang cocok',
       /BUAT TAG BARU/.test(arahan));
   cek('tidak boleh ada catatan yang pulang tanpa tag',
-      /WAJIB dapat minimal 2 tag/.test(arahan));
+      /WAJIB dapat minimal 3 tag/.test(arahan));
 
   /* Dan tanpa satu pun tag andalan pun, AI tetap harus menyusun sendiri. */
   const kosong = await hal.evaluate(() => TPelabel.arahanUji({ tagFavorit: [], hashtag: [] }));
