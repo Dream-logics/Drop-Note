@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Satu kotak, satu barang jatuh ke dalamnya. Itu seluruh aplikasinya. -->
+  <rect width="512" height="512" rx="112" fill="#0f1115"/>
+  <path d="M256 118v168" stroke="#CBA158" stroke-width="34" stroke-linecap="round"/>
+  <path d="M196 232l60 60 60-60" stroke="#CBA158" stroke-width="34"
+        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M136 330v42a20 20 0 0 0 20 20h200a20 20 0 0 0 20-20v-42"
+        stroke="#CBA158" stroke-width="34" stroke-linecap="round" fill="none" opacity=".55"/>
+</svg>

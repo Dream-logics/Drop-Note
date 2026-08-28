@@ -226,3 +226,13 @@ button,input,textarea{font:inherit;color:inherit}
   opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;z-index:9;max-width:88vw;text-align:center;
 }
 .pesan.tampil{opacity:1;transform:translate(-50%,0)}
+
+/* --- tambahan untuk alur (dropnote.js) --- */
+.lamp.rekam{border-color:var(--bahaya);color:var(--bahaya)}
+.terpasang audio{width:100%;margin-top:8px}
+.terpasang-unduh{display:inline-block;margin-top:5px;font-size:12px;font-weight:600;
+                 color:var(--a);text-decoration:none}
+/* Pesan sekilas yang membawa tindakan (Urungkan) - satu-satunya toast yang
+   bisa diklik, jadi umurnya juga lebih panjang. */
+.pesan-aksi{background:none;border:none;color:var(--at);font-weight:800;
+            text-decoration:underline;margin-left:14px;padding:0;cursor:pointer}

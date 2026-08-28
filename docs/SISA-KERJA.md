@@ -1,121 +1,32 @@
 # Sisa kerja
 
-Urut dari yang paling menentukan. Nomor 1 sendirian sudah membuat aplikasinya
-hidup; sisanya penyempurnaan.
+Nomor 1 sampai 5 di daftar lama sudah dikerjakan; yang tersisa ada di bawah.
+Riwayat lengkap alasannya tetap di `docs/RANCANGAN.md`.
 
 ---
 
-## 1. `public/dropnote.js` — alur UI *(belum ada; ini penghalang utama)*
+## Sudah jadi
 
-`index.html` sudah memanggilnya dan semua id-nya sudah terpasang. Yang belum
-ada cuma penghubungnya.
-
-### Bentuk satu entri
-
-```js
-{
-  id:          'e_1724750000000_a7f3',   // 'e_' + waktu + acak
-  jenis:       'teks'|'tautan'|'gambar'|'berkas'|'daftar'|'suara'|'catatan',
-  judul:       '',
-  judulManual: false,   // true kalau diketik sendiri -> AI TIDAK BOLEH menimpa
-  isi:         '',      // teks, atau URL untuk jenis 'tautan'
-  daftar:      [{teks:'', selesai:false}],   // hanya untuk jenis 'daftar'
-  kategori:    '',
-  label:       [],      // kata kunci tersembunyi; tidak pernah ditampilkan
-  berkasId:    null,    // kunci ke toko 'berkas'
-  namaBerkas:  '', tipeBerkas:'', ukuran:0,
-  dibuat:      0, diubah: 0,
-  dipakai:     0,       // naik tiap dibuka -> ini saluran keluarnya
-  diLabeliAI:  false,   // antrean pelabelan
-  pensiun:     false,   // disembunyikan dari hasil, TIDAK dihapus
-  riwayat:     [{isi:'', ts:0}]   // versi sebelumnya, maksimal ~20
-}
-```
-
-`riwayat` itu inti dari kenapa aplikasi ini ada. Di Keep, merevisi berarti
-menimpa, jadi pemiliknya membuat catatan baru tiap revisi — dan itulah asal
-semua duplikatnya. Di sini merevisi **memperbarui baris yang sama** dan versi
-lama tetap tersimpan. Jangan hilangkan.
-
-### Layar utama (`#l-utama`)
-
-- `#kotak` — satu kotak untuk drop sekaligus cari.
-- Saat isinya berubah (beri jeda ±250 ms): panggil `TOtak.bacaJenis()`. Kalau
-  tautan, tampilkan `#tebakan` berisi `TOtak.judulTautan()`. Kalau kosong,
-  sembunyikan.
-- **Kategori.** Saat `#kat` kehilangan fokus atau saat menekan Drop, jalankan
-  `TOtak.benahiKategori(nilai, daftarKategoriYangSudahAda)`. Kalau
-  `dibetulkan`, tampilkan di `#kat-koreksi` dengan bentuk
-  `<s>apps desig</s> → <b>apps design</b>` supaya koreksinya **terlihat** —
-  tebakan diam-diam itu yang bikin terasa tidak predictable.
-  `#kat-usul` diisi 3 kategori tersering plus hasil `TOtak.usulKategori()`.
-- **`#b-drop`** — susun entri, `TOtak.judulOtomatis()`, `TOtak.labelOtomatis()`,
-  `TSimpan.taruh()`, kosongkan kotak, tampilkan `#pesan` "Tersimpan".
-  **Tidak ada jaringan di jalur ini.**
-- **`#b-cari`** — pindah ke `#l-hasil` membawa isi kotak sebagai kueri.
-- **`#b-catat`** — buka `#l-catat` dengan entri baru berjenis `catatan`, isi
-  kotak dipindah ke badannya.
-- **`#lampiran`** — tombol `data-lamp`: `gambar` dan `berkas` memicu
-  `#pilih-gambar` / `#pilih-berkas`; `suara` merekam lewat `MediaRecorder`
-  (tombol berubah jadi tanda berhenti + penghitung detik); `daftar` menyalakan
-  `#petak-daftar` dan mengubah jenis jadi `daftar`.
-  Berkas masuk ke `TSimpan.taruhBerkas()`, entrinya hanya memegang `berkasId`.
-  Kecilkan gambar dulu lewat `<canvas>` (sisi terpanjang ~1600px, JPEG 0.82) —
-  foto HP 6 MB akan memenuhi kuota penyimpanan dalam hitungan minggu.
-
-### Layar hasil (`#l-hasil`)
-
-- Cari sambil mengetik (jeda ±120 ms) lewat `TOtak.cari(semua, kueri, jenis, kat)`.
-- `#saring-jenis` — cip: semua · tautan · gambar · berkas · daftar · suara ·
-  catatan (ini padanan baris "Types" milik Google Keep).
-- `#saring-kat` — 8 kategori tersering.
-- Kartu menampilkan **judul + potongan isi 2 baris** (`.kartu-cuplik`), lalu
-  tautan bersih yang tinggal diklik (`.kartu-tautan`), lalu ikon salin.
-  Untuk gambar, tampilkan pratinjaunya.
-- Menyalin: `navigator.clipboard.writeText()`, mundur ke `<textarea>` +
-  `document.execCommand('copy')` kalau ditolak (Android lama, konteks non-HTTPS).
-- Membuka kartu: `dipakai++`, simpan, lalu masuk `#l-catat`.
-- Yang `dipakai >= 5` diberi kelas `.sering` dan cap "sering dipakai".
-
-### Layar catat (`#l-catat`) — memo pad
-
-- Simpan otomatis, jeda ±700 ms setelah berhenti mengetik. `#simpan-tanda`
-  menampilkan "tersimpan" / "menyimpan…". Tidak ada tombol simpan.
-- Mengubah `#catat-judul` menyalakan `judulManual = true`.
-- Sebelum menimpa `isi`, dorong versi lama ke `riwayat` — **tapi hanya kalau
-  suntingan terakhir lebih dari 10 menit lalu**, supaya riwayatnya tidak
-  membengkak oleh tiap ketikan.
-- `#b-riwayat` membuka `#riwayat`; tiap baris punya tombol "pulihkan".
-- `#b-buang` **memensiunkan** (`pensiun = true`), tidak menghapus. Beri jalan
-  urung lewat `#pesan`.
-
-### Layar setelan (`#l-setelan`)
-
-Isi `#setelan-isi` dari JS. Bagian-bagiannya:
-
-- **Pelabelan otomatis** — pilihan `mati` / `proxy` / `langsung`
-  (`setelan.modeAI`), `#set-kunci` (`kunciGemini`), `alamatProxy`, `model`
-  (bawaan `TPelabel.MODEL_BAWAAN`), dan tombol "Uji" yang memanggil
-  `TPelabel.coba()`.
-- **Cadangan** — Ekspor (`TSimpan.ekspor()` → unduh JSON) dan Impor.
-- **Bahaya** — kosongkan semua data, dengan konfirmasi ketik.
-
-Jalankan `TPelabel.putaran(setelan)` saat aplikasi dibuka dan tiap ±3 menit
-selama ada antrean.
+- **`public/dropnote.js`** — alur UI penuh: drop, cari, catat, setelan,
+  lampiran (gambar dikecilkan ke 1600px/JPEG 0.82, berkas, rekaman suara,
+  daftar centang), riwayat versi, pensiun + urung.
+- **PWA** — `manifest.webmanifest`, `sw.js`, `ikon.svg` + PNG 192/512.
+  `share_target` POST sudah menerima teks **dan** berkas dari tombol Bagikan
+  aplikasi lain; kerangka disinggahkan supaya terbuka tanpa sinyal.
+- **Uji terima** — `node uji/uji-dropnote.mjs`, 31 lulus. Termasuk yang paling
+  menentukan: drop → cari → ketemu dengan **semua permintaan keluar diblokir**.
+- **Jawaban soal kunci Gemini** — dijawab jujur di layar Setelan sendiri, dan
+  tidak disamarkan jadi UI yang seolah-olah aman. Ringkasnya: di aplikasi yang
+  seluruhnya jalan di browser, kunci API **tidak bisa** benar-benar
+  disembunyikan. Yang benar-benar menyembunyikan cuma proxy.
 
 ---
 
-## 2. Menyembunyikan kunci Gemini
+## Yang masih perlu dipasang sekali di sisi pemakai
 
-Pertanyaan pemiliknya, dan jawab jujur di layar Setelan-nya sendiri:
+Bukan pekerjaan kode — pekerjaan sekali pasang.
 
-**Di aplikasi yang seluruhnya berjalan di browser, kunci API tidak bisa
-benar-benar disembunyikan.** Siapa pun yang memegang HP-nya bisa membacanya.
-Jangan bikin UI yang seolah-olah aman.
-
-Yang benar-benar menyembunyikan cuma **proxy**: kunci tinggal di Apps Script
-sebagai Script Property, aplikasi hanya tahu alamat proxy-nya. Sarankan ini
-sebagai bawaan; mode "langsung" tetap ada untuk mencoba-coba.
+### Proxy Apps Script (mode "Proxy" di Setelan)
 
 ```js
 // Apps Script — Proyek baru, tempel, Deploy > Web app,
@@ -147,53 +58,16 @@ function doPost(e) {
 CORS menganggapnya permintaan sederhana dan tidak mengirim preflight `OPTIONS`,
 yang tidak dijawab Apps Script. Jangan diubah jadi `application/json`.
 
-Sarankan juga membatasi kuncinya di Google Cloud Console (pembatasan situs
-perujuk) sebagai lapis kedua.
+Batasi juga kuncinya di Google Cloud Console (pembatasan situs perujuk)
+sebagai lapis kedua.
 
 ---
 
-## 3. PWA — `manifest.webmanifest` + `sw.js`
+## Berikutnya, kalau yang di atas sudah terpakai sehari-hari
 
-Ini yang membuatnya terasa seperti aplikasi, bukan halaman web.
-
-- Manifest: `display: standalone`, `start_url: "./"`, warna ikut CSS
-  (`#0f1115`), ikon 192 + 512.
-- **`share_target`** — inilah yang menggantikan kebiasaan share-ke-WhatsApp:
-
-  ```json
-  "share_target": {
-    "action": "./bagikan", "method": "POST", "enctype": "multipart/form-data",
-    "params": { "title": "judul", "text": "teks", "url": "tautan",
-                "files": [{ "name": "berkas", "accept": ["image/*", "*/*"] }] }
-  }
-  ```
-
-  `sw.js` menangkap `POST ./bagikan`, menyimpan bawaannya ke IndexedDB, lalu
-  `Response.redirect('./?bagikan=1')`. Wajib POST kalau mau bisa menerima
-  berkas; GET hanya cukup untuk teks.
-- Service worker juga menyinggahkan kerangka aplikasinya supaya bisa dibuka
-  tanpa sinyal.
-
-## 4. Ikon
-
-`ikon.svg` lalu render jadi `ikon-192.png` dan `ikon-512.png`. Tidak ada
-ImageMagick maupun PIL di lingkungan ini — pakai Playwright + Chromium
-(`/opt/pw-browsers/chromium`) untuk memotret SVG-nya jadi PNG.
-
-## 5. Uji terima
-
-`uji/uji-dropnote.mjs`, pola sama seperti repo editor. Yang paling perlu dijaga:
-
-- `TOtak.benahiKategori('apps desig', ['apps design'])` → `apps design`,
-  `dibetulkan: true`
-- `TOtak.judulTautan('https://script.google.com/macros/s/AAA/dev')`
-  memuat `uji coba` — dan yang `/exec` memuat `terbit`
-- drop → cari → ketemu, **dengan jaringan dimatikan** (`page.route` blokir
-  semua). Ini uji yang paling penting di seluruh berkas: kalau ini gagal,
-  aturan nomor 1 sudah bocor.
-- layar depan tidak menampilkan satu pun kartu
-
-## 6. Nanti, kalau yang di atas sudah terpakai sehari-hari
+Urutannya sengaja begitu: jangan bangun apa pun di bawah ini sebelum
+aplikasinya benar-benar dipakai sebulan. Risiko terbesar proyek ini bukan
+teknis — melainkan sistemnya tidak bertahan sebulan seperti pendahulunya.
 
 - Sinkron ke Google Sheets lewat Apps Script (lapis simpanan). **Selalu di
   belakang layar, tidak pernah ditunggu.**
@@ -201,14 +75,23 @@ ImageMagick maupun PIL di lingkungan ini — pakai Playwright + Chromium
 - Naik otomatis ke jalur cepat: kalau satu entri diambil tiga kali, tawarkan
   jadi pintasan keyboard (`;rek`).
 - Kalau pencarian biasa nol hasil, baru lempar ke Gemini. Jarang, jadi murah.
+- Memanggil lewat konteks, bukan kata kunci: buka "apps A" → keluar isi raknya.
+  Sekarang baru separuh jalan lewat cip kategori di layar hasil.
+
+---
+
+## Sudah diputuskan
+
+**Prompt draf: cukup versi terakhir saja.** Diputuskan 27 Agustus 2026.
+Riwayat cuma perlu menjawab "mana yang terakhir" — **jangan** bangun
+pembandingan antar versi berdampingan. Bentuk yang sekarang (daftar sederhana
++ tombol "pulihkan") sudah cukup dan sudah selesai. Menambah pembandingan
+berarti menambah keputusan yang harus diambil tiap kali membuka riwayat, dan
+itu persis ongkos yang aplikasi ini dibangun untuk menghapusnya.
 
 ---
 
 ## Yang belum diputuskan
 
-- **Prompt draf: cukup versi terakhir, atau perlu membandingkan antar versi?**
-  Belum terjawab. Menentukan seberapa serius `riwayat` perlu digarap
-  (daftar sederhana vs pembandingan berdampingan). Tanyakan sebelum
-  membangun tampilan riwayat yang rumit.
 - Peran mana yang diisi lebih dulu. Rancangannya menampung semuanya sejak
   awal, tapi pengisiannya sebaiknya mulai dari satu.

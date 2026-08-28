@@ -1,0 +1,36 @@
+# Menerbitkan isi public/ ke GitHub Pages.
+#
+# Pages cuma bisa menyajikan akar repo atau folder docs/, sedangkan aplikasinya
+# tinggal di public/ - jadi penerbitannya lewat berkas ini, bukan lewat setelan
+# cabang. Tidak ada build step; isinya disalin apa adanya, persis seperti kalau
+# dibuka dari berkas.
+name: Terbitkan
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:      # tombol "Run workflow" kalau mau menerbitkan ulang
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  terbitkan:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.terbit.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - id: terbit
+        uses: actions/deploy-pages@v4

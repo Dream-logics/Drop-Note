@@ -155,7 +155,7 @@
   function coba(setelan) {
     var contoh = [{
       jenis: 'tautan', kategori: '',
-      isi: 'https://script.google.com/macros/s/AKfycbwkJFjKtM6Mj/dev'
+      isi: 'https://script.google.com/macros/s/AKfycbCONTOH/dev'
     }];
     var janji = setelan.modeAI === 'proxy'
       ? lewatProxy(setelan.alamatProxy, contoh)
