@@ -668,7 +668,7 @@
       IKON_AKSI('salin', 'Salin', '<rect x="9" y="9" width="12" height="12" rx="2"/>' +
         '<path d="M5 15V5a2 2 0 0 1 2-2h10"/>') +
       IKON_AKSI('sunting', 'Ubah', '<path d="M4 20h16"/><path d="M14.5 4.5l5 5L8 21H3v-5z"/>') +
-      IKON_AKSI('pensiun', 'Pensiunkan', '<path d="M3 6h18"/><path d="M8 6V4h8v2"/>' +
+      IKON_AKSI('pensiun', 'Arsipkan', '<path d="M3 6h18"/><path d="M8 6V4h8v2"/>' +
         '<path d="M19 6l-1 14H6L5 6"/>') +
       '</div></div>');
 
@@ -727,6 +727,80 @@
       isi += '<button class="tag lagi" data-tag-lagi>+' + sisa + '</button>';
     }
     return '<div class="tag-baris">' + isi + '</div>';
+  }
+
+  /* GESER KE KIRI = ARSIPKAN.
+     Mengarsipkan itu tindakan yang paling sering dilakukan di layar hasil
+     setelah membaca - "oh, ini sudah lewat" - dan menyuruhnya lewat buka
+     kartu lalu cari tombol berarti tiga ketukan untuk satu keputusan yang
+     sudah bulat sejak detik pertama.
+
+     Cuma ke KIRI, dan cuma satu arah: dua arah berarti harus mengingat mana
+     yang mana, dan itu keputusan tambahan yang tidak perlu diadakan.
+
+     Ambang 90px sengaja jauh: gulir daftar panjang dengan jempol sering
+     menyerempet ke samping, dan mengarsipkan tanpa sengaja merusak
+     kepercayaan lebih parah daripada gestur yang gagal sekali. */
+  var GESER_AMBANG = 90;
+  var GESER_MULAI = 12;
+
+  function pasangGeser(akar) {
+    var kartu = null, x0 = 0, y0 = 0, arah = '';
+
+    akar.addEventListener('pointerdown', function (ev) {
+      if (ev.target.closest('button') || ev.target.closest('a')) return;
+      kartu = ev.target.closest('.kartu');
+      if (!kartu) return;
+      x0 = ev.clientX; y0 = ev.clientY; arah = '';
+      kartu.style.transition = 'none';
+    });
+
+    akar.addEventListener('pointermove', function (ev) {
+      if (!kartu) return;
+      var dx = ev.clientX - x0, dy = ev.clientY - y0;
+
+      /* Arah ditetapkan sekali di awal, lalu tidak berubah. Kalau dinilai
+         ulang tiap gerakan, gulir yang sedikit miring berubah jadi geser di
+         tengah jalan. */
+      if (!arah) {
+        if (Math.abs(dx) < GESER_MULAI && Math.abs(dy) < GESER_MULAI) return;
+        arah = Math.abs(dx) > Math.abs(dy) * 1.5 ? 'samping' : 'gulir';
+        if (arah === 'gulir') { lepasGeser(); return; }
+      }
+      if (arah !== 'samping') return;
+
+      ev.preventDefault();
+      var geser = Math.min(0, dx);
+      kartu.style.transform = 'translateX(' + geser + 'px)';
+      kartu.classList.toggle('siap-arsip', geser <= -GESER_AMBANG);
+    });
+
+    function selesai(ev) {
+      if (!kartu || arah !== 'samping') { lepasGeser(); return; }
+      var dx = ev.clientX - x0;
+      var k = kartu;
+      lepasGeser();
+      if (dx <= -GESER_AMBANG) {
+        var e = null;
+        var id = k.getAttribute('data-id');
+        semuaEntri.forEach(function (x) { if (x.id === id) e = x; });
+        k.style.transform = 'translateX(-100%)';
+        k.style.opacity = '0';
+        if (e) setTimeout(function () { pensiunkanKartu(e); }, 140);
+      }
+    }
+
+    function lepasGeser() {
+      if (!kartu) return;
+      kartu.style.transition = '';
+      kartu.style.transform = '';
+      kartu.classList.remove('siap-arsip');
+      kartu = null; arah = '';
+    }
+
+    akar.addEventListener('pointerup', selesai);
+    akar.addEventListener('pointercancel', lepasGeser);
+    akar.addEventListener('pointerleave', lepasGeser);
   }
 
   function pasangGambarKartu(akar) {
@@ -1095,7 +1169,7 @@
       segarkanCache(e);
       perbaruiJumlah();
       jalankanCari();
-      pesan('Dipensiunkan', {
+      pesan('Diarsipkan', {
         teks: 'Urungkan',
         jalan: function () {
           e.pensiun = false;
@@ -1119,7 +1193,7 @@
       kembali();
       /* Tidak ada yang benar-benar terhapus - yang basi cuma berhenti muncul.
          Karena itu urungnya gampang dan tidak perlu ditanya di depan. */
-      pesan('Dipensiunkan', {
+      pesan('Diarsipkan', {
         teks: 'Urungkan',
         jalan: function () {
           e.pensiun = false;
@@ -1397,6 +1471,13 @@
       '<button class="set-tbl" id="b-impor">Impor</button>',
       '</div>',
 
+      '<div class="set-bagian">Arsip</div>',
+      '<div class="set-kotak">',
+      '<div class="set-judul">Yang sudah lewat, tapi tidak dibuang</div>',
+      '<div class="set-ket">Geser kartu ke kiri di layar hasil untuk mengarsipkannya. Yang diarsipkan berhenti muncul di pencarian — datanya tetap utuh di sini, dan bisa dikembalikan kapan saja.</div>',
+      '<div id="arsip-daftar"></div>',
+      '</div>',
+
       '<div class="set-bagian">Bahaya</div>',
       '<div class="set-kotak awas">',
       '<div class="set-judul">Kosongkan semua data</div>',
@@ -1406,8 +1487,45 @@
       '</div>'
     ].join('');
 
+    gambarArsip();
     pasangSetelan();
     perbaruiStatusSetelan();
+  }
+
+  /* Arsip TIDAK diberi pencariannya sendiri. Kalau arsipnya bisa dicari, dia
+     jadi rak kedua yang harus diurus - dan mengurus dua rak adalah persis
+     pekerjaan yang bikin semua sistem sebelumnya berhenti dipakai. Di sini dia
+     cuma daftar: lihat, kembalikan kalau ternyata masih perlu. */
+  function gambarArsip() {
+    var wadah = $('#arsip-daftar');
+    if (!wadah) return;
+    var arsip = semuaEntri.filter(function (e) { return e.pensiun && !e.dihapus; });
+
+    if (!arsip.length) {
+      wadah.innerHTML = '<div class="set-ket">Belum ada yang diarsipkan.</div>';
+      return;
+    }
+    wadah.innerHTML = '<div class="set-ket">' + arsip.length + ' diarsipkan</div>' +
+      arsip.slice(0, 50).map(function (e) {
+        return '<div class="arsip-baris">' +
+          '<div class="arsip-judul">' + H(e.judul || '(tanpa judul)') + '</div>' +
+          '<button class="arsip-balik" data-balik="' + H(e.id) + '">Kembalikan</button></div>';
+      }).join('') +
+      (arsip.length > 50 ? '<div class="set-ket">…dan ' + (arsip.length - 50) + ' lagi</div>' : '');
+  }
+
+  function kembalikanArsip(id) {
+    var e = null;
+    semuaEntri.forEach(function (x) { if (x.id === id) e = x; });
+    if (!e) return;
+    e.pensiun = false;
+    e.diubah = Date.now();
+    TSimpan.taruh(e).then(function () {
+      segarkanCache(e);
+      perbaruiJumlah();
+      gambarArsip();
+      pesan('Dikembalikan');
+    });
   }
 
   function perbaruiStatusSetelan() {
@@ -1571,6 +1689,14 @@
 
     $('#b-impor').addEventListener('click', function () { $('#pilih-cadangan').click(); });
 
+    var arsip = $('#arsip-daftar');
+    if (arsip) {
+      arsip.addEventListener('click', function (ev) {
+        var b = ev.target.closest('[data-balik]');
+        if (b) kembalikanArsip(b.getAttribute('data-balik'));
+      });
+    }
+
     var ketik = $('#set-hapus-ketik');
     var tombolHapus = $('#b-kosongkan');
     ketik.addEventListener('input', function () {
@@ -1712,6 +1838,8 @@
     $('#b-hasil-cari').addEventListener('click', function () { $('#cari-input').focus(); });
     $('#b-hasil-catat').addEventListener('click', keCatatBaru);
     $('#b-hasil-semua').addEventListener('click', function () { keSemua(); });
+
+    pasangGeser($('#hasil'));
 
     $('#urut-baris').addEventListener('click', function (ev) {
       var cip = ev.target.closest('[data-urut]');

@@ -659,6 +659,55 @@ console.log('\nlayar kosong harus menyebut sebabnya');
   await hal.waitForTimeout(200);
 }
 
+console.log('\narsip: geser ke kiri, bukan hapus');
+{
+  await hal.evaluate(() => TAlur.keSemua());
+  await hal.waitForTimeout(300);
+  const sebelum = await hal.locator('#hasil .kartu').count();
+
+  /* Mulai dari baris judulnya, bukan tepi kanan: di tepi kanan ada tombol
+     salin, dan gestur yang dimulai di atas tombol memang sengaja diabaikan. */
+  const kotak = await hal.locator('#hasil .kartu').first().boundingBox();
+  const y = kotak.y + 14;
+  await hal.mouse.move(kotak.x + kotak.width * 0.6, y);
+  await hal.mouse.down();
+  await hal.mouse.move(kotak.x + kotak.width * 0.4, y, { steps: 5 });
+  await hal.mouse.move(kotak.x + 10, y, { steps: 8 });
+  await hal.mouse.up();
+  await hal.waitForTimeout(600);
+
+  cek('geser ke kiri mengeluarkannya dari hasil',
+      (await hal.locator('#hasil .kartu').count()) === sebelum - 1);
+
+  /* ATURAN NOMOR EMPAT: tidak ada yang benar-benar terhapus. Yang diarsipkan
+     cuma berhenti muncul - datanya harus masih utuh. */
+  const masih = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => e.pensiun && !e.dihapus).length));
+  cek('yang diarsipkan tidak terhapus, cuma berhenti muncul', masih >= 1, String(masih));
+
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.waitForTimeout(200);
+  cek('arsipnya bisa dilihat di Setelan',
+      (await hal.locator('#arsip-daftar [data-balik]').count()) >= 1);
+
+  await hal.locator('#arsip-daftar [data-balik]').first().click();
+  await hal.waitForTimeout(300);
+  await hal.evaluate(() => TAlur.keSemua());
+  await hal.waitForTimeout(300);
+  cek('bisa dikembalikan, dan muncul lagi di hasil',
+      (await hal.locator('#hasil .kartu').count()) === sebelum);
+
+  /* Gulir tegak tidak boleh berubah jadi arsip di tengah jalan. */
+  const kotak2 = await hal.locator('#hasil .kartu').first().boundingBox();
+  await hal.mouse.move(kotak2.x + kotak2.width * 0.6, kotak2.y + 14);
+  await hal.mouse.down();
+  await hal.mouse.move(kotak2.x + kotak2.width * 0.5, kotak2.y + 160, { steps: 8 });
+  await hal.mouse.up();
+  await hal.waitForTimeout(400);
+  cek('gulir tegak tidak ikut mengarsipkan',
+      (await hal.locator('#hasil .kartu').count()) === sebelum);
+}
+
 console.log('\nEnter = cari, di dua kotak');
 {
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
