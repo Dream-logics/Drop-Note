@@ -778,7 +778,7 @@ console.log('\nkunci: yang rahasia tidak pernah berangkat');
       !!setelanSemua.kunciGaram && !!setelanSemua.kunciUji);
 
   const rahasia = await hal.evaluate(() => {
-    const e = { id: 'rahasia1', jenis: 'teks', judul: 'Client Secret Drop Memory',
+    const e = { id: 'rahasia1', jenis: 'teks', judul: 'Client Secret RAHASIA9-aB3dE5gH-jK7mN9pQ2sT',
       judulManual: false, isi: 'RAHASIA9-aB3dE5gH-jK7mN9pQ2sT', daftar: [],
       kategori: '', label: ['sandi'], tag: ['password'],
       elemen: [{ jenis: 'kode', nilai: 'RAHASIA9-aB3dE5gH-jK7mN9pQ2sT', nama: 'Client Secret' }],
@@ -797,7 +797,12 @@ console.log('\nkunci: yang rahasia tidak pernah berangkat');
   /* Judul dan tag SENGAJA tetap terbuka: catatan yang tidak bisa ditemukan
      sama saja dengan tidak disimpan. */
   cek('judul dan tagnya tetap terbuka supaya masih bisa ditemukan',
-      rahasia.judul === 'Client Secret Drop Memory' && rahasia.tag.indexOf('password') >= 0);
+      /Client Secret/.test(rahasia.judul) && rahasia.tag.indexOf('password') >= 0);
+  /* Judul entri rahasia ikut naik ke spreadsheet dalam bentuk terbaca. Kalau
+     nilainya dibiarkan di situ, yang paling rahasia justru satu-satunya
+     bagian yang bocor. */
+  cek('nilai di dalam judulnya ikut disamarkan',
+      rahasia.judul.indexOf('RAHASIA9') < 0 && rahasia.judul.indexOf('•••') >= 0, rahasia.judul);
 
   const ketemu = await hal.evaluate(() => TSimpan.semua().then(
     (a) => TOtak.cari(a, 'client secret').length));

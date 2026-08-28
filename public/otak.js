@@ -299,6 +299,22 @@
     });
   }
 
+  /* Menyamarkan penanda DI DALAM judul. Judul entri rahasia sengaja tetap
+     terbuka supaya catatannya masih bisa ditemukan - termasuk terbuka di
+     spreadsheet cadangan, yang bisa dibaca siapa pun yang masuk akun Google.
+     Padahal baris pertama itu judulnya, dan orang yang menempel kunci API
+     buru-buru akan menempelkannya di baris pertama.
+     Jadi yang berbentuk penanda dibuang dari judulnya; kata-katanya tetap,
+     dan kata-kata itulah yang dipakai mencari. */
+  function samarkanPenanda(teks) {
+    return String(teks || '')
+      .replace(/\bhttps?:\/\/[^\s<>"']+/gi, '•••')
+      .replace(/[A-Za-z0-9][A-Za-z0-9._-]{3,}[A-Za-z0-9]/g, function (cocok) {
+        return jenisPenanda(cocok.replace(/[.\-_]+$/, '')) ? '•••' : cocok;
+      })
+      .replace(/(\s*•••\s*)+/g, ' ••• ').trim();
+  }
+
   function gabungElemen(lama, tambahan) {
     var gabung = (lama || []).slice();
     (tambahan || []).forEach(function (x) {
@@ -402,6 +418,7 @@
     benahiKategori: benahiKategori, usulKategori: usulKategori,
     labelOtomatis: labelOtomatis, cari: cari,
     elemenOtomatis: elemenOtomatis, gabungElemen: gabungElemen,
+    samarkanPenanda: samarkanPenanda,
     buangSerpihan: buangSerpihan,
     normal: normal, jarak: jarak, waktuPendek: waktuPendek,
     tanggalIndo: tanggalIndo, waktuRingkas: waktuRingkas
