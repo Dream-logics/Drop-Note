@@ -25,6 +25,16 @@
        Yang memakainya adalah proxy, bukan aplikasi ini. */
     model: 'gemini-3.5-flash-lite',
 
+    /* Tag yang pasti sering dipakai, ditanam sekali supaya AI punya rak yang
+       benar sejak catatan pertama - bukan setelah sebulan meraba-raba.
+       Ini cuma NILAI AWAL: begitu aplikasinya dipasang, daftarnya jadi milik
+       pemakainya dan disunting di Setelan. Mengubah baris ini tidak menyentuh
+       daftar yang sudah terlanjur ada di HP siapa pun. */
+    tagAwal: ['MAP', 'ProjectSpace', 'Ngoffee', 'AmaraLiving', 'Ultima',
+              'ShamiraWeb', 'ShamiraCreative', 'Resep', 'IdeBisnis',
+              'linkdev', 'linkexec', 'prompt', 'script', 'password',
+              'Akun', 'titip'],
+
     /* Alamat proxy AI milik PEMBUAT aplikasi (Apps Script /exec).
        Kunci Gemini tinggal di sana, tidak pernah di perangkat siapa pun.
        Pemakai tidak membawa kunci, tidak membeli kunci, tidak tahu ada kunci -
