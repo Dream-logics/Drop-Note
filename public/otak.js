@@ -243,12 +243,21 @@
     { jenis: 'tautan',  pola: /\bhttps?:\/\/[^\s<>"']+/gi },
     { jenis: 'surel',   pola: /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi },
     { jenis: 'telepon', pola: /(?:\+62|\b0)8\d{7,12}\b/g },
-    /* Campuran huruf+angka hampir selalu buatan mesin: sandi, plat, nomor
-       seri. Angka murni panjang hampir selalu OTP, rekening, atau nomor
-       dokumen. Dua-duanya barang yang disalin, bukan dibaca. */
-    { jenis: 'kode',    pola: /\b(?=[a-z0-9]*[a-z])(?=[a-z0-9]*\d)[a-z0-9]{5,}\b/gi },
-    { jenis: 'nomor',   pola: /\b\d{5,}\b/g }
+    /* SATU penanda = SATU elemen, walau di dalamnya ada tanda hubung dan titik.
+       Ini pelajaran mahal: memisah di tiap tanda hubung mencincang satu Client
+       ID Google jadi empat "kode" yang tidak berguna satu pun - dan yang utuh
+       jadi tenggelam di bawahnya. Penanda buatan mesin memang dirakit dari
+       potongan; potongannya sendiri tidak pernah dipakai siapa-siapa. */
+    { jenis: 'penanda', pola: /[A-Za-z0-9][A-Za-z0-9._-]{3,}[A-Za-z0-9]/g }
   ];
+
+  /* Yang lolos cuma yang mengandung angka: tanpa itu, tiap kata biasa dalam
+     kalimat ikut terangkat jadi "elemen". */
+  function jenisPenanda(teks) {
+    if (!/\d/.test(teks)) return '';
+    if (/^\d+$/.test(teks)) return teks.length >= 5 ? 'nomor' : '';
+    return teks.length >= 5 ? 'kode' : '';
+  }
 
   function tambahElemen(daftar, jenis, nilai, nama) {
     var v = String(nilai || '').trim().replace(/[.,;:]+$/, '');
@@ -266,14 +275,28 @@
     var keluar = [];
     POLA_ELEMEN.forEach(function (p) {
       sisa = sisa.replace(p.pola, function (cocok) {
-        tambahElemen(keluar, p.jenis, cocok);
+        var jenis = p.jenis === 'penanda' ? jenisPenanda(cocok.replace(/[.\-_]+$/, '')) : p.jenis;
+        if (jenis) tambahElemen(keluar, jenis, cocok);
         /* Diganti spasi, bukan dibiarkan: kalau tidak, pola berikutnya
            memungut potongan dari dalam alamat yang sudah terambil utuh -
            satu URL bisa melahirkan lima "kode" palsu. */
-        return ' ';
+        return jenis ? ' ' : cocok;
       });
     });
-    return keluar.slice(0, 12);
+    return buangSerpihan(keluar).slice(0, 12);
+  }
+
+  /* Kalau satu nilai termuat UTUH di dalam nilai lain, dia serpihan - dan
+     serpihan bukan elemen. "376616148815" di dalam Client ID lengkap bukan
+     barang kedua yang bisa disalin; dia bagian dari barang pertama, dan
+     menampilkannya sendiri cuma menenggelamkan yang utuh. */
+  function buangSerpihan(daftar) {
+    return daftar.filter(function (x, i) {
+      return !daftar.some(function (y, j) {
+        return i !== j && y.nilai.length > x.nilai.length &&
+               y.nilai.toLowerCase().indexOf(x.nilai.toLowerCase()) >= 0;
+      });
+    });
   }
 
   function gabungElemen(lama, tambahan) {
@@ -281,7 +304,7 @@
     (tambahan || []).forEach(function (x) {
       if (x && x.nilai) tambahElemen(gabung, x.jenis || 'lainnya', x.nilai, x.nama);
     });
-    return gabung.slice(0, 20);
+    return buangSerpihan(gabung).slice(0, 20);
   }
 
   var BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -376,6 +399,7 @@
     benahiKategori: benahiKategori, usulKategori: usulKategori,
     labelOtomatis: labelOtomatis, cari: cari,
     elemenOtomatis: elemenOtomatis, gabungElemen: gabungElemen,
+    buangSerpihan: buangSerpihan,
     normal: normal, jarak: jarak, waktuPendek: waktuPendek,
     tanggalIndo: tanggalIndo, waktuRingkas: waktuRingkas
   };
