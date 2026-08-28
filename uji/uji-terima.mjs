@@ -595,7 +595,7 @@ console.log('\ntag andalan: rak yang sudah diputuskan sendiri');
   cek('AI disuruh membuat tag baru kalau tidak ada yang cocok',
       /BUAT TAG BARU/.test(arahan));
   cek('tidak boleh ada catatan yang pulang tanpa tag',
-      /WAJIB dapat minimal 3 tag/.test(arahan));
+      /WAJIB dapat minimal 8 tag/.test(arahan));
 
   /* Dan tanpa satu pun tag andalan pun, AI tetap harus menyusun sendiri. */
   const kosong = await hal.evaluate(() => TPelabel.arahanUji({ tagFavorit: [], hashtag: [] }));
