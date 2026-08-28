@@ -1,97 +1,109 @@
 # Sisa kerja
 
-Nomor 1 sampai 5 di daftar lama sudah dikerjakan; yang tersisa ada di bawah.
-Riwayat lengkap alasannya tetap di `docs/RANCANGAN.md`.
+Urutan besarnya ada di [`PROPOSAL-V2.md`](PROPOSAL-V2.md). Berkas ini yang
+rinci, cukup untuk langsung jalan.
 
 ---
 
 ## Sudah jadi
 
-- **`public/dropnote.js`** — alur UI penuh: drop, cari, catat, setelan,
-  lampiran (gambar dikecilkan ke 1600px/JPEG 0.82, berkas, rekaman suara,
-  daftar centang), riwayat versi, pensiun + urung.
-- **PWA** — `manifest.webmanifest`, `sw.js`, `ikon.svg` + PNG 192/512.
-  `share_target` POST sudah menerima teks **dan** berkas dari tombol Bagikan
-  aplikasi lain; kerangka disinggahkan supaya terbuka tanpa sinyal.
-- **Uji terima** — `node uji/uji-dropnote.mjs`, 31 lulus. Termasuk yang paling
-  menentukan: drop → cari → ketemu dengan **semua permintaan keluar diblokir**.
-- **Jawaban soal kunci Gemini** — dijawab jujur di layar Setelan sendiri, dan
-  tidak disamarkan jadi UI yang seolah-olah aman. Ringkasnya: di aplikasi yang
-  seluruhnya jalan di browser, kunci API **tidak bisa** benar-benar
-  disembunyikan. Yang benar-benar menyembunyikan cuma proxy.
+- **Inti** — drop instan tanpa jaringan, pencarian offline, memo pad dengan
+  riwayat versi di baris yang sama, pensiun + urung, layar depan kosong.
+- **PWA** — bisa dipasang di HP, menerima tombol Bagikan (teks dan berkas),
+  terbuka penuh tanpa sinyal.
+- **Swalayan ke Google** (`awan.js`) — folder, folder berkas, dan spreadsheet
+  dibuat sendiri oleh aplikasi. Cakupan cuma `drive.file`. Pemakai menekan satu
+  tombol; tidak ada kode yang perlu ditempel, tidak ada yang perlu di-deploy.
+- **Cadangan** (`sinkron.js`) — satu arah, berjalan saat aplikasi dibuka, tidak
+  pernah di jalur drop. Berkas naik ke Drive; blob lokal dibuang, thumbnail
+  tinggal supaya daftar tetap seketika tanpa sinyal.
+- **Hapus permanen** — nisan (`dihapus`) naik ke awan, barisnya di Sheet dan
+  berkasnya di Drive dihapus, baru entrinya dibuang dari HP. Tekan lama pada
+  tombol buang; ketuk biasa tetap memensiunkan.
+- **AI lewat layanan pembuat** (`pelabel.js`), model `gemini-3.5-flash-lite`.
+  Kunci tinggal di proxy, tidak pernah di perangkat pemakai; yang memutuskan
+  seseorang terdaftar adalah proxy. Mode kunci-sendiri tetap ada untuk
+  pengembang, dan hilang begitu `alamatAI` ditanam.
+  Hemat = judul + kata kunci. Penuh = juga membaca isi foto dan PDF (OCR),
+  hasilnya masuk ke `isi` supaya pencarian yang sudah ada langsung menemukannya.
+- **Layar pemasangan** — muncul sekali, dua langkah, keduanya boleh dilewati.
+- **Penyimpanan permanen** — `navigator.storage.persist()`.
+- **Nama sebagai kulit** — hanya di `bawaan.js`, judul `index.html`, dan
+  manifest. Dijaga uji.
+- **Uji terima** — `node uji/uji-terima.mjs`, 60 lulus.
 
 ---
 
-## Yang masih perlu dipasang sekali di sisi pemakai
+## Berikutnya
 
-Bukan pekerjaan kode — pekerjaan sekali pasang.
+### 1. Sekali pakai *(kecil, dan menutup masalah tertua)*
 
-### Proxy Apps Script (mode "Proxy" di Setelan)
+`sekaliPakai: true` pada entri. Setelah dibuka atau disalin sekali, jalankan
+rantai hapus permanen yang sudah ada. Ini jawaban langsung untuk wadah "MEMO
+Satu Kali Pakai" yang tidak pernah kosong — di sini dia kosong sendiri, tanpa
+satu pun keputusan.
 
-```js
-// Apps Script — Proyek baru, tempel, Deploy > Web app,
-// "Execute as: Me", "Who has access: Anyone".
-// Simpan kunci di Project Settings > Script Properties: KUNCI_GEMINI
-const MODEL = 'gemini-flash-lite-latest';
+- Tanda di layar catat, dan cip saring di hasil.
+- Purge otomatis untuk yang pensiun lebih dari 90 hari **dan** `sekaliPakai`.
 
-function doPost(e) {
-  const minta = JSON.parse(e.postData.contents);
-  const kunci = PropertiesService.getScriptProperties().getProperty('KUNCI_GEMINI');
-  const r = UrlFetchApp.fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent',
-    { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-      headers: { 'x-goog-api-key': kunci },
-      payload: JSON.stringify({
-        systemInstruction: { parts: [{ text: minta.arahan }] },
-        contents: [{ role: 'user', parts: [{ text: minta.entri }] }],
-        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
-      })
-    });
-  const j = JSON.parse(r.getContentText());
-  const teks = j.candidates && j.candidates[0].content.parts[0].text || '';
-  return ContentService.createTextOutput(JSON.stringify({ teks: teks }))
-                       .setMimeType(ContentService.MimeType.JSON);
-}
-```
+### 2. Kunci layar + enkripsi selektif
 
-`pelabel.js` sudah mengirim `Content-Type: text/plain` dengan sengaja — supaya
-CORS menganggapnya permintaan sederhana dan tidak mengirim preflight `OPTIONS`,
-yang tidak dijawab Apps Script. Jangan diubah jadi `application/json`.
+- PIN atau WebAuthn untuk membuka aplikasi. Ini pagar, bukan brankas — dan
+  dikatakan begitu di layarnya.
+- `rahasia: true` per entri → `isi` dienkripsi AES-GCM, kunci dari kata sandi
+  lewat PBKDF2. Yang naik ke Sheet ikut tersandi.
+- **Jangan** mengenkripsi semuanya: satu kata sandi yang harus diingat seumur
+  hidup adalah risiko yang lebih besar daripada yang sedang dihindari.
+- Entri rahasia tidak dikirim ke AI kecuali diizinkan per-entri.
 
-Batasi juga kuncinya di Google Cloud Console (pembatasan situs perujuk)
-sebagai lapis kedua.
+### 3. Pencarian pakai bahasa manusia
 
----
+Kalau kueri lebih dari tiga kata **atau** pencarian biasa nol hasil, baru
+lempar ke Gemini untuk diubah jadi kata kunci + saringan. Jarang, jadi murah.
+Tanpa AI atau tanpa sinyal: pencarian kata biasa, tetap jalan.
 
-## Berikutnya, kalau yang di atas sudah terpakai sehari-hari
+### 4. To-do & habit sebagai keadaan, bukan modul
 
-Urutannya sengaja begitu: jangan bangun apa pun di bawah ini sebelum
-aplikasinya benar-benar dipakai sebulan. Risiko terbesar proyek ini bukan
-teknis — melainkan sistemnya tidak bertahan sebulan seperti pendahulunya.
+`selesai` dan `tally[]` pada objek yang sama. Tidak ada layar baru, tidak ada
+tombol jenis saat drop. Mencentang yang membuatnya jadi tugas — bukan memilih.
 
-- Sinkron ke Google Sheets lewat Apps Script (lapis simpanan). **Selalu di
-  belakang layar, tidak pernah ditunggu.**
-- `embedding` saat menyimpan → pencocokan makna tanpa memanggil AI saat mencari.
-- Naik otomatis ke jalur cepat: kalau satu entri diambil tiga kali, tawarkan
-  jadi pintasan keyboard (`;rek`).
-- Kalau pencarian biasa nol hasil, baru lempar ke Gemini. Jarang, jadi murah.
-- Memanggil lewat konteks, bukan kata kunci: buka "apps A" → keluar isi raknya.
-  Sekarang baru separuh jalan lewat cip kategori di layar hasil.
+**Tunggu bukti dulu.** Dua fitur ini paling gampang dibayangkan dan paling
+sering tidak dipakai.
+
+### 5. Daftar hasil digulung (virtualized)
+
+Di atas 200 kartu. Batasnya sudah ditulis di proposal; jadikan uji yang gagal
+kalau dilanggar.
+
+### 6. Huruf dibenamkan
+
+Plus Jakarta Sans + IBM Plex Mono sebagai `@font-face` data URI, supaya tanpa
+sinyal hurufnya tidak berubah dan tidak ada layar berkedip menunggu font.
+
+### 7. Play Store
+
+Domain sendiri + TWA lewat PWABuilder + akun developer $25 sekali. Paling
+akhir, saat sudah jelas aplikasinya bertahan.
 
 ---
 
-## Sudah diputuskan
+## Yang disarankan JANGAN dikerjakan
 
-**Prompt draf: cukup versi terakhir saja.** Diputuskan 27 Agustus 2026.
-Riwayat cuma perlu menjawab "mana yang terakhir" — **jangan** bangun
-pembandingan antar versi berdampingan. Bentuk yang sekarang (daftar sederhana
-+ tombol "pulihkan") sudah cukup dan sudah selesai. Menambah pembandingan
-berarti menambah keputusan yang harus diambil tiap kali membuka riwayat, dan
-itu persis ongkos yang aplikasi ini dibangun untuk menghapusnya.
+- Iklan.
+- Daftar catatan terbaru di layar depan.
+- Sinkron dua arah otomatis.
+- Folder, tag bertingkat, papan kanban.
+- Backend sendiri, selama penggunanya masih segelintir.
 
 ---
 
-## Yang belum diputuskan
+## Yang perlu dipasang sekali oleh pembuatnya
 
-- Peran mana yang diisi lebih dulu. Rancangannya menampung semuanya sejak
-  awal, tapi pengisiannya sebaiknya mulai dari satu.
+Dua, dan dua-duanya sekali seumur proyek:
+
+1. **OAuth Client ID Google** — [`GOOGLE.md`](GOOGLE.md).
+2. **Proxy AI + daftar pengguna terdaftar** — [`PROXY-AI.md`](PROXY-AI.md).
+   Ini juga yang jadi dasar berlangganan nanti: menambah pelanggan = menambah
+   satu baris di Sheet, bisa dari HP.
+
+Setelah keduanya ditanam di `public/bawaan.js`, pemakai tidak mengisi apa pun.

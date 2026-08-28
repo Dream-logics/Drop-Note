@@ -19,10 +19,11 @@
    ============================================================================ */
 'use strict';
 
-var SINGGAH = 'dropnote-v1';
+var SINGGAH = 'singgahan-v3';
 var KERANGKA = [
-  './', './index.html', './dropnote.css',
-  './simpan.js', './otak.js', './pelabel.js', './dropnote.js',
+  './', './index.html', './gaya.css',
+  './bawaan.js', './simpan.js', './otak.js', './awan.js', './pelabel.js',
+  './sinkron.js', './alur.js',
   './manifest.webmanifest', './ikon.svg', './ikon-192.png', './ikon-512.png'
 ];
 
@@ -56,7 +57,7 @@ self.addEventListener('activate', function (ev) {
 
 function bukaDb() {
   return new Promise(function (terima, tolak) {
-    var p = indexedDB.open('dropnote', 1);
+    var p = indexedDB.open('simpanan', 1);
     p.onupgradeneeded = function (e) {
       var d = e.target.result;
       if (!d.objectStoreNames.contains('entri')) {

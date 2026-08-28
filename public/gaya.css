@@ -236,3 +236,9 @@ button,input,textarea{font:inherit;color:inherit}
    bisa diklik, jadi umurnya juga lebih panjang. */
 .pesan-aksi{background:none;border:none;color:var(--at);font-weight:800;
             text-decoration:underline;margin-left:14px;padding:0;cursor:pointer}
+
+/* --- layar pemasangan --- */
+.mulai-sambut{padding:18px 2px 26px}
+.mulai-judul{font-size:27px;font-weight:800;letter-spacing:-.02em}
+.mulai-tagline{font-size:15px;color:var(--m);margin-top:5px}
+.set-ket a{color:var(--a);font-weight:600}

@@ -17,7 +17,9 @@
 (function (global) {
   'use strict';
 
-  var NAMA = 'dropnote';
+  /* Nama basis data sengaja tidak menyebut merek. Mengganti nama aplikasi
+     tidak boleh membuang timbunan pemakainya - jadi yang satu ini permanen. */
+  var NAMA = 'simpanan';
   var VERSI = 1;
   var db = null;
 

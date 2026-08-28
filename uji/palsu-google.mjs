@@ -1,0 +1,111 @@
+/* Tiruan Drive + Sheets, seluruhnya di memori. Dipakai supaya kode klien yang
+   asli benar-benar dijalankan - bukan diganti mock - tanpa menyentuh jaringan. */
+export function buatGooglePalsu() {
+  const berkas = new Map();        /* id -> {name, mimeType, parents, isi} */
+  const lembar = new Map();        /* sheetId -> baris[][] */
+  let urut = 0;
+  const negara = { panggilan: 0 };
+
+  const idBaru = (aw) => aw + (++urut);
+
+  function huruf(k) { return k.charCodeAt(0) - 64; }           /* A -> 1 */
+
+  function uraiRentang(r) {
+    const t = decodeURIComponent(r).replace(/^'|'$/g, '');
+    const [, sisi] = t.includes('!') ? t.split('!') : [null, t];
+    const m = sisi.match(/^([A-Z]+)(\d*):([A-Z]+)(\d*)$/);
+    if (!m) return null;
+    return { k1: huruf(m[1]), b1: m[2] ? +m[2] : null, k2: huruf(m[3]), b2: m[4] ? +m[4] : null };
+  }
+
+  function jawab(obj, status = 200) {
+    return { status, contentType: 'application/json', body: JSON.stringify(obj) };
+  }
+
+  function tangani(url, metode, badan) {
+    negara.panggilan++;
+    const u = new URL(url);
+    const j = badan ? (() => { try { return JSON.parse(badan); } catch (e) { return null; } })() : null;
+
+    /* ---------------- Drive ---------------- */
+    if (u.pathname.startsWith('/upload/drive/v3/files')) {
+      const nama = (badan.match(/"name"\s*:\s*"([^"]*)"/) || [])[1] || 'berkas';
+      const induk = (badan.match(/"parents"\s*:\s*\["([^"]*)"\]/) || [])[1] || null;
+      const isi = badan.split('\r\n\r\n')[2] || '';
+      const id = idBaru('f');
+      berkas.set(id, { name: nama, mimeType: 'application/octet-stream', parents: [induk], isi: isi.split('\r\n--')[0] });
+      return jawab({ id });
+    }
+    if (u.pathname === '/drive/v3/files' && metode === 'GET') {
+      const q = u.searchParams.get('q') || '';
+      const nama = (q.match(/name='([^']*)'/) || [])[1];
+      const mime = (q.match(/mimeType='([^']*)'/) || [])[1];
+      const induk = (q.match(/'([^']*)' in parents/) || [])[1];
+      const cocok = [...berkas.entries()].filter(([, f]) =>
+        f.name === nama && f.mimeType === mime && (!induk || (f.parents || []).includes(induk)));
+      return jawab({ files: cocok.map(([id, f]) => ({ id, name: f.name })) });
+    }
+    if (u.pathname === '/drive/v3/files' && metode === 'POST') {
+      const id = idBaru(j.mimeType.includes('spreadsheet') ? 's' : 'd');
+      berkas.set(id, { name: j.name, mimeType: j.mimeType, parents: j.parents || [], isi: '' });
+      if (j.mimeType.includes('spreadsheet')) lembar.set(id, []);
+      return jawab({ id });
+    }
+    if (u.pathname.startsWith('/drive/v3/files/')) {
+      const id = u.pathname.split('/').pop();
+      if (metode === 'DELETE') { berkas.delete(id); return jawab({}); }
+      if (u.searchParams.get('alt') === 'media') {
+        const f = berkas.get(id);
+        if (!f) return jawab({ error: { message: 'tidak ada' } }, 404);
+        return { status: 200, contentType: 'application/octet-stream', body: f.isi };
+      }
+    }
+
+    /* ---------------- Sheets ---------------- */
+    const ms = u.pathname.match(/^\/v4\/spreadsheets\/([^/:]+)/);
+    if (ms) {
+      const sid = ms[1];
+      if (!lembar.has(sid)) lembar.set(sid, []);
+      const baris = lembar.get(sid);
+      const sisa = u.pathname.slice(ms[0].length);
+
+      if (sisa === '' && metode === 'GET') {
+        return jawab({ sheets: [{ properties: { title: 'Sheet1', sheetId: 0 } }] });
+      }
+      if (sisa === ':batchUpdate') {
+        (j.requests || []).forEach((r) => {
+          const d = r.deleteDimension && r.deleteDimension.range;
+          if (d) baris.splice(d.startIndex - 1, d.endIndex - d.startIndex);
+        });
+        return jawab({});
+      }
+      if (sisa === '/values:batchUpdate') {
+        (j.data || []).forEach((d) => {
+          const r = uraiRentang(d.range.split('!')[1]);
+          baris[r.b1 - 2] = d.values[0];
+        });
+        return jawab({ totalUpdatedRows: (j.data || []).length });
+      }
+      const mv = sisa.match(/^\/values\/(.+?)(:append)?$/);
+      if (mv) {
+        const r = uraiRentang(mv[1]);
+        if (mv[2]) { (j.values || []).forEach((v) => baris.push(v)); return jawab({}); }
+        if (metode === 'PUT') { return jawab({}); }          /* baris kepala: tidak disimpan */
+        const potong = baris.map((b) => b.slice(r.k1 - 1, r.k2));
+        return jawab({ values: potong });
+      }
+    }
+
+    return jawab({ error: { message: 'jalur palsu tidak dikenal: ' + u.pathname } }, 404);
+  }
+
+  return { tangani, berkas, lembar, negara };
+}
+
+/* Google Sign-In diganti sepenuhnya: uji ini menguji kode kita, bukan milik Google. */
+export const STUB_GIS = `
+  window.google = { accounts: { oauth2: { initTokenClient(cfg) {
+    return { _cfg: cfg, callback: null, error_callback: null,
+      requestAccessToken() { this.callback({ access_token: 'token-palsu', expires_in: 3600 }); } };
+  } } } };
+`;

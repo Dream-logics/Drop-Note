@@ -1,0 +1,51 @@
+/* ============================================================================
+   Identitas & bawaan
+   ============================================================================
+   SATU-SATUNYA tempat nama aplikasi ditulis di dalam kode.
+
+   Nama itu kulit. Jiwa dan raganya - nama basis data, nama berkas, nama
+   global, nama kolom - sengaja tidak menyebut merek sama sekali, supaya
+   mengganti nama besok cuma menyentuh berkas ini, judul di index.html, dan
+   manifest. Tidak ada satu pun data yang perlu dipindah.
+
+   Yang TIDAK BOLEH ikut berubah selamanya, apa pun nama aplikasinya:
+   - DB       'simpanan'   -> menggantinya membuang seluruh timbunan pemakai
+   - Singgahan'singgahan-*'
+   - Global   TSimpan, TOtak, TPelabel, TAwan, TSinkron, TAlur
+   ============================================================================ */
+(function (global) {
+  'use strict';
+
+  global.TBawaan = {
+    nama: 'Drop Memory',
+    tagline: 'Simpan dulu, cari nanti.',
+
+    /* Model Gemini. Flash-Lite dipilih bukan karena murah saja: tugasnya cuma
+       memberi judul dan kata kunci, dan model terkecil sudah cukup untuk itu.
+       Yang memakainya adalah proxy, bukan aplikasi ini. */
+    model: 'gemini-3.5-flash-lite',
+
+    /* Alamat proxy AI milik PEMBUAT aplikasi (Apps Script /exec).
+       Kunci Gemini tinggal di sana, tidak pernah di perangkat siapa pun.
+       Pemakai tidak membawa kunci, tidak membeli kunci, tidak tahu ada kunci -
+       dia cuma dikenali dari email Google-nya, lalu dilayani atau tidak.
+
+       Kosong di sini berarti aplikasinya jalan tanpa AI sama sekali. Itu
+       keadaan yang sah dan lengkap, bukan keadaan rusak. */
+    alamatAI: '',
+
+    /* OAuth Client ID Google. Ini BUKAN rahasia - dia memang terbaca di semua
+       aplikasi browser, dan yang menjaganya adalah daftar origin yang kamu
+       daftarkan di Google Cloud Console. Kosong di sini berarti pemakainya
+       menempelkannya sendiri sekali di layar Setelan. */
+    clientId: '',
+
+    /* drive.file: aplikasi cuma bisa menyentuh berkas yang DIA sendiri buat -
+       isi Drive pemakai yang lain tidak terlihat sama sekali.
+       userinfo.email: supaya proxy AI bisa memastikan siapa yang memanggil.
+       Keduanya tidak dianggap sensitif oleh Google, jadi tidak perlu
+       peninjauan dan layar izinnya tidak menakutkan. */
+    lingkup: 'https://www.googleapis.com/auth/drive.file ' +
+             'https://www.googleapis.com/auth/userinfo.email'
+  };
+})(window);
