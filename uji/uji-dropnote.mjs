@@ -95,7 +95,7 @@ console.log('\nlayar depan');
 
 console.log('\ndrop -> cari (jaringan mati total)');
 {
-  await hal.fill('#kotak', 'https://script.google.com/macros/s/AKfycbw123/dev');
+  await hal.fill('#kotak', 'https://script.google.com/macros/s/AKfycbCONTOH/dev');
   await hal.fill('#kat', 'apps design');
   await hal.waitForTimeout(400);
   cek('tautan terbaca sebelum di-drop', await hal.locator('#tebakan').isVisible());

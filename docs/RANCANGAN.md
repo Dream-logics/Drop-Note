@@ -4,14 +4,13 @@ Hasil percakapan 27 Agustus 2026. Dokumen hidup — akan berubah.
 
 ## Masalah
 
-Catatan tersebar di Google Keep, WhatsApp (±50 grup diri sendiri),
+Catatan tersebar di Google Keep, puluhan grup chat ke diri sendiri,
 Notes, dan keyboard shortcut. Semuanya menumpuk, makin lama makin
 susah dicari. Menghapus terasa berbahaya, tidak menghapus terasa sesak.
 
-Cakupan sebenarnya: satu sistem untuk seluruh peran — bisnis,
-programmer, penulis konten, pengembang produk, eksplorasi ide,
-customer service, dan ±20 peran lain. Plus ranah keluarga:
-kenangan tiap anak, dan urusan bersama pasangan.
+Cakupan sebenarnya: satu sistem untuk seluruh peran yang dijalankan
+satu orang sekaligus — belasan sampai dua puluhan peran, dari urusan
+pekerjaan sampai ranah pribadi. Dua-duanya lewat pintu yang sama.
 
 ## Temuan
 
@@ -45,9 +44,8 @@ tidak terlihat tidak menyesakkan.
 Berubah terus, punya versi, dipakai lalu pensiun.
 Butuh: riwayat, status, dan cara untuk berhenti muncul.
 
-**Kenangan** — memori anak, catatan hidup.
+**Kenangan** — catatan yang nilainya justru naik seiring waktu.
 Tidak pernah direvisi, tidak pernah pensiun, ditambah terus.
-Nilainya justru naik seiring waktu.
 Butuh: permanen, ditelusuri lewat waktu, bukan lewat pencarian.
 
 Satu aplikasi, satu pintu masuk, satu pencarian — tapi dua jenis
@@ -111,7 +109,8 @@ Bisa dipasang belakangan. Aplikasi harus jalan penuh tanpanya.
 
 ## Catatan strategi
 
-Cakupannya besar (±50 grup, ±20 peran). Risiko terbesarnya bukan
+Cakupannya besar (puluhan wadah, belasan sampai dua puluhan peran).
+Risiko terbesarnya bukan
 teknis — melainkan sistem ini tidak bertahan sebulan, seperti
 pendahulunya.
 

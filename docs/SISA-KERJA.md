@@ -22,7 +22,7 @@ Riwayat lengkap alasannya tetap di `docs/RANCANGAN.md`.
 
 ---
 
-## Yang masih perlu dipasang pemiliknya
+## Yang masih perlu dipasang sekali di sisi pemakai
 
 Bukan pekerjaan kode — pekerjaan sekali pasang.
 
@@ -82,7 +82,7 @@ teknis — melainkan sistemnya tidak bertahan sebulan seperti pendahulunya.
 
 ## Sudah diputuskan
 
-**Prompt draf: cukup versi terakhir saja.** Dijawab pemiliknya, 27 Agustus 2026.
+**Prompt draf: cukup versi terakhir saja.** Diputuskan 27 Agustus 2026.
 Riwayat cuma perlu menjawab "mana yang terakhir" — **jangan** bangun
 pembandingan antar versi berdampingan. Bentuk yang sekarang (daftar sederhana
 + tombol "pulihkan") sudah cukup dan sudah selesai. Menambah pembandingan

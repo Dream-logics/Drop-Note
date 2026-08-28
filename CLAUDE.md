@@ -10,10 +10,9 @@ menentukan aplikasi ini hidup atau mati.
 Satu kotak untuk menimbun catatan, satu pencarian untuk mengambilnya kembali.
 PWA, dipakai di HP, tanpa server.
 
-Pemiliknya menjalankan banyak peran sekaligus — bisnis, programmer, penulis
-konten, customer service, dan lainnya — dan catatannya selama ini tersebar di
-Google Keep, sekitar 50 grup WhatsApp berisi dirinya sendiri, dan aplikasi
-Notes. Semuanya menumpuk sampai tidak bisa dicari lagi.
+Dipakai satu orang yang menjalankan banyak peran sekaligus. Catatannya selama
+ini tersebar di Google Keep, puluhan grup chat ke diri sendiri, dan aplikasi
+Notes bawaan — menumpuk sampai tidak bisa dicari lagi.
 
 Drop Note menggantikan semua itu dengan satu pintu masuk dan satu pencarian.
 
@@ -32,8 +31,8 @@ sebelumnya.
 
 **2. Semua sistem sebelumnya gagal karena tidak punya SALURAN KELUAR.**
 Semua yang masuk statusnya "ada" selamanya. Bug yang sudah diperbaiki sebulan
-lalu tetap memakan tempat. Bahkan grup WhatsApp bernama "MEMO Satu Kali Pakai"
-pun tidak pernah kosong. Di sini saluran keluarnya adalah **peringkat**, bukan
+lalu tetap memakan tempat. Bahkan wadah yang sengaja dinamai "MEMO Satu Kali
+Pakai" pun tidak pernah kosong. Di sini saluran keluarnya adalah **peringkat**, bukan
 tombol hapus: yang sering dipakai naik (`dipakai`), yang tidak pernah disentuh
 tenggelam sendiri. Tidak ada yang dibuang, tapi yang basi berhenti muncul.
 Jangan pernah menggantinya dengan alur "rapikan catatanmu".
@@ -80,7 +79,7 @@ public/manifest.webmanifest   supaya bisa dipasang di HP
 uji/uji-dropnote.mjs          uji terima (Playwright)
 docs/RANCANGAN.md   alasan di balik rancangannya
 docs/SISA-KERJA.md  yang belum dikerjakan, cukup rinci untuk langsung jalan
-docs/mockup/        sumber mockup UI (3 arah; yang dipilih pemiliknya: B)
+docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 ```
 
 ## Keadaan sekarang
@@ -98,8 +97,8 @@ pintasan keyboard. Selebihnya ada di `docs/SISA-KERJA.md`.
 
 ## Konvensi
 
-Diikuti dari repo `text-image-editor` milik pemilik yang sama, supaya satu
-keluarga dan supaya dia tidak perlu belajar gaya baru:
+Diikuti dari repo `text-image-editor` yang satu penulis, supaya satu keluarga
+dan supaya tidak perlu belajar gaya baru:
 
 - **Vanilla JS.** Tanpa framework, tanpa build step, tanpa npm untuk aplikasinya.
   Buka berkasnya, jalan. Tiap berkas satu IIFE `(function(global){ 'use strict';
@@ -117,14 +116,13 @@ keluarga dan supaya dia tidak perlu belajar gaya baru:
 - Uji terima pakai Playwright (`node uji/…`), Chromium di
   `/opt/pw-browsers/chromium`.
 
-## Cara bicara dengan pemiliknya
+## Cara membalas
 
-Dia menulis pendek — sering dari HP, sering di sela pekerjaan lain, kadang
-dengan baterai hampir habis. Pesannya padat dan koreksinya tajam.
-
+Pesan yang masuk ke sini pendek — biasanya dari HP, di sela pekerjaan lain.
 Balas seimbang dengan itu. Jawaban 600 kata untuk pertanyaan 15 kata bukan
 membantu — itu menambah beban di tempat yang sama. Kalau ada yang perlu
 diputuskan, tawarkan satu rekomendasi, bukan daftar pilihan.
 
-Dan kalau dia bilang rancanganmu keliru, kemungkinan besar memang keliru.
-Selama percakapan yang melahirkan aplikasi ini, hampir setiap koreksinya benar.
+Dan kalau kamu diberi tahu rancanganmu keliru, kemungkinan besar memang keliru.
+Selama percakapan yang melahirkan aplikasi ini, hampir setiap koreksi yang
+masuk terbukti benar.
