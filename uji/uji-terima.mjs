@@ -57,7 +57,7 @@ function layani() {
 /* Tiruan proxy AI milik pembuat aplikasi. Yang diuji di sini bukan Gemini-nya,
    melainkan dua hal yang menentukan modelnya: token pemakai benar-benar ikut
    dikirim, dan penolakan "belum terdaftar" ditangani tanpa merusak apa pun. */
-const proxyAI = { panggilan: 0, tokenTerakhir: null, tolak: false, arahanTerakhir: '' };
+const proxyAI = { panggilan: 0, tokenTerakhir: null, tolak: false, arahanTerakhir: '', badanTerakhir: '' };
 function tiruProxyAI(req, res) {
   let badan = '';
   req.on('data', (p) => { badan += p; });
@@ -67,6 +67,7 @@ function tiruProxyAI(req, res) {
     try { j = JSON.parse(badan); } catch (e) { /* biarkan */ }
     proxyAI.tokenTerakhir = j.token || null;
     proxyAI.arahanTerakhir = j.arahan || '';
+    proxyAI.badanTerakhir = badan;
     res.writeHead(200, { 'Content-Type': 'application/json' });
     if (proxyAI.tolak) return res.end(JSON.stringify({ galat: 'belum-terdaftar' }));
     res.end(JSON.stringify({
@@ -758,6 +759,75 @@ console.log('\ntag andalan: rak yang sudah diputuskan sendiri');
   const kosong = await hal.evaluate(() => TPelabel.arahanUji({ tagFavorit: [], hashtag: [] }));
   cek('tanpa daftar sama sekali, AI tetap disuruh menyusun dari nol',
       /susun sendiri dari nol/.test(kosong));
+}
+
+console.log('\nkunci: yang rahasia tidak pernah berangkat');
+{
+  const bisa = await hal.evaluate(() => TKunci.ada());
+  cek('Web Crypto tersedia, jadi enkripsinya bawaan peramban', bisa === true);
+
+  await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TKunci.pasang(s, 'sandi-uji-123')));
+  cek('kuncinya terpasang dan langsung terbuka', await hal.evaluate(() => TKunci.terbuka()));
+
+  /* Yang disimpan cuma garam dan penanda uji - sandinya sendiri tidak pernah
+     tersimpan di mana pun. */
+  const setelanSemua = await hal.evaluate(() => TSimpan.semuaSetelan());
+  cek('sandinya tidak ikut tersimpan',
+      JSON.stringify(setelanSemua).indexOf('sandi-uji-123') < 0);
+  cek('yang tersimpan cuma garam dan penanda uji',
+      !!setelanSemua.kunciGaram && !!setelanSemua.kunciUji);
+
+  const rahasia = await hal.evaluate(() => {
+    const e = { id: 'rahasia1', jenis: 'teks', judul: 'Client Secret Drop Memory',
+      judulManual: false, isi: 'RAHASIA9-aB3dE5gH-jK7mN9pQ2sT', daftar: [],
+      kategori: '', label: ['sandi'], tag: ['password'],
+      elemen: [{ jenis: 'kode', nilai: 'RAHASIA9-aB3dE5gH-jK7mN9pQ2sT', nama: 'Client Secret' }],
+      berkasId: null, driveId: null, thumb: '', namaBerkas: '', tipeBerkas: '', ukuran: 0,
+      dibuat: Date.now(), diubah: Date.now(), dipakai: 0,
+      diLabeliAI: false, diBacaAI: false, rahasia: false, elemenTerkunci: '',
+      pensiun: false, dihapus: false, riwayat: [] };
+    return TKunci.kunciEntri(e).then(() => TSimpan.taruh(e)).then(() => e);
+  });
+
+  /* INTI SELURUH BAGIAN INI. */
+  cek('isinya tersimpan sebagai sandi, bukan teks',
+      rahasia.isi.indexOf('terkunci1:') === 0, rahasia.isi.slice(0, 40));
+  cek('nilai aslinya tidak ada lagi di kolom mana pun',
+      JSON.stringify(rahasia).indexOf('RAHASIA9-aB3dE5gH') < 0);
+  /* Judul dan tag SENGAJA tetap terbuka: catatan yang tidak bisa ditemukan
+     sama saja dengan tidak disimpan. */
+  cek('judul dan tagnya tetap terbuka supaya masih bisa ditemukan',
+      rahasia.judul === 'Client Secret Drop Memory' && rahasia.tag.indexOf('password') >= 0);
+
+  const ketemu = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => TOtak.cari(a, 'client secret').length));
+  cek('masih ketemu lewat judulnya', ketemu >= 1, String(ketemu));
+
+  /* JANJI UTAMA: tidak pernah dikirim ke AI. */
+  await hal.evaluate(() => TSimpan.semua().then((a) => Promise.all(
+    a.filter((e) => !e.rahasia).map((e) => { e.diLabeliAI = false; return TSimpan.taruh(e); }))));
+  const sebelumAI = proxyAI.panggilan;
+  await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TPelabel.putaran(s)));
+  cek('pelabelan tetap jalan untuk yang lain', proxyAI.panggilan > sebelumAI);
+  cek('isi rahasianya tidak pernah ikut dikirim',
+      String(proxyAI.badanTerakhir || '').indexOf('RAHASIA9-aB3dE5gH') < 0);
+
+  const balik = await hal.evaluate(() => TSimpan.ambil('rahasia1').then((e) => TKunci.bukaEntri(e)));
+  cek('dengan sandinya, isinya kembali utuh',
+      balik.isi === 'RAHASIA9-aB3dE5gH-jK7mN9pQ2sT' &&
+      balik.elemen[0].nama === 'Client Secret', JSON.stringify(balik.elemen));
+
+  await hal.evaluate(() => TKunci.tutup());
+  const gagal = await hal.evaluate(() => TSimpan.ambil('rahasia1')
+    .then((e) => TKunci.bukaEntri(e)).then(() => 'terbaca', (x) => x.message));
+  cek('tanpa sandinya tidak bisa dibaca sama sekali', gagal !== 'terbaca', String(gagal));
+
+  const salah = await hal.evaluate(() => TSimpan.semuaSetelan()
+    .then((s) => TKunci.buka(s, 'sandi-yang-salah')).then(() => 'lolos', (x) => x.message));
+  cek('sandi salah ditolak', /salah/i.test(String(salah)), String(salah));
+
+  await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TKunci.buka(s, 'sandi-uji-123')));
+  cek('sandi benar membukanya lagi', await hal.evaluate(() => TKunci.terbuka()));
 }
 
 console.log('\nnama cuma kulit');

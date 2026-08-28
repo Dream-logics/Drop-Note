@@ -358,11 +358,14 @@
       /* Tag dinilai setinggi label karena dia label yang KELIHATAN - sekali
          dipakai orangnya, dia akan mengetik kata itu lagi. */
       if ((e.tag || []).some(function (t) { return normal(t).indexOf(w) === 0; })) n += 5;
-      if ((e.elemen || []).some(function (x) {
+      if (!e.rahasia && (e.elemen || []).some(function (x) {
         return normal(x.nilai).indexOf(w) >= 0 || normal(x.nama).indexOf(w) >= 0;
       })) n += 4;
       if (normal(e.kategori).indexOf(w) >= 0) n += 4;
-      if (normal(e.isi).indexOf(w) >= 0) n += 3;
+      /* Isi dan elemen entri rahasia sudah berupa sandi - mencocokkannya
+         cuma menghasilkan kecocokan palsu. Judul, tag, dan labelnya tetap
+         terbuka, dan itu memang yang membuatnya masih bisa DITEMUKAN. */
+      if (!e.rahasia && normal(e.isi).indexOf(w) >= 0) n += 3;
       if (normal(e.namaBerkas).indexOf(w) >= 0) n += 3;
       if ((e.daftar || []).some(function (b) { return normal(b.teks).indexOf(w) >= 0; })) n += 3;
       return n;

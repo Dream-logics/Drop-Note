@@ -115,6 +115,7 @@
       namaBerkas: '', tipeBerkas: '', ukuran: 0,
       dibuat: t, diubah: t, dipakai: 0,
       diLabeliAI: false, diBacaAI: false,
+      rahasia: false, elemenTerkunci: '',
       pensiun: false, dihapus: false, riwayat: []
     };
   }
@@ -625,7 +626,17 @@
     var cup = cuplikan(e) ||
               (e.jenis === 'tautan' && !adaDiElemen ? e.isi : '') ||
               (e.namaBerkas ? e.namaBerkas + ' · ' + ukuranTeks(e.ukuran) : '');
-    if (cup && !elemen.length) b.push('<div class="kartu-cuplik">' + H(cup) + '</div>');
+    /* Judul dan tag tetap terbaca - itu yang membuatnya masih bisa DITEMUKAN.
+       Isinya tidak, sampai kuncinya dibuka. */
+    if (e.rahasia) {
+      b.push('<div class="kartu-cuplik terkunci">' +
+        '<svg viewBox="0 0 24 24" class="ik gembok"><rect x="4" y="10" width="16" height="11" rx="2"/>' +
+        '<path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>' +
+        (TKunci.terbuka() ? 'Terkunci — buka lewat tombol ubah'
+                          : 'Terkunci — sandinya belum dibuka') + '</div>');
+    } else if (cup && !elemen.length) {
+      b.push('<div class="kartu-cuplik">' + H(cup) + '</div>');
+    }
 
     /* Thumbnail-nya sudah ada di dalam entri, jadi tidak ada satu pun
        permintaan - ke IndexedDB maupun ke jaringan - saat menggambar hasil. */
@@ -639,9 +650,10 @@
        tersering kartu ini dibuka sama sekali. Kalau dia ikut disembunyikan,
        yang dihemat cuma tinggi kartu - yang dibayar satu ketukan tambahan
        pada gerakan tersering. */
-    if (elemen.length) b.push('<div class="elemen">' + elemenBaris(elemen[0], 0) + '</div>');
+    if (elemen.length && !e.rahasia) b.push('<div class="elemen">' + elemenBaris(elemen[0], 0) + '</div>');
 
     var r = [];
+    if (e.rahasia) elemen = [];
     if (elemen.length > 1) {
       r.push('<div class="elemen">' + elemen.slice(1, 10).map(function (x, i) {
         return elemenBaris(x, i + 1);
@@ -652,7 +664,7 @@
         return '<div><span>' + (x.selesai ? '☑' : '☐') + '</span><span>' + H(x.teks) + '</span></div>';
       }).join('') + '</div>');
     }
-    var isi = String(e.isi || '').trim();
+    var isi = e.rahasia ? '' : String(e.isi || '').trim();
     if (isi && (elemen.length || isi !== cup)) r.push('<div class="kartu-penuh">' + H(isi) + '</div>');
     r.push(tagHtml(e));
 
@@ -1092,11 +1104,75 @@
     entriCatat = e;
     $('#catat-judul').value = e.judul || '';
     $('#catat-kat').value = e.kategori || '';
-    $('#catat-isi').value = e.isi || '';
     $('#riwayat').classList.add('sembunyi');
     gambarLampiranCatat(e);
+    gambarGembok(e);
     tanda('tersimpan');
     keLayar('l-catat');
+
+    /* Isi yang terkunci baru dibuka setelah layarnya tampil - kalau menunggu
+       enkripsi dulu, perpindahan layarnya terasa tersendat. */
+    var isian = $('#catat-isi');
+    if (!e.rahasia) { isian.value = e.isi || ''; isian.readOnly = false; return; }
+
+    if (!TKunci.terbuka()) {
+      isian.value = '';
+      isian.readOnly = true;
+      isian.placeholder = 'Terkunci. Buka kuncinya di Setelan untuk membacanya.';
+      return;
+    }
+    isian.readOnly = false;
+    isian.placeholder = 'Tulis apa saja…';
+    isian.value = '…';
+    TKunci.bukaTeks(e.isi || '').then(function (t) {
+      if (entriCatat === e) { isian.value = t; e.isiTerbuka = t; }
+    }, function () { if (entriCatat === e) isian.value = ''; });
+  }
+
+  function gambarGembok(e) {
+    var b = $('#b-gembok');
+    if (!b) return;
+    b.classList.toggle('nyala', !!e.rahasia);
+    b.setAttribute('aria-label', e.rahasia ? 'Buka kunci catatan ini' : 'Kunci catatan ini');
+  }
+
+  /* Menandai rahasia = mengunci isinya SEKARANG, bukan nanti. Kalau ditunda,
+     ada jendela waktu ketika teks biasanya masih tersimpan - dan jendela itu
+     persis yang mau ditutup. */
+  function alihGembok() {
+    var e = entriCatat;
+    if (!e) return;
+    if (!TKunci.ada()) { pesan('Peramban ini tidak punya Web Crypto'); return; }
+    if (!TKunci.sudahDipasang(setelanSaat)) {
+      pesan('Pasang sandi dulu di Setelan');
+      return;
+    }
+    if (!TKunci.terbuka()) { pesan('Buka kuncinya dulu di Setelan'); return; }
+
+    if (e.rahasia) {
+      TKunci.lepasEntri(e).then(function () {
+        e.diubah = Date.now();
+        return TSimpan.taruh(e);
+      }).then(function () {
+        segarkanCache(e);
+        $('#catat-isi').value = e.isi || '';
+        gambarGembok(e);
+        pesan('Kuncinya dilepas');
+      });
+      return;
+    }
+
+    /* Isi yang sedang diketik ikut dikunci, bukan yang terakhir tersimpan. */
+    e.isi = $('#catat-isi').value;
+    e.elemen = TOtak.gabungElemen([], TOtak.elemenOtomatis(e));
+    TKunci.kunciEntri(e).then(function () {
+      e.diubah = Date.now();
+      return TSimpan.taruh(e);
+    }).then(function () {
+      segarkanCache(e);
+      gambarGembok(e);
+      pesan('Terkunci · tidak akan dikirim ke AI');
+    }, function (err) { pesan('Gagal mengunci: ' + err.message); });
   }
 
   function simpanCatat() {
@@ -1106,6 +1182,17 @@
     var judul = $('#catat-judul').value.trim();
     var kat = $('#catat-kat').value.trim();
     var isi = $('#catat-isi').value;
+
+    /* Entri terkunci: kolom isinya berisi sandi, bukan teks. Menyimpan apa
+       yang tampak di layar akan menimpanya dengan teks biasa - jadi
+       perubahan isi disimpan lewat gembok, bukan lewat jalur ini. */
+    if (e.rahasia) {
+      if (judul === e.judul && kat === e.kategori) { tanda('tersimpan'); return Promise.resolve(); }
+      e.judul = judul || e.judul;
+      e.kategori = kat;
+      e.diubah = Date.now();
+      return TSimpan.taruh(e).then(function () { segarkanCache(e); tanda('tersimpan'); });
+    }
 
     if (judul === e.judul && kat === e.kategori && isi === e.isi) {
       tanda('tersimpan');
@@ -1471,6 +1558,23 @@
       '<button class="set-tbl" id="b-impor">Impor</button>',
       '</div>',
 
+      '<div class="set-bagian">Kunci rahasia</div>',
+      '<div class="set-kotak">',
+      '<div class="set-judul">' + (TKunci.sudahDipasang(s)
+        ? (TKunci.terbuka() ? 'Kuncinya sedang terbuka' : 'Terkunci')
+        : 'Belum dipasang') + '</div>',
+      '<div class="set-ket">Catatan yang kamu tandai gembok <b>tidak pernah dikirim ke AI</b>, dan isinya naik ke Drive sudah berupa sandi. Judul dan tagnya tetap terbuka — supaya catatannya masih bisa <b>ditemukan</b>, cuma tidak bisa dibaca.</div>',
+      '<div class="set-ket awas-teks">Sandinya tidak disimpan di mana pun. Lupa sandi berarti isinya hilang selamanya — tidak ada yang bisa mengembalikannya, termasuk aku.</div>',
+      TKunci.sudahDipasang(s)
+        ? (TKunci.terbuka()
+            ? '<button class="set-tbl" id="b-kunci-tutup">Kunci lagi sekarang</button>'
+            : '<input class="set-input" id="set-sandi" type="password" placeholder="Sandi" autocomplete="off">' +
+              '<button class="set-tbl emas" id="b-kunci-buka">Buka kunci</button>')
+        : '<input class="set-input" id="set-sandi" type="password" placeholder="Sandi baru, minimal 6 huruf" autocomplete="off">' +
+          '<button class="set-tbl emas" id="b-kunci-pasang">Pasang sandi</button>',
+      '<div class="set-ket" id="kunci-ket"></div>',
+      '</div>',
+
       '<div class="set-bagian">Arsip</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">Yang sudah lewat, tapi tidak dibuang</div>',
@@ -1688,6 +1792,35 @@
     });
 
     $('#b-impor').addEventListener('click', function () { $('#pilih-cadangan').click(); });
+
+    var pasangSandi = $('#b-kunci-pasang');
+    if (pasangSandi) {
+      pasangSandi.addEventListener('click', function () {
+        var nilai = $('#set-sandi').value;
+        TKunci.pasang(setelanSaat, nilai).then(function () {
+          pesan('Sandi terpasang · kuncinya terbuka');
+          gambarSetelan();
+        }, function (err) { $('#kunci-ket').textContent = err.message; });
+      });
+    }
+    var bukaSandi = $('#b-kunci-buka');
+    if (bukaSandi) {
+      bukaSandi.addEventListener('click', function () {
+        TKunci.buka(setelanSaat, $('#set-sandi').value).then(function () {
+          pesan('Kuncinya terbuka');
+          gambarSetelan();
+          if (layarSaat === 'l-hasil') jalankanCari();
+        }, function (err) { $('#kunci-ket').textContent = err.message; });
+      });
+    }
+    var tutupSandi = $('#b-kunci-tutup');
+    if (tutupSandi) {
+      tutupSandi.addEventListener('click', function () {
+        TKunci.tutup();
+        pesan('Terkunci lagi');
+        gambarSetelan();
+      });
+    }
 
     var arsip = $('#arsip-daftar');
     if (arsip) {
@@ -2010,6 +2143,8 @@
     /* Ketuk = pensiun (bisa diurungkan). Tekan lama = hapus permanen sampai ke
        Sheet dan Drive. Dua tindakan, satu tombol, tanpa dialog yang bertanya. */
     var tekanJam = null, sudahLama = false;
+    $('#b-gembok').addEventListener('click', alihGembok);
+
     var buang = $('#b-buang');
     function mulaiTekan() {
       sudahLama = false;

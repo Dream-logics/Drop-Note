@@ -61,6 +61,9 @@
       if (k === 'label') return (e.label || []).join(' ');
       if (k === 'tag') return (e.tag || []).join(' ');
       if (k === 'elemen') return JSON.stringify(e.elemen || []);
+      /* Yang rahasia naik ke Drive sudah berupa sandi - isinya memang sudah
+         tersimpan begitu, jadi tidak ada langkah tambahan di sini. */
+      if (k === 'elemenTerkunci') return e.elemenTerkunci || '';
       if (k === 'daftar') return JSON.stringify(e.daftar || []);
       if (k === 'riwayat') return JSON.stringify(e.riwayat || []);
       var v = e[k];
@@ -84,6 +87,7 @@
       label: String(r.label || '').split(' ').filter(Boolean),
       tag: String(r.tag || '').split(' ').filter(Boolean),
       elemen: urai(r.elemen, []),
+      rahasia: benar(r.rahasia), elemenTerkunci: r.elemenTerkunci || '',
       daftar: urai(r.daftar, []),
       berkasId: r.berkasId || null, driveId: r.driveId || null,
       namaBerkas: r.namaBerkas || '', tipeBerkas: r.tipeBerkas || '',

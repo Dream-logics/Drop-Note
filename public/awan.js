@@ -176,9 +176,9 @@
   var KOLOM = ['id', 'jenis', 'judul', 'judulManual', 'isi', 'kategori', 'label',
                'daftar', 'berkasId', 'driveId', 'namaBerkas', 'tipeBerkas', 'ukuran',
                'dibuat', 'diubah', 'dipakai', 'diLabeliAI', 'pensiun', 'dihapus', 'riwayat',
-               'tag', 'elemen'];
+               'tag', 'elemen', 'rahasia', 'elemenTerkunci'];
 
-  var HURUF_AKHIR = String.fromCharCode(64 + KOLOM.length);   /* V untuk 22 kolom */
+  var HURUF_AKHIR = String.fromCharCode(64 + KOLOM.length);   /* X untuk 24 kolom */
 
   /* Tab kedua: kumpulan tag yang pernah dibuat AI. Gunanya supaya tag tidak
      beranak - dan supaya kamu bisa melihat sendiri daftarnya tanpa membuka
