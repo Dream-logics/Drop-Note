@@ -757,7 +757,7 @@
     var wadah = $('#hasil');
     if (!hasil.length) {
       $('#hasil-ket').textContent = '';
-      wadah.innerHTML = '<div class="kosong">Tidak ada yang cocok.<br>Coba satu kata saja — pencarian ini memaafkan.</div>';
+      wadah.innerHTML = kosongHtml(kueri);
       return;
     }
     $('#hasil-ket').textContent = hasil.length + ' hasil';
@@ -773,6 +773,34 @@
       wadah.innerHTML = potong.map(kartuHtml).join('');
     }
     pasangGambarKartu(wadah);
+  }
+
+  /* Layar kosong harus menyebut SEBABNYA. "Tidak ada yang cocok" saat
+     timbunannya sebenarnya penuh - cuma tersaring rak atau jenis - membuat
+     orang menyimpulkan aplikasinya rusak, lalu berhenti memakainya. Yang
+     dibutuhkan bukan penghiburan, tapi jalan keluar satu ketukan. */
+  function kosongHtml(kueri) {
+    var isiTimbunan = semuaEntri.some(function (e) { return !e.pensiun; });
+    if (!isiTimbunan) {
+      return '<div class="kosong">Belum ada apa-apa di sini.<br>' +
+             'Jatuhkan sesuatu dulu lewat tombol Drop.</div>';
+    }
+
+    var sebab = [];
+    if (kueri) sebab.push('kata <b>' + H(kueri) + '</b>');
+    if (saringKat) sebab.push('rak <b>#' + H(saringKat) + '</b>');
+    if (saringJenis && saringJenis !== 'semua') sebab.push('jenis <b>' + H(saringJenis) + '</b>');
+
+    if (!sebab.length) {
+      /* Timbunannya ada, saringannya bersih, tapi hasilnya nol - ini memang
+         tidak wajar, jadi jangan dibuat seolah wajar. */
+      return '<div class="kosong">Ada isinya, tapi tidak ada yang tergambar.<br>' +
+             'Tutup aplikasinya dan buka lagi.</div>';
+    }
+
+    return '<div class="kosong">Tidak ada yang cocok dengan ' + sebab.join(' + ') + '.<br>' +
+           'Coba satu kata saja — pencarian ini memaafkan.' +
+           '<button class="tbl kosong-tbl" data-bersihkan>Tampilkan semua</button></div>';
   }
 
   function keHasil(kueri) {
@@ -1767,6 +1795,7 @@
       jalankanCari();
     });
     $('#hasil').addEventListener('click', function (ev) {
+      if (ev.target.closest('[data-bersihkan]')) { keSemua(); return; }
       /* Membuka lipatan tag: bukan mencari, bukan membuka kartunya. */
       var lipat = ev.target.closest('[data-tag-lagi]');
       if (lipat) {
@@ -1964,6 +1993,7 @@
     gambarMulai: gambarMulai, gambarSetelan: gambarSetelan,
     alihKeyword: alihKeyword, perbaruiUsulKategori: perbaruiUsulKategori,
     keSemua: keSemua, uraiTagFavorit: uraiTagFavorit, kartuHtmlUji: kartuHtml,
+    saringRakUji: function (k) { saringKat = k; gambarSaringKategori(); jalankanCari(); },
     /* Cuma untuk uji: memindah layar tanpa lewat tombol. */
     keLayarUji: keLayar,
     semuaEntri: function () { return semuaEntri; }

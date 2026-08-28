@@ -594,6 +594,33 @@ console.log('\nSemua: melihat seluruh timbunan, atas permintaan');
       (await hal.locator('#hasil .kelompok').count()) === 0);
 }
 
+console.log('\nlayar kosong harus menyebut sebabnya');
+{
+  await hal.evaluate(() => TAlur.keHasil('katayangpastitidakada'));
+  await hal.waitForTimeout(250);
+  const teks = await hal.textContent('#hasil .kosong');
+  /* "Tidak ada yang cocok" saat timbunannya sebenarnya penuh membuat orang
+     menyimpulkan aplikasinya rusak, lalu berhenti memakainya. */
+  cek('sebab kosongnya disebut, bukan cuma "tidak ada"',
+      /katayangpastitidakada/.test(teks), teks);
+  cek('ada jalan keluar satu ketukan',
+      (await hal.locator('#hasil [data-bersihkan]').count()) === 1);
+
+  await hal.click('#hasil [data-bersihkan]');
+  await hal.waitForTimeout(300);
+  cek('menekannya benar-benar mengembalikan seluruh isi',
+      (await hal.locator('#hasil .kartu').count()) > 1 &&
+      (await hal.inputValue('#cari-input')) === '');
+
+  /* Saringan rak juga disebut - bukan cuma kata pencariannya. */
+  await hal.evaluate(() => TAlur.saringRakUji('rakyangtidakada'));
+  await hal.waitForTimeout(250);
+  cek('rak yang menyaring ikut disebut',
+      /rakyangtidakada/.test(await hal.textContent('#hasil .kosong')));
+  await hal.evaluate(() => TAlur.keSemua());
+  await hal.waitForTimeout(200);
+}
+
 console.log('\nEnter = cari, di dua kotak');
 {
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));

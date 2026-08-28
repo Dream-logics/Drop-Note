@@ -196,7 +196,9 @@ button,input,textarea{font:inherit;color:inherit}
 }
 .aksi .ik{width:15px;height:15px}
 .aksi:active{background:var(--p);opacity:1}
-.kosong{text-align:center;color:var(--m);font-size:13.5px;line-height:1.7;padding:38px 20px}
+.kosong{text-align:center;color:var(--m);font-size:13.5px;line-height:1.7;padding:34px 20px}
+.kosong b{color:var(--i);font-weight:600}
+.kosong-tbl{max-width:220px;margin:16px auto 0}
 
 /* --- elemen: potongan yang disalin, bukan dibaca ---
    Tiap baris satu barang, dengan tombol salinnya sendiri. Yang mahal di ujung
