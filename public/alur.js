@@ -107,7 +107,7 @@
     return {
       id: idBaru('e'), jenis: jenis || 'teks',
       judul: '', judulManual: false, isi: '', daftar: [],
-      kategori: '', label: [],
+      kategori: '', label: [], tag: [], elemen: [],
       berkasId: null, driveId: null, thumb: '',
       namaBerkas: '', tipeBerkas: '', ukuran: 0,
       dibuat: t, diubah: t, dipakai: 0,
@@ -215,7 +215,12 @@
     var hitung = {};
     semuaEntri.forEach(function (e) {
       if (e.pensiun || !e.kategori) return;
-      hitung[e.kategori] = (hitung[e.kategori] || 0) + 1;
+      /* Satu catatan boleh punya beberapa keyword, dipisah spasi. Dihitung
+         satu per satu, kalau tidak "klien urgent" jadi rak sendiri yang
+         terpisah dari "klien". */
+      pecahKeyword(e.kategori).forEach(function (k) {
+        hitung[k] = (hitung[k] || 0) + 1;
+      });
     });
     return Object.keys(hitung).map(function (k) {
       return { kategori: k, jumlah: hitung[k] };
@@ -257,17 +262,52 @@
     kotak.classList.add('sembunyi');
   }
 
+  function pecahKeyword(s) {
+    return String(s || '').split(/\s+/).filter(Boolean);
+  }
+
+  /* Pilihan bawaan supaya tidak ada yang perlu dipikirkan. Mengetik keyword
+     dari nol itu keputusan kecil yang diulang tiap kali nge-drop - dan
+     keputusan berulang persis yang membunuh sistem-sistem sebelumnya.
+     Yang sering dipakai naik sendiri di depan daftar ini. */
+  var KEYWORD_UMUM = ['kerja', 'klien', 'proyek', 'keuangan', 'pribadi', 'rumah',
+                      'kesehatan', 'kendaraan', 'belanja', 'kontak', 'sandi', 'dokumen'];
+
   function perbaruiUsulKategori() {
     var wadah = $('#kat-usul');
-    var sering = daftarKategori().slice(0, 3).map(function (r) { return r.kategori; });
+    var dipilih = pecahKeyword($('#kat').value).map(function (k) { return k.toLowerCase(); });
+
+    var urut = [];
+    function tambah(k) {
+      if (k && urut.indexOf(k) < 0) urut.push(k);
+    }
 
     var contoh = { isi: $('#kotak').value, judul: '', namaBerkas: draf ? draf.namaBerkas : '' };
-    var usul = TOtak.usulKategori(contoh, daftarKategori());
-    if (usul && sering.indexOf(usul) < 0) sering.unshift(usul);
+    tambah(TOtak.usulKategori(contoh, daftarKategori()));
+    daftarKategori().slice(0, 6).forEach(function (r) { tambah(r.kategori); });
+    dipilih.forEach(tambah);
+    KEYWORD_UMUM.forEach(tambah);
 
-    wadah.innerHTML = sering.map(function (k) {
-      return '<button class="cip" data-kat="' + H(k) + '">#' + H(k) + '</button>';
+    wadah.innerHTML = urut.slice(0, 14).map(function (k) {
+      var nyala = dipilih.indexOf(k.toLowerCase()) >= 0;
+      return '<button class="cip' + (nyala ? ' nyala' : '') + '" data-kat="' + H(k) + '">#' +
+             H(k) + '</button>';
     }).join('');
+  }
+
+  /* Centang = tambah, centang lagi = buang. Bukan mengganti: satu catatan
+     boleh masuk beberapa rak sekaligus, dan memaksa memilih satu adalah
+     keputusan yang tidak perlu diadakan. */
+  function alihKeyword(k) {
+    var isian = $('#kat');
+    var ada = pecahKeyword(isian.value);
+    var i = -1;
+    ada.forEach(function (x, n) { if (x.toLowerCase() === k.toLowerCase()) i = n; });
+    if (i >= 0) ada.splice(i, 1);
+    else ada.push(k);
+    isian.value = ada.join(' ');
+    $('#b-kat-hapus').classList.toggle('sembunyi', !isian.value);
+    perbaruiUsulKategori();
   }
 
   /* Koreksi kategori sengaja DITAMPILKAN, tidak diam-diam. Tebakan yang tidak
@@ -276,18 +316,28 @@
   function benahiKotakKategori() {
     var kotak = $('#kat');
     var tanda = $('#kat-koreksi');
-    var hasil = TOtak.benahiKategori(kotak.value, daftarKategori().map(function (r) { return r.kategori; }));
+    var rak = daftarKategori().map(function (r) { return r.kategori; });
 
-    if (hasil.dibetulkan) {
-      kotak.value = hasil.kategori;
-      tanda.innerHTML = '<s>' + H(hasil.asli) + '</s> → <b>' + H(hasil.kategori) + '</b>';
+    /* Dibetulkan per kata, bukan sekaligus: "kerja klien" itu dua rak, dan
+       mencocokkannya sebagai satu kalimat tidak akan pernah ketemu. */
+    var koreksi = [];
+    var keluar = pecahKeyword(kotak.value).map(function (k) {
+      var h = TOtak.benahiKategori(k, rak);
+      if (h.dibetulkan) koreksi.push('<s>' + H(h.asli) + '</s> → <b>' + H(h.kategori) + '</b>');
+      return h.kategori;
+    }).filter(Boolean);
+
+    var gabung = keluar.join(' ');
+    kotak.value = gabung;
+    if (koreksi.length) {
+      tanda.innerHTML = koreksi.join(' · ');
       tanda.classList.remove('sembunyi');
     } else {
-      kotak.value = hasil.kategori;
       tanda.classList.add('sembunyi');
     }
-    $('#b-kat-hapus').classList.toggle('sembunyi', !kotak.value);
-    return hasil.kategori;
+    $('#b-kat-hapus').classList.toggle('sembunyi', !gabung);
+    perbaruiUsulKategori();
+    return gabung;
   }
 
   function barisDaftarBaru(teks, selesai) {
@@ -361,6 +411,9 @@
     }
     e.judul = TOtak.judulOtomatis(e);
     e.label = TOtak.labelOtomatis(e);
+    /* Elemen berpola sudah terpisah SEBELUM AI menyentuhnya. Kalau AI mati,
+       tautan dan kode tetap bisa disalin sendiri-sendiri. */
+    e.elemen = TOtak.elemenOtomatis(e);
 
     TSimpan.taruh(e).then(function () {
       segarkanCache(e);
@@ -534,7 +587,11 @@
     var cup = cuplikan(e);
     if (cup) b.push('<div class="kartu-cuplik">' + H(cup) + '</div>');
 
-    if (e.jenis === 'tautan' && e.isi) {
+    /* Kalau alamatnya sudah berdiri sendiri sebagai elemen, jangan digambar
+       dua kali. Kartu yang mengucapkan hal yang sama dua kali cuma menambah
+       tinggi tanpa menambah satu pun kata baru. */
+    var adaDiElemen = (e.elemen || []).some(function (x) { return x.nilai === e.isi; });
+    if (e.jenis === 'tautan' && e.isi && !adaDiElemen) {
       b.push('<a class="kartu-tautan" href="' + H(e.isi) + '" target="_blank" rel="noopener">' +
              H(e.isi) + '</a>');
     }
@@ -555,17 +612,76 @@
       b.push('<div class="kartu-cuplik">' + H(e.namaBerkas) + ' · ' + H(ukuranTeks(e.ukuran)) + '</div>');
     }
 
+    b.push(elemenHtml(e));
+    b.push(penuhHtml(e));
+    b.push(tagHtml(e));
+
     var meta = [];
     if (e.kategori) meta.push('<span class="tanda-kat">#' + H(e.kategori) + '</span>');
-    meta.push('<span class="tanda-waktu">' + H(TOtak.waktuPendek(e.diubah)) + '</span>');
+    meta.push('<span class="kartu-tanggal">' + H(TOtak.tanggalIndo(e.diubah)) + '</span>');
 
     b.push('<div class="kartu-kaki"><div class="kartu-meta">' + meta.join('') + '</div>' +
-      '<div class="kartu-aksi"><button class="aksi" data-salin aria-label="Salin">' +
-      '<svg viewBox="0 0 24 24" class="ik"><rect x="9" y="9" width="12" height="12" rx="2"/>' +
-      '<path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></div></div>');
+      '<div class="kartu-aksi">' +
+      IKON_AKSI('salin', 'Salin', '<rect x="9" y="9" width="12" height="12" rx="2"/>' +
+        '<path d="M5 15V5a2 2 0 0 1 2-2h10"/>') +
+      IKON_AKSI('sunting', 'Ubah', '<path d="M4 20h16"/><path d="M14.5 4.5l5 5L8 21H3v-5z"/>') +
+      IKON_AKSI('pensiun', 'Pensiunkan', '<path d="M3 6h18"/><path d="M8 6V4h8v2"/>' +
+        '<path d="M19 6l-1 14H6L5 6"/>') +
+      '</div></div>');
 
     return '<article class="kartu' + ((e.dipakai || 0) >= SERING ? ' sering' : '') +
            '" data-id="' + H(e.id) + '">' + b.join('') + '</article>';
+  }
+
+  function IKON_AKSI(nama, label, isi) {
+    return '<button class="aksi" data-' + nama + ' aria-label="' + H(label) + '">' +
+           '<svg viewBox="0 0 24 24" class="ik">' + isi + '</svg></button>';
+  }
+
+  /* Nama elemen ditulis di atas nilainya, bukan di sampingnya: nilai yang
+     panjang (tautan, token) akan mendorong namanya keluar layar kalau
+     sebaris. */
+  var NAMA_JENIS = {
+    tautan: 'tautan', surel: 'surel', telepon: 'telepon', kode: 'kode',
+    nomor: 'nomor', alamat: 'alamat', berkas: 'berkas', nama: 'nama',
+    jadwal: 'jadwal', harga: 'harga', prompt: 'prompt', lainnya: 'catatan'
+  };
+
+  function elemenHtml(e) {
+    var daftar = (e.elemen || []).slice(0, 10);
+    if (!daftar.length) return '';
+    return '<div class="elemen">' + daftar.map(function (x, i) {
+      var nama = x.nama || NAMA_JENIS[x.jenis] || 'elemen';
+      var nilai = String(x.nilai || '');
+      /* Tautan harus bisa langsung dibuka - itu satu-satunya alasan dia
+         disimpan. Yang lain cukup bisa disalin. */
+      var isi = /^https?:\/\//i.test(nilai)
+        ? '<a class="elemen-nilai" href="' + H(nilai) + '" target="_blank" rel="noopener">' + H(nilai) + '</a>'
+        : '<div class="elemen-nilai">' + H(nilai) + '</div>';
+      return '<div class="elemen-baris">' +
+        '<div class="elemen-isi"><div class="elemen-nama">' + H(nama) + '</div>' + isi + '</div>' +
+        '<button class="elemen-salin" data-elemen="' + i + '" aria-label="Salin ' + H(nama) + '">' +
+        '<svg viewBox="0 0 24 24" class="ik"><rect x="9" y="9" width="12" height="12" rx="2"/>' +
+        '<path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></div>';
+    }).join('') + '</div>';
+  }
+
+  /* Dua baris dulu. Menampilkan catatan utuh di daftar hasil mengembalikan
+     dinding kartu yang justru mau dihindari - sesak datang dari tampilan,
+     bukan dari jumlah. */
+  function penuhHtml(e) {
+    var isi = String(e.isi || '').trim();
+    if (!isi || isi.length < 140) return '';
+    return '<button class="kartu-lagi" data-lagi>Tampilkan seluruh catatan</button>' +
+           '<div class="kartu-penuh sembunyi">' + H(isi) + '</div>';
+  }
+
+  function tagHtml(e) {
+    var tag = (e.tag || []).slice(0, 8);
+    if (!tag.length) return '';
+    return '<div class="tag-baris">' + tag.map(function (t) {
+      return '<button class="tag" data-tag="' + H(t) + '">#' + H(t) + '</button>';
+    }).join('') + '</div>';
   }
 
   function pasangGambarKartu(akar) {
@@ -754,6 +870,7 @@
     }
 
     var sekarang = Date.now();
+    var isiSebelum = e.isi;
     /* Inti kenapa aplikasi ini ada: merevisi memperbarui BARIS YANG SAMA, dan
        versi lamanya tetap ada. Di Keep, tiap revisi melahirkan catatan baru -
        dan dari enam versi mirip tidak ada cara tahu mana yang terakhir. */
@@ -774,6 +891,16 @@
     }
     e.label = TOtak.labelOtomatis(e);
 
+    /* Isi yang berubah artinya penilaian lamanya sudah tidak menggambarkan
+       catatan ini lagi. Judul, elemen, dan tag disusun ulang - dan judul yang
+       diketik sendiri tetap tidak ikut ditimpa, karena judulManual yang
+       menjaganya, bukan penanda ini. */
+    if (isi !== isiSebelum) {
+      e.elemen = TOtak.gabungElemen([], TOtak.elemenOtomatis(e));
+      e.diLabeliAI = false;
+      sundulLabel();
+    }
+
     tanda('menyimpan…');
     return TSimpan.taruh(e).then(function () {
       segarkanCache(e);
@@ -781,6 +908,31 @@
     }).catch(function (err) {
       tanda('gagal menyimpan');
       pesan('Gagal menyimpan: ' + err.message);
+    });
+  }
+
+  /* Dari kartu, tanpa membuka apa pun. Sengaja TIDAK bertanya "yakin?":
+     yang basi cuma berhenti muncul, datanya tetap ada, dan urungnya satu
+     ketukan. Dialog konfirmasi di sini adalah keputusan yang dibebankan
+     tanpa perlu. */
+  function pensiunkanKartu(e) {
+    e.pensiun = true;
+    e.diubah = Date.now();
+    TSimpan.taruh(e).then(function () {
+      segarkanCache(e);
+      perbaruiJumlah();
+      jalankanCari();
+      pesan('Dipensiunkan', {
+        teks: 'Urungkan',
+        jalan: function () {
+          e.pensiun = false;
+          TSimpan.taruh(e).then(function () {
+            segarkanCache(e);
+            perbaruiJumlah();
+            jalankanCari();
+          });
+        }
+      });
     });
   }
 
@@ -1353,18 +1505,19 @@
     $('#kat').addEventListener('blur', benahiKotakKategori);
     $('#kat').addEventListener('input', function () {
       $('#b-kat-hapus').classList.toggle('sembunyi', !$('#kat').value);
+      perbaruiUsulKategori();
     });
     $('#b-kat-hapus').addEventListener('click', function () {
       $('#kat').value = '';
       $('#kat-koreksi').classList.add('sembunyi');
       $('#b-kat-hapus').classList.add('sembunyi');
+      perbaruiUsulKategori();
     });
     $('#kat-usul').addEventListener('click', function (ev) {
       var cip = ev.target.closest('[data-kat]');
       if (!cip) return;
-      $('#kat').value = cip.getAttribute('data-kat');
       $('#kat-koreksi').classList.add('sembunyi');
-      $('#b-kat-hapus').classList.remove('sembunyi');
+      alihKeyword(cip.getAttribute('data-kat'));
     });
 
     $('#b-tambah-baris').addEventListener('click', tambahBarisDaftar);
@@ -1395,6 +1548,15 @@
 
     /* --- layar hasil --- */
     $('#cari-input').addEventListener('input', tunda(jalankanCari, JEDA_CARI));
+    /* Tombol kirim di papan ketik = cari, lalu papan ketiknya menutup supaya
+       hasilnya langsung kelihatan utuh. Di kotak drop, Enter tetap baris baru:
+       kehilangan satu baris di catatan tiga detik jauh lebih mahal. */
+    $('#cari-input').addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Enter') return;
+      ev.preventDefault();
+      jalankanCari();
+      ev.target.blur();
+    });
     $('#saring-jenis').addEventListener('click', function (ev) {
       var cip = ev.target.closest('[data-jenis]');
       if (!cip) return;
@@ -1410,15 +1572,45 @@
       jalankanCari();
     });
     $('#hasil').addEventListener('click', function (ev) {
+      /* Tag dibaca lebih dulu, sebelum kartunya: menekan tag berarti
+         "carikan yang lain seperti ini", bukan "buka yang ini". */
+      var cipTag = ev.target.closest('[data-tag]');
+      if (cipTag) {
+        saringKat = '';
+        saringJenis = 'semua';
+        $('#cari-input').value = cipTag.getAttribute('data-tag');
+        gambarSaringJenis();
+        gambarSaringKategori();
+        jalankanCari();
+        return;
+      }
+
       var kartu = ev.target.closest('.kartu');
       if (!kartu) return;
       var id = kartu.getAttribute('data-id');
-      if (ev.target.closest('[data-salin]')) {
-        var e = null;
-        semuaEntri.forEach(function (x) { if (x.id === id) e = x; });
-        if (e) salin(isiSalin(e));
+      var e = null;
+      semuaEntri.forEach(function (x) { if (x.id === id) e = x; });
+
+      var lagi = ev.target.closest('[data-lagi]');
+      if (lagi) {
+        var penuh = kartu.querySelector('.kartu-penuh');
+        var buka = penuh.classList.contains('sembunyi');
+        penuh.classList.toggle('sembunyi', !buka);
+        lagi.textContent = buka ? 'Tutup' : 'Tampilkan seluruh catatan';
         return;
       }
+
+      var satuan = ev.target.closest('[data-elemen]');
+      if (satuan && e) {
+        var x = (e.elemen || [])[Number(satuan.getAttribute('data-elemen'))];
+        if (x) salin(x.nilai);
+        return;
+      }
+
+      if (ev.target.closest('[data-salin]')) { if (e) salin(isiSalin(e)); return; }
+      if (ev.target.closest('[data-sunting]')) { bukaKartu(id); return; }
+      if (ev.target.closest('[data-pensiun]')) { if (e) pensiunkanKartu(e); return; }
+
       if (ev.target.closest('a')) return;   /* tautan dibuka, bukan kartunya */
       bukaKartu(id);
     });
@@ -1565,6 +1757,7 @@
   global.TAlur = {
     keHasil: keHasil, keCatat: keCatat, drop: drop,
     gambarMulai: gambarMulai, gambarSetelan: gambarSetelan,
+    alihKeyword: alihKeyword, perbaruiUsulKategori: perbaruiUsulKategori,
     semuaEntri: function () { return semuaEntri; }
   };
 })(window);

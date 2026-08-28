@@ -37,9 +37,9 @@
     </div>
   </header>
 
-  <textarea id="kotak" class="kotak" rows="4" placeholder="Tempel atau tulis apa saja&#8230;" autocomplete="off" spellcheck="false"></textarea>
-
-  <!-- Lampiran: jenis dropping selain teks -->
+  <!-- Lampiran DI ATAS kotak: yang dipilih lebih dulu adalah jenisnya, dan
+       menaruhnya di bawah membuat kotak yang memanjang mendorongnya ke luar
+       layar tepat saat mau dipakai. -->
   <div class="lampiran" id="lampiran">
     <button class="lamp" data-lamp="gambar">
       <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span>Gambar</span>
@@ -54,6 +54,8 @@
       <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/></svg><span>Daftar</span>
     </button>
   </div>
+
+  <textarea id="kotak" class="kotak" rows="4" placeholder="Tempel atau tulis apa saja&#8230;" autocomplete="off" spellcheck="false"></textarea>
 
   <!-- Yang dibaca otomatis dari isi kotak -->
   <div class="tebakan sembunyi" id="tebakan">
@@ -72,18 +74,23 @@
     <button class="tambah-baris" id="b-tambah-baris">+ baris</button>
   </div>
 
-  <div class="label-kecil">Kategori</div>
+  <div class="label-kecil">Keyword — centang, tidak perlu mengetik</div>
   <div class="kat-baris">
     <span class="kat-pagar">#</span>
-    <input id="kat" class="kat-input" placeholder="boleh disingkat" autocomplete="off" spellcheck="false">
-    <button class="kat-hapus sembunyi" id="b-kat-hapus" aria-label="Kosongkan kategori">
+    <input id="kat" class="kat-input" placeholder="boleh disingkat, pisahkan dengan spasi" autocomplete="off" spellcheck="false">
+    <button class="kat-hapus sembunyi" id="b-kat-hapus" aria-label="Kosongkan keyword">
       <svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
     </button>
   </div>
   <div class="kat-koreksi sembunyi" id="kat-koreksi"></div>
   <div class="cip-baris" id="kat-usul"></div>
 
-  <div class="tombol-baris">
+  <div class="tumbuh"></div>
+  <div class="kaki" id="kaki-utama">Tersimpan langsung di perangkat, tanpa menunggu jaringan.</div>
+
+  <!-- Tombol paling bawah, menempel: ini dipakai satu tangan sambil
+       mengerjakan hal lain, dan jempol tidak sampai ke atas layar. -->
+  <div class="tombol-baris jempol">
     <button class="tbl utama" id="b-drop">
       <svg viewBox="0 0 24 24" class="ik"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg>Drop
     </button>
@@ -94,9 +101,6 @@
       <svg viewBox="0 0 24 24" class="ik"><path d="M4 20h16"/><path d="M14.5 4.5l5 5L8 21H3v-5z"/></svg>Catat
     </button>
   </div>
-
-  <div class="tumbuh"></div>
-  <div class="kaki" id="kaki-utama">Tersimpan langsung di perangkat, tanpa menunggu jaringan.</div>
 </section>
 
 <!-- ===================== LAYAR HASIL ===================== -->

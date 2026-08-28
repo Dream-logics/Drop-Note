@@ -170,11 +170,20 @@
 
   /* ------------------------------------------------------------------ rumah */
 
+  /* Kolom baru DITAMBAHKAN DI EKOR, tidak pernah disisipkan di tengah. Baris
+     lama membaca nilainya berdasarkan urutan, jadi menyisipkan satu kolom
+     menggeser seluruh cadangan yang sudah terlanjur ada. */
   var KOLOM = ['id', 'jenis', 'judul', 'judulManual', 'isi', 'kategori', 'label',
                'daftar', 'berkasId', 'driveId', 'namaBerkas', 'tipeBerkas', 'ukuran',
-               'dibuat', 'diubah', 'dipakai', 'diLabeliAI', 'pensiun', 'dihapus', 'riwayat'];
+               'dibuat', 'diubah', 'dipakai', 'diLabeliAI', 'pensiun', 'dihapus', 'riwayat',
+               'tag', 'elemen'];
 
-  var HURUF_AKHIR = String.fromCharCode(64 + KOLOM.length);   /* T untuk 20 kolom */
+  var HURUF_AKHIR = String.fromCharCode(64 + KOLOM.length);   /* V untuk 22 kolom */
+
+  /* Tab kedua: kumpulan tag yang pernah dibuat AI. Gunanya supaya tag tidak
+     beranak - dan supaya kamu bisa melihat sendiri daftarnya tanpa membuka
+     aplikasinya. Sumber kebenarannya tetap di HP; ini cerminan. */
+  var TAB_TAG = 'hashtag';
 
   /* Menyiapkan folder + spreadsheet, lalu mengingat id-nya. Aman dipanggil
      berkali-kali: kalau sudah ada, dia cuma memakai yang lama. */
@@ -302,6 +311,38 @@
     });
   }
 
+  /* Menulis ulang seluruh daftar, bukan menambah satu per satu: daftarnya
+     ratusan baris, sekali tulis lebih murah daripada mencari selisihnya -
+     dan tidak ada yang bisa rusak setengah jalan. */
+  function tulisTag(setelan, s, tag) {
+    var isi = (tag || []).map(function (t) { return [t]; });
+    return siapkanTabTag(setelan, s).then(function () {
+      return panggil(setelan, SHEETS + '/' + s.sheetId + '/values/' +
+        rentang(TAB_TAG, 'A1', 'A') + ':clear', { method: 'POST' });
+    }).then(function () {
+      if (!isi.length) return true;
+      return panggil(setelan, SHEETS + '/' + s.sheetId + '/values/' +
+        rentang(TAB_TAG, 'A1', 'A' + isi.length) + '?valueInputOption=RAW', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: isi })
+      });
+    });
+  }
+
+  function siapkanTabTag(setelan, s) {
+    return panggil(setelan, SHEETS + '/' + s.sheetId + '?fields=sheets.properties.title')
+      .then(function (j) {
+        var ada = (j.sheets || []).some(function (x) { return x.properties.title === TAB_TAG; });
+        if (ada) return true;
+        return panggil(setelan, SHEETS + '/' + s.sheetId + ':batchUpdate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requests: [{ addSheet: { properties: { title: TAB_TAG } } }] })
+        });
+      });
+  }
+
   function nomorTab(setelan, s) {
     return panggil(setelan, SHEETS + '/' + s.sheetId + '?fields=sheets.properties')
       .then(function (j) {
@@ -350,6 +391,7 @@
     siapkanRumah: siapkanRumah,
     tulisBaris: tulisBaris, bacaSemuaBaris: bacaSemuaBaris, hapusBaris: hapusBaris,
     unggahBerkas: unggahBerkas, unduhBerkas: unduhBerkas, hapusBerkas: hapusBerkas,
-    KOLOM: KOLOM
+    tulisTag: tulisTag,
+    KOLOM: KOLOM, TAB_TAG: TAB_TAG
   };
 })(window);

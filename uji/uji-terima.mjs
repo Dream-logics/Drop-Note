@@ -57,7 +57,7 @@ function layani() {
 /* Tiruan proxy AI milik pembuat aplikasi. Yang diuji di sini bukan Gemini-nya,
    melainkan dua hal yang menentukan modelnya: token pemakai benar-benar ikut
    dikirim, dan penolakan "belum terdaftar" ditangani tanpa merusak apa pun. */
-const proxyAI = { panggilan: 0, tokenTerakhir: null, tolak: false };
+const proxyAI = { panggilan: 0, tokenTerakhir: null, tolak: false, arahanTerakhir: '' };
 function tiruProxyAI(req, res) {
   let badan = '';
   req.on('data', (p) => { badan += p; });
@@ -66,11 +66,16 @@ function tiruProxyAI(req, res) {
     let j = {};
     try { j = JSON.parse(badan); } catch (e) { /* biarkan */ }
     proxyAI.tokenTerakhir = j.token || null;
+    proxyAI.arahanTerakhir = j.arahan || '';
     res.writeHead(200, { 'Content-Type': 'application/json' });
     if (proxyAI.tolak) return res.end(JSON.stringify({ galat: 'belum-terdaftar' }));
     res.end(JSON.stringify({
       candidates: [{ content: { parts: [{
-        text: JSON.stringify({ hasil: [{ i: 0, judul: 'Judul dari layanan', label: ['apps', 'uji'] }] })
+        text: JSON.stringify({ hasil: [{
+          i: 0, judul: 'Judul dari layanan', label: ['apps', 'uji'],
+          tag: ['appsscript', 'ujicoba'],
+          elemen: [{ jenis: 'kode', nilai: 'RAHASIA-77', nama: 'kode dari layanan' }]
+        }] })
       }] } }]
     }));
   });
@@ -206,7 +211,9 @@ console.log('\ncatat: satu baris, banyak versi');
 {
   await hal.fill('#cari-input', '');
   await hal.waitForTimeout(250);
-  await hal.locator('#hasil .kartu').first().click();
+  /* Judulnya, bukan tengah kartunya: sejak elemen dipisah, bagian tengah
+     kartu bisa jadi tautan atau tombol salin - dan itu memang disengaja. */
+  await hal.locator('#hasil .kartu .kartu-judul').first().click();
   await hal.waitForSelector('#l-catat.aktif');
   cek('dipakai naik saat kartunya dibuka', (await hal.evaluate(() => TAlur.semuaEntri()[0].dipakai)) === 1);
 
@@ -334,6 +341,90 @@ console.log('\nsetelan & pwa');
   cek('nama aplikasi ikut satu sumber', manifes.name === 'Drop Memory');
 }
 
+console.log('\nelemen: yang disalin, bukan yang dibaca');
+{
+  /* Semua di bagian ini berjalan TANPA AI - itu justru intinya. Kalau elemen
+     cuma ada saat AI hidup, orang yang AI-nya mati kehilangan bagian yang
+     paling sering dipakai di ujung. */
+  const hasil = await hal.evaluate(() => TOtak.elemenOtomatis({
+    isi: 'wifi kntr 8899aabb ganti tiap bulan, daftar di https://contoh.id/wifi atau 081234567890'
+  }));
+  const jenis = hasil.map((x) => x.jenis).join(',');
+  cek('tautan, telepon, dan kode terpisah sendiri-sendiri',
+      /tautan/.test(jenis) && /telepon/.test(jenis) && /kode/.test(jenis), jenis);
+  cek('kode diambil persis apa adanya',
+      hasil.some((x) => x.nilai === '8899aabb'), JSON.stringify(hasil));
+  /* Kalau URL tidak dikeluarkan lebih dulu, satu alamat melahirkan lima
+     "kode" palsu dari potongan jalurnya. */
+  cek('potongan alamat tidak jadi kode palsu',
+      !hasil.some((x) => x.jenis !== 'tautan' && /contoh/.test(x.nilai)), JSON.stringify(hasil));
+
+  const kosong = await hal.evaluate(() => TOtak.elemenOtomatis({ isi: 'beli galon dan tisu' }));
+  cek('catatan biasa tidak dipaksa punya elemen', kosong.length === 0, JSON.stringify(kosong));
+
+  await hal.evaluate(() => {
+    document.querySelector('#kotak').value = 'sandi router 8899aabb';
+    document.querySelector('#kat').value = '';
+    return TAlur.drop();
+  });
+  await hal.waitForTimeout(300);
+  const tersimpan = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => /8899aabb/.test(e.isi))[0].elemen));
+  cek('elemen ikut tersimpan saat drop, sebelum AI menyentuhnya',
+      (tersimpan || []).some((x) => x.nilai === '8899aabb'), JSON.stringify(tersimpan));
+
+  const ketemu = await hal.evaluate(() => TOtak.cari(
+    [{ id: 'x', judul: 'apa saja', isi: '', label: [], tag: [],
+       elemen: [{ jenis: 'kode', nilai: '8899aabb', nama: 'sandi wifi' }] }], 'sandi'));
+  cek('nama elemen ikut dicari', ketemu.length === 1);
+}
+
+console.log('\ntag: label yang kelihatan dan bisa ditekan');
+{
+  const bersih = await hal.evaluate(() => TOtak.cari(
+    [{ id: 'a', judul: '', isi: '', label: [], tag: ['keuangan'] },
+     { id: 'b', judul: '', isi: '', label: [], tag: ['rumah'] }], 'keuangan'));
+  cek('tag dipakai mencari', bersih.length === 1 && bersih[0].id === 'a');
+
+  const tgl = await hal.evaluate(() => TOtak.tanggalIndo(new Date(2026, 2, 9, 7, 5).getTime()));
+  cek('tanggal ditulis dengan bulan Indonesia', /9 Maret 2026/.test(tgl), tgl);
+}
+
+console.log('\nkeyword: dicentang, bukan diketik');
+{
+  await hal.evaluate(() => { document.querySelector('#kat').value = ''; TAlur.perbaruiUsulKategori(); });
+  const adaPilihan = await hal.locator('#kat-usul .cip').count();
+  cek('pilihan umum tersedia tanpa perlu mengetik', adaPilihan > 3, String(adaPilihan));
+
+  await hal.evaluate(() => { TAlur.alihKeyword('kerja'); TAlur.alihKeyword('klien'); });
+  const dua = await hal.inputValue('#kat');
+  cek('dua keyword bisa menempel sekaligus, dipisah spasi', dua === 'kerja klien', dua);
+
+  const nyala = await hal.locator('#kat-usul .cip.nyala').count();
+  cek('yang tercentang terlihat tercentang', nyala === 2, String(nyala));
+
+  await hal.evaluate(() => TAlur.alihKeyword('kerja'));
+  cek('centang lagi berarti buang', (await hal.inputValue('#kat')) === 'klien');
+
+  const saring = await hal.evaluate(() => TOtak.cari(
+    [{ id: 'a', judul: '', isi: '', label: [], kategori: 'kerja klien' },
+     { id: 'b', judul: '', isi: '', label: [], kategori: 'rumah' }], '', '', 'klien'));
+  cek('saringan rak mencocokkan salah satu keyword, bukan seluruh isian',
+      saring.length === 1 && saring[0].id === 'a');
+  await hal.evaluate(() => { document.querySelector('#kat').value = ''; TAlur.perbaruiUsulKategori(); });
+}
+
+console.log('\ntata letak: sedekat mungkin ke jempol');
+{
+  const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
+  const utama = html.slice(html.indexOf('id="l-utama"'), html.indexOf('id="l-hasil"'));
+  cek('ikon lampiran di ATAS kotak', utama.indexOf('id="lampiran"') < utama.indexOf('id="kotak"'));
+  cek('tombol di BAWAH kotak', utama.indexOf('id="b-drop"') > utama.indexOf('id="kotak"'));
+  cek('tombolnya menempel supaya tidak perlu digulir', /tombol-baris jempol/.test(utama));
+  const css = fs.readFileSync(path.join(AKAR, 'gaya.css'), 'utf8');
+  cek('menempelnya benar-benar diatur di gaya', /\.tombol-baris\.jempol\{[^}]*position:sticky/.test(css));
+}
+
 console.log('\nAI: kunci milik pembuat, pemakai tinggal pakai');
 {
   const alamatAI = 'http://127.0.0.1:' + port + '/palsu-ai';
@@ -367,6 +458,31 @@ console.log('\nAI: kunci milik pembuat, pemakai tinggal pakai');
   const judul = await hal.evaluate(() => TSimpan.semua().then(
     (a) => a.filter((e) => e.diLabeliAI).map((e) => e.judul).join(' | ')));
   cek('judul dari layanan benar-benar tersimpan', /Judul dari layanan/.test(judul), judul);
+
+  /* Tiga langkah yang diminta ke AI harus benar-benar sampai ke kabelnya,
+     bukan cuma tertulis di kode. */
+  cek('arahan meminta subjek, elemen, dan tag',
+      /SUBJEK/.test(proxyAI.arahanTerakhir) && /ELEMEN/.test(proxyAI.arahanTerakhir) &&
+      /TAG/.test(proxyAI.arahanTerakhir));
+
+  const berlabel = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => e.diLabeliAI)[0]));
+  cek('elemen dari layanan ikut tersimpan',
+      (berlabel.elemen || []).some((x) => x.nilai === 'RAHASIA-77'), JSON.stringify(berlabel.elemen));
+  cek('tag dari layanan ikut tersimpan',
+      (berlabel.tag || []).indexOf('appsscript') >= 0, JSON.stringify(berlabel.tag));
+
+  /* Inti kenapa daftar tag ada: tanpa dia, "klien" dan "pelanggan" jadi dua
+     tag berbeda dalam sebulan dan tidak ada yang bisa diandalkan. */
+  const daftarTag = await hal.evaluate(() => TSimpan.setelan('hashtag'));
+  cek('tag yang pernah dibuat dicatat di perangkat',
+      (daftarTag || []).indexOf('appsscript') >= 0, JSON.stringify(daftarTag));
+
+  await hal.evaluate(() => TSimpan.semua().then((a) => Promise.all(
+    a.map((e) => { e.diLabeliAI = false; return TSimpan.taruh(e); }))));
+  await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TPelabel.putaran(s)));
+  cek('daftar tag lama ikut dikirim supaya tag tidak beranak',
+      /appsscript/.test(proxyAI.arahanTerakhir), proxyAI.arahanTerakhir.slice(-200));
 
   /* Belum terdaftar itu jawaban, bukan gangguan: tidak merusak apa pun,
      tapi harus bisa dibaca di Setelan. */
