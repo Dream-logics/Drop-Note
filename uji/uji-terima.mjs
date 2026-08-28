@@ -211,9 +211,11 @@ console.log('\ncatat: satu baris, banyak versi');
 {
   await hal.fill('#cari-input', '');
   await hal.waitForTimeout(250);
-  /* Judulnya, bukan tengah kartunya: sejak elemen dipisah, bagian tengah
-     kartu bisa jadi tautan atau tombol salin - dan itu memang disengaja. */
+  /* Kartunya ringkas: sentuh judulnya untuk membuka rincian, lalu tombol
+     pensil untuk benar-benar menyunting. Pindah layar hanya kalau memang
+     diminta - saat memindai, pindah layar itu kehilangan posisi gulir. */
   await hal.locator('#hasil .kartu .kartu-judul').first().click();
+  await hal.locator('#hasil .kartu [data-sunting]').first().click();
   await hal.waitForSelector('#l-catat.aktif');
   cek('dipakai naik saat kartunya dibuka', (await hal.evaluate(() => TAlur.semuaEntri()[0].dipakai)) === 1);
 
@@ -397,12 +399,36 @@ console.log('\ntag: label yang kelihatan dan bisa ditekan');
           'sembilan', 'sepuluh', 'sebelas', 'duabelas'],
     diubah: Date.now()
   }));
+  /* Yang menentukan berapa hasil muat dalam satu layar: bawaannya ringkas.
+     Semua rincian ada di dalam .kartu-rinci yang tersembunyi. */
+  cek('rincian tersembunyi sampai kartunya disentuh', /kartu-rinci sembunyi/.test(kartu));
+  cek('tag ikut tersembunyi, tidak memenuhi baris',
+      kartu.indexOf('tag-baris') > kartu.indexOf('kartu-rinci sembunyi'));
+  cek('tombolnya juga menunggu, bukan bertumpuk di tiap kartu',
+      kartu.indexOf('data-pensiun') > kartu.indexOf('kartu-rinci sembunyi'));
+  cek('waktunya ringkas di baris judul, bukan tanggal penuh',
+      /class="kartu-waktu"/.test(kartu) &&
+      kartu.indexOf('kartu-waktu') < kartu.indexOf('kartu-rinci'));
+
   const terlipat = (kartu.match(/tag terlipat/g) || []).length;
   cek('cuma sepuluh tag yang langsung terlihat', terlipat === 2, String(terlipat));
   cek('sisanya ditawarkan, bukan dibuang', /data-tag-lagi>\+2</.test(kartu));
   /* Yang terlipat tetap ada di HTML - jadi tidak ada permintaan baru saat
      dibuka, dan pencarian tetap menemukannya. */
   cek('yang terlipat tetap ikut tergambar', /data-tag="duabelas"/.test(kartu));
+
+  /* Elemen PERTAMA tetap terlihat walau kartunya ringkas: menyalin satu nomor
+     adalah alasan tersering kartu ini dilihat sama sekali. */
+  const berelemen = await hal.evaluate(() => TAlur.kartuHtmlUji({
+    id: 'y', jenis: 'teks', judul: 'rekening', isi: 'BCA 123456789', label: [], tag: [],
+    elemen: [{ jenis: 'nomor', nilai: '123456789', nama: 'rekening' },
+             { jenis: 'nama', nilai: 'Ibu Nani', nama: 'atas nama' }],
+    diubah: Date.now()
+  }));
+  cek('elemen pertama tetap terlihat tanpa membuka apa pun',
+      berelemen.indexOf('123456789') < berelemen.indexOf('kartu-rinci sembunyi'));
+  cek('elemen kedua menunggu di rincian',
+      berelemen.indexOf('Ibu Nani') > berelemen.indexOf('kartu-rinci sembunyi'));
 }
 
 console.log('\nkeyword: dicentang, bukan diketik');
