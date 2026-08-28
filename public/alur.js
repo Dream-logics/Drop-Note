@@ -42,6 +42,20 @@
 
   var PUTARAN_LABEL = 3 * 60 * 1000;
 
+  /* Momen paling murah untuk melabeli adalah tepat SESUDAH catatan jatuh:
+     HP masih di tangan, sinyal masih menyala. Menunggu putaran 3 menit membuat
+     catatan yang baru dijatuhkan tidak bisa dicari padahal orangnya masih di
+     depan layar - dan yang dia simpulkan bukan "belum sempat", melainkan
+     "pencariannya tidak bekerja".
+
+     Ini tidak melanggar aturan nomor satu: yang dilarang adalah AI MENGHAMBAT
+     drop. Ini berjalan sesudah drop selesai, di belakang layar, dan boleh
+     gagal diam-diam seperti biasa.
+
+     Ditunda beberapa detik, bukan seketika, supaya menjatuhkan lima catatan
+     berturut-turut tetap jadi satu panggilan borongan - bukan lima. */
+  var JEDA_SUNDUL = 5 * 1000;
+
   /* Foto HP 6 MB akan memenuhi kuota penyimpanan dalam hitungan minggu, dan
      kuota penuh artinya drop mulai gagal - pelanggaran aturan nomor satu. */
   var SISI_MAKS = 1600;
@@ -358,6 +372,7 @@
       pesan('Tersimpan' + (e.kategori ? ' · #' + e.kategori : ''));
       kosongkanKotak();
       $('#kotak').focus();
+      sundulLabel();
     }).catch(function (err) {
       pesan('Gagal menyimpan: ' + err.message);
     });
@@ -1228,6 +1243,13 @@
 
   function adaAntrean() {
     return semuaEntri.some(function (e) { return !e.diLabeliAI && !e.pensiun; });
+  }
+
+  /* Sekali saja walau lima catatan jatuh beruntun: yang terakhir yang menang. */
+  var sundulan = null;
+  function sundulLabel() {
+    clearTimeout(sundulan);
+    sundulan = setTimeout(putaranLabel, JEDA_SUNDUL);
   }
 
   function putaranLabel() {
