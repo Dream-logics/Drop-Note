@@ -160,6 +160,13 @@
         e.elemenTerkunci = elemen;
         e.elemen = [];
         e.rahasia = true;
+        /* Judulnya tetap terbuka - itu memang yang membuatnya bisa ditemukan.
+           Tapi baris pertama ITU judulnya, dan orang yang menempel kunci API
+           buru-buru menempelkannya di baris pertama. Jadi penanda di dalam
+           judul disamarkan: katanya tetap, nilainya tidak. Tanpa ini, yang
+           paling rahasia justru satu-satunya bagian yang terbaca di
+           spreadsheet cadangan. */
+        e.judul = TOtak.samarkanPenanda(e.judul);
         /* Ditandai sudah dinilai supaya antrean AI tidak pernah menyentuhnya
            lagi - ini penjaga kedua, setelah saringan di pelabel.js. */
         e.diLabeliAI = true;
