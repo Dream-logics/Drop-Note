@@ -13,8 +13,17 @@ Riwayat lengkap alasannya tetap di `docs/RANCANGAN.md`.
 - **PWA** — `manifest.webmanifest`, `sw.js`, `ikon.svg` + PNG 192/512.
   `share_target` POST sudah menerima teks **dan** berkas dari tombol Bagikan
   aplikasi lain; kerangka disinggahkan supaya terbuka tanpa sinyal.
-- **Uji terima** — `node uji/uji-dropnote.mjs`, 31 lulus. Termasuk yang paling
-  menentukan: drop → cari → ketemu dengan **semua permintaan keluar diblokir**.
+- **Cadangan harian ke Google Sheets** (`public/sinkron.js`) — satu arah,
+  DB → Sheet, berjalan saat aplikasi dibuka dan **tidak pernah** di jalur drop.
+  Menarik balik adalah tombol manual, dan yang di HP selalu menang kalau lebih
+  baru. Isi berkas tidak ikut; yang dijamin teksnya.
+- **Penyimpanan permanen** — `navigator.storage.persist()` diminta saat aplikasi
+  dibuka, supaya browser tidak membuang timbunan sendiri saat HP sesak.
+  Statusnya kelihatan di Setelan.
+- **Uji terima** — `node uji/uji-dropnote.mjs`, 42 lulus. Termasuk dua yang
+  paling menentukan: drop → cari → ketemu dengan **semua permintaan keluar
+  diblokir**, dan **drop tidak memanggil jaringan sama sekali** meski cadangan
+  sedang nyala dan penahan jedanya dilepas.
 - **Jawaban soal kunci Gemini** — dijawab jujur di layar Setelan sendiri, dan
   tidak disamarkan jadi UI yang seolah-olah aman. Ringkasnya: di aplikasi yang
   seluruhnya jalan di browser, kunci API **tidak bisa** benar-benar
@@ -24,42 +33,19 @@ Riwayat lengkap alasannya tetap di `docs/RANCANGAN.md`.
 
 ## Yang masih perlu dipasang sekali di sisi pemakai
 
-Bukan pekerjaan kode — pekerjaan sekali pasang.
+Bukan pekerjaan kode — pekerjaan sekali pasang, ±10 menit.
 
-### Proxy Apps Script (mode "Proxy" di Setelan)
+**Buat satu Google Sheets kosong, tempel satu Apps Script, deploy, tempel
+alamat + sandinya di Setelan.** Satu deployment melayani cadangan harian
+sekaligus pelabelan AI. Langkah dan kodenya lengkap di
+[`docs/APPS-SCRIPT.md`](APPS-SCRIPT.md).
 
-```js
-// Apps Script — Proyek baru, tempel, Deploy > Web app,
-// "Execute as: Me", "Who has access: Anyone".
-// Simpan kunci di Project Settings > Script Properties: KUNCI_GEMINI
-const MODEL = 'gemini-flash-lite-latest';
+Batasi juga kunci Gemini-nya di Google Cloud Console (pembatasan situs
+perujuk) sebagai lapis kedua.
 
-function doPost(e) {
-  const minta = JSON.parse(e.postData.contents);
-  const kunci = PropertiesService.getScriptProperties().getProperty('KUNCI_GEMINI');
-  const r = UrlFetchApp.fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent',
-    { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-      headers: { 'x-goog-api-key': kunci },
-      payload: JSON.stringify({
-        systemInstruction: { parts: [{ text: minta.arahan }] },
-        contents: [{ role: 'user', parts: [{ text: minta.entri }] }],
-        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
-      })
-    });
-  const j = JSON.parse(r.getContentText());
-  const teks = j.candidates && j.candidates[0].content.parts[0].text || '';
-  return ContentService.createTextOutput(JSON.stringify({ teks: teks }))
-                       .setMimeType(ContentService.MimeType.JSON);
-}
-```
-
-`pelabel.js` sudah mengirim `Content-Type: text/plain` dengan sengaja — supaya
-CORS menganggapnya permintaan sederhana dan tidak mengirim preflight `OPTIONS`,
-yang tidak dijawab Apps Script. Jangan diubah jadi `application/json`.
-
-Batasi juga kuncinya di Google Cloud Console (pembatasan situs perujuk)
-sebagai lapis kedua.
+**Jangan pernah menaruh alamat `/exec` atau sandinya ke dalam repo.** Repo ini
+publik, dan riwayat Git menyimpan segalanya — menghapusnya dari commit
+berikutnya tidak menghapus apa pun.
 
 ---
 
@@ -69,8 +55,6 @@ Urutannya sengaja begitu: jangan bangun apa pun di bawah ini sebelum
 aplikasinya benar-benar dipakai sebulan. Risiko terbesar proyek ini bukan
 teknis — melainkan sistemnya tidak bertahan sebulan seperti pendahulunya.
 
-- Sinkron ke Google Sheets lewat Apps Script (lapis simpanan). **Selalu di
-  belakang layar, tidak pernah ditunggu.**
 - `embedding` saat menyimpan → pencocokan makna tanpa memanggil AI saat mencari.
 - Naik otomatis ke jalur cepat: kalau satu entri diambil tiga kali, tawarkan
   jadi pintasan keyboard (`;rek`).

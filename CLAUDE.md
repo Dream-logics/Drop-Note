@@ -73,11 +73,13 @@ public/otak.js      SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
                     alamat, betulkan kategori salah ketik, tarik kata kunci,
                     nilai hasil pencarian
 public/pelabel.js   satu-satunya bagian ber-AI (Gemini / proxy Apps Script)
+public/sinkron.js   cadangan satu arah ke Google Sheets; tidak pernah di jalur drop
 public/dropnote.js  alur UI — semua layar, drop, cari, catat, setelan
 public/sw.js        service worker — singgahan kerangka + penerima "Bagikan"
 public/manifest.webmanifest   supaya bisa dipasang di HP
 uji/uji-dropnote.mjs          uji terima (Playwright)
 docs/RANCANGAN.md   alasan di balik rancangannya
+docs/APPS-SCRIPT.md satu Apps Script untuk cadangan + pelabelan; langkah pasangnya
 docs/SISA-KERJA.md  yang belum dikerjakan, cukup rinci untuk langsung jalan
 docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 ```
@@ -88,12 +90,12 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-dropnote.mjs` (31 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-dropnote.mjs` (42 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
-Yang belum: sinkron ke Google Sheets, pencocokan makna, dan naik otomatis ke
-pintasan keyboard. Selebihnya ada di `docs/SISA-KERJA.md`.
+Yang belum: pencocokan makna dan naik otomatis ke pintasan keyboard.
+Selebihnya ada di `docs/SISA-KERJA.md`.
 
 ## Konvensi
 

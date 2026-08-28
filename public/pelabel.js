@@ -61,13 +61,15 @@
   }
 
   /* --- lewat proxy Apps Script: kunci tinggal di server, tidak pernah di HP --- */
-  function lewatProxy(alamat, entri) {
+  function lewatProxy(alamat, sandi, entri) {
     return fetch(alamat, {
       method: 'POST',
       /* text/plain sengaja: bikin permintaan ini "sederhana" menurut CORS,
          jadi tidak ada preflight OPTIONS - yang tidak dijawab Apps Script. */
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ tugas: 'label', arahan: ARAHAN, entri: pesanan(entri) })
+      /* Sandi ikut dikirim: alamat /exec yang di-deploy "Anyone" itu pintu
+         terbuka, dan di baliknya ada kuota Gemini yang bisa dihabiskan orang. */
+      body: JSON.stringify({ tugas: 'label', sandi: sandi || '', arahan: ARAHAN, entri: pesanan(entri) })
     }).then(function (r) {
       if (!r.ok) throw new Error('Proxy menjawab ' + r.status);
       return r.text();
@@ -105,7 +107,7 @@
   function siap(setelan) {
     if (!setelan) return false;
     if (setelan.modeAI === 'mati') return false;
-    if (setelan.modeAI === 'proxy') return !!setelan.alamatProxy;
+    if (setelan.modeAI === 'proxy') return !!setelan.alamatScript;
     return !!setelan.kunciGemini;
   }
 
@@ -120,7 +122,7 @@
       if (!antre.length) return 0;
 
       var janji = setelan.modeAI === 'proxy'
-        ? lewatProxy(setelan.alamatProxy, antre)
+        ? lewatProxy(setelan.alamatScript, setelan.sandiScript, antre)
         : lewatGemini(setelan.kunciGemini, setelan.model, antre);
 
       return janji.then(function (jawab) {
@@ -158,7 +160,7 @@
       isi: 'https://script.google.com/macros/s/AKfycbCONTOH/dev'
     }];
     var janji = setelan.modeAI === 'proxy'
-      ? lewatProxy(setelan.alamatProxy, contoh)
+      ? lewatProxy(setelan.alamatScript, setelan.sandiScript, contoh)
       : lewatGemini(setelan.kunciGemini, setelan.model, contoh);
     return janji.then(function (j) {
       if (!j || !j.hasil || !j.hasil.length) throw new Error('Tersambung, tapi jawabannya tidak dikenali');

@@ -19,10 +19,10 @@
    ============================================================================ */
 'use strict';
 
-var SINGGAH = 'dropnote-v1';
+var SINGGAH = 'dropnote-v2';
 var KERANGKA = [
   './', './index.html', './dropnote.css',
-  './simpan.js', './otak.js', './pelabel.js', './dropnote.js',
+  './simpan.js', './otak.js', './pelabel.js', './sinkron.js', './dropnote.js',
   './manifest.webmanifest', './ikon.svg', './ikon-192.png', './ikon-512.png'
 ];
 

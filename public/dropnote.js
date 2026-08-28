@@ -736,11 +736,67 @@
 
   /* ===================== layar setelan ===================== */
 
+  function mintaPermanen() {
+    if (!navigator.storage || !navigator.storage.persist) return Promise.resolve(false);
+    return navigator.storage.persisted().then(function (sudah) {
+      /* Tanpa status ini, browser boleh membuang data situs sendiri saat
+         penyimpanan HP sesak - tanpa bertanya, tanpa kabar. Untuk PWA yang
+         sudah dipasang di layar utama, Chrome hampir selalu mengabulkan. */
+      return sudah ? true : navigator.storage.persist();
+    }).catch(function () { return false; });
+  }
+
+  function taksirSimpanan() {
+    if (!navigator.storage || !navigator.storage.estimate) return Promise.resolve(null);
+    return navigator.storage.estimate().catch(function () { return null; });
+  }
+
+  function waktuPanjang(ts) {
+    if (!ts) return 'belum pernah';
+    var lalu = Date.now() - ts;
+    if (lalu < 60000) return 'barusan';
+    if (lalu < 3600000) return Math.floor(lalu / 60000) + ' menit lalu';
+    if (lalu < 86400000) return Math.floor(lalu / 3600000) + ' jam lalu';
+    return Math.floor(lalu / 86400000) + ' hari lalu';
+  }
+
   function gambarSetelan() {
     var s = setelanSaat;
     var mode = s.modeAI || 'mati';
 
     $('#setelan-isi').innerHTML = [
+      /* Cadangan ditaruh paling atas dengan sengaja. Ini satu-satunya bagian
+         yang menjawab "kalau HP-nya hilang, hilang juga semuanya?" - dan itu
+         pertanyaan yang lebih menentukan daripada kerapian label. */
+      '<div class="set-bagian">Apps Script</div>',
+      '<div class="set-kotak">',
+      '<div class="set-judul">Satu alamat untuk dua-duanya</div>',
+      '<div class="set-ket">Alamat <b>/exec</b> hasil deploy Apps Script-mu. Dipakai bersama oleh cadangan harian dan pelabelan AI. Sandinya wajib: alamat /exec yang di-deploy “Anyone” itu pintu terbuka, dan di baliknya ada catatanmu.</div>',
+      '<input class="set-input" id="set-alamat" placeholder="https://script.google.com/macros/s/…/exec" value="' + H(s.alamatScript || '') + '">',
+      '<input class="set-input" id="set-sandi" type="password" placeholder="Sandi (samakan dengan Script Property)" value="' + H(s.sandiScript || '') + '">',
+      '<button class="set-tbl" id="b-uji-script">Uji sambungan</button>',
+      '<div class="set-ket" id="uji-script-hasil"></div>',
+      '</div>',
+
+      '<div class="set-bagian">Cadangan harian</div>',
+      '<div class="set-kotak">',
+      '<div class="set-judul">Brankas di Google Sheets</div>',
+      '<div class="set-ket">Berjalan saat aplikasi dibuka, di belakang layar, dan boleh gagal diam-diam. <b>Tidak pernah</b> di jalur drop. Yang naik cuma teksnya — isi gambar dan rekaman tetap hanya di HP ini.</div>',
+      '<div class="set-pilih" id="set-cadangan">',
+      '<button class="cip' + (s.cadanganNyala ? '' : ' nyala') + '" data-cadangan="mati">Mati</button>',
+      '<button class="cip' + (s.cadanganNyala ? ' nyala' : '') + '" data-cadangan="nyala">Nyala</button>',
+      '</div>',
+      '<div class="set-ket" id="cadangan-status">…</div>',
+      s.cadanganNyala ? '<button class="set-tbl" id="b-cadang-sekarang">Kirim sekarang</button>' : '',
+      s.cadanganNyala ? '<button class="set-tbl" id="b-pulihkan">Pulihkan dari Sheet</button>' : '',
+      '</div>',
+
+      '<div class="set-bagian">Penyimpanan di perangkat</div>',
+      '<div class="set-kotak" id="kotak-simpanan">',
+      '<div class="set-judul">Timbunanmu ada di sini</div>',
+      '<div class="set-ket" id="simpanan-ket">…</div>',
+      '</div>',
+
       '<div class="set-bagian">Pelabelan otomatis</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">Menambal konteks yang tidak sempat ditulis</div>',
@@ -754,10 +810,10 @@
           (m === 'mati' ? 'Mati' : (m === 'proxy' ? 'Proxy' : 'Langsung')) + '</button>';
       }).join(''),
       '</div>',
-      mode === 'proxy' ? '<input class="set-input" id="set-proxy" placeholder="https://script.google.com/macros/s/…/exec" value="' + H(s.alamatProxy || '') + '">' : '',
+      mode === 'proxy' ? '<div class="set-ket">Memakai alamat Apps Script di atas.</div>' : '',
       mode === 'langsung' ? '<input class="set-input" id="set-kunci" type="password" placeholder="Kunci Gemini" value="' + H(s.kunciGemini || '') + '">' : '',
       mode !== 'mati' ? '<input class="set-input" id="set-model" placeholder="' + H(TPelabel.MODEL_BAWAAN) + '" value="' + H(s.model || '') + '">' : '',
-      mode !== 'mati' ? '<button class="set-tbl" id="b-uji">Uji sambungan</button><div class="set-ket" id="uji-hasil"></div>' : '',
+      mode !== 'mati' ? '<button class="set-tbl" id="b-uji">Uji pelabelan</button><div class="set-ket" id="uji-hasil"></div>' : '',
       '</div>',
 
       /* Pertanyaannya pernah ditanyakan langsung, jadi dijawab jujur di sini
@@ -768,9 +824,9 @@
         'kuncinya tinggal di Apps Script, aplikasi ini cuma tahu alamat proxy-nya. ' +
         'Kalau tetap memakai mode langsung, batasi kuncinya di Google Cloud Console sebagai lapis kedua.</div></div>' : '',
 
-      '<div class="set-bagian">Cadangan</div>',
+      '<div class="set-bagian">Cadangan manual</div>',
       '<div class="set-kotak">',
-      '<div class="set-judul">Salinan teks</div>',
+      '<div class="set-judul">Salinan teks ke berkas</div>',
       '<div class="set-ket">Isi berkas (gambar, rekaman) sengaja tidak ikut — satu cadangan bisa ratusan megabita dan gagal di tengah jalan. Yang diekspor teksnya, bagian yang tidak tergantikan.</div>',
       '<button class="set-tbl" id="b-ekspor">Ekspor</button>',
       '<button class="set-tbl" id="b-impor">Impor</button>',
@@ -786,6 +842,34 @@
     ].join('');
 
     pasangSetelan();
+    perbaruiStatusSetelan();
+  }
+
+  function perbaruiStatusSetelan() {
+    var kotak = $('#cadangan-status');
+    if (kotak) {
+      var s = setelanSaat;
+      if (!TSinkron.nyala(s)) {
+        kotak.textContent = s.cadanganNyala ? 'Isi dulu alamat Apps Script di atas.' : 'Mati — catatanmu cuma ada di HP ini.';
+      } else {
+        TSinkron.belumTerkirim(s).then(function (n) {
+          kotak.innerHTML = 'Terakhir berhasil: <b>' + H(waktuPanjang(s.cadanganBerhasil)) + '</b>' +
+            ' · belum terkirim: <b>' + n + '</b>' +
+            (s.cadanganGalat ? '<br>Percobaan terakhir gagal: ' + H(s.cadanganGalat) : '');
+        });
+      }
+    }
+
+    var ket = $('#simpanan-ket');
+    if (!ket) return;
+    Promise.all([mintaPermanen(), taksirSimpanan(), TSimpan.jumlah()]).then(function (r) {
+      var permanen = r[0], taksir = r[1], jumlah = r[2];
+      var baris = [jumlah + ' entri'];
+      if (taksir && taksir.usage != null) baris.push(ukuranTeks(taksir.usage) + ' terpakai');
+      ket.innerHTML = baris.join(' · ') + '<br>' + (permanen
+        ? 'Status: <b>permanen</b>. Browser tidak akan membuangnya sendiri saat penyimpanan HP sesak.'
+        : 'Status: <b>sementara</b>. Browser boleh membuangnya saat penyimpanan HP sesak — dan menghapus “cookies and site data” tetap menghapus semuanya.');
+    });
   }
 
   function simpanSetelan(kunci, nilai) {
@@ -794,14 +878,57 @@
   }
 
   function pasangSetelan() {
+    var alamat = $('#set-alamat');
+    if (alamat) alamat.addEventListener('change', function () { simpanSetelan('alamatScript', alamat.value.trim()); });
+    var sandi = $('#set-sandi');
+    if (sandi) sandi.addEventListener('change', function () { simpanSetelan('sandiScript', sandi.value.trim()); });
+
+    var ujiScript = $('#b-uji-script');
+    if (ujiScript) ujiScript.addEventListener('click', function () {
+      var ket = $('#uji-script-hasil');
+      ket.textContent = 'Mencoba…';
+      TSinkron.coba(setelanSaat).then(function (j) {
+        ket.innerHTML = 'Tersambung. Sheet berisi <b>' + H(String(j.baris == null ? 0 : j.baris)) + '</b> baris.';
+      }, function (err) {
+        ket.textContent = 'Gagal: ' + err.message;
+      });
+    });
+
+    $$('#set-cadangan .cip').forEach(function (b) {
+      b.addEventListener('click', function () {
+        simpanSetelan('cadanganNyala', b.getAttribute('data-cadangan') === 'nyala').then(gambarSetelan);
+      });
+    });
+
+    var sekarang = $('#b-cadang-sekarang');
+    if (sekarang) sekarang.addEventListener('click', function () {
+      sekarang.textContent = 'Mengirim…';
+      TSinkron.putaran(setelanSaat, true).then(function (n) {
+        sekarang.textContent = 'Kirim sekarang';
+        pesan(n ? n + ' catatan naik ke Sheet' : (setelanSaat.cadanganGalat || 'Semua sudah tersalin'));
+        perbaruiStatusSetelan();
+      });
+    });
+
+    var pulih = $('#b-pulihkan');
+    if (pulih) pulih.addEventListener('click', function () {
+      pulih.textContent = 'Menarik…';
+      TSinkron.pulihkan(setelanSaat).then(function (n) {
+        pulih.textContent = 'Pulihkan dari Sheet';
+        return muatSemua().then(function () {
+          pesan(n ? n + ' catatan dipulihkan' : 'Tidak ada yang perlu dipulihkan');
+        });
+      }, function (err) {
+        pulih.textContent = 'Pulihkan dari Sheet';
+        pesan('Gagal memulihkan: ' + err.message);
+      });
+    });
+
     $$('#set-mode .cip').forEach(function (b) {
       b.addEventListener('click', function () {
         simpanSetelan('modeAI', b.getAttribute('data-mode')).then(gambarSetelan);
       });
     });
-
-    var proxy = $('#set-proxy');
-    if (proxy) proxy.addEventListener('change', function () { simpanSetelan('alamatProxy', proxy.value.trim()); });
 
     var kunci = $('#set-kunci');
     if (kunci) kunci.addEventListener('change', function () { simpanSetelan('kunciGemini', kunci.value.trim()); });
@@ -853,7 +980,10 @@
     });
   }
 
-  /* ===================== pelabelan di belakang layar ===================== */
+  /* ===================== kerja di belakang layar =====================
+     Dua-duanya berjalan setelah aplikasi terbuka, bukan saat drop. Kalau
+     salah satu pindah ke jalur masuk, nge-drop berhenti terasa gratis - dan
+     itu yang membunuh semua sistem sebelumnya. */
 
   function adaAntrean() {
     return semuaEntri.some(function (e) { return !e.diLabeliAI && !e.pensiun; });
@@ -863,6 +993,12 @@
     if (!TPelabel.siap(setelanSaat) || !adaAntrean()) return;
     TPelabel.putaran(setelanSaat).then(function (n) {
       if (n) muatSemua().then(function () { if (layarSaat === 'l-hasil') jalankanCari(); });
+    });
+  }
+
+  function putaranCadangan() {
+    TSinkron.putaran(setelanSaat).then(function () {
+      if (layarSaat === 'l-setelan') perbaruiStatusSetelan();
     });
   }
 
@@ -1071,7 +1207,15 @@
        terakhir. Di HP, 'hidden' jauh lebih bisa diandalkan daripada
        'beforeunload'. */
     document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'hidden' && layarSaat === 'l-catat') simpanCatat();
+      if (document.visibilityState === 'hidden') {
+        if (layarSaat === 'l-catat') simpanCatat();
+        return;
+      }
+      /* Di HP, aplikasi jarang benar-benar ditutup - dia cuma ditinggal.
+         Jadi "dibuka lagi" dihitung sebagai pembukaan, dan cadangannya
+         menyusul di situ. TSinkron sendiri yang menahan supaya tidak
+         menembak berulang dalam satu sesi. */
+      putaranCadangan();
     });
   }
 
@@ -1090,7 +1234,11 @@
       return ambilBagikan();
     }).then(function () {
       perbaruiUsulKategori();
+      /* Minta status penyimpanan permanen sekali di awal: tanpa itu browser
+         boleh membuang seluruh timbunan saat penyimpanan HP sesak, diam-diam. */
+      mintaPermanen();
       putaranLabel();
+      putaranCadangan();
       setInterval(putaranLabel, PUTARAN_LABEL);
     }).catch(function (err) {
       pesan('Penyimpanan tidak bisa dibuka: ' + err.message);

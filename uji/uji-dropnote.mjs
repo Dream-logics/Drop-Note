@@ -34,11 +34,38 @@ const TIPE = {
   '.json': 'application/json', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json'
 };
 
+/* Tiruan Apps Script + Sheets, seluruhnya di memori. Dipakai untuk menguji
+   cadangan tanpa menyentuh jaringan sungguhan - sekaligus supaya bisa dihitung
+   BERAPA KALI dia dipanggil, yang justru pengujian terpentingnya. */
+const lembar = new Map();
+let panggilanScript = 0;
+
+function tiruScript(req, res) {
+  let badan = '';
+  req.on('data', (p) => { badan += p; });
+  req.on('end', () => {
+    panggilanScript++;
+    let j = {};
+    try { j = JSON.parse(badan); } catch (e) { /* biarkan kosong */ }
+    let balas;
+    if (j.sandi !== 'rahasia') balas = { galat: 'Sandi salah' };
+    else if (j.tugas === 'halo') balas = { baris: lembar.size };
+    else if (j.tugas === 'sinkron') {
+      (j.entri || []).forEach((e) => lembar.set(String(e.id), e));   /* upsert per id */
+      balas = { disimpan: (j.entri || []).length, baris: lembar.size };
+    } else if (j.tugas === 'pulihkan') balas = { entri: Array.from(lembar.values()) };
+    else balas = { galat: 'Tugas tidak dikenali' };
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(balas));
+  });
+}
+
 /* IndexedDB tidak jalan di file:// - jadi uji ini butuh server kecil. */
 function layani() {
   return new Promise((terima) => {
     const s = http.createServer((req, res) => {
       const nama = decodeURIComponent(req.url.split('?')[0]);
+      if (nama === '/palsu-script') return tiruScript(req, res);
       const berkas = path.join(AKAR, nama === '/' ? 'index.html' : nama);
       if (!berkas.startsWith(AKAR) || !fs.existsSync(berkas) || fs.statSync(berkas).isDirectory()) {
         res.writeHead(404); res.end('tidak ada'); return;
@@ -184,6 +211,59 @@ console.log('\nsetelan');
       /tidak bisa benar-benar disembunyikan/.test(await hal.innerText('#setelan-isi')));
   await hal.click('#set-mode [data-mode="mati"]');
   await hal.waitForTimeout(200);
+}
+
+console.log('\ncadangan ke Sheet');
+{
+  const alamatScript = 'http://127.0.0.1:' + port + '/palsu-script';
+  await hal.evaluate(([a]) => Promise.all([
+    TSimpan.setel('alamatScript', a),
+    TSimpan.setel('sandiScript', 'rahasia'),
+    TSimpan.setel('cadanganNyala', true)
+  ]), [alamatScript]);
+
+  /* Membuka aplikasi = cadangan menyusul di belakang layar. */
+  await hal.goto(alamat);
+  await hal.waitForFunction(() => window.TAlur);
+  await hal.waitForFunction(() => TAlur.semuaEntri().length > 0);
+  await hal.waitForTimeout(800);
+  cek('catatan naik ke Sheet saat aplikasi dibuka', lembar.size === 1, 'baris: ' + lembar.size);
+
+  const baris = Array.from(lembar.values())[0];
+  cek('isinya utuh sampai di Sheet', /Link dev photo studio/.test(baris.judul || ''), JSON.stringify(baris.judul));
+  cek('riwayat versi ikut naik', JSON.parse(baris.riwayat || '[]').length === 1);
+  cek('berkas tidak ikut naik, cuma teksnya', baris.blob === undefined);
+
+  /* INI UJI TERPENTING DI BAGIAN INI. Cadangan boleh berjalan kapan saja
+     KECUALI di jalur drop. Penahan jedanya dinolkan dulu supaya kalau dia
+     memang menembak saat drop, dia benar-benar tertangkap. */
+  await hal.evaluate(() => TSimpan.setel('cadanganDicoba', 0));
+  const sebelum = panggilanScript;
+  await hal.fill('#kotak', 'catatan baru saat jaringan tidak boleh disentuh');
+  await hal.click('#b-drop');
+  await hal.waitForFunction(() => TAlur.semuaEntri().length === 2);
+  await hal.waitForTimeout(700);
+  cek('drop tidak memanggil jaringan sama sekali', panggilanScript === sebelum,
+      'bertambah ' + (panggilanScript - sebelum) + ' panggilan');
+
+  const naik = await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TSinkron.putaran(s, true)));
+  cek('yang baru menyusul di putaran berikutnya', naik === 1 && lembar.size === 2, 'naik: ' + naik);
+
+  const lagi = await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TSinkron.putaran(s, true)));
+  cek('yang sudah naik tidak dikirim ulang', lagi === 0);
+
+  const salah = await hal.evaluate(() => TSinkron.coba({ alamatScript: document.location.origin + '/palsu-script', sandiScript: 'ngawur' }).then(() => 'lolos', (e) => e.message));
+  cek('sandi salah ditolak', salah === 'Sandi salah', String(salah));
+
+  /* Ganti HP: DB kosong, lalu ditarik balik dari Sheet. */
+  await hal.evaluate(() => TSimpan.kosongkan());
+  const pulih = await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TSinkron.pulihkan(s)));
+  cek('semua ditarik balik dari Sheet', pulih === 2, 'pulih: ' + pulih);
+  const setelahPulih = await hal.evaluate(() => TSimpan.semua().then((a) => a.map((e) => e.judul).sort()));
+  cek('judulnya utuh setelah dipulihkan', /Link dev photo studio/.test(setelahPulih.join(' ')), setelahPulih.join(' | '));
+  const riwayatPulih = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => (e.riwayat || []).length).length));
+  cek('riwayat versi selamat menyeberang', riwayatPulih === 1);
 }
 
 console.log('\npwa: bisa dipasang & menerima Bagikan');
