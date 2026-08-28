@@ -62,7 +62,7 @@ button,input,textarea{font:inherit;color:inherit}
 .kotak::placeholder{color:var(--m);opacity:.75}
 
 /* --- lampiran (jenis dropping) --- */
-.lampiran{display:flex;gap:7px;margin-top:10px}
+.lampiran{display:flex;gap:7px;margin-bottom:10px}
 .lamp{
   flex:1;min-height:46px;border:1px solid var(--l);background:none;border-radius:11px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
@@ -112,6 +112,13 @@ button,input,textarea{font:inherit;color:inherit}
 
 /* --- tombol --- */
 .tombol-baris{display:flex;gap:9px;margin-top:18px}
+/* Menempel di bawah supaya tetap terjangkau jempol walau kotaknya memanjang.
+   Latarnya wajib pekat - kalau tembus, teks yang lewat di belakangnya
+   membuat tombol terlihat rusak. */
+.tombol-baris.jempol{
+  position:sticky;bottom:calc(env(safe-area-inset-bottom) - 10px);z-index:5;
+  background:var(--g);padding:10px 0 4px;margin-top:10px;
+}
 .tbl{
   flex:1;min-height:54px;border:1px solid var(--lt);border-radius:12px;background:none;
   font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;
@@ -156,6 +163,42 @@ button,input,textarea{font:inherit;color:inherit}
 .tanda-waktu{font-size:11px;color:var(--m);white-space:nowrap}
 .tanda-label{font-size:10.5px;color:var(--m);border:1px solid var(--l);border-radius:5px;padding:3px 6px}
 .kartu-aksi{display:flex;gap:6px;flex:0 0 auto}
+
+/* --- elemen: potongan yang disalin, bukan dibaca ---
+   Tiap baris satu barang, dengan tombol salinnya sendiri. Yang mahal di ujung
+   bukan menemukan kartunya, tapi menyorot satu baris dengan jempol. */
+.elemen{margin-top:9px;display:flex;flex-direction:column;gap:6px}
+.elemen-baris{
+  display:flex;align-items:center;gap:8px;background:var(--g);border:1px solid var(--l);
+  border-radius:10px;padding:7px 7px 7px 10px;min-height:44px;
+}
+.elemen-isi{flex:1;min-width:0}
+.elemen-nama{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+             color:var(--m);margin-bottom:2px}
+.elemen-nilai{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.45;
+              word-break:break-all;color:var(--i)}
+a.elemen-nilai{color:var(--a);text-decoration:none;display:block}
+.elemen-salin{
+  width:38px;height:38px;flex:0 0 auto;border:1px solid var(--lt);border-radius:9px;
+  background:none;color:var(--m);display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+
+/* --- accordion: dua baris dulu, sisanya kalau diminta --- */
+.kartu-penuh{font-size:13.5px;line-height:1.6;color:var(--m);margin-top:6px;
+             white-space:pre-wrap;word-break:break-word}
+.kartu-lagi{
+  background:none;border:none;color:var(--a);font-size:12px;font-weight:600;
+  padding:8px 0 2px;cursor:pointer;min-height:36px;
+}
+
+/* --- tag: kelihatan, bisa ditekan, seperti di Instagram --- */
+.tag-baris{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.tag{
+  font-size:11.5px;font-weight:600;color:var(--a);border-radius:7px;padding:5px 9px;
+  background:color-mix(in srgb, var(--a) 12%, transparent);border:none;cursor:pointer;
+  white-space:nowrap;
+}
+.kartu-tanggal{font-size:11px;color:var(--m);white-space:nowrap;margin-left:auto}
 .aksi{
   width:44px;height:44px;border:1px solid var(--lt);border-radius:10px;background:none;color:var(--m);
   display:flex;align-items:center;justify-content:center;cursor:pointer;

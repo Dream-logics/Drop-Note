@@ -228,6 +228,72 @@
     return label.slice(0, 40);
   }
 
+  /* ===================== ELEMEN =====================
+     Yang sebenarnya dicari orang sering BUKAN catatannya, melainkan satu
+     potong di dalamnya: alamatnya, kodenya, nomornya. Menemukan kartunya lalu
+     masih harus menyorot teks dengan jempol untuk menyalin satu baris adalah
+     pekerjaan yang tidak perlu ada - dan itu justru di ujung, saat orangnya
+     paling buru-buru.
+
+     Yang di sini murni pola, tanpa AI, jadi tetap bekerja kalau AI mati
+     selamanya. AI menambah yang tidak berpola: nama supplier, dosis obat,
+     maksud sebuah angka. Pembagian yang sama seperti label. */
+
+  var POLA_ELEMEN = [
+    { jenis: 'tautan',  pola: /\bhttps?:\/\/[^\s<>"']+/gi },
+    { jenis: 'surel',   pola: /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi },
+    { jenis: 'telepon', pola: /(?:\+62|\b0)8\d{7,12}\b/g },
+    /* Campuran huruf+angka hampir selalu buatan mesin: sandi, plat, nomor
+       seri. Angka murni panjang hampir selalu OTP, rekening, atau nomor
+       dokumen. Dua-duanya barang yang disalin, bukan dibaca. */
+    { jenis: 'kode',    pola: /\b(?=[a-z0-9]*[a-z])(?=[a-z0-9]*\d)[a-z0-9]{5,}\b/gi },
+    { jenis: 'nomor',   pola: /\b\d{5,}\b/g }
+  ];
+
+  function tambahElemen(daftar, jenis, nilai, nama) {
+    var v = String(nilai || '').trim().replace(/[.,;:]+$/, '');
+    if (!v || v.length > 300) return;
+    for (var i = 0; i < daftar.length; i++) {
+      if (daftar[i].nilai.toLowerCase() === v.toLowerCase()) return;
+    }
+    daftar.push({ jenis: jenis, nilai: v, nama: String(nama || '') });
+  }
+
+  function elemenOtomatis(entri) {
+    var sisa = [entri.isi || '', entri.namaBerkas || '',
+                (entri.daftar || []).map(function (b) { return b.teks; }).join('\n')]
+               .filter(Boolean).join('\n');
+    var keluar = [];
+    POLA_ELEMEN.forEach(function (p) {
+      sisa = sisa.replace(p.pola, function (cocok) {
+        tambahElemen(keluar, p.jenis, cocok);
+        /* Diganti spasi, bukan dibiarkan: kalau tidak, pola berikutnya
+           memungut potongan dari dalam alamat yang sudah terambil utuh -
+           satu URL bisa melahirkan lima "kode" palsu. */
+        return ' ';
+      });
+    });
+    return keluar.slice(0, 12);
+  }
+
+  function gabungElemen(lama, tambahan) {
+    var gabung = (lama || []).slice();
+    (tambahan || []).forEach(function (x) {
+      if (x && x.nilai) tambahElemen(gabung, x.jenis || 'lainnya', x.nilai, x.nama);
+    });
+    return gabung.slice(0, 20);
+  }
+
+  var BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+  function tanggalIndo(ts) {
+    var d = new Date(ts || Date.now());
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getDate() + ' ' + BULAN[d.getMonth()] + ' ' + d.getFullYear() +
+           ' · ' + p(d.getHours()) + '.' + p(d.getMinutes());
+  }
+
   /* ===================== PENCARIAN =====================
      Berjalan di atas salinan lokal. Tidak ada jaringan, tidak ada AI, tidak
      ada tunggu. Ini bagian yang paling sering dipakai, jadi paling murah. */
@@ -238,7 +304,9 @@
     var pakai = (daftar || []).filter(function (e) {
       if (e.pensiun) return false;
       if (saringJenis && saringJenis !== 'semua' && e.jenis !== saringJenis) return false;
-      if (saringKat && normal(e.kategori) !== normal(saringKat)) return false;
+      /* Kategori boleh berisi beberapa keyword yang dipisah spasi, jadi
+         saringannya mencocokkan SALAH SATU - bukan seluruh isian. */
+      if (saringKat && normal(e.kategori).split(' ').indexOf(normal(saringKat)) < 0) return false;
       return true;
     });
 
@@ -250,6 +318,12 @@
       var n = 0;
       if (normal(e.judul).indexOf(w) >= 0) n += 6;
       if ((e.label || []).some(function (l) { return l.indexOf(w) === 0; })) n += 5;
+      /* Tag dinilai setinggi label karena dia label yang KELIHATAN - sekali
+         dipakai orangnya, dia akan mengetik kata itu lagi. */
+      if ((e.tag || []).some(function (t) { return normal(t).indexOf(w) === 0; })) n += 5;
+      if ((e.elemen || []).some(function (x) {
+        return normal(x.nilai).indexOf(w) >= 0 || normal(x.nama).indexOf(w) >= 0;
+      })) n += 4;
       if (normal(e.kategori).indexOf(w) >= 0) n += 4;
       if (normal(e.isi).indexOf(w) >= 0) n += 3;
       if (normal(e.namaBerkas).indexOf(w) >= 0) n += 3;
@@ -287,6 +361,7 @@
     judulTautan: judulTautan, judulTeks: judulTeks, judulOtomatis: judulOtomatis,
     benahiKategori: benahiKategori, usulKategori: usulKategori,
     labelOtomatis: labelOtomatis, cari: cari,
-    normal: normal, jarak: jarak, waktuPendek: waktuPendek
+    elemenOtomatis: elemenOtomatis, gabungElemen: gabungElemen,
+    normal: normal, jarak: jarak, waktuPendek: waktuPendek, tanggalIndo: tanggalIndo
   };
 })(window);

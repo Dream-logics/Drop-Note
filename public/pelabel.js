@@ -120,15 +120,54 @@
 
   /* ===================== label ===================== */
 
-  var ARAHAN_LABEL =
-    'Kamu membantu seseorang menemukan kembali catatannya sendiri berbulan-bulan kemudian.\n' +
-    'Untuk setiap entri, hasilkan:\n' +
-    '- judul: ringkas, maksimal 8 kata, memakai kata yang akan diingat orangnya, bukan menyalin isi.\n' +
-    '- label: 4 sampai 8 kata kunci huruf kecil. Sertakan nama proyek, lingkungan (uji/produksi),\n' +
-    '  nama klien, dan sebutan lain yang mungkin dipakai orang itu saat mencari - termasuk yang\n' +
-    '  TIDAK tertulis di isinya tapi jelas dari konteks.\n' +
-    'Bahasa Indonesia, kecuali istilah teknis yang memang lazim Inggris.\n' +
-    'Jawab HANYA JSON: {"hasil":[{"i":0,"judul":"...","label":["..."]}]}';
+  /* Tiga langkah, dan urutannya yang penting: subjek dulu, baru elemen, baru
+     tag. Kalau tag diminta lebih dulu, model menebak dari kata yang kebetulan
+     ada di permukaan; kalau subjeknya sudah ditetapkan, tagnya menempel pada
+     maksud catatan.
+
+     ELEMEN adalah bagian yang paling menentukan di sini. Menemukan kartunya
+     itu setengah pekerjaan; setengah lagi adalah menyalin satu baris dari
+     dalamnya - dan itu justru dikerjakan saat orangnya paling buru-buru.
+
+     Daftar tag lama ikut dikirim supaya tag tidak beranak sendiri. Tanpa itu
+     "klien", "pelanggan", dan "customer" jadi tiga tag berbeda dalam sebulan,
+     dan tidak ada satu pun yang bisa diandalkan buat menyaring. */
+  function arahanLabel(tagLama) {
+    var daftar = (tagLama || []).slice(0, 150).join(', ');
+    return [
+      'Kamu membantu seseorang menemukan kembali catatannya sendiri berbulan-bulan kemudian.',
+      'Catatannya ditulis dalam tiga detik, jadi konteksnya tidak ikut tertulis. Tugasmu menambalnya.',
+      '',
+      'Untuk SETIAP entri, kerjakan tiga langkah berurutan:',
+      '',
+      '1. SUBJEK -> judul. Tentukan dulu catatan ini sebenarnya tentang apa, lalu tulis',
+      '   ringkas, maksimal 8 kata, memakai kata yang akan diingat orangnya, bukan menyalin isi.',
+      '',
+      '2. ELEMEN. Cari potongan yang nanti akan dia SALIN atau BUKA, bukan yang dia baca:',
+      '   tautan, prompt, kode, sandi, PIN, token, nomor (rekening, pesanan, seri, plat, OTP),',
+      '   alamat, nama berkas, nama supplier atau klien, resep dan dosis obat, jadwal, harga.',
+      '   Ambil nilainya PERSIS apa adanya - jangan dirapikan, jangan diterjemahkan, jangan dipotong.',
+      '   Kalau satu entri memuat beberapa - misalnya tiga tautan sekaligus - pisahkan semuanya.',
+      '   Beri "nama" pendek untuk tiap elemen, sebutan yang menjelaskan itu apa.',
+      '   Kalau memang tidak ada yang menonjol, kembalikan elemen kosong. Itu jawaban yang sah:',
+      '   berarti catatan itu utuh sebagai catatan. JANGAN mengarang elemen supaya tidak kosong.',
+      '',
+      '3. TAG. 2 sampai 5 tag, huruf kecil, satu kata (boleh gabungan tanpa spasi).',
+      '   Hanya yang relevansinya TINGGI - bukan yang sekadar mungkin berhubungan.',
+      '   PAKAI ULANG tag dari daftar di bawah kalau maknanya sama, walau katanya tidak persis.',
+      '   Buat tag baru HANYA kalau benar-benar tidak ada yang cocok.',
+      daftar ? '   Tag yang sudah dipakai: ' + daftar : '   Belum ada tag sama sekali; mulailah dari yang paling umum.',
+      '',
+      'Selain itu, label: 4 sampai 8 kata kunci huruf kecil yang TIDAK dilihat pemakainya -',
+      'tugasnya cuma membuat pencarian ketemu. Sertakan sebutan yang mungkin dia pakai saat',
+      'mencari, termasuk yang TIDAK tertulis di isinya tapi jelas dari konteks.',
+      '',
+      'Bahasa Indonesia, kecuali istilah teknis yang memang lazim Inggris.',
+      'Jawab HANYA JSON: {"hasil":[{"i":0,"judul":"...",' +
+        '"elemen":[{"jenis":"tautan|kode|nomor|telepon|surel|alamat|berkas|nama|jadwal|harga|prompt|lainnya",' +
+        '"nilai":"...","nama":"..."}],"tag":["..."],"label":["..."]}]}'
+    ].join('\n');
+  }
 
   function pesanan(entri) {
     return entri.map(function (e, i) {
@@ -151,22 +190,55 @@
     }).slice(0, SEKALI);
     if (!antre.length) return Promise.resolve(0);
 
-    return tanya(setelan, [{ text: pesanan(antre) }], ARAHAN_LABEL).then(function (jawab) {
-      var hasil = (jawab && jawab.hasil) || [];
-      if (!hasil.length) throw new Error('Jawaban AI kosong');
-      var tulis = hasil.map(function (h) {
-        var e = antre[h.i];
-        if (!e) return null;
-        /* Judul yang sudah diketik sendiri tidak pernah ditimpa. Itu punya
-           pemakainya - AI cuma mengisi yang kosong atau yang disusun mesin. */
-        if (!e.judulManual && h.judul) e.judul = String(h.judul).slice(0, 90);
-        e.label = gabungLabel(e.label, h.label);
-        e.diLabeliAI = true;
-        e.diubah = Date.now();
-        return TSimpan.taruh(e);
-      }).filter(Boolean);
-      return Promise.all(tulis).then(function () { return tulis.length; });
+    return tanya(setelan, [{ text: pesanan(antre) }], arahanLabel(setelan.hashtag))
+      .then(function (jawab) {
+        var hasil = (jawab && jawab.hasil) || [];
+        if (!hasil.length) throw new Error('Jawaban AI kosong');
+        var tagBaru = [];
+        var tulis = hasil.map(function (h) {
+          var e = antre[h.i];
+          if (!e) return null;
+          /* Judul yang sudah diketik sendiri tidak pernah ditimpa. Itu punya
+             pemakainya - AI cuma mengisi yang kosong atau yang disusun mesin. */
+          if (!e.judulManual && h.judul) e.judul = String(h.judul).slice(0, 90);
+          e.label = gabungLabel(e.label, h.label);
+          e.elemen = TOtak.gabungElemen(e.elemen, h.elemen);
+          e.tag = gabungTag(e.tag, h.tag);
+          e.tag.forEach(function (t) { if (tagBaru.indexOf(t) < 0) tagBaru.push(t); });
+          e.diLabeliAI = true;
+          e.diubah = Date.now();
+          return TSimpan.taruh(e);
+        }).filter(Boolean);
+        return Promise.all(tulis)
+          .then(function () { return catatTag(setelan, tagBaru); })
+          .then(function () { return tulis.length; });
+      });
+  }
+
+  function bersihTag(t) {
+    return String(t || '').toLowerCase().replace(/^#+/, '')
+      .replace(/[^a-z0-9]+/g, '').slice(0, 24);
+  }
+
+  function gabungTag(lama, tambahan) {
+    var gabung = (lama || []).slice();
+    (tambahan || []).map(bersihTag).filter(Boolean).forEach(function (t) {
+      if (gabung.indexOf(t) < 0) gabung.push(t);
     });
+    return gabung.slice(0, 8);
+  }
+
+  /* Daftar tag hidup di perangkat, bukan di Sheet. Kalau otoritasnya di Drive,
+     pelabelan ikut mati saat Drive belum tersambung - padahal AI harus tetap
+     bisa jalan sendiri. Sheet cuma cerminannya, dan cerminan boleh telat. */
+  function catatTag(setelan, tag) {
+    var lama = (setelan.hashtag || []).slice();
+    var berubah = false;
+    tag.forEach(function (t) { if (lama.indexOf(t) < 0) { lama.push(t); berubah = true; } });
+    if (!berubah) return Promise.resolve();
+    lama = lama.slice(-300);
+    setelan.hashtag = lama;
+    return TSimpan.setel('hashtag', lama);
   }
 
   function gabungLabel(lama, tambahan) {
@@ -178,15 +250,27 @@
 
   /* ===================== baca berkas (OCR) ===================== */
 
-  var ARAHAN_BACA =
-    'Kamu membaca satu dokumen atau foto milik seseorang, supaya dia bisa menemukannya lagi\n' +
-    'bertahun-tahun kemudian saat dia cuma ingat samar-samar isinya.\n' +
-    'Hasilkan:\n' +
-    '- judul: maksimal 8 kata, sebutkan jenis dokumennya dan pihak/objek utamanya.\n' +
-    '- label: 5 sampai 12 kata kunci huruf kecil - jenis dokumen, nama orang/perusahaan,\n' +
-    '  tahun, nomor penting, dan sebutan sehari-hari yang mungkin dipakai mencarinya.\n' +
-    '- teks: ringkasan isi terpenting, maksimal 600 karakter. Tulis apa adanya, jangan menafsirkan.\n' +
-    'Bahasa Indonesia. Jawab HANYA JSON: {"judul":"...","label":["..."],"teks":"..."}';
+  function arahanBaca(tagLama) {
+    var daftar = (tagLama || []).slice(0, 150).join(', ');
+    return [
+      'Kamu membaca satu dokumen atau foto milik seseorang, supaya dia bisa menemukannya lagi',
+      'bertahun-tahun kemudian saat dia cuma ingat samar-samar isinya.',
+      'Hasilkan:',
+      '- judul: maksimal 8 kata, sebutkan jenis dokumennya dan pihak/objek utamanya.',
+      '- elemen: nomor, kode, nama pihak, tanggal, dan jumlah yang nanti akan dia SALIN dari',
+      '  dokumen ini - nomor KTP, nomor faktur, nominal, nama apotek, dosis obat. Persis apa adanya.',
+      '  Beri "nama" pendek untuk tiap elemen. Kosongkan kalau memang tidak ada yang menonjol.',
+      '- tag: 2 sampai 5, huruf kecil, satu kata. PAKAI ULANG dari daftar di bawah kalau maknanya',
+      '  sama; buat baru hanya kalau tidak ada yang cocok.',
+      daftar ? '  Tag yang sudah dipakai: ' + daftar : '  Belum ada tag sama sekali.',
+      '- label: 5 sampai 12 kata kunci huruf kecil - jenis dokumen, nama orang/perusahaan,',
+      '  tahun, nomor penting, dan sebutan sehari-hari yang mungkin dipakai mencarinya.',
+      '- teks: ringkasan isi terpenting, maksimal 600 karakter. Tulis apa adanya, jangan menafsirkan.',
+      'Bahasa Indonesia. Jawab HANYA JSON:',
+      '{"judul":"...","elemen":[{"jenis":"...","nilai":"...","nama":"..."}],' +
+        '"tag":["..."],"label":["..."],"teks":"..."}'
+    ].join('\n');
+  }
 
   var BISA_DIBACA = /^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/i;
 
@@ -226,11 +310,13 @@
             return tanya(setelan, [
               { inline_data: { mime_type: e.tipeBerkas, data: b64 } },
               { text: 'Baca dokumen ini.' }
-            ], ARAHAN_BACA);
+            ], arahanBaca(setelan.hashtag));
           }).then(function (h) {
             if (!h) throw new Error('Dokumen tidak terbaca');
             if (!e.judulManual && h.judul) e.judul = String(h.judul).slice(0, 90);
             e.label = gabungLabel(e.label, h.label);
+            e.elemen = TOtak.gabungElemen(e.elemen, h.elemen);
+            e.tag = gabungTag(e.tag, h.tag);
             /* Teksnya ditaruh di isi, bukan di kolom baru: dengan begitu
                pencarian yang sudah ada langsung menemukannya, tanpa satu baris
                pun perubahan di otak.js. */
@@ -238,7 +324,9 @@
             e.diBacaAI = true;
             e.diLabeliAI = true;
             e.diubah = Date.now();
-            return TSimpan.taruh(e).then(function () { return n + 1; });
+            return TSimpan.taruh(e)
+              .then(function () { return catatTag(setelan, e.tag); })
+              .then(function () { return n + 1; });
           });
         }).catch(function () {
           /* Satu berkas yang gagal dibaca tidak boleh menghentikan antreannya.
@@ -277,7 +365,7 @@
   /* Uji dari layar Setelan - satu-satunya tempat kegagalan AI boleh berisik. */
   function coba(setelan) {
     var contoh = [{ jenis: 'tautan', kategori: '', isi: 'https://script.google.com/macros/s/AKfycbCONTOH/dev' }];
-    return tanya(setelan, [{ text: pesanan(contoh) }], ARAHAN_LABEL).then(function (j) {
+    return tanya(setelan, [{ text: pesanan(contoh) }], arahanLabel(setelan.hashtag)).then(function (j) {
       if (!j || !j.hasil || !j.hasil.length) throw new Error('Tersambung, tapi jawabannya tidak dikenali');
       return j.hasil[0];
     });

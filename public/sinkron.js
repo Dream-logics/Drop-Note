@@ -59,6 +59,8 @@
   function pipihkan(e) {
     return TAwan.KOLOM.map(function (k) {
       if (k === 'label') return (e.label || []).join(' ');
+      if (k === 'tag') return (e.tag || []).join(' ');
+      if (k === 'elemen') return JSON.stringify(e.elemen || []);
       if (k === 'daftar') return JSON.stringify(e.daftar || []);
       if (k === 'riwayat') return JSON.stringify(e.riwayat || []);
       var v = e[k];
@@ -80,6 +82,8 @@
       isi: r.isi == null ? '' : String(r.isi),
       kategori: r.kategori || '',
       label: String(r.label || '').split(' ').filter(Boolean),
+      tag: String(r.tag || '').split(' ').filter(Boolean),
+      elemen: urai(r.elemen, []),
       daftar: urai(r.daftar, []),
       berkasId: r.berkasId || null, driveId: r.driveId || null,
       namaBerkas: r.namaBerkas || '', tipeBerkas: r.tipeBerkas || '',
@@ -153,6 +157,19 @@
     });
   }
 
+  /* Daftar tag ikut naik ke tab sendiri, dan cuma kalau memang berubah -
+     kalau tidak, tiap putaran menulis ulang ratusan baris tanpa guna.
+     Gagal di sini tidak boleh menggagalkan cadangannya: tagnya cerminan,
+     catatannya yang tidak tergantikan. */
+  function cerminTag(setelan, sarang) {
+    var tag = setelan.hashtag || [];
+    var cap = tag.join(' ');
+    if (!tag.length || cap === setelan.hashtagTerkirim) return Promise.resolve();
+    return TAwan.tulisTag(setelan, sarang, tag)
+      .then(function () { return catat(setelan, 'hashtagTerkirim', cap); })
+      .catch(function () { /* diam - dicoba lagi putaran berikutnya */ });
+  }
+
   function putaran(setelan, paksa) {
     if (jalan || !nyala(setelan)) return Promise.resolve(0);
     if (!paksa && (Date.now() - (Number(setelan.cadanganDicoba) || 0)) < JEDA) {
@@ -189,6 +206,7 @@
           });
         }, Promise.resolve()).then(function () { return naik; });
       })
+      .then(function () { return cerminTag(setelan, sarang); })
       .then(function () {
         return catat(setelan, 'cadanganBerhasil', Date.now())
           .then(function () { return catat(setelan, 'cadanganGalat', ''); })
