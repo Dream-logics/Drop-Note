@@ -287,6 +287,20 @@
   var BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
+  /* Di daftar hasil, waktu itu keterangan - bukan isi. "28 Agustus 2026 ·
+     18.27" memakan selebar judulnya sendiri untuk menjawab pertanyaan yang
+     jarang ditanya. Yang ditulis cuma bagian yang membedakan: jam kalau hari
+     ini, tanggal kalau tahun ini, tahunnya kalau lebih lama. */
+  function waktuRingkas(ts) {
+    var d = new Date(ts || Date.now());
+    var kini = new Date();
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    if (d.toDateString() === kini.toDateString()) return p(d.getHours()) + '.' + p(d.getMinutes());
+    var pendek = d.getDate() + ' ' + BULAN[d.getMonth()].slice(0, 3);
+    return d.getFullYear() === kini.getFullYear() ? pendek
+                                                  : pendek + ' ' + String(d.getFullYear()).slice(2);
+  }
+
   function tanggalIndo(ts) {
     var d = new Date(ts || Date.now());
     var p = function (n) { return (n < 10 ? '0' : '') + n; };
@@ -362,6 +376,7 @@
     benahiKategori: benahiKategori, usulKategori: usulKategori,
     labelOtomatis: labelOtomatis, cari: cari,
     elemenOtomatis: elemenOtomatis, gabungElemen: gabungElemen,
-    normal: normal, jarak: jarak, waktuPendek: waktuPendek, tanggalIndo: tanggalIndo
+    normal: normal, jarak: jarak, waktuPendek: waktuPendek,
+    tanggalIndo: tanggalIndo, waktuRingkas: waktuRingkas
   };
 })(window);

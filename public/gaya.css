@@ -102,11 +102,13 @@ button,input,textarea{font:inherit;color:inherit}
 
 /* --- cip --- */
 .cip-baris{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
-.cip-gulir{display:flex;gap:7px;overflow-x:auto;padding-bottom:9px;scrollbar-width:none}
+.cip-gulir{display:flex;gap:6px;overflow-x:auto;padding-bottom:7px;scrollbar-width:none}
 .cip-gulir::-webkit-scrollbar{display:none}
+.cip-bagian{display:flex;gap:6px}
+.cip-pisah{width:1px;flex:0 0 auto;background:var(--l);margin:4px 3px}
 .cip{
-  border:1px solid var(--l);background:none;color:var(--m);border-radius:9px;
-  padding:9px 12px;font-size:12.5px;font-weight:500;white-space:nowrap;cursor:pointer;
+  border:1px solid var(--l);background:none;color:var(--m);border-radius:8px;
+  padding:7px 11px;font-size:12px;font-weight:500;white-space:nowrap;cursor:pointer;
 }
 .cip.nyala{background:var(--a);border-color:var(--a);color:var(--at);font-weight:700}
 
@@ -139,63 +141,80 @@ button,input,textarea{font:inherit;color:inherit}
   padding:0 14px;min-height:48px;outline:none;font-size:16px;
 }
 .cari-input:focus{border-color:var(--a)}
-.hasil-ket{font-size:12.5px;color:var(--m);padding:2px 2px 12px}
+.hasil-ket{font-size:11.5px;color:var(--m);padding:1px 2px 8px}
 
-/* --- kartu hasil --- */
+/* --- kartu hasil ---
+   Bawaannya RINGKAS. Di layar ini orangnya sedang memindai, dan memindai butuh
+   banyak baris pendek - bukan sedikit baris lengkap. Rinciannya menyusul kalau
+   kartunya disentuh. */
 .kartu{
-  background:var(--p);border:1px solid var(--l);border-radius:14px;padding:13px;margin-bottom:10px;
-  cursor:pointer;
+  background:var(--p);border:1px solid var(--l);border-radius:12px;
+  padding:11px 12px;margin-bottom:7px;cursor:pointer;
 }
+.kartu.terbuka{border-color:var(--lt)}
 .kartu.sering{border-color:color-mix(in srgb, var(--a) 45%, transparent)}
-.kartu-cap{display:flex;align-items:center;gap:6px;margin-bottom:7px}
-.kartu-cap span{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--a)}
-.kartu-judul{font-size:15px;font-weight:600;line-height:1.35;word-break:break-word}
-.kartu-cuplik{font-size:13.5px;line-height:1.5;color:var(--m);margin-top:5px;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.kartu-atas{display:flex;align-items:baseline;gap:10px}
+.kartu-judul{
+  flex:1;min-width:0;font-size:14.5px;font-weight:600;line-height:1.35;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+/* Titik kecil menggantikan pita "SERING DIPAKAI": keterangan itu satu baris
+   penuh untuk sesuatu yang cukup dibisikkan. */
+.titik{
+  display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--a);margin-right:7px;vertical-align:middle;
+}
+.kartu-waktu{flex:0 0 auto;font-size:11px;color:var(--m)}
+.kartu-cuplik{
+  font-size:12.5px;line-height:1.45;color:var(--m);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
 .kartu-tautan{
   font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.5;color:var(--a);
   word-break:break-all;text-decoration:none;display:block;margin-top:6px;
 }
-.kartu-gambar{width:100%;max-height:190px;object-fit:cover;border-radius:9px;margin-top:8px;display:block}
-.kartu-daftar{margin-top:6px;font-size:13px;color:var(--m)}
+.kartu-gambar{width:100%;max-height:130px;object-fit:cover;border-radius:8px;margin-top:7px;display:block}
+.kartu-daftar{margin-top:7px;font-size:13px;color:var(--m)}
 .kartu-daftar div{display:flex;gap:7px;align-items:flex-start}
 .kartu-kaki{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px}
 .kartu-meta{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
-.tanda-kat{font-size:11px;font-weight:600;color:var(--a);border-radius:6px;padding:4px 8px;
-           background:color-mix(in srgb, var(--a) 13%, transparent);white-space:nowrap}
+.tanda-kat{font-size:11px;color:var(--m);white-space:nowrap}
 .tanda-waktu{font-size:11px;color:var(--m);white-space:nowrap}
 .tanda-label{font-size:10.5px;color:var(--m);border:1px solid var(--l);border-radius:5px;padding:3px 6px}
 .kartu-aksi{display:flex;gap:6px;flex:0 0 auto}
+.aksi{
+  width:44px;height:44px;border:1px solid var(--lt);border-radius:10px;background:none;color:var(--m);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.aksi.emas{background:var(--a);border-color:var(--a);color:var(--at)}
+.kosong{text-align:center;color:var(--m);font-size:13.5px;line-height:1.7;padding:38px 20px}
 
 /* --- elemen: potongan yang disalin, bukan dibaca ---
    Tiap baris satu barang, dengan tombol salinnya sendiri. Yang mahal di ujung
    bukan menemukan kartunya, tapi menyorot satu baris dengan jempol. */
-.elemen{margin-top:9px;display:flex;flex-direction:column;gap:6px}
+.elemen{margin-top:7px;display:flex;flex-direction:column;gap:5px}
 .elemen-baris{
   display:flex;align-items:center;gap:8px;background:var(--g);border:1px solid var(--l);
-  border-radius:10px;padding:7px 7px 7px 10px;min-height:44px;
+  border-radius:9px;padding:5px 5px 5px 9px;min-height:40px;
 }
 .elemen-isi{flex:1;min-width:0}
-.elemen-nama{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
-             color:var(--m);margin-bottom:2px}
-.elemen-nilai{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.45;
+.elemen-nama{font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+             color:var(--m);margin-bottom:1px}
+.elemen-nilai{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.4;
               word-break:break-all;color:var(--i)}
 a.elemen-nilai{color:var(--a);text-decoration:none;display:block}
 .elemen-salin{
-  width:38px;height:38px;flex:0 0 auto;border:1px solid var(--lt);border-radius:9px;
+  width:34px;height:34px;flex:0 0 auto;border:1px solid var(--lt);border-radius:8px;
   background:none;color:var(--m);display:flex;align-items:center;justify-content:center;cursor:pointer;
 }
 
-/* --- accordion: dua baris dulu, sisanya kalau diminta --- */
-.kartu-penuh{font-size:13.5px;line-height:1.6;color:var(--m);margin-top:6px;
+/* --- rincian: ada, tapi menunggu disentuh --- */
+.kartu-rinci{margin-top:2px}
+.kartu-penuh{font-size:13px;line-height:1.6;color:var(--m);margin-top:8px;
              white-space:pre-wrap;word-break:break-word}
-.kartu-lagi{
-  background:none;border:none;color:var(--a);font-size:12px;font-weight:600;
-  padding:8px 0 2px;cursor:pointer;min-height:36px;
-}
 
 /* --- tag: kelihatan, bisa ditekan, seperti di Instagram --- */
-.tag-baris{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.tag-baris{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
 .tag{
   font-size:11.5px;font-weight:600;color:var(--a);border-radius:7px;padding:5px 9px;
   background:color-mix(in srgb, var(--a) 12%, transparent);border:none;cursor:pointer;

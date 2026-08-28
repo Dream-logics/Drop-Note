@@ -551,8 +551,23 @@
     urlSementara = [];
   }
 
+  /* Saringan jenis cuma digambar kalau memang bisa menyaring sesuatu. Enam cip
+     yang semuanya menuju hasil yang sama itu satu baris penuh yang mendorong
+     hasil pertama ke bawah layar - dan hasil pertama itu yang dicari. */
   function gambarSaringJenis() {
-    $('#saring-jenis').innerHTML = JENIS_SARING.map(function (j) {
+    var ada = {};
+    semuaEntri.forEach(function (e) {
+      if (!e.pensiun) ada[e.jenis === 'teks' ? 'catatan' : e.jenis] = true;
+    });
+    var punya = Object.keys(ada).length;
+
+    var wadah = $('#saring-jenis');
+    wadah.classList.toggle('sembunyi', punya < 2);
+    if (punya < 2) { saringJenis = 'semua'; wadah.innerHTML = ''; return; }
+
+    wadah.innerHTML = JENIS_SARING.filter(function (j) {
+      return j[0] === 'semua' || ada[j[0]];
+    }).map(function (j) {
       return '<button class="cip' + (saringJenis === j[0] ? ' nyala' : '') +
              '" data-jenis="' + j[0] + '">' + H(j[1]) + '</button>';
     }).join('');
@@ -579,26 +594,39 @@
     return isi;
   }
 
+  /* KARTU RINGKAS.
+     Sebelumnya tiap kartu mengucapkan semuanya sekaligus: judul, cuplikan,
+     semua elemen, semua tag, tanggal penuh, tiga tombol. Satu layar cuma muat
+     dua hasil - padahal yang dikerjakan orangnya di layar ini adalah MEMINDAI,
+     dan memindai butuh banyak baris pendek, bukan sedikit baris lengkap.
+
+     Jadi bawaannya sekarang tiga baris saja: judul, satu baris isi, dan SATU
+     elemen yang paling mungkin dia butuhkan - lengkap dengan tombol salinnya,
+     supaya kejadian tersering tetap selesai tanpa membuka apa pun.
+
+     Sisanya - elemen lain, tag, catatan utuh, tombol - menunggu disentuh.
+     Tidak dibuang, cuma tidak berteriak. */
   function kartuHtml(e) {
+    var sering = (e.dipakai || 0) >= SERING;
     var b = [];
-    if ((e.dipakai || 0) >= SERING) {
-      b.push('<div class="kartu-cap"><svg viewBox="0 0 24 24" class="ik kilau">' +
-             '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>' +
-             '<span>sering dipakai</span></div>');
-    }
-    b.push('<div class="kartu-judul">' + H(e.judul || '(tanpa judul)') + '</div>');
 
-    var cup = cuplikan(e);
-    if (cup) b.push('<div class="kartu-cuplik">' + H(cup) + '</div>');
+    b.push('<div class="kartu-atas">' +
+      '<div class="kartu-judul">' + (sering ? '<span class="titik" title="sering dipakai"></span>' : '') +
+      H(e.judul || '(tanpa judul)') + '</div>' +
+      '<span class="kartu-waktu">' + H(TOtak.waktuRingkas(e.diubah)) + '</span></div>');
 
-    /* Kalau alamatnya sudah berdiri sendiri sebagai elemen, jangan digambar
-       dua kali. Kartu yang mengucapkan hal yang sama dua kali cuma menambah
-       tinggi tanpa menambah satu pun kata baru. */
-    var adaDiElemen = (e.elemen || []).some(function (x) { return x.nilai === e.isi; });
-    if (e.jenis === 'tautan' && e.isi && !adaDiElemen) {
-      b.push('<a class="kartu-tautan" href="' + H(e.isi) + '" target="_blank" rel="noopener">' +
-             H(e.isi) + '</a>');
-    }
+    /* Satu baris saja, dan CUMA kalau tidak ada elemen. Kalau elemennya ada,
+       dia sudah jadi ringkasan yang lebih baik daripada potongan mentahnya -
+       "BCA 6573937947 ibu nani" di bawah judul "Nomor rekening BCA Ibu Nani"
+       cuma mengulang hal yang sama dengan huruf yang lebih jelek.
+       Catatan utuhnya tetap ada, satu sentuhan di bawah. */
+    var elemen = e.elemen || [];
+    var adaDiElemen = elemen.some(function (x) { return x.nilai === e.isi; });
+    var cup = cuplikan(e) ||
+              (e.jenis === 'tautan' && !adaDiElemen ? e.isi : '') ||
+              (e.namaBerkas ? e.namaBerkas + ' · ' + ukuranTeks(e.ukuran) : '');
+    if (cup && !elemen.length) b.push('<div class="kartu-cuplik">' + H(cup) + '</div>');
+
     /* Thumbnail-nya sudah ada di dalam entri, jadi tidak ada satu pun
        permintaan - ke IndexedDB maupun ke jaringan - saat menggambar hasil. */
     if (e.thumb) {
@@ -606,25 +634,36 @@
     } else if (e.jenis === 'gambar' && e.berkasId) {
       b.push('<img class="kartu-gambar" data-berkas="' + H(e.berkasId) + '" alt="">');
     }
-    if (e.jenis === 'daftar' && (e.daftar || []).length) {
-      b.push('<div class="kartu-daftar">' + e.daftar.slice(0, 3).map(function (r) {
-        return '<div><span>' + (r.selesai ? '☑' : '☐') + '</span><span>' + H(r.teks) + '</span></div>';
-      }).join('') + (e.daftar.length > 3 ? '<div><span></span><span>+' +
-        (e.daftar.length - 3) + ' lagi</span></div>' : '') + '</div>');
-    }
-    if ((e.jenis === 'berkas' || e.jenis === 'suara') && e.namaBerkas) {
-      b.push('<div class="kartu-cuplik">' + H(e.namaBerkas) + ' · ' + H(ukuranTeks(e.ukuran)) + '</div>');
-    }
 
-    b.push(elemenHtml(e));
-    b.push(penuhHtml(e));
-    b.push(tagHtml(e));
+    /* Elemen pertama ikut terlihat: menyalin satu nomor adalah alasan
+       tersering kartu ini dibuka sama sekali. Kalau dia ikut disembunyikan,
+       yang dihemat cuma tinggi kartu - yang dibayar satu ketukan tambahan
+       pada gerakan tersering. */
+    if (elemen.length) b.push('<div class="elemen">' + elemenBaris(elemen[0], 0) + '</div>');
+
+    var r = [];
+    if (elemen.length > 1) {
+      r.push('<div class="elemen">' + elemen.slice(1, 10).map(function (x, i) {
+        return elemenBaris(x, i + 1);
+      }).join('') + '</div>');
+    }
+    if (e.jenis === 'daftar' && (e.daftar || []).length) {
+      r.push('<div class="kartu-daftar">' + e.daftar.slice(0, 8).map(function (x) {
+        return '<div><span>' + (x.selesai ? '☑' : '☐') + '</span><span>' + H(x.teks) + '</span></div>';
+      }).join('') + '</div>');
+    }
+    var isi = String(e.isi || '').trim();
+    if (isi && (elemen.length || isi !== cup)) r.push('<div class="kartu-penuh">' + H(isi) + '</div>');
+    r.push(tagHtml(e));
 
     var meta = [];
-    if (e.kategori) meta.push('<span class="tanda-kat">#' + H(e.kategori) + '</span>');
+    /* Ditulis "rak: x", bukan "#x". Kalau bentuknya sama persis dengan tag,
+       kartunya seolah punya dua tag #keuangan - padahal yang satu rak yang
+       kamu ketik sendiri, yang satu tag yang disusun AI. */
+    if (e.kategori) meta.push('<span class="tanda-kat">rak: ' + H(e.kategori) + '</span>');
     meta.push('<span class="kartu-tanggal">' + H(TOtak.tanggalIndo(e.diubah)) + '</span>');
 
-    b.push('<div class="kartu-kaki"><div class="kartu-meta">' + meta.join('') + '</div>' +
+    r.push('<div class="kartu-kaki"><div class="kartu-meta">' + meta.join('') + '</div>' +
       '<div class="kartu-aksi">' +
       IKON_AKSI('salin', 'Salin', '<rect x="9" y="9" width="12" height="12" rx="2"/>' +
         '<path d="M5 15V5a2 2 0 0 1 2-2h10"/>') +
@@ -633,7 +672,9 @@
         '<path d="M19 6l-1 14H6L5 6"/>') +
       '</div></div>');
 
-    return '<article class="kartu' + ((e.dipakai || 0) >= SERING ? ' sering' : '') +
+    b.push('<div class="kartu-rinci sembunyi">' + r.join('') + '</div>');
+
+    return '<article class="kartu' + (sering ? ' sering' : '') +
            '" data-id="' + H(e.id) + '">' + b.join('') + '</article>';
   }
 
@@ -651,33 +692,19 @@
     jadwal: 'jadwal', harga: 'harga', prompt: 'prompt', lainnya: 'catatan'
   };
 
-  function elemenHtml(e) {
-    var daftar = (e.elemen || []).slice(0, 10);
-    if (!daftar.length) return '';
-    return '<div class="elemen">' + daftar.map(function (x, i) {
-      var nama = x.nama || NAMA_JENIS[x.jenis] || 'elemen';
-      var nilai = String(x.nilai || '');
-      /* Tautan harus bisa langsung dibuka - itu satu-satunya alasan dia
-         disimpan. Yang lain cukup bisa disalin. */
-      var isi = /^https?:\/\//i.test(nilai)
-        ? '<a class="elemen-nilai" href="' + H(nilai) + '" target="_blank" rel="noopener">' + H(nilai) + '</a>'
-        : '<div class="elemen-nilai">' + H(nilai) + '</div>';
-      return '<div class="elemen-baris">' +
-        '<div class="elemen-isi"><div class="elemen-nama">' + H(nama) + '</div>' + isi + '</div>' +
-        '<button class="elemen-salin" data-elemen="' + i + '" aria-label="Salin ' + H(nama) + '">' +
-        '<svg viewBox="0 0 24 24" class="ik"><rect x="9" y="9" width="12" height="12" rx="2"/>' +
-        '<path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></div>';
-    }).join('') + '</div>';
-  }
-
-  /* Dua baris dulu. Menampilkan catatan utuh di daftar hasil mengembalikan
-     dinding kartu yang justru mau dihindari - sesak datang dari tampilan,
-     bukan dari jumlah. */
-  function penuhHtml(e) {
-    var isi = String(e.isi || '').trim();
-    if (!isi || isi.length < 140) return '';
-    return '<button class="kartu-lagi" data-lagi>Tampilkan seluruh catatan</button>' +
-           '<div class="kartu-penuh sembunyi">' + H(isi) + '</div>';
+  function elemenBaris(x, i) {
+    var nama = x.nama || NAMA_JENIS[x.jenis] || 'elemen';
+    var nilai = String(x.nilai || '');
+    /* Tautan harus bisa langsung dibuka - itu satu-satunya alasan dia
+       disimpan. Yang lain cukup bisa disalin. */
+    var isi = /^https?:\/\//i.test(nilai)
+      ? '<a class="elemen-nilai" href="' + H(nilai) + '" target="_blank" rel="noopener">' + H(nilai) + '</a>'
+      : '<div class="elemen-nilai">' + H(nilai) + '</div>';
+    return '<div class="elemen-baris">' +
+      '<div class="elemen-isi"><div class="elemen-nama">' + H(nama) + '</div>' + isi + '</div>' +
+      '<button class="elemen-salin" data-elemen="' + i + '" aria-label="Salin ' + H(nama) + '">' +
+      '<svg viewBox="0 0 24 24" class="ik"><rect x="9" y="9" width="12" height="12" rx="2"/>' +
+      '<path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></div>';
   }
 
   /* Tagnya boleh banyak - tiap tag yang tepat adalah satu pintu lagi menuju
@@ -806,8 +833,11 @@
 
   var URUT = [['waktu', 'Terbaru'], ['tag', 'Per tag — terbanyak dulu']];
 
+  /* Digabung ke baris rak, bukan barisnya sendiri: dua-duanya menjawab
+     pertanyaan yang sama - "potongan mana yang mau kulihat" - dan satu baris
+     tambahan di sini berarti satu hasil lebih sedikit yang terlihat. */
   function gambarUrut() {
-    $('#urut-baris').innerHTML = URUT.map(function (u) {
+    $('#urut-baris').innerHTML = '<span class="cip-pisah"></span>' + URUT.map(function (u) {
       return '<button class="cip' + (urutSaat === u[0] ? ' nyala' : '') +
              '" data-urut="' + u[0] + '">' + H(u[1]) + '</button>';
     }).join('');
@@ -1765,15 +1795,6 @@
       var e = null;
       semuaEntri.forEach(function (x) { if (x.id === id) e = x; });
 
-      var lagi = ev.target.closest('[data-lagi]');
-      if (lagi) {
-        var penuh = kartu.querySelector('.kartu-penuh');
-        var buka = penuh.classList.contains('sembunyi');
-        penuh.classList.toggle('sembunyi', !buka);
-        lagi.textContent = buka ? 'Tutup' : 'Tampilkan seluruh catatan';
-        return;
-      }
-
       var satuan = ev.target.closest('[data-elemen]');
       if (satuan && e) {
         var x = (e.elemen || [])[Number(satuan.getAttribute('data-elemen'))];
@@ -1786,7 +1807,17 @@
       if (ev.target.closest('[data-pensiun]')) { if (e) pensiunkanKartu(e); return; }
 
       if (ev.target.closest('a')) return;   /* tautan dibuka, bukan kartunya */
-      bukaKartu(id);
+
+      /* Menyentuh kartunya = membuka rinciannya di tempat, bukan pindah layar.
+         Pindah layar itu mahal saat sedang memindai: kamu kehilangan posisi
+         gulir dan harus mencari lagi dari atas. Yang benar-benar mau menyunting
+         menekan tombol pensil yang baru saja muncul. */
+      var rinci = kartu.querySelector('.kartu-rinci');
+      if (rinci) {
+        var buka = rinci.classList.contains('sembunyi');
+        rinci.classList.toggle('sembunyi', !buka);
+        kartu.classList.toggle('terbuka', buka);
+      }
     });
 
     /* --- layar catat --- */
