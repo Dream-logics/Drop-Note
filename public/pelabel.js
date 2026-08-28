@@ -152,9 +152,11 @@
       '   Kalau memang tidak ada yang menonjol, kembalikan elemen kosong. Itu jawaban yang sah:',
       '   berarti catatan itu utuh sebagai catatan. JANGAN mengarang elemen supaya tidak kosong.',
       '',
-      '3. TAG. 2 sampai 5 tag, huruf kecil, satu kata (boleh gabungan tanpa spasi).',
+      '3. TAG. 2 sampai 5 tag, satu kata masing-masing (boleh gabungan tanpa spasi).',
       '   Hanya yang relevansinya TINGGI - bukan yang sekadar mungkin berhubungan.',
-      '   PAKAI ULANG tag dari daftar di bawah kalau maknanya sama, walau katanya tidak persis.',
+      '   PAKAI ULANG tag dari daftar di bawah kalau maknanya sama, walau katanya tidak persis,',
+      '   dan salin PERSIS penulisannya termasuk huruf besar-kecilnya.',
+      '   Yang disebut paling awal di daftar itu rak andalannya - dahulukan.',
       '   Buat tag baru HANYA kalau benar-benar tidak ada yang cocok.',
       daftar ? '   Tag yang sudah dipakai: ' + daftar : '   Belum ada tag sama sekali; mulailah dari yang paling umum.',
       '',
@@ -190,7 +192,7 @@
     }).slice(0, SEKALI);
     if (!antre.length) return Promise.resolve(0);
 
-    return tanya(setelan, [{ text: pesanan(antre) }], arahanLabel(setelan.hashtag))
+    return tanya(setelan, [{ text: pesanan(antre) }], arahanLabel(daftarTag(setelan)))
       .then(function (jawab) {
         var hasil = (jawab && jawab.hasil) || [];
         if (!hasil.length) throw new Error('Jawaban AI kosong');
@@ -215,17 +217,32 @@
       });
   }
 
+  /* Huruf besarnya DIPERTAHANKAN. Tag ini dilihat pemakainya, dan
+     "#ShamiraWeb" lebih cepat dikenali daripada "#shamiraweb" - sementara
+     pencocokannya sendiri tetap tidak peduli huruf besar-kecil. */
   function bersihTag(t) {
-    return String(t || '').toLowerCase().replace(/^#+/, '')
-      .replace(/[^a-z0-9]+/g, '').slice(0, 24);
+    return String(t || '').replace(/^#+/, '').replace(/[^A-Za-z0-9]+/g, '').slice(0, 24);
   }
+
+  function samaTag(a, b) { return String(a).toLowerCase() === String(b).toLowerCase(); }
 
   function gabungTag(lama, tambahan) {
     var gabung = (lama || []).slice();
     (tambahan || []).map(bersihTag).filter(Boolean).forEach(function (t) {
-      if (gabung.indexOf(t) < 0) gabung.push(t);
+      if (!gabung.some(function (x) { return samaTag(x, t); })) gabung.push(t);
     });
     return gabung.slice(0, 8);
+  }
+
+  /* Tag andalan disebut LEBIH DULU daripada yang pernah dipakai: itu rak yang
+     sudah dia putuskan sendiri, dan model membaca daftar dari depan. */
+  function daftarTag(setelan) {
+    var awal = setelan.tagFavorit != null ? setelan.tagFavorit : (TBawaan.tagAwal || []);
+    var keluar = (awal || []).slice();
+    (setelan.hashtag || []).forEach(function (t) {
+      if (!keluar.some(function (x) { return samaTag(x, t); })) keluar.push(t);
+    });
+    return keluar;
   }
 
   /* Daftar tag hidup di perangkat, bukan di Sheet. Kalau otoritasnya di Drive,
@@ -234,7 +251,9 @@
   function catatTag(setelan, tag) {
     var lama = (setelan.hashtag || []).slice();
     var berubah = false;
-    tag.forEach(function (t) { if (lama.indexOf(t) < 0) { lama.push(t); berubah = true; } });
+    tag.forEach(function (t) {
+      if (!lama.some(function (x) { return samaTag(x, t); })) { lama.push(t); berubah = true; }
+    });
     if (!berubah) return Promise.resolve();
     lama = lama.slice(-300);
     setelan.hashtag = lama;
@@ -260,8 +279,8 @@
       '- elemen: nomor, kode, nama pihak, tanggal, dan jumlah yang nanti akan dia SALIN dari',
       '  dokumen ini - nomor KTP, nomor faktur, nominal, nama apotek, dosis obat. Persis apa adanya.',
       '  Beri "nama" pendek untuk tiap elemen. Kosongkan kalau memang tidak ada yang menonjol.',
-      '- tag: 2 sampai 5, huruf kecil, satu kata. PAKAI ULANG dari daftar di bawah kalau maknanya',
-      '  sama; buat baru hanya kalau tidak ada yang cocok.',
+      '- tag: 2 sampai 5, satu kata masing-masing. PAKAI ULANG dari daftar di bawah kalau maknanya',
+      '  sama, salin persis penulisannya; buat baru hanya kalau tidak ada yang cocok.',
       daftar ? '  Tag yang sudah dipakai: ' + daftar : '  Belum ada tag sama sekali.',
       '- label: 5 sampai 12 kata kunci huruf kecil - jenis dokumen, nama orang/perusahaan,',
       '  tahun, nomor penting, dan sebutan sehari-hari yang mungkin dipakai mencarinya.',
@@ -310,7 +329,7 @@
             return tanya(setelan, [
               { inline_data: { mime_type: e.tipeBerkas, data: b64 } },
               { text: 'Baca dokumen ini.' }
-            ], arahanBaca(setelan.hashtag));
+            ], arahanBaca(daftarTag(setelan)));
           }).then(function (h) {
             if (!h) throw new Error('Dokumen tidak terbaca');
             if (!e.judulManual && h.judul) e.judul = String(h.judul).slice(0, 90);
@@ -365,13 +384,16 @@
   /* Uji dari layar Setelan - satu-satunya tempat kegagalan AI boleh berisik. */
   function coba(setelan) {
     var contoh = [{ jenis: 'tautan', kategori: '', isi: 'https://script.google.com/macros/s/AKfycbCONTOH/dev' }];
-    return tanya(setelan, [{ text: pesanan(contoh) }], arahanLabel(setelan.hashtag)).then(function (j) {
+    return tanya(setelan, [{ text: pesanan(contoh) }], arahanLabel(daftarTag(setelan))).then(function (j) {
       if (!j || !j.hasil || !j.hasil.length) throw new Error('Tersambung, tapi jawabannya tidak dikenali');
       return j.hasil[0];
     });
   }
 
   global.TPelabel = {
-    putaran: putaran, coba: coba, siap: siap, model: model, lewatProxy: lewatProxy
+    putaran: putaran, coba: coba, siap: siap, model: model, lewatProxy: lewatProxy,
+    /* Cuma untuk uji: melihat arahan yang benar-benar dikirim, bukan menebak
+       dari kodenya. */
+    arahanUji: function (setelan) { return arahanLabel(daftarTag(setelan)); }
   };
 })(window);

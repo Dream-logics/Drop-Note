@@ -419,10 +419,21 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
   const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
   const utama = html.slice(html.indexOf('id="l-utama"'), html.indexOf('id="l-hasil"'));
   cek('ikon lampiran di ATAS kotak', utama.indexOf('id="lampiran"') < utama.indexOf('id="kotak"'));
-  cek('tombol di BAWAH kotak', utama.indexOf('id="b-drop"') > utama.indexOf('id="kotak"'));
-  cek('tombolnya menempel supaya tidak perlu digulir', /tombol-baris jempol/.test(utama));
+  /* Tepat di bawah kotak, bukan di dasar layar: di layar panjang, dasar layar
+     itu jauh dari yang barusan diketik. */
+  cek('tombol tepat di BAWAH kotak', utama.indexOf('id="b-drop"') > utama.indexOf('id="kotak"'));
+  cek('tombol tidak terlempar ke bawah keyword',
+      utama.indexOf('id="b-drop"') < utama.indexOf('id="kat-usul"'));
+
+  const hasil = html.slice(html.indexOf('id="l-hasil"'), html.indexOf('id="l-catat"'));
+  cek('layar hasil punya tombol yang sama', /id="b-hasil-drop"/.test(hasil) &&
+      /id="b-hasil-cari"/.test(hasil) && /id="b-hasil-catat"/.test(hasil) &&
+      /id="b-hasil-semua"/.test(hasil));
+  cek('di layar hasil tombolnya lebih kecil dan menempel', /tombol-baris kecil jempol/.test(hasil));
+
   const css = fs.readFileSync(path.join(AKAR, 'gaya.css'), 'utf8');
   cek('menempelnya benar-benar diatur di gaya', /\.tombol-baris\.jempol\{[^}]*position:sticky/.test(css));
+  cek('ukuran kecilnya benar-benar diatur di gaya', /\.tombol-baris\.kecil \.tbl\{/.test(css));
 }
 
 console.log('\nAI: kunci milik pembuat, pemakai tinggal pakai');
@@ -495,6 +506,72 @@ console.log('\nAI: kunci milik pembuat, pemakai tinggal pakai');
   const jumlah = await hal.evaluate(() => TSimpan.jumlah());
   cek('ditolak layanan tidak merusak apa pun', jumlah >= 1);
   proxyAI.tolak = false;
+}
+
+console.log('\nSemua: melihat seluruh timbunan, atas permintaan');
+{
+  await hal.evaluate(() => TAlur.keSemua());
+  await hal.waitForSelector('#l-hasil.aktif');
+  cek('tombol Semua membuka seluruh isi tanpa kata kunci',
+      (await hal.inputValue('#cari-input')) === '' &&
+      (await hal.locator('#hasil .kartu').count()) > 1);
+  cek('dua cara mengurut tersedia', (await hal.locator('#urut-baris .cip').count()) === 2);
+
+  await hal.click('[data-urut="tag"]');
+  await hal.waitForTimeout(200);
+  const kepala = await hal.locator('#hasil .kelompok-nama').allTextContents();
+  cek('diurut per tag, dan yang tanpa tag tetap ikut - bukan hilang',
+      kepala.length > 0 && kepala[kepala.length - 1] === 'Belum bertag', kepala.join(' | '));
+
+  /* Terbanyak dulu. Ini yang menaruh rak yang benar-benar dipakai di atas
+     tanpa perlu ditata sendiri. */
+  const jumlah = (await hal.locator('#hasil .kelompok-jumlah').allTextContents())
+    .slice(0, -1).map(Number);
+  const menurun = jumlah.every((n, i) => i === 0 || jumlah[i - 1] >= n);
+  cek('kelompok terbanyak berada di atas', menurun, jumlah.join(','));
+
+  await hal.click('[data-urut="waktu"]');
+  await hal.waitForTimeout(150);
+  cek('kembali ke urutan terbaru tanpa kepala kelompok',
+      (await hal.locator('#hasil .kelompok').count()) === 0);
+}
+
+console.log('\nEnter = cari, di dua kotak');
+{
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForSelector('#l-utama.aktif');
+  await hal.fill('#kotak', 'wifi');
+  await hal.press('#kotak', 'Enter');
+  await hal.waitForSelector('#l-hasil.aktif');
+  cek('Enter di kotak drop langsung mencari', (await hal.inputValue('#cari-input')) === 'wifi');
+  /* Isinya tidak boleh hilang: kalau ternyata mau di-drop, tinggal tekan Drop. */
+  cek('isi kotak tetap utuh setelah Enter', (await hal.inputValue('#kotak')) === 'wifi');
+
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.fill('#kotak', 'baris satu');
+  await hal.press('#kotak', 'Shift+Enter');
+  cek('Shift+Enter tetap baris baru', /\n/.test(await hal.inputValue('#kotak')),
+      JSON.stringify(await hal.inputValue('#kotak')));
+  await hal.fill('#kotak', '');
+}
+
+console.log('\ntag andalan: rak yang sudah diputuskan sendiri');
+{
+  const awal = await hal.evaluate(() => TBawaan.tagAwal);
+  cek('daftar awal ditanam di bawaan.js, bukan berserakan',
+      Array.isArray(awal) && awal.indexOf('ProjectSpace') >= 0, JSON.stringify(awal));
+
+  const rapi = await hal.evaluate(() => TAlur.uraiTagFavorit('#MAP  #ProjectSpace, map\n#Resep'));
+  cek('pagar, koma, dan baris baru sama saja', rapi.join(' ') === 'MAP ProjectSpace Resep', rapi.join(' '));
+  cek('tag kembar tidak masuk dua kali walau beda huruf besar', rapi.length === 3);
+
+  await hal.evaluate(() => TSimpan.setel('tagFavorit', ['Ngoffee', 'AmaraLiving']));
+  await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => {
+    window.__arahan = TPelabel.arahanUji(s);
+  }));
+  const arahan = await hal.evaluate(() => window.__arahan);
+  cek('tag andalan ikut dikirim ke AI, di depan', /Ngoffee/.test(arahan) && /AmaraLiving/.test(arahan));
+  cek('huruf besarnya diminta disalin persis', /huruf besar-kecil/.test(arahan));
 }
 
 console.log('\nnama cuma kulit');

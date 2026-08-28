@@ -52,9 +52,12 @@
      drop. Ini berjalan sesudah drop selesai, di belakang layar, dan boleh
      gagal diam-diam seperti biasa.
 
-     Ditunda beberapa detik, bukan seketika, supaya menjatuhkan lima catatan
-     berturut-turut tetap jadi satu panggilan borongan - bukan lima. */
-  var JEDA_SUNDUL = 5 * 1000;
+     Ditunda sebentar, bukan seketika, supaya menjatuhkan lima catatan
+     berturut-turut tetap jadi satu panggilan borongan - bukan lima. Jedanya
+     dipendekkan sampai batas itu saja: lebih cepat berarti judul, elemen, dan
+     tagnya sudah rapi sebelum orangnya sempat pindah layar - dan yang dia
+     rasakan bukan "AI-nya lambat", tapi "aplikasinya memang begitu". */
+  var JEDA_SUNDUL = 1200;
 
   /* Foto HP 6 MB akan memenuhi kuota penyimpanan dalam hitungan minggu, dan
      kuota penuh artinya drop mulai gagal - pelanggaran aturan nomor satu. */
@@ -124,6 +127,7 @@
   var entriCatat = null;
   var saringJenis = 'semua';
   var saringKat = '';
+  var urutSaat = 'waktu';
   var urlSementara = [];
   var perekam = null;
   var rekamJam = null;
@@ -716,7 +720,17 @@
       return;
     }
     $('#hasil-ket').textContent = hasil.length + ' hasil';
-    wadah.innerHTML = hasil.slice(0, 200).map(kartuHtml).join('');
+    var potong = hasil.slice(0, 200);
+
+    if (urutSaat === 'tag') {
+      wadah.innerHTML = kelompokTag(potong).map(function (k) {
+        return '<div class="kelompok"><span class="kelompok-nama">' + H(k.nama) + '</span>' +
+               '<span class="kelompok-jumlah">' + k.isi.length + '</span></div>' +
+               k.isi.map(kartuHtml).join('');
+      }).join('');
+    } else {
+      wadah.innerHTML = potong.map(kartuHtml).join('');
+    }
     pasangGambarKartu(wadah);
   }
 
@@ -724,9 +738,96 @@
     $('#cari-input').value = kueri || '';
     gambarSaringJenis();
     gambarSaringKategori();
+    gambarUrut();
     keLayar('l-hasil');
     jalankanCari();
+    /* Kalau ada yang belum dinilai, kerjakan sekarang juga - bukan tunggu
+       jadwal. Orang yang baru saja nge-drop lalu langsung mencari akan
+       menyimpulkan "pencariannya tidak bekerja", bukan "labelnya belum
+       sempat". Hasilnya menggambar ulang sendiri begitu sampai. */
+    putaranLabel();
     if (!kueri) $('#cari-input').focus();
+  }
+
+  /* Melihat SELURUH timbunan. Ini tidak melanggar "layar depan kosong":
+     yang dilarang adalah dinding kartu yang menyambut tanpa diminta. Kalau
+     kamu sendiri yang menekan tombolnya, kamu memang sedang mencari sesuatu
+     yang belum punya kata. */
+  function keSemua() {
+    saringJenis = 'semua';
+    saringKat = '';
+    keHasil('');
+    $('#cari-input').blur();
+  }
+
+  function keCatatBaru() {
+    var e = entriBaru('catatan');
+    e.isi = layarSaat === 'l-utama' ? $('#kotak').value : '';
+    if (layarSaat === 'l-utama') {
+      e.kategori = benahiKotakKategori();
+      kosongkanKotak();
+    }
+    keCatat(e);
+    $('#catat-isi').focus();
+  }
+
+  /* Nilai awal dari bawaan.js dipakai HANYA kalau pemakainya belum pernah
+     menyunting daftarnya. Begitu dia menyentuhnya sekali, daftarnya jadi
+     miliknya - termasuk kalau dia mengosongkannya sampai habis. */
+  function daftarTagFavorit(s) {
+    if (s && s.tagFavorit != null) return s.tagFavorit;
+    return (TBawaan.tagAwal || []).slice();
+  }
+
+  function uraiTagFavorit(teks) {
+    var keluar = [];
+    String(teks || '').split(/[\s,]+/).forEach(function (t) {
+      var v = t.replace(/^#+/, '').replace(/[^A-Za-z0-9]+/g, '').slice(0, 24);
+      if (!v) return;
+      var ada = keluar.some(function (x) { return x.toLowerCase() === v.toLowerCase(); });
+      if (!ada) keluar.push(v);
+    });
+    return keluar.slice(0, 200);
+  }
+
+  var URUT = [['waktu', 'Terbaru'], ['tag', 'Per tag — terbanyak dulu']];
+
+  function gambarUrut() {
+    $('#urut-baris').innerHTML = URUT.map(function (u) {
+      return '<button class="cip' + (urutSaat === u[0] ? ' nyala' : '') +
+             '" data-urut="' + u[0] + '">' + H(u[1]) + '</button>';
+    }).join('');
+  }
+
+  /* Tag diurut dari yang paling banyak dipakai. Itu bukan sekadar rapi:
+     urutan terbanyak-dulu adalah satu-satunya urutan yang menaruh rak yang
+     benar-benar kamu pakai di paling atas, tanpa kamu perlu menatanya. */
+  function kelompokTag(daftar) {
+    var hitung = {};
+    daftar.forEach(function (e) {
+      (e.tag || []).forEach(function (t) { hitung[t] = (hitung[t] || 0) + 1; });
+    });
+    var urut = Object.keys(hitung).sort(function (a, b) {
+      if (hitung[b] !== hitung[a]) return hitung[b] - hitung[a];
+      return a.localeCompare(b);
+    });
+
+    var sudah = {};
+    var keluar = [];
+    urut.forEach(function (t) {
+      var isi = daftar.filter(function (e) {
+        return (e.tag || []).indexOf(t) >= 0 && !sudah[e.id];
+      });
+      if (!isi.length) return;
+      isi.forEach(function (e) { sudah[e.id] = true; });
+      keluar.push({ nama: '#' + t, isi: isi });
+    });
+
+    /* Yang belum bertag ditaruh paling bawah, bukan disembunyikan - kalau
+       tidak, "Semua" tidak lagi berarti semua. */
+    var sisa = daftar.filter(function (e) { return !sudah[e.id]; });
+    if (sisa.length) keluar.push({ nama: 'Belum bertag', isi: sisa });
+    return keluar;
   }
 
   function isiSalin(e) {
@@ -1205,6 +1306,17 @@
           'Ini mode pengembang — untuk pemakai biasa, kuncinya tinggal di layanan dan tidak pernah sampai ke perangkat.</div></div>'
         : '',
 
+      '<div class="set-bagian">Tag andalan</div>',
+      '<div class="set-kotak">',
+      '<div class="set-judul">Rak yang kamu sudah tahu akan dipakai</div>',
+      '<div class="set-ket">Tulis di sini tag yang pasti sering kamu pakai — nama proyek, nama klien, jenis barang. ' +
+        'Daftar ini ikut dikirim ke AI tiap kali melabeli, jadi dia memakai tag <b>ini</b> ' +
+        'dan tidak mengarang sinonimnya sendiri. Pisahkan dengan spasi atau baris baru; pagarnya boleh tidak ditulis.</div>',
+      '<textarea class="set-input tinggi" id="set-tag" spellcheck="false" placeholder="MAP ProjectSpace Resep">' +
+        H(daftarTagFavorit(s).join(' ')) + '</textarea>',
+      '<div class="set-ket" id="tag-jumlah">…</div>',
+      '</div>',
+
       '<div class="set-bagian">Cadangan manual</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">Salinan teks ke berkas</div>',
@@ -1342,6 +1454,22 @@
 
     var model = $('#set-model');
     if (model) model.addEventListener('change', function () { simpanSetelan('model', model.value.trim()); });
+
+    var isianTag = $('#set-tag');
+    if (isianTag) {
+      var tampilJumlahTag = function () {
+        var n = uraiTagFavorit(isianTag.value).length;
+        $('#tag-jumlah').textContent = n ? n + ' tag andalan' : 'Belum ada — AI akan menyusun tagnya sendiri.';
+      };
+      tampilJumlahTag();
+      isianTag.addEventListener('input', tampilJumlahTag);
+      isianTag.addEventListener('change', function () {
+        var daftar = uraiTagFavorit(isianTag.value);
+        isianTag.value = daftar.join(' ');
+        tampilJumlahTag();
+        simpanSetelan('tagFavorit', daftar);
+      });
+    }
 
     var uji = $('#b-uji');
     if (uji) uji.addEventListener('click', function () {
@@ -1487,15 +1615,38 @@
     }, JEDA_BACA);
     $('#kotak').addEventListener('input', bacaTertunda);
 
+    /* Enter = cari. Kotak ini pintu masuk DAN pintu keluar: mengetik satu kata
+       lalu menekan Enter adalah gerakan yang paling sering terjadi, dan
+       memaksanya lewat tombol menambah satu ketukan pada gerakan tersering.
+       Isi kotaknya tidak hilang - kalau ternyata mau di-drop, tekan Drop.
+       Shift+Enter tetap baris baru buat catatan yang memang berbaris-baris. */
+    $('#kotak').addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Enter' || ev.shiftKey) return;
+      var isi = $('#kotak').value.trim();
+      if (!isi) return;
+      ev.preventDefault();
+      keHasil(isi);
+    });
+
     $('#b-drop').addEventListener('click', drop);
     $('#b-cari').addEventListener('click', function () { keHasil($('#kotak').value.trim()); });
-    $('#b-catat').addEventListener('click', function () {
-      var e = entriBaru('catatan');
-      e.isi = $('#kotak').value;
-      e.kategori = benahiKotakKategori();
-      kosongkanKotak();
-      keCatat(e);
-      $('#catat-isi').focus();
+    $('#b-catat').addEventListener('click', keCatatBaru);
+    $('#b-semua').addEventListener('click', function () { keSemua(); });
+
+    /* Dari layar hasil, yang paling sering terjadi berikutnya bukan mencari
+       lagi - tapi menjatuhkan sesuatu yang barusan teringat gara-gara hasil
+       ini. Jadi tombolnya sama persis, cuma lebih kecil. */
+    $('#b-hasil-drop').addEventListener('click', function () { keLayar('l-utama'); $('#kotak').focus(); });
+    $('#b-hasil-cari').addEventListener('click', function () { $('#cari-input').focus(); });
+    $('#b-hasil-catat').addEventListener('click', keCatatBaru);
+    $('#b-hasil-semua').addEventListener('click', function () { keSemua(); });
+
+    $('#urut-baris').addEventListener('click', function (ev) {
+      var cip = ev.target.closest('[data-urut]');
+      if (!cip) return;
+      urutSaat = cip.getAttribute('data-urut');
+      gambarUrut();
+      jalankanCari();
     });
     $('#b-setelan').addEventListener('click', function () {
       gambarSetelan();
@@ -1758,6 +1909,9 @@
     keHasil: keHasil, keCatat: keCatat, drop: drop,
     gambarMulai: gambarMulai, gambarSetelan: gambarSetelan,
     alihKeyword: alihKeyword, perbaruiUsulKategori: perbaruiUsulKategori,
+    keSemua: keSemua, uraiTagFavorit: uraiTagFavorit,
+    /* Cuma untuk uji: memindah layar tanpa lewat tombol. */
+    keLayarUji: keLayar,
     semuaEntri: function () { return semuaEntri; }
   };
 })(window);

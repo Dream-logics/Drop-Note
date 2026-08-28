@@ -111,18 +111,21 @@ button,input,textarea{font:inherit;color:inherit}
 .cip.nyala{background:var(--a);border-color:var(--a);color:var(--at);font-weight:700}
 
 /* --- tombol --- */
-.tombol-baris{display:flex;gap:9px;margin-top:18px}
-/* Menempel di bawah supaya tetap terjangkau jempol walau kotaknya memanjang.
-   Latarnya wajib pekat - kalau tembus, teks yang lewat di belakangnya
+.tombol-baris{display:flex;gap:7px;margin-top:10px}
+/* Menempel di bawah layar hasil: daftar hasil bisa ratusan baris, dan tombol
+   yang ikut tergulir ke atas sama saja dengan tidak ada.
+   Latarnya wajib pekat - kalau tembus, kartu yang lewat di belakangnya
    membuat tombol terlihat rusak. */
 .tombol-baris.jempol{
   position:sticky;bottom:calc(env(safe-area-inset-bottom) - 10px);z-index:5;
   background:var(--g);padding:10px 0 4px;margin-top:10px;
 }
+.tombol-baris.kecil .tbl{min-height:44px;font-size:13px;gap:5px;font-weight:600}
+.tombol-baris.kecil .ik{width:16px;height:16px}
 .tbl{
-  flex:1;min-height:54px;border:1px solid var(--lt);border-radius:12px;background:none;
-  font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;
-  cursor:pointer;padding:0 8px;
+  flex:1;min-width:0;min-height:52px;border:1px solid var(--lt);border-radius:12px;background:none;
+  font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;
+  cursor:pointer;padding:0 6px;white-space:nowrap;
 }
 .tbl.utama{background:var(--a);border-color:var(--a);color:var(--at);font-weight:700}
 .tbl:disabled{opacity:.4}
@@ -199,6 +202,15 @@ a.elemen-nilai{color:var(--a);text-decoration:none;display:block}
   white-space:nowrap;
 }
 .kartu-tanggal{font-size:11px;color:var(--m);white-space:nowrap;margin-left:auto}
+
+/* --- kepala kelompok saat diurut per tag --- */
+.kelompok{
+  display:flex;align-items:baseline;gap:8px;margin:16px 0 9px;
+  border-top:1px solid var(--l);padding-top:13px;
+}
+.kelompok:first-child{border-top:none;margin-top:2px;padding-top:0}
+.kelompok-nama{font-size:13px;font-weight:700;color:var(--a)}
+.kelompok-jumlah{font-size:11px;color:var(--m)}
 .aksi{
   width:44px;height:44px;border:1px solid var(--lt);border-radius:10px;background:none;color:var(--m);
   display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -252,6 +264,7 @@ a.elemen-nilai{color:var(--a);text-decoration:none;display:block}
 .set-input{width:100%;margin-top:11px;background:var(--g);border:1px solid var(--l);border-radius:10px;
   padding:12px;outline:none;font-family:'IBM Plex Mono',monospace;font-size:12.5px;word-break:break-all}
 .set-input:focus{border-color:var(--a)}
+.set-input.tinggi{min-height:104px;line-height:1.6;resize:vertical;font-size:14px}
 .set-tbl{margin-top:11px;width:100%;min-height:46px;border:1px solid var(--lt);border-radius:10px;
   background:none;font-size:14px;font-weight:600;cursor:pointer}
 .set-tbl.emas{background:var(--a);border-color:var(--a);color:var(--at);font-weight:700}
