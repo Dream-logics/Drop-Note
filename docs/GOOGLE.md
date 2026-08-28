@@ -47,11 +47,12 @@ isian itu hilang untuk semua orang.
    - Application type: **Web application**
    - **Authorized JavaScript origins** — isi asal aplikasimu, tanpa jalur:
      ```
-     https://titosaputramag.github.io
+     https://dream-logics.github.io
      http://localhost:8080
      ```
      Cukup skema + host. Sub-jalur seperti `/Drop-Note/` tidak ditulis dan
-     tidak perlu.
+     tidak perlu — karena itu mengganti nama repo tidak pernah menyentuh
+     Client ID: yang berubah cuma jalurnya, bukan asalnya.
    - Salin **Client ID**-nya.
 
 5. Tempel Client ID itu ke layar pemasangan aplikasi — atau, kalau mau semua

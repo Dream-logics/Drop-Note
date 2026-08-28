@@ -137,7 +137,13 @@ console.log('\npemasangan swalayan');
   });
   cek('Client ID tidak pernah ditanyakan ke pemakai', adaIsianKlien === false);
 
-  await hal.fill('#mulai-client', 'klien-uji.apps.googleusercontent.com');
+  /* Isian itu cuma ada selama `clientId` di bawaan.js masih kosong - artinya
+     cuma di mesin yang belum ditanami. Begitu pembuatnya menanamnya, isian ini
+     lenyap untuk selamanya, dan uji ini harus tetap lulus tanpa mengisi apa
+     pun. Jadi diisi kalau ada, dilewati kalau tidak. */
+  if (await hal.locator('#mulai-client').count()) {
+    await hal.fill('#mulai-client', 'klien-uji.apps.googleusercontent.com');
+  }
   await hal.click('#b-mulai-google');
   await hal.waitForFunction(() => document.querySelector('#mulai-google-ket').textContent.indexOf('Selesai') >= 0,
                             null, { timeout: 8000 });

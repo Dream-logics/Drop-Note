@@ -38,7 +38,8 @@
        aplikasi browser, dan yang menjaganya adalah daftar origin yang kamu
        daftarkan di Google Cloud Console. Kosong di sini berarti pemakainya
        menempelkannya sendiri sekali di layar Setelan. */
-    clientId: '',
+    clientId: '376616148815-6j81udqlnh9r0mdrfkgi2jg8lmnp2k7j' +
+              '.apps.googleusercontent.com',
 
     /* drive.file: aplikasi cuma bisa menyentuh berkas yang DIA sendiri buat -
        isi Drive pemakai yang lain tidak terlihat sama sekali.
