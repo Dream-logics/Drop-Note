@@ -19,7 +19,12 @@
    ============================================================================ */
 'use strict';
 
-var SINGGAH = 'singgahan-v3';
+/* NAIKKAN ANGKA INI SETIAP KALI SALAH SATU BERKAS KERANGKA BERUBAH.
+   Berkas selain halaman diambil dari singgahan dulu, jadi tanpa nama
+   singgahan yang baru, HP yang sudah memasang aplikasinya akan terus
+   memakai versi lama SELAMANYA - terbitan baru tidak akan pernah sampai.
+   'activate' membuang singgahan bernama lain, jadi menaikkannya sudah cukup. */
+var SINGGAH = 'singgahan-v4';
 var KERANGKA = [
   './', './index.html', './gaya.css',
   './bawaan.js', './simpan.js', './otak.js', './awan.js', './pelabel.js',
