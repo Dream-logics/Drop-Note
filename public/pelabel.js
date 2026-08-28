@@ -221,6 +221,10 @@
 
   function labeli(setelan, semua) {
     var antre = semua.filter(function (e) {
+      /* JANJI YANG MENENTUKAN: yang ditandai rahasia tidak pernah berangkat.
+         Bukan disaring di layanan - tidak pernah dikirim sama sekali. Ini
+         saringan pertama; penanda diLabeliAI di kunci.js penjaga keduanya. */
+      if (e.rahasia) return false;
       return !e.diLabeliAI && !e.pensiun && !e.dihapus && (e.isi || e.namaBerkas || (e.daftar || []).length);
     }).slice(0, SEKALI);
     if (!antre.length) return Promise.resolve(0);
@@ -356,6 +360,7 @@
 
   function bacaBerkas(setelan, semua) {
     var antre = semua.filter(function (e) {
+      if (e.rahasia) return false;
       return !e.diBacaAI && !e.pensiun && !e.dihapus &&
              (e.berkasId || e.driveId) && BISA_DIBACA.test(e.tipeBerkas || '') &&
              (e.ukuran || 0) <= BACA_MAKS;

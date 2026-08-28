@@ -24,11 +24,11 @@
    singgahan yang baru, HP yang sudah memasang aplikasinya akan terus
    memakai versi lama SELAMANYA - terbitan baru tidak akan pernah sampai.
    'activate' membuang singgahan bernama lain, jadi menaikkannya sudah cukup. */
-var SINGGAH = 'singgahan-v17';
+var SINGGAH = 'singgahan-v18';
 var KERANGKA = [
   './', './index.html', './gaya.css',
   './bawaan.js', './simpan.js', './otak.js', './awan.js', './pelabel.js',
-  './sinkron.js', './alur.js',
+  './sinkron.js', './kunci.js', './alur.js',
   './manifest.webmanifest', './ikon.svg', './ikon-192.png', './ikon-512.png'
 ];
 

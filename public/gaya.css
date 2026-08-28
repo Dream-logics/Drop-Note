@@ -206,6 +206,11 @@ button,input,textarea{font:inherit;color:inherit}
 .kosong-tbl{max-width:220px;margin:16px auto 0}
 
 /* --- arsip di setelan --- */
+.kartu-cuplik.terkunci{display:flex;align-items:center;gap:7px;color:var(--m);font-style:italic}
+.gembok{width:14px;height:14px;flex:0 0 auto}
+.ikon-btn.nyala{color:var(--a)}
+.awas-teks{color:var(--bahaya) !important;opacity:.95}
+
 .arsip-baris{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--l)}
 .arsip-baris:last-child{border-bottom:none}
 .arsip-judul{flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
