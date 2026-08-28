@@ -94,9 +94,11 @@
       id: idBaru('e'), jenis: jenis || 'teks',
       judul: '', judulManual: false, isi: '', daftar: [],
       kategori: '', label: [],
-      berkasId: null, namaBerkas: '', tipeBerkas: '', ukuran: 0,
+      berkasId: null, driveId: null, thumb: '',
+      namaBerkas: '', tipeBerkas: '', ukuran: 0,
       dibuat: t, diubah: t, dipakai: 0,
-      diLabeliAI: false, pensiun: false, riwayat: []
+      diLabeliAI: false, diBacaAI: false,
+      pensiun: false, dihapus: false, riwayat: []
     };
   }
 
@@ -149,7 +151,7 @@
   function tampilkanLayar(id) {
     if (layarSaat === 'l-catat' && id !== 'l-catat') simpanCatat();
     if (layarSaat === 'l-hasil' && id !== 'l-hasil') bersihkanUrl();
-    ['l-utama', 'l-hasil', 'l-catat', 'l-setelan'].forEach(function (x) {
+    ['l-mulai', 'l-utama', 'l-hasil', 'l-catat', 'l-setelan'].forEach(function (x) {
       $('#' + x).classList.toggle('aktif', x === id);
     });
     layarSaat = id;
@@ -340,6 +342,8 @@
       e.namaBerkas = draf.namaBerkas;
       e.tipeBerkas = draf.tipeBerkas;
       e.ukuran = draf.ukuran;
+      e.thumb = draf.thumb || '';
+      e.driveId = draf.driveId || null;
     }
     e.judul = TOtak.judulOtomatis(e);
     e.label = TOtak.labelOtomatis(e);
@@ -384,14 +388,40 @@
     });
   }
 
+  /* Thumbnail 200px disimpan sebagai dataURL di dalam entri, bukan sebagai
+     blob terpisah. Setelah berkas aslinya naik ke Drive dan dibuang dari HP,
+     inilah satu-satunya yang tersisa - dan berkat dia daftar hasil tetap
+     tergambar seketika, bahkan tanpa sinyal. */
+  function buatThumb(blob) {
+    return new Promise(function (terima) {
+      if (!/^image\//.test(blob.type || '')) return terima('');
+      var url = URL.createObjectURL(blob);
+      var gbr = new Image();
+      gbr.onload = function () {
+        var skala = Math.min(1, 200 / Math.max(gbr.naturalWidth, gbr.naturalHeight));
+        var k = document.createElement('canvas');
+        k.width = Math.max(1, Math.round(gbr.naturalWidth * skala));
+        k.height = Math.max(1, Math.round(gbr.naturalHeight * skala));
+        k.getContext('2d').drawImage(gbr, 0, 0, k.width, k.height);
+        URL.revokeObjectURL(url);
+        try { terima(k.toDataURL('image/jpeg', 0.6)); } catch (e) { terima(''); }
+      };
+      gbr.onerror = function () { URL.revokeObjectURL(url); terima(''); };
+      gbr.src = url;
+    });
+  }
+
   function pasangBerkas(berkas, jenis) {
     var siap = jenis === 'gambar' ? kecilkanGambar(berkas) : Promise.resolve(berkas);
     return siap.then(function (blob) {
       var bid = idBaru('b');
       var nama = berkas.name || (jenis === 'suara' ? 'rekaman.webm' : 'berkas');
-      return TSimpan.taruhBerkas(bid, blob, nama, blob.type || berkas.type).then(function () {
+      return Promise.all([
+        TSimpan.taruhBerkas(bid, blob, nama, blob.type || berkas.type),
+        buatThumb(blob)
+      ]).then(function (r) {
         draf = {
-          jenis: jenis, berkasId: bid, namaBerkas: nama,
+          jenis: jenis, berkasId: bid, namaBerkas: nama, thumb: r[1] || '',
           tipeBerkas: blob.type || berkas.type || '', ukuran: blob.size || 0
         };
         $$('.lamp').forEach(function (b) {
@@ -493,7 +523,11 @@
       b.push('<a class="kartu-tautan" href="' + H(e.isi) + '" target="_blank" rel="noopener">' +
              H(e.isi) + '</a>');
     }
-    if (e.jenis === 'gambar' && e.berkasId) {
+    /* Thumbnail-nya sudah ada di dalam entri, jadi tidak ada satu pun
+       permintaan - ke IndexedDB maupun ke jaringan - saat menggambar hasil. */
+    if (e.thumb) {
+      b.push('<img class="kartu-gambar" src="' + H(e.thumb) + '" alt="">');
+    } else if (e.jenis === 'gambar' && e.berkasId) {
       b.push('<img class="kartu-gambar" data-berkas="' + H(e.berkasId) + '" alt="">');
     }
     if (e.jenis === 'daftar' && (e.daftar || []).length) {
@@ -617,20 +651,45 @@
   function gambarLampiranCatat(e) {
     var wadah = $('#catat-lampiran');
     wadah.innerHTML = '';
-    if (!e.berkasId) return;
+    if (!e.berkasId && !e.driveId) return;
 
-    TSimpan.ambilBerkas(e.berkasId).then(function (r) {
-      if (!r || !r.blob) return;
-      var url = URL.createObjectURL(r.blob);
-      urlSementara.push(url);
-      var tubuh = '<div class="terpasang-tubuh"><div class="terpasang-nama">' +
-        H(e.namaBerkas || 'Berkas') + '</div><div class="terpasang-ukuran">' +
-        H(ukuranTeks(e.ukuran)) + '</div>' +
-        (e.jenis === 'suara' ? '<audio controls src="' + url + '"></audio>' :
-          '<a class="terpasang-unduh" href="' + url + '" download="' + H(e.namaBerkas || 'berkas') +
-          '" target="_blank" rel="noopener">Buka berkas</a>') + '</div>';
-      wadah.innerHTML = '<div class="terpasang">' +
-        (e.jenis === 'gambar' ? '<img src="' + url + '" alt="">' : '') + tubuh + '</div>';
+    wadah.innerHTML = '<div class="terpasang">' +
+      (e.thumb ? '<img src="' + H(e.thumb) + '" alt="">' : '') +
+      '<div class="terpasang-tubuh">' +
+      '<div class="terpasang-nama">' + H(e.namaBerkas || 'Berkas') + '</div>' +
+      '<div class="terpasang-ukuran">' + H(ukuranTeks(e.ukuran)) +
+      (e.driveId ? ' · di Drive' : '') + '</div>' +
+      '<button class="terpasang-unduh" id="b-unduh">Unduh berkas</button>' +
+      '</div></div>';
+
+    $('#b-unduh').addEventListener('click', function () { unduh(e); });
+  }
+
+  /* Blob aslinya dibuang setelah selamat sampai Drive, jadi mengunduh punya
+     dua jalan. Yang lokal instan; yang di Drive butuh sinyal - dan itu
+     dikatakan apa adanya, bukan digantung tanpa kabar. */
+  function unduh(e) {
+    var tombol = $('#b-unduh');
+    function beri(blob) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = e.namaBerkas || 'berkas';
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      if (tombol) tombol.textContent = 'Unduh berkas';
+    }
+    if (e.berkasId) {
+      TSimpan.ambilBerkas(e.berkasId).then(function (r) {
+        if (r && r.blob) beri(r.blob);
+        else pesan('Berkasnya tidak ketemu');
+      });
+      return;
+    }
+    if (tombol) tombol.textContent = 'Mengambil…';
+    TAwan.unduhBerkas(setelanSaat, e.driveId).then(beri, function (err) {
+      if (tombol) tombol.textContent = 'Unduh berkas';
+      pesan('Gagal mengambil: ' + err.message);
     });
   }
 
@@ -734,6 +793,135 @@
     });
   }
 
+  /* Menghapus sungguhan. Bukan bawaan, dan sengaja butuh tekan lama - tapi
+     tanpa ini, catatan sekali pakai meninggalkan bangkai di Sheet dan wadahnya
+     kembali jadi wadah yang tidak pernah kosong. Nisannya (`dihapus`) yang
+     naik ke awan; barisnya di Sheet dan berkasnya di Drive dihapus di sana,
+     baru entrinya dibuang dari HP. */
+  function hapusPermanen() {
+    var e = entriCatat;
+    if (!e) return;
+    e.dihapus = true;
+    e.pensiun = true;
+    e.diubah = Date.now();
+    TSimpan.taruh(e).then(function () {
+      segarkanCache(e);
+      kembali();
+      pesan('Dihapus permanen', {
+        teks: 'Urungkan',
+        jalan: function () {
+          e.dihapus = false;
+          e.pensiun = false;
+          TSimpan.taruh(e).then(function () {
+            segarkanCache(e);
+            perbaruiJumlah();
+            if (layarSaat === 'l-hasil') jalankanCari();
+          });
+        }
+      });
+      /* Kalau cadangan nyala, nisannya menyusul di putaran berikutnya. */
+    });
+  }
+
+  /* ===================== layar mulai =====================
+     Swalayan. Pemakainya tidak membuat folder, tidak membuat spreadsheet,
+     tidak menempel kode ke mana pun - dia menekan satu tombol dan aplikasi
+     ini yang membuat rumahnya sendiri di Drive-nya.
+
+     Dan seluruh layar ini boleh dilewati. Aplikasinya jalan penuh tanpa
+     Google dan tanpa AI; yang dua itu menambah, bukan menyalakan. */
+
+  function sudahDipasang() { return !!setelanSaat.dipasang; }
+
+  function gambarMulai() {
+    var s = setelanSaat;
+    var tersambung = !!s.sheetId;
+
+    $('#mulai-isi').innerHTML = [
+      '<div class="set-kotak">',
+      '<div class="set-judul">' + H(TBawaan.nama) + '</div>',
+      '<div class="set-ket">' + H(TBawaan.tagline) + ' Semua tersimpan di HP ini dan bisa dipakai tanpa sinyal. Dua langkah di bawah cuma menambah — <b>boleh dilewati sekarang</b>, dan bisa dipasang kapan saja dari Setelan.</div>',
+      '</div>',
+
+      '<div class="set-bagian">1 · Brankas di Google-mu</div>',
+      '<div class="set-kotak">',
+      '<div class="set-judul">' + (tersambung ? 'Sudah tersambung' : 'Hubungkan Google') + '</div>',
+      '<div class="set-ket">Aplikasi ini akan membuat sendiri satu folder <b>' + H(TBawaan.nama) +
+        '</b> di Drive-mu, berisi satu spreadsheet cadangan dan satu folder berkas. ' +
+        'Kamu tidak perlu membuat apa pun.<br><br>' +
+        'Izin yang diminta cuma <b>berkas yang dibuat aplikasi ini sendiri</b> — isi Drive-mu yang lain tidak terlihat sama sekali.</div>',
+      (s.clientId || TBawaan.clientId) ? '' :
+        '<input class="set-input" id="mulai-client" placeholder="OAuth Client ID Google" value="">',
+      '<button class="set-tbl' + (tersambung ? '' : ' emas') + '" id="b-mulai-google">' +
+        (tersambung ? 'Sambungkan ulang' : 'Hubungkan Google') + '</button>',
+      '<div class="set-ket" id="mulai-google-ket">' +
+        (tersambung ? 'Folder dan spreadsheet sudah dibuat.' : '') + '</div>',
+      '</div>',
+
+      '<div class="set-bagian">2 · Bantuan AI</div>',
+      '<div class="set-kotak">',
+      '<div class="set-judul">Supaya yang lahir setengah tetap ketemu</div>',
+      '<div class="set-ket">Catatan lahir dalam tiga detik, jadi konteksnya tidak ikut tertulis — dan foto dokumen tidak punya kata sama sekali. AI menuliskannya sekali di belakang layar, supaya pencarian biasa bisa menemukannya bertahun-tahun kemudian.<br><br>' +
+        'Tempel kunci Gemini-mu. Model bawaan <b>' + H(TBawaan.model) + '</b>.</div>',
+      '<input class="set-input" id="mulai-kunci" type="password" placeholder="Kunci Gemini" value="' + H(s.kunciGemini || '') + '">',
+      '<button class="set-tbl" id="b-mulai-uji">Uji kunci</button>',
+      '<div class="set-ket" id="mulai-ai-ket"></div>',
+      '</div>',
+
+      '<button class="set-tbl emas" id="b-mulai-selesai" style="margin-top:22px">Mulai pakai</button>',
+      '<button class="set-tbl" id="b-mulai-lewati">Lewati, atur nanti</button>'
+    ].join('');
+
+    pasangMulai();
+  }
+
+  function pasangMulai() {
+    var ket = $('#mulai-google-ket');
+
+    $('#b-mulai-google').addEventListener('click', function () {
+      var isian = $('#mulai-client');
+      var simpan = isian ? simpanSetelan('clientId', isian.value.trim()) : Promise.resolve();
+      ket.textContent = 'Membuka izin Google…';
+      simpan.then(function () {
+        return TAwan.masuk(setelanSaat);
+      }).then(function () {
+        ket.textContent = 'Menyiapkan folder dan spreadsheet…';
+        return TSinkron.rumah(setelanSaat);
+      }).then(function () {
+        return simpanSetelan('cadanganNyala', true);
+      }).then(function () {
+        ket.innerHTML = '<b>Selesai.</b> Folder <b>' + H(TBawaan.nama) + '</b> dan cadangannya sudah dibuat di Drive-mu.';
+      }).catch(function (err) {
+        ket.textContent = 'Gagal: ' + err.message;
+      });
+    });
+
+    var kunci = $('#mulai-kunci');
+    kunci.addEventListener('change', function () { simpanSetelan('kunciGemini', kunci.value.trim()); });
+
+    $('#b-mulai-uji').addEventListener('click', function () {
+      var k = $('#mulai-ai-ket');
+      k.textContent = 'Mencoba…';
+      simpanSetelan('kunciGemini', kunci.value.trim())
+        .then(function () { return simpanSetelan('modeAI', 'penuh'); })
+        .then(function () { return TPelabel.coba(setelanSaat); })
+        .then(function (h) {
+          k.innerHTML = 'Tersambung. Contoh judul: <b>' + H(h.judul || '') + '</b>';
+        }, function (err) {
+          k.textContent = 'Gagal: ' + err.message;
+        });
+    });
+
+    function selesai() {
+      simpanSetelan('dipasang', true).then(function () {
+        tampilkanLayar('l-utama');
+        muatSemua().then(function () { perbaruiUsulKategori(); });
+      });
+    }
+    $('#b-mulai-selesai').addEventListener('click', selesai);
+    $('#b-mulai-lewati').addEventListener('click', selesai);
+  }
+
   /* ===================== layar setelan ===================== */
 
   function mintaPermanen() {
@@ -763,71 +951,65 @@
   function gambarSetelan() {
     var s = setelanSaat;
     var mode = s.modeAI || 'mati';
+    var tersambung = !!s.sheetId;
 
     $('#setelan-isi').innerHTML = [
-      /* Cadangan ditaruh paling atas dengan sengaja. Ini satu-satunya bagian
-         yang menjawab "kalau HP-nya hilang, hilang juga semuanya?" - dan itu
-         pertanyaan yang lebih menentukan daripada kerapian label. */
-      '<div class="set-bagian">Apps Script</div>',
+      /* Cadangan ditaruh paling atas dengan sengaja: ini satu-satunya bagian
+         yang menjawab "kalau HP-nya hilang, hilang juga semuanya?" */
+      '<div class="set-bagian">Brankas</div>',
       '<div class="set-kotak">',
-      '<div class="set-judul">Satu alamat untuk dua-duanya</div>',
-      '<div class="set-ket">Alamat <b>/exec</b> hasil deploy Apps Script-mu. Dipakai bersama oleh cadangan harian dan pelabelan AI. Sandinya wajib: alamat /exec yang di-deploy “Anyone” itu pintu terbuka, dan di baliknya ada catatanmu.</div>',
-      '<input class="set-input" id="set-alamat" placeholder="https://script.google.com/macros/s/…/exec" value="' + H(s.alamatScript || '') + '">',
-      '<input class="set-input" id="set-sandi" type="password" placeholder="Sandi (samakan dengan Script Property)" value="' + H(s.sandiScript || '') + '">',
-      '<button class="set-tbl" id="b-uji-script">Uji sambungan</button>',
-      '<div class="set-ket" id="uji-script-hasil"></div>',
-      '</div>',
-
-      '<div class="set-bagian">Cadangan harian</div>',
-      '<div class="set-kotak">',
-      '<div class="set-judul">Brankas di Google Sheets</div>',
-      '<div class="set-ket">Berjalan saat aplikasi dibuka, di belakang layar, dan boleh gagal diam-diam. <b>Tidak pernah</b> di jalur drop. Yang naik cuma teksnya — isi gambar dan rekaman tetap hanya di HP ini.</div>',
+      '<div class="set-judul">' + (tersambung ? 'Tersambung ke Drive-mu' : 'Belum tersambung') + '</div>',
+      '<div class="set-ket">' + (tersambung
+        ? 'Folder <b>' + H(TBawaan.nama) + '</b> berisi cadangan dan berkasmu. Cadangan berjalan saat aplikasi dibuka, di belakang layar, dan <b>tidak pernah</b> di jalur drop.'
+        : 'Catatanmu cuma ada di HP ini. Menghapus “cookies and site data” akan menghapus semuanya.') + '</div>',
+      (s.clientId || TBawaan.clientId) ? '' :
+        '<input class="set-input" id="set-client" placeholder="OAuth Client ID Google" value="' + H(s.clientId || '') + '">',
       '<div class="set-pilih" id="set-cadangan">',
       '<button class="cip' + (s.cadanganNyala ? '' : ' nyala') + '" data-cadangan="mati">Mati</button>',
       '<button class="cip' + (s.cadanganNyala ? ' nyala' : '') + '" data-cadangan="nyala">Nyala</button>',
       '</div>',
       '<div class="set-ket" id="cadangan-status">…</div>',
-      s.cadanganNyala ? '<button class="set-tbl" id="b-cadang-sekarang">Kirim sekarang</button>' : '',
-      s.cadanganNyala ? '<button class="set-tbl" id="b-pulihkan">Pulihkan dari Sheet</button>' : '',
+      '<button class="set-tbl' + (tersambung ? '' : ' emas') + '" id="b-hubungkan">' +
+        (tersambung ? 'Sambungkan ulang Google' : 'Hubungkan Google') + '</button>',
+      tersambung ? '<button class="set-tbl" id="b-buka-sheet">Buka spreadsheet-nya</button>' : '',
+      tersambung ? '<button class="set-tbl" id="b-cadang-sekarang">Kirim sekarang</button>' : '',
+      tersambung ? '<button class="set-tbl" id="b-pulihkan">Pulihkan dari Drive</button>' : '',
       '</div>',
 
       '<div class="set-bagian">Penyimpanan di perangkat</div>',
-      '<div class="set-kotak" id="kotak-simpanan">',
+      '<div class="set-kotak">',
       '<div class="set-judul">Timbunanmu ada di sini</div>',
       '<div class="set-ket" id="simpanan-ket">…</div>',
       '</div>',
 
-      '<div class="set-bagian">Pelabelan otomatis</div>',
+      '<div class="set-bagian">Bantuan AI</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">Menambal konteks yang tidak sempat ditulis</div>',
-      '<div class="set-ket">Catatan lahir dalam tiga detik, jadi konteksnya tidak ikut tertulis. ' +
-        'Kartu <b>“Link dev photo studio”</b> nanti dicari dengan kata <b>“apps A”</b>. ' +
-        'AI di sini cuma menambal selisih itu — sekali per catatan, di belakang layar. ' +
-        'Aplikasinya jalan penuh tanpa ini.</div>',
+      '<div class="set-ket"><b>Hemat</b> memberi judul dan kata kunci pada catatan. ' +
+        '<b>Penuh</b> juga membaca isi foto dan PDF — KTP, kontrak, struk jadi bisa dicari lewat isinya. ' +
+        'Keduanya berjalan di belakang layar dan boleh gagal diam-diam.</div>',
       '<div class="set-pilih" id="set-mode">',
-      ['mati', 'proxy', 'langsung'].map(function (m) {
+      ['mati', 'hemat', 'penuh'].map(function (m) {
         return '<button class="cip' + (mode === m ? ' nyala' : '') + '" data-mode="' + m + '">' +
-          (m === 'mati' ? 'Mati' : (m === 'proxy' ? 'Proxy' : 'Langsung')) + '</button>';
+          m.charAt(0).toUpperCase() + m.slice(1) + '</button>';
       }).join(''),
       '</div>',
-      mode === 'proxy' ? '<div class="set-ket">Memakai alamat Apps Script di atas.</div>' : '',
-      mode === 'langsung' ? '<input class="set-input" id="set-kunci" type="password" placeholder="Kunci Gemini" value="' + H(s.kunciGemini || '') + '">' : '',
-      mode !== 'mati' ? '<input class="set-input" id="set-model" placeholder="' + H(TPelabel.MODEL_BAWAAN) + '" value="' + H(s.model || '') + '">' : '',
-      mode !== 'mati' ? '<button class="set-tbl" id="b-uji">Uji pelabelan</button><div class="set-ket" id="uji-hasil"></div>' : '',
+      mode !== 'mati' ? '<input class="set-input" id="set-kunci" type="password" placeholder="Kunci Gemini" value="' + H(s.kunciGemini || '') + '">' : '',
+      mode !== 'mati' ? '<input class="set-input" id="set-model" placeholder="' + H(TBawaan.model) + '" value="' + H(s.model || '') + '">' : '',
+      mode !== 'mati' ? '<button class="set-tbl" id="b-uji">Uji kunci</button><div class="set-ket" id="uji-hasil"></div>' : '',
       '</div>',
 
       /* Pertanyaannya pernah ditanyakan langsung, jadi dijawab jujur di sini
          juga - bukan disamarkan jadi UI yang seolah-olah aman. */
-      mode === 'langsung' ? '<div class="set-kotak awas"><div class="set-judul">Kunci di HP tidak bisa disembunyikan</div>' +
+      mode !== 'mati' ? '<div class="set-kotak awas"><div class="set-judul">Kunci di HP tidak bisa disembunyikan</div>' +
         '<div class="set-ket">Di aplikasi yang seluruhnya jalan di browser, <b>kunci API tidak bisa benar-benar disembunyikan</b>. ' +
-        'Siapa pun yang memegang HP ini bisa membacanya. Mode <b>Proxy</b> yang benar-benar menyembunyikan: ' +
-        'kuncinya tinggal di Apps Script, aplikasi ini cuma tahu alamat proxy-nya. ' +
-        'Kalau tetap memakai mode langsung, batasi kuncinya di Google Cloud Console sebagai lapis kedua.</div></div>' : '',
+        'Siapa pun yang memegang HP ini bisa membacanya. Itu kunci <b>milikmu sendiri</b>, jadi risikonya juga milikmu — ' +
+        'batasi kuncinya di Google AI Studio dan cabut kalau HP-nya hilang.</div></div>' : '',
 
       '<div class="set-bagian">Cadangan manual</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">Salinan teks ke berkas</div>',
-      '<div class="set-ket">Isi berkas (gambar, rekaman) sengaja tidak ikut — satu cadangan bisa ratusan megabita dan gagal di tengah jalan. Yang diekspor teksnya, bagian yang tidak tergantikan.</div>',
+      '<div class="set-ket">Isi berkas sengaja tidak ikut — satu cadangan bisa ratusan megabita dan gagal di tengah jalan. Yang diekspor teksnya, bagian yang tidak tergantikan.</div>',
       '<button class="set-tbl" id="b-ekspor">Ekspor</button>',
       '<button class="set-tbl" id="b-impor">Impor</button>',
       '</div>',
@@ -835,7 +1017,7 @@
       '<div class="set-bagian">Bahaya</div>',
       '<div class="set-kotak awas">',
       '<div class="set-judul">Kosongkan semua data</div>',
-      '<div class="set-ket">Semua entri dan berkas di perangkat ini hilang, tanpa urung. Ketik <b>HAPUS</b> untuk membuka tombolnya.</div>',
+      '<div class="set-ket">Semua entri dan berkas di perangkat ini hilang, tanpa urung. Yang sudah naik ke Drive tetap aman. Ketik <b>HAPUS</b> untuk membuka tombolnya.</div>',
       '<input class="set-input" id="set-hapus-ketik" placeholder="HAPUS" autocomplete="off">',
       '<button class="set-tbl bahaya" id="b-kosongkan" disabled>Kosongkan</button>',
       '</div>'
@@ -850,7 +1032,7 @@
     if (kotak) {
       var s = setelanSaat;
       if (!TSinkron.nyala(s)) {
-        kotak.textContent = s.cadanganNyala ? 'Isi dulu alamat Apps Script di atas.' : 'Mati — catatanmu cuma ada di HP ini.';
+        kotak.textContent = 'Mati — catatanmu cuma ada di HP ini.';
       } else {
         TSinkron.belumTerkirim(s).then(function (n) {
           kotak.innerHTML = 'Terakhir berhasil: <b>' + H(waktuPanjang(s.cadanganBerhasil)) + '</b>' +
@@ -878,20 +1060,25 @@
   }
 
   function pasangSetelan() {
-    var alamat = $('#set-alamat');
-    if (alamat) alamat.addEventListener('change', function () { simpanSetelan('alamatScript', alamat.value.trim()); });
-    var sandi = $('#set-sandi');
-    if (sandi) sandi.addEventListener('change', function () { simpanSetelan('sandiScript', sandi.value.trim()); });
+    var klien = $('#set-client');
+    if (klien) klien.addEventListener('change', function () { simpanSetelan('clientId', klien.value.trim()); });
 
-    var ujiScript = $('#b-uji-script');
-    if (ujiScript) ujiScript.addEventListener('click', function () {
-      var ket = $('#uji-script-hasil');
-      ket.textContent = 'Mencoba…';
-      TSinkron.coba(setelanSaat).then(function (j) {
-        ket.innerHTML = 'Tersambung. Sheet berisi <b>' + H(String(j.baris == null ? 0 : j.baris)) + '</b> baris.';
-      }, function (err) {
+    $('#b-hubungkan').addEventListener('click', function () {
+      var ket = $('#cadangan-status');
+      ket.textContent = 'Membuka izin Google…';
+      TAwan.masuk(setelanSaat).then(function () {
+        ket.textContent = 'Menyiapkan folder dan spreadsheet…';
+        return TSinkron.rumah(setelanSaat);
+      }).then(function () {
+        return simpanSetelan('cadanganNyala', true);
+      }).then(gambarSetelan, function (err) {
         ket.textContent = 'Gagal: ' + err.message;
       });
+    });
+
+    var bukaSheet = $('#b-buka-sheet');
+    if (bukaSheet) bukaSheet.addEventListener('click', function () {
+      global.open('https://docs.google.com/spreadsheets/d/' + setelanSaat.sheetId + '/edit', '_blank', 'noopener');
     });
 
     $$('#set-cadangan .cip').forEach(function (b) {
@@ -905,7 +1092,7 @@
       sekarang.textContent = 'Mengirim…';
       TSinkron.putaran(setelanSaat, true).then(function (n) {
         sekarang.textContent = 'Kirim sekarang';
-        pesan(n ? n + ' catatan naik ke Sheet' : (setelanSaat.cadanganGalat || 'Semua sudah tersalin'));
+        pesan(n ? n + ' catatan naik ke Drive' : (setelanSaat.cadanganGalat || 'Semua sudah tersalin'));
         perbaruiStatusSetelan();
       });
     });
@@ -914,12 +1101,12 @@
     if (pulih) pulih.addEventListener('click', function () {
       pulih.textContent = 'Menarik…';
       TSinkron.pulihkan(setelanSaat).then(function (n) {
-        pulih.textContent = 'Pulihkan dari Sheet';
+        pulih.textContent = 'Pulihkan dari Drive';
         return muatSemua().then(function () {
           pesan(n ? n + ' catatan dipulihkan' : 'Tidak ada yang perlu dipulihkan');
         });
       }, function (err) {
-        pulih.textContent = 'Pulihkan dari Sheet';
+        pulih.textContent = 'Pulihkan dari Drive';
         pesan('Gagal memulihkan: ' + err.message);
       });
     });
@@ -955,7 +1142,8 @@
         var u = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = u;
-        a.download = 'drop-note-' + new Date().toISOString().slice(0, 10) + '.json';
+        a.download = TOtak.normal(TBawaan.nama).replace(/\s+/g, '-') + '-' +
+                     new Date().toISOString().slice(0, 10) + '.json';
         a.click();
         setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
       });
@@ -997,9 +1185,26 @@
   }
 
   function putaranCadangan() {
-    TSinkron.putaran(setelanSaat).then(function () {
+    return TSinkron.putaran(setelanSaat).then(function () {
+      /* WAJIB. Cadangan menyunting entri di belakang layar: berkas yang naik
+         ke Drive kehilangan berkasId dan mendapat driveId, dan nisan yang
+         sudah bersih dibuang. Kalau salinan di memori tidak disegarkan,
+         suntingan berikutnya menimpanya dengan keadaan lama - dan berkasnya
+         jadi yatim di Drive, tidak bisa diambil lagi dari mana pun. */
+      return muatSemua();
+    }).then(function () {
       if (layarSaat === 'l-setelan') perbaruiStatusSetelan();
-    });
+      if (layarSaat === 'l-hasil') jalankanCari();
+      /* Entri yang sedang dibuka ikut disegarkan, kalau dia belum disunting. */
+      if (entriCatat) {
+        var segar = null;
+        semuaEntri.forEach(function (x) { if (x.id === entriCatat.id) segar = x; });
+        if (segar && segar.diubah >= (entriCatat.diubah || 0)) {
+          entriCatat = segar;
+          gambarLampiranCatat(segar);
+        }
+      }
+    }).catch(function () { /* cadangan gagal bukan kabar buruk buat pemakainya */ });
   }
 
   /* ===================== bagikan & pemasangan ===================== */
@@ -1173,7 +1378,25 @@
       simpanCatat().then(gambarRiwayat);
       pesan('Versi dipulihkan');
     });
-    $('#b-buang').addEventListener('click', pensiunkan);
+    /* Ketuk = pensiun (bisa diurungkan). Tekan lama = hapus permanen sampai ke
+       Sheet dan Drive. Dua tindakan, satu tombol, tanpa dialog yang bertanya. */
+    var tekanJam = null, sudahLama = false;
+    var buang = $('#b-buang');
+    function mulaiTekan() {
+      sudahLama = false;
+      clearTimeout(tekanJam);
+      tekanJam = setTimeout(function () {
+        sudahLama = true;
+        if (navigator.vibrate) navigator.vibrate(18);
+        hapusPermanen();
+      }, 650);
+    }
+    function lepasTekan() { clearTimeout(tekanJam); }
+    buang.addEventListener('pointerdown', mulaiTekan);
+    buang.addEventListener('pointerup', lepasTekan);
+    buang.addEventListener('pointerleave', lepasTekan);
+    buang.addEventListener('pointercancel', lepasTekan);
+    buang.addEventListener('click', function () { if (!sudahLama) pensiunkan(); });
 
     /* --- umum --- */
     $$('[data-kembali]').forEach(function (b) {
@@ -1223,6 +1446,12 @@
     try { history.replaceState({ layar: 'l-utama' }, ''); }
     catch (e) { pakaiRiwayatBrowser = false; }
 
+    /* Nama aplikasi dituliskan dari satu tempat saja (bawaan.js), supaya
+       menggantinya besok tidak menyentuh apa pun selain kulitnya. */
+    $$('#merek, #merek-mulai').forEach(function (n) { n.textContent = TBawaan.nama; });
+    $('#kaki-utama').textContent = TBawaan.tagline +
+      ' Tersimpan langsung di perangkat, tanpa menunggu jaringan.';
+
     pasang();
 
     daftarSW();
@@ -1237,6 +1466,15 @@
       /* Minta status penyimpanan permanen sekali di awal: tanpa itu browser
          boleh membuang seluruh timbunan saat penyimpanan HP sesak, diam-diam. */
       mintaPermanen();
+
+      /* Layar pemasangan cuma muncul sekali, dan hanya kalau kotaknya masih
+         benar-benar kosong. Kalau sudah ada isinya - misalnya masuk lewat
+         tombol Bagikan - jangan pernah menghalangi jalan masuk. */
+      if (!sudahDipasang() && !semuaEntri.length && !$('#kotak').value) {
+        gambarMulai();
+        tampilkanLayar('l-mulai');
+      }
+
       putaranLabel();
       putaranCadangan();
       setInterval(putaranLabel, PUTARAN_LABEL);

@@ -1,7 +1,16 @@
-# Proposal revisi — Drop Note v2
+# Proposal revisi v2
 
-Ditulis 28 Agustus 2026, menjawab tujuh syarat baru dari pemakainya.
-Belum dikerjakan. Ini bahan keputusan, bukan catatan pekerjaan.
+Ditulis 28 Agustus 2026, menjawab syarat-syarat baru dari pemakainya.
+
+> **Keputusan yang sudah diambil, 28 Agustus 2026:**
+> - Nama untuk sekarang **“Drop Memory”**, bukan Laci. Riset di bawah tetap
+>   berlaku dan nama masih bisa berganti kapan saja — strukturnya sudah dibuat
+>   tidak peduli nama (lihat `public/bawaan.js`).
+> - **Semuanya swalayan.** Folder Drive dan spreadsheet dibuat aplikasi.
+>   Apps Script dibuang; diganti Google Sign-In + Drive/Sheets langsung.
+>   Satu-satunya yang diminta dari pemakai: kunci Gemini, dan itu pun opsional.
+> - Tahap 0, 2, 3 sebagian, dan pemasangan swalayan **sudah dikerjakan**.
+>   Sisanya di `docs/SISA-KERJA.md`.
 
 ---
 

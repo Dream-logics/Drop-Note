@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Drop Note</title>
+<title>Drop Memory</title>
 <meta name="description" content="Satu kotak untuk menimbun catatan, satu pencarian untuk mengambilnya kembali.">
 <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#F4F2EC" media="(prefers-color-scheme: light)">
@@ -13,14 +13,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="dropnote.css">
+<link rel="stylesheet" href="gaya.css">
 </head>
 <body>
+
+<!-- ===================== LAYAR MULAI (sekali saat dipasang) ===================== -->
+<section class="layar" id="l-mulai">
+  <header class="atas">
+    <div class="merek" id="merek-mulai">Drop Memory</div>
+  </header>
+  <div class="gulung" id="mulai-isi"></div>
+</section>
 
 <!-- ===================== LAYAR UTAMA ===================== -->
 <section class="layar aktif" id="l-utama">
   <header class="atas">
-    <div class="merek">Drop Note</div>
+    <div class="merek" id="merek">Drop Memory</div>
     <div class="atas-kanan">
       <span class="jumlah" id="jumlah">0 tersimpan</span>
       <button class="ikon-btn" id="b-setelan" aria-label="Setelan">
@@ -148,10 +156,12 @@
 <input type="file" id="pilih-gambar" accept="image/*" hidden>
 <input type="file" id="pilih-berkas" hidden>
 
+<script src="bawaan.js"></script>
 <script src="simpan.js"></script>
 <script src="otak.js"></script>
+<script src="awan.js"></script>
 <script src="pelabel.js"></script>
 <script src="sinkron.js"></script>
-<script src="dropnote.js"></script>
+<script src="alur.js"></script>
 </body>
 </html>

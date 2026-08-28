@@ -1,32 +1,91 @@
 /* ============================================================================
-   Drop Note — pelabel (satu-satunya bagian yang memakai AI)
+   Pelabel — satu-satunya bagian yang memakai AI
    ============================================================================
-   Tugasnya satu kalimat: memberi judul dan kata kunci yang MEMAKAI KATA YANG
-   NANTI DIPAKAI UNTUK MENCARI - bukan kata yang kebetulan ada di isinya.
+   Dua tugas, dan keduanya soal yang sama: membuat sesuatu bisa DITEMUKAN
+   berbulan-bulan kemudian oleh orang yang sudah lupa menamainya.
 
-   Dan alasannya bukan kecanggihan. Memberi judul yang bagus itu menuntut
-   keputusan, dan keputusan adalah ongkos yang paling mahal buat orang yang
-   seharian sudah dikejar pekerjaan lain. Kalau pekerjaan itu dilempar balik
-   ke pemakainya, aplikasi ini mati dalam seminggu seperti semua pendahulunya.
-   Jadi AI di sini membayar ongkos itu. Itu saja.
+   1. LABEL. Catatan lahir dalam tiga detik, jadi konteksnya tidak ikut
+      tertulis. Kartu "Link dev photo studio" nanti dicari dengan kata
+      "apps A" - dan tidak ada satu pun kata yang cocok.
+
+   2. BACA BERKAS (OCR). Foto KTP bernama IMG_20240312_094512.jpg tidak cocok
+      dengan apa pun yang diingat pemiliknya. AI membaca isinya sekali, lalu
+      menuliskan kata-kata yang nanti dipakai mencari. Setelah itu pencarian
+      biasa - offline, nol biaya - sudah cukup menemukannya.
+
+   Pembagiannya tetap: AI MENULIS sekali saat entri masuk, LOGIC MEMBACA tiap
+   kali mencari. Kebalikannya bikin pencarian - hal yang paling sering
+   dilakukan - jadi lambat dan berbayar.
 
    TIGA ATURAN YANG TIDAK BOLEH DILANGGAR
 
    1. Tidak pernah di jalur masuk. Nge-drop tidak boleh menunggu jaringan
-      sedetik pun. Pelabelan berjalan belakangan, atas antrean yang tertinggal.
-   2. Borongan. Sekali panggil untuk banyak entri - lebih murah, dan lebih
-      jarang kena batas pemakaian.
-   3. Gagal itu wajar. Tidak ada sinyal, kunci salah, kuota habis - entrinya
-      tetap tersimpan dan tetap bisa dicari lewat label logic. Antreannya
-      dicoba lagi nanti. Tidak ada yang hilang kalau AI tidak pernah jalan
-      sama sekali.
+      sedetik pun. Semua di sini berjalan belakangan, atas antrean.
+   2. Borongan untuk label. Sekali panggil untuk banyak entri.
+   3. Gagal itu wajar dan diam. Entrinya tetap tersimpan dan tetap bisa dicari
+      lewat label logic. Aplikasinya jalan penuh kalau AI tidak pernah hidup.
    ============================================================================ */
 (function (global) {
   'use strict';
 
-  var MODEL_BAWAAN = 'gemini-flash-lite-latest';
-  var SEKALI = 12;          /* entri per panggilan */
+  var AKAR = 'https://generativelanguage.googleapis.com/v1beta/models/';
+  var SEKALI = 12;               /* entri per panggilan label */
+  var BACA_SEKALI = 2;           /* berkas per putaran - ini yang paling mahal */
+  var BACA_MAKS = 5 * 1024 * 1024;
   var jalan = false;
+
+  function model(setelan) {
+    return ((setelan && setelan.model) || '').trim() || TBawaan.model;
+  }
+
+  function siap(setelan) {
+    return !!(setelan && setelan.modeAI && setelan.modeAI !== 'mati' && setelan.kunciGemini);
+  }
+
+  /* Satu pintu ke Gemini. Bentuk permintaannya mengikuti REST v1beta:
+     POST .../models/<model>:generateContent dengan kunci di header. */
+  function tanya(setelan, bagian, arahan) {
+    return fetch(AKAR + encodeURIComponent(model(setelan)) + ':generateContent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': setelan.kunciGemini
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: arahan }] },
+        contents: [{ role: 'user', parts: bagian }],
+        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
+      })
+    }).then(function (r) {
+      return r.json().then(function (j) {
+        if (!r.ok) throw new Error((j && j.error && j.error.message) || ('Gemini menjawab ' + r.status));
+        return j;
+      });
+    }).then(function (j) {
+      var p = j && j.candidates && j.candidates[0] && j.candidates[0].content &&
+              j.candidates[0].content.parts && j.candidates[0].content.parts[0];
+      return urai(p && p.text);
+    });
+  }
+
+  function urai(teks) {
+    var t = String(teks || '').replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+    var a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a < 0 || b < a) return null;
+    try { return JSON.parse(t.slice(a, b + 1)); } catch (e) { return null; }
+  }
+
+  /* ===================== label ===================== */
+
+  var ARAHAN_LABEL =
+    'Kamu membantu seseorang menemukan kembali catatannya sendiri berbulan-bulan kemudian.\n' +
+    'Untuk setiap entri, hasilkan:\n' +
+    '- judul: ringkas, maksimal 8 kata, memakai kata yang akan diingat orangnya, bukan menyalin isi.\n' +
+    '- label: 4 sampai 8 kata kunci huruf kecil. Sertakan nama proyek, lingkungan (uji/produksi),\n' +
+    '  nama klien, dan sebutan lain yang mungkin dipakai orang itu saat mencari - termasuk yang\n' +
+    '  TIDAK tertulis di isinya tapi jelas dari konteks.\n' +
+    'Bahasa Indonesia, kecuali istilah teknis yang memang lazim Inggris.\n' +
+    'Jawab HANYA JSON: {"hasil":[{"i":0,"judul":"...","label":["..."]}]}';
 
   function pesanan(entri) {
     return entri.map(function (e, i) {
@@ -43,130 +102,137 @@
     }).join('\n');
   }
 
-  var ARAHAN =
-    'Kamu membantu seseorang menemukan kembali catatannya sendiri berbulan-bulan kemudian.\n' +
-    'Untuk setiap entri, hasilkan:\n' +
-    '- judul: ringkas, maksimal 8 kata, memakai kata yang akan diingat orangnya, bukan menyalin isi.\n' +
-    '- label: 4 sampai 8 kata kunci huruf kecil. Sertakan nama proyek, lingkungan (uji/produksi),\n' +
-    '  nama klien, dan sebutan lain yang mungkin dipakai orang itu saat mencari - termasuk yang\n' +
-    '  TIDAK tertulis di isinya tapi jelas dari konteks.\n' +
-    'Bahasa Indonesia, kecuali istilah teknis yang memang lazim Inggris.\n' +
-    'Jawab HANYA JSON: {"hasil":[{"i":0,"judul":"...","label":["..."]}]}';
+  function labeli(setelan, semua) {
+    var antre = semua.filter(function (e) {
+      return !e.diLabeliAI && !e.pensiun && !e.dihapus && (e.isi || e.namaBerkas || (e.daftar || []).length);
+    }).slice(0, SEKALI);
+    if (!antre.length) return Promise.resolve(0);
 
-  function urai(teks) {
-    var t = String(teks || '').replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
-    var a = t.indexOf('{'), b = t.lastIndexOf('}');
-    if (a < 0 || b < a) return null;
-    try { return JSON.parse(t.slice(a, b + 1)); } catch (e) { return null; }
-  }
-
-  /* --- lewat proxy Apps Script: kunci tinggal di server, tidak pernah di HP --- */
-  function lewatProxy(alamat, sandi, entri) {
-    return fetch(alamat, {
-      method: 'POST',
-      /* text/plain sengaja: bikin permintaan ini "sederhana" menurut CORS,
-         jadi tidak ada preflight OPTIONS - yang tidak dijawab Apps Script. */
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      /* Sandi ikut dikirim: alamat /exec yang di-deploy "Anyone" itu pintu
-         terbuka, dan di baliknya ada kuota Gemini yang bisa dihabiskan orang. */
-      body: JSON.stringify({ tugas: 'label', sandi: sandi || '', arahan: ARAHAN, entri: pesanan(entri) })
-    }).then(function (r) {
-      if (!r.ok) throw new Error('Proxy menjawab ' + r.status);
-      return r.text();
-    }).then(function (t) {
-      var j = urai(t);
-      if (j && j.teks) return urai(j.teks);
-      return j;
+    return tanya(setelan, [{ text: pesanan(antre) }], ARAHAN_LABEL).then(function (jawab) {
+      var hasil = (jawab && jawab.hasil) || [];
+      if (!hasil.length) throw new Error('Jawaban AI kosong');
+      var tulis = hasil.map(function (h) {
+        var e = antre[h.i];
+        if (!e) return null;
+        /* Judul yang sudah diketik sendiri tidak pernah ditimpa. Itu punya
+           pemakainya - AI cuma mengisi yang kosong atau yang disusun mesin. */
+        if (!e.judulManual && h.judul) e.judul = String(h.judul).slice(0, 90);
+        e.label = gabungLabel(e.label, h.label);
+        e.diLabeliAI = true;
+        e.diubah = Date.now();
+        return TSimpan.taruh(e);
+      }).filter(Boolean);
+      return Promise.all(tulis).then(function () { return tulis.length; });
     });
   }
 
-  /* --- langsung ke Gemini: kunci ada di perangkat ini --- */
-  function lewatGemini(kunci, model, entri) {
-    var alamat = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-                 encodeURIComponent(model || MODEL_BAWAAN) + ':generateContent';
-    return fetch(alamat, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': kunci },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: ARAHAN }] },
-        contents: [{ role: 'user', parts: [{ text: pesanan(entri) }] }],
-        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
-      })
-    }).then(function (r) {
-      return r.json().then(function (j) {
-        if (!r.ok) throw new Error((j && j.error && j.error.message) || ('Gemini menjawab ' + r.status));
-        return j;
+  function gabungLabel(lama, tambahan) {
+    var gabung = (lama || []).slice();
+    (tambahan || []).map(function (l) { return TOtak.normal(l); }).filter(Boolean)
+      .forEach(function (l) { if (gabung.indexOf(l) < 0) gabung.push(l); });
+    return gabung.slice(0, 50);
+  }
+
+  /* ===================== baca berkas (OCR) ===================== */
+
+  var ARAHAN_BACA =
+    'Kamu membaca satu dokumen atau foto milik seseorang, supaya dia bisa menemukannya lagi\n' +
+    'bertahun-tahun kemudian saat dia cuma ingat samar-samar isinya.\n' +
+    'Hasilkan:\n' +
+    '- judul: maksimal 8 kata, sebutkan jenis dokumennya dan pihak/objek utamanya.\n' +
+    '- label: 5 sampai 12 kata kunci huruf kecil - jenis dokumen, nama orang/perusahaan,\n' +
+    '  tahun, nomor penting, dan sebutan sehari-hari yang mungkin dipakai mencarinya.\n' +
+    '- teks: ringkasan isi terpenting, maksimal 600 karakter. Tulis apa adanya, jangan menafsirkan.\n' +
+    'Bahasa Indonesia. Jawab HANYA JSON: {"judul":"...","label":["..."],"teks":"..."}';
+
+  var BISA_DIBACA = /^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/i;
+
+  function keBase64(blob) {
+    return new Promise(function (terima, tolak) {
+      var baca = new FileReader();
+      baca.onload = function () {
+        var hasil = String(baca.result);
+        terima(hasil.slice(hasil.indexOf(',') + 1));
+      };
+      baca.onerror = function () { tolak(new Error('Berkas tidak terbaca')); };
+      baca.readAsDataURL(blob);
+    });
+  }
+
+  function ambilBlob(setelan, e) {
+    if (e.berkasId) {
+      return TSimpan.ambilBerkas(e.berkasId).then(function (b) { return b && b.blob; });
+    }
+    if (e.driveId) return TAwan.unduhBerkas(setelan, e.driveId);
+    return Promise.resolve(null);
+  }
+
+  function bacaBerkas(setelan, semua) {
+    var antre = semua.filter(function (e) {
+      return !e.diBacaAI && !e.pensiun && !e.dihapus &&
+             (e.berkasId || e.driveId) && BISA_DIBACA.test(e.tipeBerkas || '') &&
+             (e.ukuran || 0) <= BACA_MAKS;
+    }).slice(0, BACA_SEKALI);
+    if (!antre.length) return Promise.resolve(0);
+
+    return antre.reduce(function (rantai, e) {
+      return rantai.then(function (n) {
+        return ambilBlob(setelan, e).then(function (blob) {
+          if (!blob) { e.diBacaAI = true; return TSimpan.taruh(e).then(function () { return n; }); }
+          return keBase64(blob).then(function (b64) {
+            return tanya(setelan, [
+              { inline_data: { mime_type: e.tipeBerkas, data: b64 } },
+              { text: 'Baca dokumen ini.' }
+            ], ARAHAN_BACA);
+          }).then(function (h) {
+            if (!h) throw new Error('Dokumen tidak terbaca');
+            if (!e.judulManual && h.judul) e.judul = String(h.judul).slice(0, 90);
+            e.label = gabungLabel(e.label, h.label);
+            /* Teksnya ditaruh di isi, bukan di kolom baru: dengan begitu
+               pencarian yang sudah ada langsung menemukannya, tanpa satu baris
+               pun perubahan di otak.js. */
+            if (!String(e.isi || '').trim() && h.teks) e.isi = String(h.teks).slice(0, 1500);
+            e.diBacaAI = true;
+            e.diLabeliAI = true;
+            e.diubah = Date.now();
+            return TSimpan.taruh(e).then(function () { return n + 1; });
+          });
+        }).catch(function () {
+          /* Satu berkas yang gagal dibaca tidak boleh menghentikan antreannya.
+             Ditandai supaya tidak dicoba terus-menerus dan menghabiskan kuota. */
+          e.diBacaAI = true;
+          return TSimpan.taruh(e).then(function () { return n; });
+        });
       });
-    }).then(function (j) {
-      var bagian = j && j.candidates && j.candidates[0] && j.candidates[0].content &&
-                   j.candidates[0].content.parts && j.candidates[0].content.parts[0];
-      return urai(bagian && bagian.text);
-    });
+    }, Promise.resolve(0));
   }
 
-  function siap(setelan) {
-    if (!setelan) return false;
-    if (setelan.modeAI === 'mati') return false;
-    if (setelan.modeAI === 'proxy') return !!setelan.alamatScript;
-    return !!setelan.kunciGemini;
-  }
+  /* ===================== putaran ===================== */
 
-  /* Satu putaran atas antrean yang belum berlabel AI. Mengembalikan jumlah
-     entri yang berhasil diperbarui; 0 berarti tidak ada kerjaan atau gagal. */
   function putaran(setelan) {
     if (jalan || !siap(setelan)) return Promise.resolve(0);
     jalan = true;
+    var total = 0;
 
     return TSimpan.semua().then(function (semua) {
-      var antre = semua.filter(function (e) { return !e.diLabeliAI && !e.pensiun; }).slice(0, SEKALI);
-      if (!antre.length) return 0;
-
-      var janji = setelan.modeAI === 'proxy'
-        ? lewatProxy(setelan.alamatScript, setelan.sandiScript, antre)
-        : lewatGemini(setelan.kunciGemini, setelan.model, antre);
-
-      return janji.then(function (jawab) {
-        var hasil = (jawab && jawab.hasil) || [];
-        if (!hasil.length) throw new Error('Jawaban AI kosong');
-        var tulis = hasil.map(function (h) {
-          var e = antre[h.i];
-          if (!e) return null;
-          /* Judul yang sudah diketik sendiri tidak pernah ditimpa. Ini punya
-             pemakainya - AI cuma mengisi yang masih kosong atau yang tadinya
-             disusun otomatis. */
-          if (!e.judulManual && h.judul) e.judul = String(h.judul).slice(0, 90);
-          var tambahan = (h.label || []).map(function (l) { return TOtak.normal(l); }).filter(Boolean);
-          var gabung = (e.label || []).slice();
-          tambahan.forEach(function (l) { if (gabung.indexOf(l) < 0) gabung.push(l); });
-          e.label = gabung.slice(0, 50);
-          e.diLabeliAI = true;
-          return TSimpan.taruh(e);
-        }).filter(Boolean);
-        return Promise.all(tulis).then(function () { return tulis.length; });
-      });
+      return labeli(setelan, semua).then(function (n) {
+        total += n;
+        return setelan.modeAI === 'penuh' ? bacaBerkas(setelan, semua) : 0;
+      }).then(function (n) { total += n; });
     }).catch(function (err) {
-      /* Sengaja diam. Gagal melabeli bukan kabar buruk buat pemakainya -
-         entrinya tersimpan, pencariannya jalan, antrean dicoba lagi nanti. */
-      if (global.console && console.debug) console.debug('[Drop Note] pelabelan tertunda:', err.message);
-      return 0;
-    }).then(function (n) { jalan = false; return n; },
-            function () { jalan = false; return 0; });
+      if (global.console && console.debug) console.debug('[pelabelan tertunda]', err.message);
+    }).then(function () { jalan = false; return total; },
+            function () { jalan = false; return total; });
   }
 
-  /* Uji kunci/proxy dari layar Setelan - ini yang boleh berisik. */
+  /* Uji dari layar Setelan - satu-satunya tempat kegagalan AI boleh berisik. */
   function coba(setelan) {
-    var contoh = [{
-      jenis: 'tautan', kategori: '',
-      isi: 'https://script.google.com/macros/s/AKfycbCONTOH/dev'
-    }];
-    var janji = setelan.modeAI === 'proxy'
-      ? lewatProxy(setelan.alamatScript, setelan.sandiScript, contoh)
-      : lewatGemini(setelan.kunciGemini, setelan.model, contoh);
-    return janji.then(function (j) {
+    var contoh = [{ jenis: 'tautan', kategori: '', isi: 'https://script.google.com/macros/s/AKfycbCONTOH/dev' }];
+    return tanya(setelan, [{ text: pesanan(contoh) }], ARAHAN_LABEL).then(function (j) {
       if (!j || !j.hasil || !j.hasil.length) throw new Error('Tersambung, tapi jawabannya tidak dikenali');
       return j.hasil[0];
     });
   }
 
-  global.TPelabel = { putaran: putaran, coba: coba, siap: siap, MODEL_BAWAAN: MODEL_BAWAAN };
+  global.TPelabel = { putaran: putaran, coba: coba, siap: siap, model: model };
 })(window);

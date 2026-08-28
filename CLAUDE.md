@@ -1,4 +1,4 @@
-# Drop Note — catatan untuk Claude berikutnya
+# Catatan untuk Claude berikutnya
 
 Baca berkas ini sampai habis sebelum menyentuh kode. Berkas ini menjelaskan
 **kenapa** aplikasi ini berbentuk seperti sekarang. Tanpa itu, hampir setiap
@@ -14,7 +14,12 @@ Dipakai satu orang yang menjalankan banyak peran sekaligus. Catatannya selama
 ini tersebar di Google Keep, puluhan grup chat ke diri sendiri, dan aplikasi
 Notes bawaan — menumpuk sampai tidak bisa dicari lagi.
 
-Drop Note menggantikan semua itu dengan satu pintu masuk dan satu pencarian.
+Aplikasi ini menggantikan semua itu dengan satu pintu masuk dan satu pencarian.
+
+**Namanya sekarang "Drop Memory", dan nama itu kulit.** Dia cuma ditulis di
+`public/bawaan.js`, judul `index.html`, dan manifest. Nama basis data, nama
+berkas, nama global, dan nama kolom sengaja tidak menyebut merek sama sekali —
+menggantinya besok tidak boleh menyentuh satu baris pun data pemakainya.
 
 ## Yang harus kamu pahami dulu, sebelum kode
 
@@ -45,7 +50,7 @@ satu-satunya tugas AI di sini (lihat `public/pelabel.js`).
 
 **4. Sesak datang dari TAMPILAN, bukan dari jumlah.**
 Google Keep memaksa melihat dinding kartu tiap kali dibuka. Karena itu layar
-depan Drop Note **kosong** — cuma kotak dan tombol. Timbunan yang tidak terlihat
+depan aplikasi ini **kosong** — cuma kotak dan tombol. Timbunan yang tidak terlihat
 tidak menyesakkan, mau sepuluh ribu sekalipun. **Jangan pernah menambahkan
 daftar catatan terbaru di layar depan.** Itu perbaikan yang paling sering
 terpikir, dan itu membatalkan seluruh gunanya.
@@ -62,24 +67,34 @@ terpikir, dan itu membatalkan seluruh gunanya.
 4. **Tidak ada yang benar-benar terhapus.** Yang basi tenggelam.
 5. **Layar depan kosong.**
 6. **Judul yang diketik sendiri tidak pernah ditimpa AI** (`judulManual`).
+7. **Swalayan.** Folder Drive dan spreadsheet dibuat aplikasi, bukan pemakainya.
+   Satu-satunya yang diminta darinya: kunci Gemini, dan itu pun boleh dilewati.
+8. **Nama aplikasi cuma di `bawaan.js`.** Jangan pernah menuliskannya di berkas
+   lain, dan jangan pernah menurunkan nama basis data atau kunci setelan dari
+   nama itu — data pemakainya ikut hilang kalau namanya berganti.
 
 ## Peta berkas
 
 ```
-public/index.html   kerangka semua layar (utama, hasil, catat, setelan)
-public/dropnote.css    gaya; gelap dulu, terang lewat prefers-color-scheme
+public/index.html   kerangka semua layar (mulai, utama, hasil, catat, setelan)
+public/bawaan.js    SATU-SATUNYA tempat nama aplikasi & model AI ditulis
+public/gaya.css     gaya; gelap dulu, terang lewat prefers-color-scheme
 public/simpan.js    IndexedDB — entri, berkas (blob), setelan, cadangan
 public/otak.js      SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
                     alamat, betulkan kategori salah ketik, tarik kata kunci,
                     nilai hasil pencarian
-public/pelabel.js   satu-satunya bagian ber-AI (Gemini / proxy Apps Script)
-public/sinkron.js   cadangan satu arah ke Google Sheets; tidak pernah di jalur drop
-public/dropnote.js  alur UI — semua layar, drop, cari, catat, setelan
+public/awan.js      Google Drive & Sheets langsung — folder dan spreadsheet
+                    dibuat SENDIRI oleh aplikasi; cakupan cuma drive.file
+public/pelabel.js   satu-satunya bagian ber-AI (Gemini langsung): label + OCR
+public/sinkron.js   cadangan satu arah ke Drive; tidak pernah di jalur drop
+public/alur.js      alur UI — semua layar, drop, cari, catat, setelan
 public/sw.js        service worker — singgahan kerangka + penerima "Bagikan"
 public/manifest.webmanifest   supaya bisa dipasang di HP
-uji/uji-dropnote.mjs          uji terima (Playwright)
+uji/uji-terima.mjs            uji terima (Playwright)
+uji/palsu-google.mjs          tiruan Drive+Sheets di memori untuk uji
 docs/RANCANGAN.md   alasan di balik rancangannya
-docs/APPS-SCRIPT.md satu Apps Script untuk cadangan + pelabelan; langkah pasangnya
+docs/PROPOSAL-V2.md rencana bertahap yang sedang dikerjakan
+docs/GOOGLE.md      satu langkah pembuat (OAuth Client ID) + kunci Gemini
 docs/SISA-KERJA.md  yang belum dikerjakan, cukup rinci untuk langsung jalan
 docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 ```
@@ -90,12 +105,13 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-dropnote.mjs` (42 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (51 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
-Yang belum: pencocokan makna dan naik otomatis ke pintasan keyboard.
-Selebihnya ada di `docs/SISA-KERJA.md`.
+Yang belum: catatan sekali pakai, kunci layar + enkripsi selektif, pencarian
+pakai bahasa manusia, to-do & habit sebagai keadaan. Urutannya di
+`docs/PROPOSAL-V2.md`, rinciannya di `docs/SISA-KERJA.md`.
 
 ## Konvensi
 
