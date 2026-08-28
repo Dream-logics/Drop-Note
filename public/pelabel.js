@@ -147,6 +147,11 @@
       '   tautan, prompt, kode, sandi, PIN, token, nomor (rekening, pesanan, seri, plat, OTP),',
       '   alamat, nama berkas, nama supplier atau klien, resep dan dosis obat, jadwal, harga.',
       '   Ambil nilainya PERSIS apa adanya - jangan dirapikan, jangan diterjemahkan, jangan dipotong.',
+      '   SATU penanda tetap SATU elemen walau di dalamnya ada tanda hubung, titik, atau spasi:',
+      '   Client ID Google, kunci API, nomor faktur, dan plat nomor itu utuh - memecahnya jadi',
+      '   potongan membuat semuanya tidak berguna, karena yang disalin memang keseluruhannya.',
+      '   Namai dengan sebutan yang dipakai di tempat asalnya - "Client ID", "Client Secret",',
+      '   "nomor rekening" - bukan sebutan umum seperti "kode" atau "nomor".',
       '   Kalau satu entri memuat beberapa - misalnya tiga tautan sekaligus - pisahkan semuanya.',
       '   Beri "nama" pendek untuk tiap elemen, sebutan yang menjelaskan itu apa.',
       '   Kalau memang tidak ada yang menonjol, kembalikan elemen kosong. Itu jawaban yang sah:',
@@ -216,7 +221,10 @@
              pemakainya - AI cuma mengisi yang kosong atau yang disusun mesin. */
           if (!e.judulManual && h.judul) e.judul = String(h.judul).slice(0, 90);
           e.label = gabungLabel(e.label, h.label);
-          e.elemen = TOtak.gabungElemen(e.elemen, h.elemen);
+          /* Elemen AI DULUAN, baru sisa tebakan pola. AI yang tahu potongan
+             itu sebenarnya apa - "Client ID", bukan "kode" - dan yang pertama
+             terlihat di kartu ringkas cuma satu. */
+          e.elemen = TOtak.gabungElemen(h.elemen, e.elemen);
           e.tag = gabungTag(e.tag, h.tag);
           e.tag.forEach(function (t) { if (tagBaru.indexOf(t) < 0) tagBaru.push(t); });
           e.diLabeliAI = true;
@@ -351,7 +359,7 @@
             if (!h) throw new Error('Dokumen tidak terbaca');
             if (!e.judulManual && h.judul) e.judul = String(h.judul).slice(0, 90);
             e.label = gabungLabel(e.label, h.label);
-            e.elemen = TOtak.gabungElemen(e.elemen, h.elemen);
+            e.elemen = TOtak.gabungElemen(h.elemen, e.elemen);
             e.tag = gabungTag(e.tag, h.tag);
             /* Teksnya ditaruh di isi, bukan di kolom baru: dengan begitu
                pencarian yang sudah ada langsung menemukannya, tanpa satu baris

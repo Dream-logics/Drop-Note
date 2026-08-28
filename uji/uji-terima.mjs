@@ -361,6 +361,34 @@ console.log('\nelemen: yang disalin, bukan yang dibaca');
   cek('potongan alamat tidak jadi kode palsu',
       !hasil.some((x) => x.jenis !== 'tautan' && /contoh/.test(x.nilai)), JSON.stringify(hasil));
 
+  /* PELAJARAN MAHAL: satu Client ID Google pernah tercincang jadi empat
+     "kode" yang tidak berguna satu pun, dan yang utuh tenggelam di bawahnya. */
+  const klien = await hal.evaluate(() => TOtak.elemenOtomatis({ isi:
+    'Client ID 111222333444-abcdefghijklmnopqrstuvwx.apps.googleusercontent.com\n' +
+    'Client Secret RAHASIA9-aB3dE5gH-jK7mN9pQ2sT' }));
+  cek('Client ID tidak tercincang di tanda hubung dan titik',
+      klien.some((x) => x.nilai === '111222333444-abcdefghijklmnopqrstuvwx.apps.googleusercontent.com'),
+      JSON.stringify(klien));
+  cek('rahasia berpenggal-penggal ikut utuh',
+      klien.some((x) => x.nilai === 'RAHASIA9-aB3dE5gH-jK7mN9pQ2sT'));
+  cek('tidak ada serpihan dari dalamnya', klien.length === 2, JSON.stringify(klien));
+
+  /* Serpihan bukan elemen kedua: yang termuat utuh di dalam nilai lain
+     dibuang, kalau tidak dia menenggelamkan yang lengkap. */
+  const bersihSerpih = await hal.evaluate(() => TOtak.buangSerpihan([
+    { jenis: 'nomor', nilai: '111222333444', nama: '' },
+    { jenis: 'kode', nilai: '111222333444-abc.apps.googleusercontent.com', nama: 'Client ID' }
+  ]));
+  cek('yang termuat di dalam yang lain dibuang',
+      bersihSerpih.length === 1 && bersihSerpih[0].nama === 'Client ID');
+
+  /* Elemen dari AI didahulukan: dia yang tahu potongan itu sebenarnya apa,
+     dan yang pertama terlihat di kartu ringkas cuma satu. */
+  const urutan = await hal.evaluate(() => TOtak.gabungElemen(
+    [{ jenis: 'kode', nilai: 'AAA-111', nama: 'Client ID' }],
+    [{ jenis: 'kode', nilai: 'BBB-222', nama: '' }]));
+  cek('elemen bernama dari AI berdiri paling depan', urutan[0].nama === 'Client ID');
+
   const kosong = await hal.evaluate(() => TOtak.elemenOtomatis({ isi: 'beli galon dan tisu' }));
   cek('catatan biasa tidak dipaksa punya elemen', kosong.length === 0, JSON.stringify(kosong));
 
