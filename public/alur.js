@@ -984,17 +984,6 @@
     $('#cari-input').blur();
   }
 
-  function keCatatBaru() {
-    var e = entriBaru('catatan');
-    e.isi = layarSaat === 'l-utama' ? $('#kotak').value : '';
-    if (layarSaat === 'l-utama') {
-      e.kategori = benahiKotakKategori();
-      kosongkanKotak();
-    }
-    keCatat(e);
-    $('#catat-isi').focus();
-  }
-
   /* Nilai awal dari bawaan.js dipakai HANYA kalau pemakainya belum pernah
      menyunting daftarnya. Begitu dia menyentuhnya sekali, daftarnya jadi
      miliknya - termasuk kalau dia mengosongkannya sampai habis. */
@@ -2074,7 +2063,6 @@
 
     $('#b-drop').addEventListener('click', drop);
     $('#b-cari').addEventListener('click', function () { keHasil($('#kotak').value.trim()); });
-    $('#b-catat').addEventListener('click', keCatatBaru);
     $('#b-semua').addEventListener('click', function () { keSemua(); });
 
     /* Dari layar hasil, yang paling sering terjadi berikutnya bukan mencari
@@ -2082,7 +2070,6 @@
        ini. Jadi tombolnya sama persis, cuma lebih kecil. */
     $('#b-hasil-drop').addEventListener('click', function () { keLayar('l-utama'); $('#kotak').focus(); });
     $('#b-hasil-cari').addEventListener('click', function () { $('#cari-input').focus(); });
-    $('#b-hasil-catat').addEventListener('click', keCatatBaru);
     $('#b-hasil-semua').addEventListener('click', function () { keSemua(); });
 
     pasangGeser($('#hasil'));

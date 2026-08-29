@@ -84,6 +84,7 @@ terpikir, dan itu membatalkan seluruh gunanya.
 
 ```
 public/index.html   kerangka semua layar (mulai, utama, hasil, catat, setelan)
+                    Catat BUKAN tombol - layar tulis didatangi dari hasil
 public/bawaan.js    SATU-SATUNYA tempat nama aplikasi & model AI ditulis
 public/gaya.css     gaya; gelap dulu, terang lewat prefers-color-scheme
 public/simpan.js    IndexedDB — entri, berkas (blob), setelan, cadangan
@@ -127,7 +128,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (208 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (211 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
