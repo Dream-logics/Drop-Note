@@ -88,9 +88,9 @@ public/bawaan.js    SATU-SATUNYA tempat nama aplikasi & model AI ditulis
 public/gaya.css     gaya; gelap dulu, terang lewat prefers-color-scheme
 public/simpan.js    IndexedDB — entri, berkas (blob), setelan, cadangan
 public/otak.js      SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
-                    alamat, betulkan kategori salah ketik, tarik kata kunci,
-                    pisahkan elemen berpola (tautan/kode/nomor), nilai hasil
-                    pencarian
+                    alamat, bakukan istilah judul (Inggris dulu kalau bentrok:
+                    Link bukan Tautan), betulkan kategori salah ketik, tarik
+                    kata kunci, pisahkan elemen berpola, nilai hasil pencarian
 public/awan.js      Google Drive & Sheets langsung — folder dan spreadsheet
                     dibuat SENDIRI oleh aplikasi; cakupan cuma drive.file
 public/pelabel.js   satu-satunya bagian ber-AI: judul + elemen + tag + OCR.
@@ -123,7 +123,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (155 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (165 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

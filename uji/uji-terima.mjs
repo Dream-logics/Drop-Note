@@ -178,6 +178,41 @@ console.log('\notak');
   cek('/exec disebut terbit', /terbit/.test(exec), exec);
 }
 
+console.log('\njudul: kata yang ada di kepalanya, bukan yang paling rapi');
+{
+  const susun = (t, e) => hal.evaluate(([teks, entri]) => TOtak.susunJudul(teks, entri), [t, e]);
+
+  /* INGGRIS DULU kalau bentrok. Dia mengetik "link" waktu mencari; menyimpannya
+     sebagai "tautan" berarti aplikasinya sendiri yang bikin dia lupa. */
+  cek('tautan ditulis kembali sebagai Link',
+      (await susun('tautan dev photo studio', { elemen: [] })) === 'Link dev photo studio');
+  cek('sandi ditulis kembali sebagai Password',
+      /^Password /.test(await susun('sandi router rumah', { elemen: [] })));
+  cek('surel ditulis kembali sebagai Email',
+      /^Email /.test(await susun('surel klien AAA', { elemen: [] })));
+
+  /* KATA PERTAMA penanda jenis, supaya daftar hasil bisa dipindai dari tepi
+     kiri tanpa membaca seluruh barisnya. */
+  cek('penanda diambil dari elemen kalau judulnya belum menyebut',
+      (await susun('wifi kntr 8899aabb',
+        { elemen: [{ jenis: 'kode', nilai: '8899aabb' }] })).indexOf('Kode ') === 0);
+  cek('penanda yang sudah ada diangkat ke depan, bukan ditambahi yang kedua',
+      (await susun('rekening nomor BCA', { elemen: [] })) === 'Nomor rekening BCA');
+
+  /* TIDAK ADA KATA KEMBAR. */
+  const kembar = await susun('link link editor v2 link', { elemen: [] });
+  cek('kata kembar dibuang, yang pertama menang', kembar === 'Link editor v2', kembar);
+  cek('kata sambung pendek boleh berulang',
+      (await susun('bayar ke Andi dan ke Budi', { elemen: [] })).split(' ke ').length === 3);
+
+  const arahan = await hal.evaluate(() => TPelabel.arahanUji({ tagFavorit: [], hashtag: [] }));
+  cek('AI ikut diberi tahu: Link, bukan Tautan', /JANGAN "Tautan"/.test(arahan));
+  cek('AI ikut diberi tahu kata pertama itu penanda jenis',
+      /KATA PERTAMA adalah penanda jenisnya/.test(arahan));
+  cek('AI ikut dilarang menulis kata kembar makna',
+      /JANGAN ADA KATA KEMBAR/.test(arahan));
+}
+
 console.log('\nlayar depan');
 {
   cek('tidak ada satu pun kartu di layar depan', await hal.locator('#l-utama .kartu').count() === 0);
