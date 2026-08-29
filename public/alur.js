@@ -128,6 +128,8 @@
   var draf = null;            /* lampiran yang sudah siap tapi belum di-drop */
   var entriCatat = null;
   var labelDepan = null;   /* label yang sedang ditampilkan di layar depan */
+  var saringJenis = '';    /* '' = semua jenis; 'gambar', 'berkas', 'suara', ... */
+  var laciBuka = '';       /* laci mana yang sedang terbuka: label | drop | filter */
   var urlSementara = [];
   var perekam = null;
   var rekamJam = null;
@@ -231,7 +233,11 @@
      muat sebaris di layar HP, dan yang tidak muat akan dipotong sendiri oleh
      browser di tempat yang tidak kamu pilih. */
   var TAB = [
-    ['l-utama', 'Drop', '<path d="M12 4v13"/><path d="M6 12l6 6 6-6"/>'],
+    /* Pena, BUKAN panah ke bawah. Panahnya milik tombol Drop di bawah kotak -
+       dua ikon yang sama persis di satu layar bikin orang mengira dua-duanya
+       tombol yang sama. Yang di kepala itu TEMPAT (di sini kamu menulis), yang
+       di bawah itu TINDAKAN (jatuhkan sekarang). */
+    ['l-utama', 'Drop', '<path d="M4 20h16"/><path d="M14.5 4.5l5 5L8 21H3v-5z"/>'],
     ['l-tugas', 'To Do', '<rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/>'],
     ['l-note', 'Note', '<path d="M4 5a2 2 0 0 1 2-2h4l2 3h6a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>']
   ];
@@ -250,7 +256,15 @@
   }
 
   function keTab(id) {
-    if (id === layarSaat) return;
+    /* Menekan pintu yang sedang terbuka bukan tidak berarti apa-apa: di pintu
+       Drop, itu membuka laci cara-cara memasukkan (gambar, berkas, suara,
+       daftar). Bawaannya tetap teks - kotaknya sudah siap diketik tanpa
+       memilih apa pun, dan laci ini cuma untuk yang bukan teks. */
+    if (id === layarSaat) {
+      if (id === 'l-utama') alihLaci('drop');
+      return;
+    }
+    tutupLaci();
     if (id === 'l-tugas') TTugas.buka();
     keLayar(id);
   }
@@ -475,9 +489,8 @@
           b.classList.toggle('nyala', b.getAttribute('data-lamp') === jenis);
         });
         perbaruiTebakan();
-        /* Lacinya menutup sendiri: lampirannya sudah terpilih, dan daftar
-           label yang menggantung terbuka cuma menutupi kotaknya. */
-        alihPanelLabel(false);
+        /* Lacinya menutup sendiri: lampirannya sudah terpilih. */
+        tutupLaci();
       });
     });
   }
@@ -586,24 +599,80 @@
     $('#label-daftar').innerHTML = baris.join('');
   }
 
-  function alihPanelLabel(buka) {
-    var panel = $('#panel-label');
-    var mau = buka === undefined ? panel.classList.contains('sembunyi') : buka;
-    panel.classList.toggle('sembunyi', !mau);
-    $('#b-label').setAttribute('aria-expanded', mau ? 'true' : 'false');
+  /* SATU LACI SAJA YANG BOLEH TERBUKA, dan dia menutup begitu kamu menyentuh
+     hal lain. Layarnya sempit: laci yang menggantung terbuka menutupi kotak
+     dan hasilnya sekaligus, dan yang menutupnya harus kamu sendiri - satu
+     ketukan tambahan untuk membereskan sesuatu yang kamu tidak minta. */
+  var LACI = {
+    label: ['#panel-label', '#b-label'],
+    drop: ['#panel-drop', null],
+    filter: ['#panel-filter', '#b-filter']
+  };
+
+  function tutupLaci() {
+    Object.keys(LACI).forEach(function (k) {
+      $(LACI[k][0]).classList.add('sembunyi');
+      if (LACI[k][1]) $(LACI[k][1]).setAttribute('aria-expanded', 'false');
+    });
+    laciBuka = '';
+  }
+
+  function alihLaci(nama, buka) {
+    var mau = buka === undefined ? laciBuka !== nama : buka;
+    tutupLaci();
     if (!mau) return;
-    $('#label-cari').value = '';
-    gambarDaftarLabel();
+    $(LACI[nama][0]).classList.remove('sembunyi');
+    if (LACI[nama][1]) $(LACI[nama][1]).setAttribute('aria-expanded', 'true');
+    laciBuka = nama;
+    if (nama === 'label') { $('#label-cari').value = ''; gambarDaftarLabel(); }
+    if (nama === 'filter') gambarDaftarFilter();
   }
 
   function pilihLabelDepan(nama) {
     labelDepan = nama;
-    alihPanelLabel(false);
+    tutupLaci();
+    gambarHasilDepan();
+  }
+
+  /* Sisi KELUAR dari laci Drop, dan sengaja memakai ikon yang sama. Memilih
+     "Gambar" berarti "perlihatkan gambar-gambarku" tanpa satu kata pun -
+     pertanyaan yang tidak bisa dijawab kata kunci, karena gambar memang tidak
+     punya kata sampai AI membacanya. */
+  var JENIS_SARING = [
+    ['', 'Semua jenis', '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/>'],
+    ['gambar', 'Gambar', '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>'],
+    ['berkas', 'Berkas', '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>'],
+    ['suara', 'Suara', '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/>'],
+    ['daftar', 'Daftar', '<rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/>'],
+    ['tautan', 'Link', '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>']
+  ];
+
+  function gambarDaftarFilter() {
+    var hidup = semuaEntri.filter(catatanSaja);
+    $('#filter-daftar').innerHTML = JENIS_SARING.map(function (j) {
+      var n = j[0] ? hidup.filter(function (e) { return e.jenis === j[0]; }).length : hidup.length;
+      return '<button class="label-baris' + (saringJenis === j[0] ? ' nyala' : '') +
+             (n ? '' : ' sepi') + '" data-jenis="' + j[0] + '">' +
+             '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg>' +
+             '<span class="label-baris-nama">' + H(j[1]) + '</span>' +
+             '<span class="label-jumlah">' + n + '</span></button>';
+    }).join('');
+  }
+
+  function pilihJenis(j) {
+    saringJenis = j;
+    tutupLaci();
+    var nama = 'Jenis';
+    JENIS_SARING.forEach(function (x) { if (x[0] === j && x[0]) nama = x[1]; });
+    $('#b-filter-teks').textContent = nama;
     gambarHasilDepan();
   }
 
   function tutupHasilDepan() {
     labelDepan = null;
+    saringJenis = '';
+    var tf = $('#b-filter-teks');
+    if (tf) tf.textContent = 'Jenis';
     var kepala = $('.kepala-tetap');
     if (kepala) kepala.classList.remove('ringkas');
     $('#petak-hasil-depan').classList.add('sembunyi');
@@ -627,7 +696,7 @@
      langsung menyusut. Kotak kosong tanpa label berarti tidak ada apa-apa di
      bawah, dan layar depannya kembali kosong. */
   function hasilDepanAktif() {
-    return !!labelDepan || !!$('#kotak').value.trim();
+    return !!labelDepan || !!saringJenis || !!$('#kotak').value.trim();
   }
 
   function gambarHasilDepan() {
@@ -641,7 +710,7 @@
 
     var kueri = $('#kotak').value.trim();
     bersihkanUrl();
-    var hasil = TOtak.cari(semuaEntri, kueri, '', istilah || '');
+    var hasil = TOtak.cari(semuaEntri, kueri, saringJenis, istilah || '');
     $('#b-label-teks').textContent = !labelDepan ? 'Label'
                                    : labelDepan === '*' ? 'Semua' : labelDepan;
     $('#petak-hasil-depan').classList.remove('sembunyi');
@@ -649,6 +718,7 @@
     var ket = [];
     ket.push(hasil.length ? hasil.length + ' hasil' : 'Kosong');
     if (labelDepan && labelDepan !== '*') ket.push(labelDepan);
+    if (saringJenis) JENIS_SARING.forEach(function (x) { if (x[0] === saringJenis) ket.push(x[1]); });
     if (kueri) ket.push('“' + kueri + '”');
     $('#hasil-depan-ket').textContent = ket.join(' · ');
 
@@ -663,10 +733,29 @@
     if (!hasil.length) {
       wadah.innerHTML = '<div class="kosong">' + (kueri
         ? 'Tidak ada yang cocok.<br>Coba satu kata saja — pencarian ini memaafkan.'
-        : 'Belum ada yang masuk label ini.<br>Label diisi AI sesudah catatannya jatuh.') +
+        : saringJenis
+          ? 'Belum ada yang berjenis ini.'
+          : 'Belum ada yang masuk label ini.<br>Label diisi AI sesudah catatannya jatuh.') +
         '</div>';
       return;
     }
+
+    /* Gambar digambar sebagai PETAK, bukan baris. Judul gambar hampir selalu
+       nama berkas yang tidak berarti apa-apa; yang mengenalinya kembali adalah
+       rupanya. Jenis lain tetap baris, karena di sana justru judulnya yang
+       dikenali. */
+    if (saringJenis === 'gambar') {
+      wadah.innerHTML = '<div class="petak">' + hasil.slice(0, 120).map(function (e) {
+        var gambar = e.thumb
+          ? '<img src="' + H(e.thumb) + '" alt="">'
+          : (e.berkasId ? '<img data-berkas="' + H(e.berkasId) + '" alt="">' : '<span class="petak-kosong"></span>');
+        return '<button class="petak-satu" data-buka="' + H(e.id) + '">' + gambar +
+               '<span class="petak-nama">' + H(e.judul || e.namaBerkas || '(tanpa judul)') + '</span></button>';
+      }).join('') + '</div>';
+      pasangGambarKartu(wadah);
+      return;
+    }
+
     wadah.innerHTML = hasil.slice(0, 200).map(kartuHtml).join('');
     pasangGambarKartu(wadah);
   }
@@ -2066,7 +2155,25 @@
     });
 
     $('#b-drop').addEventListener('click', drop);
-    $('#b-label').addEventListener('click', function () { alihPanelLabel(); });
+    $('#b-label').addEventListener('click', function () { alihLaci('label'); });
+    $('#b-filter').addEventListener('click', function () { alihLaci('filter'); });
+    $('#filter-daftar').addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-jenis]');
+      if (b) pilihJenis(b.getAttribute('data-jenis'));
+    });
+
+    /* RUANGNYA TERBATAS: laci yang menggantung terbuka menutupi kotak dan
+       hasilnya sekaligus. Jadi dia menutup sendiri begitu kamu menyentuh hal
+       lain - mengetuk kotak, menggulir hasil, apa pun di luar lacinya. Kalau
+       menutupnya harus kamu sendiri, itu satu ketukan untuk membereskan
+       sesuatu yang tidak kamu minta. */
+    $('#kotak').addEventListener('focus', tutupLaci);
+    document.addEventListener('pointerdown', function (ev) {
+      if (!laciBuka) return;
+      if (ev.target.closest('#panel-label, #panel-drop, #panel-filter')) return;
+      if (ev.target.closest('#b-label, #b-filter, [data-tab-ke="l-utama"]')) return;
+      tutupLaci();
+    }, true);
     $('#label-cari').addEventListener('input', gambarDaftarLabel);
     $('#label-daftar').addEventListener('click', function (ev) {
       var b = ev.target.closest('[data-label]');
@@ -2184,6 +2291,8 @@
      tidak sampai ke tempat lain, dan itu jenis bug yang paling lama tidak
      ketahuan. */
   function klikHasil(ev) {
+    var petak = ev.target.closest('[data-buka]');
+    if (petak) { bukaKartu(petak.getAttribute('data-buka')); return; }
     /* Membuka lipatan tag: bukan mencari, bukan membuka kartunya. */
     var lipat = ev.target.closest('[data-tag-lagi]');
     if (lipat) {

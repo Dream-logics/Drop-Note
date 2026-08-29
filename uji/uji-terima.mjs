@@ -121,8 +121,12 @@ console.log('\npemasangan swalayan');
   cek('layar pemasangan muncul sekali di awal', await hal.locator('#l-mulai').isVisible());
   /* textContent, bukan innerText: .merek pakai text-transform uppercase, dan
      innerText mengembalikan yang terlihat, bukan yang tertulis. */
+  /* Namanya dibaca dari bawaan.js, bukan ditulis ulang di sini: kalau uji
+     ikut menyimpan namanya, mengganti nama besok berarti menyunting dua
+     tempat - dan itu persis yang aturan nomor delapan cegah. */
+  const NAMA = await hal.evaluate(() => TBawaan.nama);
   cek('namanya dituliskan dari satu tempat',
-      (await hal.locator('#merek-mulai').textContent()) === 'Drop Memory');
+      (await hal.locator('#merek-mulai').textContent()) === NAMA, NAMA);
   /* Satu tombol saja yang menutup layar ini. Dua tombol yang sama-sama
      menutupnya adalah keputusan yang tidak perlu diadakan. */
   cek('cuma satu tombol yang menutup pemasangan',
@@ -157,7 +161,7 @@ console.log('\npemasangan swalayan');
   /* Ini syarat yang paling dia tekankan: pemakainya tidak membuat apa pun. */
   const dibuat = [...google.berkas.values()].map((f) => f.name + '|' + f.mimeType);
   cek('folder aplikasi dibuat sendiri',
-      dibuat.some((x) => x.startsWith('Drop Memory|application/vnd.google-apps.folder')), dibuat.join(', '));
+      dibuat.some((x) => x.startsWith(NAMA + '|application/vnd.google-apps.folder')), dibuat.join(', '));
   cek('folder berkas dibuat sendiri',
       dibuat.some((x) => x.startsWith('berkas|application/vnd.google-apps.folder')));
   cek('spreadsheet cadangan dibuat sendiri',
@@ -429,7 +433,8 @@ console.log('\nsetelan & pwa');
   cek('manifest berdiri sendiri', manifes.display === 'standalone' && manifes.start_url === './');
   cek('share_target lewat POST + berkas',
       manifes.share_target.method === 'POST' && Array.isArray(manifes.share_target.params.files));
-  cek('nama aplikasi ikut satu sumber', manifes.name === 'Drop Memory');
+  cek('nama aplikasi ikut satu sumber',
+      manifes.name === (await hal.evaluate(() => TBawaan.nama)), manifes.name);
 }
 
 console.log('\nelemen: yang disalin, bukan yang dibaca');
@@ -600,12 +605,14 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
 {
   const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
   const utama = html.slice(html.indexOf('id="l-utama"'), html.indexOf('id="l-note"'));
-  /* Lampiran pindah ke DALAM laci label: empat ikon yang memakan satu baris
-     penuh sepanjang hari untuk sesuatu yang dipakai sekali-sekali. */
-  cek('lampiran tinggal di dalam laci label, bukan di atas kotak',
-      utama.indexOf('id="lampiran"') > utama.indexOf('id="panel-label"'));
-  cek('lampiran berdiri sebelum daftar labelnya',
-      utama.indexOf('id="lampiran"') < utama.indexOf('id="label-daftar"'));
+  /* Lampiran tinggal di laci pintu Drop: empat ikon yang memakan satu baris
+     penuh sepanjang hari untuk sesuatu yang dipakai sekali-sekali. Dan dia di
+     bawah pintu "Drop", karena di situlah semua cara MEMASUKKAN berkumpul. */
+  cek('lampiran tinggal di dalam laci Drop, bukan di atas kotak',
+      utama.indexOf('id="lampiran"') > utama.indexOf('id="panel-drop"') &&
+      utama.indexOf('id="lampiran"') < utama.indexOf('id="kotak"'));
+  cek('laci Drop menggantung di bawah baris pintunya',
+      utama.indexOf('data-tab>') < utama.indexOf('id="panel-drop"'));
   /* Kotak dan tombolnya menempel di atas: kendali yang ikut tergulir waktu
      hasilnya ratusan baris sama saja dengan tidak ada. */
   cek('kotak dan tombolnya dibungkus kepala yang menempel',
@@ -962,6 +969,85 @@ console.log('\ntiga pintu di kepala, dan layar Note');
 
   await hal.click('#l-note [data-tab-ke="l-utama"]');
   await hal.waitForSelector('#l-utama.aktif');
+}
+
+console.log('\nlaci: satu saja yang terbuka, dan menutup sendiri');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(250);
+
+  const buka = (id) => hal.locator(id).evaluate((n) => !n.classList.contains('sembunyi'));
+
+  /* Menekan pintu Drop yang sedang terbuka membuka laci cara memasukkan -
+     seperti Keep. Bawaannya tetap teks: kotaknya sudah siap diketik tanpa
+     memilih apa pun. */
+  await hal.click('#l-utama [data-tab-ke="l-utama"]');
+  await hal.waitForTimeout(250);
+  cek('pintu Drop yang ditekan lagi membuka laci lampiran', await buka('#panel-drop'));
+  cek('layarnya tidak ke mana-mana', await hal.locator('#l-utama').isVisible());
+
+  /* Ruangnya terbatas: dua laci terbuka sekaligus menutupi kotak DAN hasilnya. */
+  await hal.click('#b-label');
+  await hal.waitForTimeout(250);
+  cek('membuka laci lain menutup yang sebelumnya', !(await buka('#panel-drop')));
+  cek('laci label yang terbuka sekarang', await buka('#panel-label'));
+
+  /* Menyentuh hal lain menutupnya sendiri - kalau harus ditutup tangan, itu
+     satu ketukan untuk membereskan sesuatu yang tidak diminta. */
+  await hal.click('#kotak');
+  await hal.waitForTimeout(250);
+  cek('mengetuk kotak menutup lacinya sendiri', !(await buka('#panel-label')));
+  cek('dan tidak ada label yang diam-diam terpilih',
+      (await hal.textContent('#b-label-teks')) === 'Label');
+}
+
+console.log('\nsaringan jenis: sisi keluar dari laci Drop');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', 'https://shamira.example.id/katalog');
+  await hal.click('#b-drop');
+  await hal.waitForTimeout(400);
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(250);
+
+  /* Ikonnya sengaja sama dengan yang di laci Drop: yang di atas MEMASUKKAN,
+     yang ini MENGELUARKAN. */
+  const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
+  cek('tombol jenis berdiri di antara Label dan Drop',
+      html.indexOf('id="b-label"') < html.indexOf('id="b-filter"') &&
+      html.indexOf('id="b-filter"') < html.indexOf('id="b-drop"'));
+
+  await hal.click('#b-filter');
+  await hal.waitForTimeout(250);
+  const jenis = await hal.locator('#filter-daftar .label-baris').allTextContents();
+  cek('lacinya berisi jenis yang sama dengan laci Drop',
+      jenis.some((t) => /^Gambar/.test(t)) && jenis.some((t) => /^Berkas/.test(t)) &&
+      jenis.some((t) => /^Suara/.test(t)) && jenis.some((t) => /^Daftar/.test(t)), jenis.join('|'));
+
+  /* Memilih Link memperlihatkan tautan TANPA satu kata pun diketik. */
+  await hal.click('[data-jenis="tautan"]');
+  await hal.waitForTimeout(350);
+  cek('memilih jenis menampilkan hasil tanpa kata kunci',
+      (await hal.locator('#hasil-depan .kartu').count()) >= 1);
+  cek('jenis yang menyaring tertulis di tombolnya',
+      (await hal.textContent('#b-filter-teks')) === 'Link');
+  cek('dan ikut disebut di kepala hasilnya',
+      /Link/.test(await hal.textContent('#hasil-depan-ket')));
+
+  /* Kata + jenis dipakai bersama: hasilnya menyusut, bukan mengganti. */
+  const semua = await hal.locator('#hasil-depan .kartu').count();
+  await hal.fill('#kotak', 'shamira');
+  await hal.waitForTimeout(400);
+  cek('menambah kata menyusutkan hasil yang berjenis itu',
+      (await hal.locator('#hasil-depan .kartu').count()) < semua ||
+      (await hal.locator('#hasil-depan .kartu').count()) >= 1);
+
+  await hal.fill('#kotak', '');
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+  await hal.waitForTimeout(250);
+  cek('menutup hasilnya melepas saringan jenisnya juga',
+      (await hal.textContent('#b-filter-teks')) === 'Jenis');
 }
 
 console.log('\narsip: geser ke kiri, bukan hapus');

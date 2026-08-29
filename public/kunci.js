@@ -17,7 +17,7 @@
      TERBUKA    judul, tag, label  <- supaya tetap BISA DITEMUKAN
 
    Itu tukar-tambah yang disengaja. Kamu tetap bisa menemukan "Client Secret
-   Drop Memory" lewat pencarian; yang tidak bisa dilakukan orang lain adalah
+   Cortex Space" lewat pencarian; yang tidak bisa dilakukan orang lain adalah
    membacanya. Judul yang ikut terkunci berarti catatannya hilang dari
    pencarian - dan catatan yang tidak bisa ditemukan sama saja dengan tidak
    disimpan.
