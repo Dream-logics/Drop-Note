@@ -103,6 +103,119 @@
     return (spasi > 30 ? potong.slice(0, spasi) : potong) + '…';
   }
 
+  /* ===================== ISTILAH & STRUKTUR JUDUL =====================
+     Judul di sini bukan hiasan - dia kata yang nanti diketik orangnya waktu
+     mencari. Karena itu tiga aturan, dan ketiganya soal yang sama: judul harus
+     memakai kata yang ADA DI KEPALANYA, bukan kata yang paling rapi.
+
+     1. INGGRIS DULU kalau istilahnya bentrok. Dia mengetik "link" waktu
+        mencari; menyimpannya sebagai "tautan" berarti aplikasinya sendiri
+        yang bikin dia lupa. Bahasa layar tetap Indonesia - yang diinggriskan
+        cuma istilah teknis yang memang dipakai sehari-hari dalam bahasa
+        Inggris.
+     2. TIDAK ADA KATA KEMBAR. "Uji coba dan pengecekan versi" itu satu makna
+        yang ditulis dua kali. Panjang tidak menambah pintu masuk - tag yang
+        menambahnya.
+     3. KATA PERTAMA ITU PENANDA JENISNYA, satu kata benda: Link, Nomor, API,
+        Telepon. Dengan begitu daftar hasil bisa dipindai dari tepi kiri saja,
+        tanpa membaca seluruh barisnya. */
+
+  var ISTILAH = [
+    ['Link', ['link', 'tautan', 'url', 'alamat web', 'links']],
+    ['API', ['api', 'apikey', 'api key', 'kunci api', 'endpoint']],
+    ['Password', ['password', 'sandi', 'kata sandi', 'pass', 'pw', 'passwd']],
+    ['Email', ['email', 'surel', 'e-mail', 'mail']],
+    ['Telepon', ['telepon', 'telpon', 'telp', 'hp', 'phone', 'nomor hp', 'wa']],
+    ['Nomor', ['nomor', 'no', 'nomer', 'number']],
+    ['Akun', ['akun', 'account', 'login', 'username', 'user']],
+    ['Alamat', ['alamat', 'address', 'lokasi']],
+    ['Kode', ['kode', 'code', 'otp', 'pin', 'token']],
+    ['Prompt', ['prompt']],
+    ['Resep', ['resep', 'obat', 'dosis']],
+    ['Berkas', ['berkas', 'file', 'dokumen', 'document']],
+    ['Jadwal', ['jadwal', 'schedule', 'agenda']],
+    ['Harga', ['harga', 'price', 'tarif', 'biaya']]
+  ];
+
+  /* Penanda yang diturunkan dari elemen, dipakai kalau judulnya sendiri belum
+     menyebut satu pun istilah yang dikenal. */
+  var PENANDA_JENIS = {
+    tautan: 'Link', surel: 'Email', telepon: 'Telepon',
+    kode: 'Kode', nomor: 'Nomor', alamat: 'Alamat', berkas: 'Berkas',
+    jadwal: 'Jadwal', harga: 'Harga', prompt: 'Prompt'
+  };
+
+  function bakuIstilah(kata) {
+    var k = normal(kata);
+    if (!k) return '';
+    for (var i = 0; i < ISTILAH.length; i++) {
+      if (ISTILAH[i][1].indexOf(k) >= 0) return ISTILAH[i][0];
+    }
+    return '';
+  }
+
+  /* Kata kembar dibuang, yang pertama menang. Yang dibandingkan bentuk
+     normalnya, jadi "Link" dan "link," terhitung sama. */
+  function buangKembar(kata) {
+    var lihat = {};
+    return kata.filter(function (w) {
+      var n = normal(w);
+      if (!n) return true;
+      /* Kata sambung boleh berulang - membuangnya bikin judulnya jadi
+         telegram yang sulit dibaca. */
+      if (n.length <= 3) return true;
+      if (lihat[n]) return false;
+      lihat[n] = true;
+      return true;
+    });
+  }
+
+  function penandaDari(entri) {
+    var el = (entri && entri.elemen) || [];
+    for (var i = 0; i < el.length; i++) {
+      if (PENANDA_JENIS[el[i].jenis]) return PENANDA_JENIS[el[i].jenis];
+    }
+    if (entri && entri.jenis === 'tautan') return 'Link';
+    if (entri && entri.jenis === 'gambar') return 'Gambar';
+    if (entri && entri.jenis === 'suara') return 'Rekaman';
+    return '';
+  }
+
+  function susunJudul(teks, entri) {
+    var kata = String(teks || '').trim().split(/\s+/).filter(Boolean);
+    if (!kata.length) return '';
+
+    /* Istilah yang bentrok dibakukan lebih dulu, di mana pun letaknya -
+       "tautan" di tengah kalimat pun jadi "link". */
+    kata = kata.map(function (w) {
+      var baku = bakuIstilah(w.replace(/[^\wÀ-ÿ]/g, ''));
+      if (!baku) return w;
+      /* Yang di tengah kalimat ditulis huruf kecil supaya judulnya tidak
+         terbaca seperti judul berita. */
+      return baku === 'API' ? baku : baku.toLowerCase();
+    });
+
+    kata = buangKembar(kata);
+
+    /* Penanda di depan. Kalau judulnya sudah menyebut istilahnya, istilah itu
+       yang diangkat ke depan - bukan ditambahi penanda kedua yang artinya
+       sama. */
+    var adaIstilah = -1, istilah = '';
+    for (var i = 0; i < kata.length && i < 6; i++) {
+      var b = bakuIstilah(kata[i].replace(/[^\wÀ-ÿ]/g, ''));
+      if (b) { adaIstilah = i; istilah = b; break; }
+    }
+    if (adaIstilah >= 0) {
+      kata.splice(adaIstilah, 1);
+    } else {
+      istilah = penandaDari(entri);
+    }
+
+    var sisa = kata.join(' ').replace(/^[\s,;:.\-]+/, '').trim();
+    var hasil = istilah ? (sisa ? istilah + ' ' + sisa : istilah) : sisa;
+    return hasil.split(/\s+/).slice(0, 9).join(' ').slice(0, 90);
+  }
+
   function judulOtomatis(entri) {
     if (entri.jenis === 'tautan') return judulTautan(entri.isi);
     if (entri.jenis === 'gambar') return entri.namaBerkas || 'Gambar';
@@ -112,7 +225,7 @@
       var d = (entri.daftar || []).filter(function (b) { return b.teks; });
       return d.length ? d[0].teks.slice(0, 50) : 'Daftar';
     }
-    return judulTeks(entri.isi);
+    return susunJudul(judulTeks(entri.isi), entri);
   }
 
   function waktuPendek(ts) {
@@ -415,6 +528,7 @@
   global.TOtak = {
     bacaJenis: bacaJenis, ambilUrl: ambilUrl,
     judulTautan: judulTautan, judulTeks: judulTeks, judulOtomatis: judulOtomatis,
+    susunJudul: susunJudul, bakuIstilah: bakuIstilah,
     benahiKategori: benahiKategori, usulKategori: usulKategori,
     labelOtomatis: labelOtomatis, cari: cari,
     elemenOtomatis: elemenOtomatis, gabungElemen: gabungElemen,

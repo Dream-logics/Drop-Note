@@ -152,6 +152,24 @@
       '   dari isi catatan supaya judulnya berdiri sendiri saat dibaca enam bulan lagi.',
       '   Maksimal 8 kata.',
       '',
+      '   Tiga aturan bentuk judul, dan ketiganya soal yang sama - judul harus memakai kata',
+      '   yang ADA DI KEPALANYA saat mencari, bukan kata yang paling rapi:',
+      '',
+      '   a. KATA PERTAMA adalah penanda jenisnya: satu kata benda yang menyebut catatan ini',
+      '      barang apa. Link, Nomor, API, Telepon, Password, Email, Akun, Alamat, Kode,',
+      '      Jadwal, Harga, Resep, Berkas. Dengan begitu daftar hasil bisa dipindai dari tepi',
+      '      kiri saja, tanpa membaca seluruh barisnya.',
+      '',
+      '   b. INGGRIS DULU kalau istilahnya bentrok. Dia mengetik "link" waktu mencari, jadi',
+      '      tulis "Link" - JANGAN "Tautan". Begitu juga Password (bukan Sandi), Email (bukan',
+      '      Surel), API. Menyimpannya dengan kata lain berarti aplikasinya sendiri yang bikin',
+      '      dia lupa. Selebihnya tetap bahasa Indonesia.',
+      '',
+      '   c. JANGAN ADA KATA KEMBAR, termasuk yang kembar maknanya. "Uji coba dan pengecekan',
+      '      versi editor" itu satu maksud yang ditulis dua kali - cukup "Uji coba versi',
+      '      editor". Judul panjang tidak menambah pintu masuk; yang menambah itu tag, dan',
+      '      tagnya sudah banyak.',
+      '',
       '   Yang TIDAK BOLEH: berpindah subjek. Kalau baris pertama bicara soal sandi wifi,',
       '   judulnya tetap soal sandi wifi - bukan soal kantornya, bukan soal jadwal gantinya.',
       '   Ide itu miliknya; kamu yang merapikan bentuknya, bukan menggantinya.',
@@ -239,7 +257,12 @@
           if (!e) return null;
           /* Judul yang sudah diketik sendiri tidak pernah ditimpa. Itu punya
              pemakainya - AI cuma mengisi yang kosong atau yang disusun mesin. */
-          if (!e.judulManual && h.judul) e.judul = String(h.judul).slice(0, 90);
+          /* Dirapikan lagi di sini, bukan cuma dipesankan di arahan: model
+             sesekali lupa aturannya, dan aturan yang cuma diminta - tidak
+             ditegakkan - akan bocor di hari yang paling sibuk. */
+          if (!e.judulManual && h.judul) {
+            e.judul = TOtak.susunJudul(String(h.judul), e).slice(0, 90);
+          }
           e.label = gabungLabel(e.label, h.label);
           /* Elemen AI DULUAN, baru sisa tebakan pola. AI yang tahu potongan
              itu sebenarnya apa - "Client ID", bukan "kode" - dan yang pertama
@@ -378,7 +401,9 @@
             ], arahanBaca(daftarTag(setelan)));
           }).then(function (h) {
             if (!h) throw new Error('Dokumen tidak terbaca');
-            if (!e.judulManual && h.judul) e.judul = String(h.judul).slice(0, 90);
+            if (!e.judulManual && h.judul) {
+              e.judul = TOtak.susunJudul(String(h.judul), e).slice(0, 90);
+            }
             e.label = gabungLabel(e.label, h.label);
             e.elemen = TOtak.gabungElemen(h.elemen, e.elemen);
             e.tag = gabungTag(e.tag, h.tag);
