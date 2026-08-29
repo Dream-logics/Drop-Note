@@ -618,6 +618,12 @@
 
     var pakai = (daftar || []).filter(function (e) {
       if (e.pensiun) return false;
+      /* Tugas menumpang di toko yang sama supaya tidak ada basis data kedua,
+         tapi dia bukan catatan. "Bayar listrik" muncul di hasil pencarian
+         cuma menambah barang yang harus dilewati - dan yang lebih buruk,
+         tugas yang sudah selesai pun ikut naik ke permukaan. Dia punya
+         layarnya sendiri, dan di sanalah satu-satunya tempat dia dicari. */
+      if (e.jenis === 'tugas') return false;
       if (saringJenis && saringJenis !== 'semua' && e.jenis !== saringJenis) return false;
       /* Kategori boleh berisi beberapa keyword yang dipisah spasi, jadi
          saringannya mencocokkan SALAH SATU - bukan seluruh isian. Kalau yang
