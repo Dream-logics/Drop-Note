@@ -623,8 +623,8 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
      jempol kanan bertumpu di sudut kanan bawah - makin ke kiri makin jauh
      diraih. Yang paling sering ditekan duduk paling kanan. Urutan kiri-ke-kanan
      akan terasa rapi di laptop dan salah di tangan. */
-  cek('Drop paling kanan, Semua paling kiri',
-      utama.indexOf('id="b-semua"') < utama.indexOf('id="b-cari"') &&
+  cek('Drop paling kanan, Label paling kiri',
+      utama.indexOf('id="b-label"') < utama.indexOf('id="b-cari"') &&
       utama.indexOf('id="b-cari"') < utama.indexOf('id="b-drop"'));
 
   const hasil = html.slice(html.indexOf('id="l-hasil"'), html.indexOf('id="l-catat"'));
@@ -844,6 +844,60 @@ console.log('\nlabel rak: barisan tetap, satu ketuk sama dengan menyaring');
       cipNama.slice(1, 3).join('|'));
   await hal.evaluate(() => TAlur.keSemua());
   await hal.waitForTimeout(200);
+}
+
+console.log('\nlabel di layar depan: hasil di tempat, bukan pindah layar');
+{
+  /* Satu catatan yang pasti masuk label Cons - kalau tidak, uji ini cuma
+     memastikan layarnya tidak pindah, bukan bahwa hasilnya benar-benar ada. */
+  await hal.evaluate(() => TSimpan.taruh({
+    id: 'lbl-cons', jenis: 'teks', judul: 'Vendor granit Cons-3',
+    isi: 'Vendor granit Cons-3 dikonfirmasi kirim Kamis', kategori: 'construction',
+    tag: ['Construction'], label: [], elemen: [], daftar: [],
+    dibuat: Date.now(), diubah: Date.now(), dipakai: 0, diLabeliAI: true, diBacaAI: true
+  }));
+  await hal.evaluate(() => TAlur.muatUlangUji());
+  await hal.waitForTimeout(300);
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(200);
+
+  await hal.click('#b-label');
+  await hal.waitForTimeout(250);
+  const isi = await hal.locator('#label-daftar .label-baris').allTextContents();
+  cek('daftar label terbuka dari tombolnya', isi.length > 5, String(isi.length));
+  cek('barisan pertama "Semua"', /^Semua/.test(isi[0]), isi[0]);
+  cek('tiap label membawa jumlahnya', /\d$/.test(isi[1]), isi[1]);
+
+  /* Dicocokkan ke istilahnya juga: mengetik kata panjang harus menemukan
+     label yang tertulis singkat. */
+  await hal.fill('#label-cari', 'construction');
+  await hal.waitForTimeout(250);
+  const saring = await hal.locator('#label-daftar .label-baris').allTextContents();
+  cek('mencari "construction" menemukan label "Cons"',
+      saring.some((t) => t.indexOf('Cons') === 0), saring.join('|'));
+
+  await hal.fill('#label-cari', '');
+  await hal.waitForTimeout(200);
+  await hal.click('[data-label="Cons"]');
+  await hal.waitForTimeout(400);
+
+  /* INI YANG DIUJI: memilih label tidak memindahkan layar. */
+  cek('layarnya tetap layar depan', await hal.locator('#l-utama').isVisible());
+  cek('daftar labelnya menutup sendiri',
+      await hal.locator('#panel-label').evaluate((n) => n.classList.contains('sembunyi')));
+  cek('hasilnya tergambar di layar yang sama',
+      (await hal.locator('#hasil-depan .kartu').count()) >= 1);
+  cek('tombolnya menyebut label yang sedang tampil',
+      (await hal.textContent('#b-label-teks')) === 'Cons');
+
+  /* Kepalanya membawa jalan keluarnya sendiri - kalau tidak, saringan ini
+     menetap tanpa ada yang menutupnya. */
+  await hal.click('#b-tutup-hasil');
+  await hal.waitForTimeout(250);
+  cek('silang di kepalanya menutup hasilnya',
+      await hal.locator('#petak-hasil-depan').evaluate((n) => n.classList.contains('sembunyi')));
+  cek('tombolnya kembali menyebut "Label"',
+      (await hal.textContent('#b-label-teks')) === 'Label');
 }
 
 console.log('\narsip: geser ke kiri, bukan hapus');
