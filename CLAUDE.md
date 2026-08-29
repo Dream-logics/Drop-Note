@@ -83,7 +83,9 @@ terpikir, dan itu membatalkan seluruh gunanya.
 ## Peta berkas
 
 ```
-public/index.html   kerangka semua layar (mulai, utama, hasil, catat, setelan)
+public/index.html   kerangka semua layar (mulai, utama/Drop, tugas/To Do,
+                    note, hasil, catat, setelan). Tiga pintu di kepala:
+                    Drop - To Do - Note, digambar dari alur.js ke <div data-tab>
                     Catat BUKAN tombol - layar tulis didatangi dari hasil
 public/bawaan.js    SATU-SATUNYA tempat nama aplikasi & model AI ditulis
 public/gaya.css     gaya; SATU tema putih, tidak mengikuti setelan HP
@@ -128,7 +130,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (228 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (242 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

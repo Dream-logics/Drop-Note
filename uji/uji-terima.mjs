@@ -934,6 +934,55 @@ console.log('\nlabel di layar depan: hasil di tempat, bukan pindah layar');
       (await hal.textContent('#b-label-teks')) === 'Label');
 }
 
+console.log('\ntiga pintu di kepala, dan layar Note');
+{
+  const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
+  /* Digambar dari satu tempat, bukan disalin tiga kali: baris yang disalin
+     akan berbeda-beda begitu salah satunya disunting. */
+  cek('baris tabnya wadah kosong di HTML, diisi dari alur.js',
+      (html.match(/class="tab-baris" data-tab></g) || []).length === 3);
+
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(250);
+  const tab = await hal.locator('#l-utama [data-tab] .tab').allTextContents();
+  cek('tiga pintu: Drop, To Do, Note', tab.length === 3 &&
+      /^Drop/.test(tab[0]) && /^To Do/.test(tab[1]) && /^Note/.test(tab[2]), tab.join('|'));
+  cek('yang sedang dibuka ditandai',
+      (await hal.locator('#l-utama [data-tab] .tab.nyala').textContent()).indexOf('Drop') === 0);
+
+  await hal.click('#l-utama [data-tab-ke="l-note"]');
+  await hal.waitForSelector('#l-note.aktif');
+  cek('Note punya layarnya sendiri', await hal.locator('#l-note').isVisible());
+
+  /* Struktur foldernya tetap ada - itu yang bikin catatan punya ALAMAT. */
+  const folder = await hal.locator('#note-isi .note-folder').count();
+  cek('catatan tersusun dalam folder, bukan mengambang', folder >= 1, String(folder));
+
+  /* Alamatnya dari rak yang dipilih sendiri; kalau lupa, dari tag AI. */
+  const alamat = await hal.evaluate(() => [
+    TAlur.alamatNoteUji({ kategori: 'construction', tag: ['Lain'] }),
+    TAlur.alamatNoteUji({ kategori: '', tag: ['AmaraLiving', 'Lain'] }),
+    TAlur.alamatNoteUji({ kategori: '', tag: [] })
+  ]);
+  cek('alamat diambil dari rak yang dipilih sendiri', alamat[0] === 'construction', alamat[0]);
+  cek('kalau lupa mengisi, alamatnya dari tag pertama AI', alamat[1] === 'AmaraLiving', alamat[1]);
+  cek('tidak pernah ada catatan tanpa alamat', !!alamat[2], alamat[2]);
+
+  /* Dipanggil dengan MENCARI, bukan disusuri satu per satu - dan pencariannya
+     menembus seluruh folder, bukan cuma yang sedang dibuka. */
+  await hal.fill('#note-cari', 'wifi');
+  await hal.waitForTimeout(350);
+  cek('mengetik menembus semua folder',
+      (await hal.locator('#note-isi .kartu').count()) >= 1);
+  cek('tiap hasil membawa alamat foldernya',
+      (await hal.locator('#note-isi .note-alamat-kecil').count()) >= 1);
+  await hal.fill('#note-cari', '');
+  await hal.waitForTimeout(250);
+
+  await hal.click('#l-note [data-tab-ke="l-utama"]');
+  await hal.waitForSelector('#l-utama.aktif');
+}
+
 console.log('\narsip: geser ke kiri, bukan hapus');
 {
   await hal.evaluate(() => TAlur.keSemua());
@@ -983,16 +1032,38 @@ console.log('\narsip: geser ke kiri, bukan hapus');
       (await hal.locator('#hasil .kartu').count()) === sebelum);
 }
 
-console.log('\nEnter = cari, di dua kotak');
+console.log('\nmengetik = mencari, tanpa Enter');
 {
-  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.waitForSelector('#l-utama.aktif');
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(250);
+  cek('kotak kosong berarti layar depan kosong',
+      await hal.locator('#petak-hasil-depan').evaluate((n) => n.classList.contains('sembunyi')));
+
+  /* Tanpa label pun mengetik langsung menyaring - inilah yang bikin dia
+     terasa seperti WhatsApp. */
   await hal.fill('#kotak', 'wifi');
+  await hal.waitForTimeout(350);
+  cek('mengetik tanpa label sekalipun langsung menampilkan hasil',
+      (await hal.locator('#hasil-depan .kartu').count()) >= 1);
+  cek('layarnya tidak berpindah', await hal.locator('#l-utama').isVisible());
+
+  /* Enter tidak lagi memindahkan layar: hasilnya sudah di depan mata, dan
+     memindahkannya justru membuang yang sedang dilihat. Yang dibutuhkan cuma
+     papan ketiknya minggir. */
   await hal.press('#kotak', 'Enter');
+  await hal.waitForTimeout(300);
+  cek('Enter tidak memindahkan layar waktu hasilnya sudah terbuka',
+      await hal.locator('#l-utama').isVisible());
+  cek('isi kotak tetap utuh', (await hal.inputValue('#kotak')) === 'wifi');
+
+  /* Layar hasil tetap ada, dan tombol Cari tetap pintu ke sana - di situ ada
+     saringan jenis dan urutan yang tidak muat di layar depan. */
+  await hal.click('#b-cari');
   await hal.waitForSelector('#l-hasil.aktif');
-  cek('Enter di kotak drop langsung mencari', (await hal.inputValue('#cari-input')) === 'wifi');
-  /* Isinya tidak boleh hilang: kalau ternyata mau di-drop, tinggal tekan Drop. */
-  cek('isi kotak tetap utuh setelah Enter', (await hal.inputValue('#kotak')) === 'wifi');
+  cek('tombol Cari tetap membawa ke layar hasil',
+      (await hal.inputValue('#cari-input')) === 'wifi');
 
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.fill('#kotak', 'baris satu');
@@ -1000,6 +1071,7 @@ console.log('\nEnter = cari, di dua kotak');
   cek('Shift+Enter tetap baris baru', /\n/.test(await hal.inputValue('#kotak')),
       JSON.stringify(await hal.inputValue('#kotak')));
   await hal.fill('#kotak', '');
+  await hal.waitForTimeout(250);
 }
 
 console.log('\ntag andalan: rak yang sudah diputuskan sendiri');

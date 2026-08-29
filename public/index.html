@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Drop Memory</title>
 <meta name="description" content="Satu kotak untuk menimbun catatan, satu pencarian untuk mengambilnya kembali.">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#f5f5f3">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="ikon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="ikon-192.png">
@@ -35,6 +35,10 @@
       </button>
     </div>
   </header>
+  <!-- Tiga pintu, satu baris. Isinya digambar dari satu tempat di alur.js,
+       bukan disalin tiga kali - baris yang disalin akan berbeda-beda begitu
+       salah satunya disunting. -->
+  <div class="tab-baris" data-tab></div>
 
   <!-- KOTAK DAN TOMBOLNYA MENEMPEL DI ATAS. Begitu hasil digambar di layar
        yang sama, daftarnya bisa ratusan baris - dan kendali yang ikut tergulir
@@ -150,15 +154,6 @@
 
   <div class="tumbuh"></div>
 
-  <!-- Tugas berdiri sendiri di kaki: dia menjawab pertanyaan yang berbeda
-       ("apa yang harus kukerjakan"), jadi tidak dicampur ke baris tombol
-       yang semuanya soal catatan. -->
-  <div class="kaki-baris">
-    <button class="kaki-tbl" id="b-tugas">
-      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/></svg>
-      To-do list<span class="kaki-jumlah" id="tugas-jumlah"></span>
-    </button>
-  </div>
   <div class="kaki" id="kaki-utama">Tersimpan langsung di perangkat, tanpa menunggu jaringan.</div>
 </section>
 
@@ -200,13 +195,11 @@
 
 <!-- ===================== LAYAR TUGAS (to-do) ===================== -->
 <section class="layar" id="l-tugas">
-  <header class="atas rapat">
-    <button class="ikon-btn" data-kembali aria-label="Kembali">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-    </button>
-    <div class="atas-judul">To-do list</div>
+  <header class="atas">
+    <div class="merek" data-merek>Drop Memory</div>
     <span class="jumlah" id="tugas-ket"></span>
   </header>
+  <div class="tab-baris" data-tab></div>
 
   <div class="cip-gulir" id="tugas-saring"></div>
   <!-- Daftar lahir dari keyword yang dipakai, bukan dari layar "buat daftar".
@@ -227,6 +220,32 @@
       <svg viewBox="0 0 24 24" class="ik"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
     </button>
   </div>
+</section>
+
+<!-- ===================== LAYAR NOTE (berkas bertingkat) =====================
+     Pengganti Notepad, tapi dipanggil dengan MENCARI, bukan dibuka dari pohon
+     folder. Struktur foldernya tetap ada dan tetap kelihatan - itu yang bikin
+     satu catatan punya alamat, bukan cuma mengambang di timbunan - tapi
+     menyusuri folder satu per satu itu pekerjaan yang tidak perlu diadakan
+     kalau kata kuncinya sudah ada di kepala.
+
+     Alamatnya dari rak yang kamu pilih sendiri. Kalau lupa mengisi - dan itu
+     yang biasanya terjadi - alamatnya diambil dari tag pertama buatan AI.
+     Jadi tidak pernah ada catatan tanpa alamat. -->
+<section class="layar" id="l-note">
+  <header class="atas">
+    <div class="merek" data-merek>Drop Memory</div>
+    <span class="jumlah" id="note-jumlah"></span>
+  </header>
+  <div class="tab-baris" data-tab></div>
+
+  <div class="kepala-tetap">
+    <div class="note-alamat" id="note-alamat"></div>
+    <input id="note-cari" class="cari-input" placeholder="Cari di semua folder&#8230;" autocomplete="off">
+  </div>
+
+  <div id="note-isi"></div>
+  <div class="tumbuh"></div>
 </section>
 
 <!-- ===================== LAYAR CATAT (memo pad) ===================== -->
