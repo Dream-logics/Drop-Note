@@ -233,6 +233,23 @@ console.log('\njudul: kata yang ada di kepalanya, bukan yang paling rapi');
       (await susun('Ngoffee stok gelas menipis', { elemen: [{ jenis: 'kode', nilai: 'x1234' }] }))
         === 'Ngoffee stok gelas menipis');
 
+  /* Penanda DUA KATA: "Client ID" memang namanya di Google. Memendekkannya
+     jadi "Client" - atau menggantinya jadi "Token" - membuat orangnya mencari
+     dengan kata yang tidak pernah dia dengar dari sumbernya. */
+  cek('Client ID tetap dua kata, seperti Google menamainya',
+      (await susun('Google OAuth Client ID Drop Memory', { elemen: [] }))
+        .indexOf('Client ID ') === 0);
+  cek('Client Secret ikut dikenali utuh',
+      (await susun('client secret drop memory', { elemen: [] })).indexOf('Client Secret ') === 0);
+  cek('frasa menang atas kata tunggal di kalimat yang sama',
+      (await susun('kunci api gemini buat proxy', { elemen: [] })).indexOf('API Key ') === 0);
+
+  /* Token dicabut: dia jarang diketik, bukan catatan harian. */
+  cek('token bukan lagi penanda',
+      (await susun('token bearer buat uji', { elemen: [] })).indexOf('Token') !== 0);
+  cek('Idea, bukan Ide - Inggris dulu berlaku di sini juga',
+      (await susun('ide bisnis kopi keliling', { elemen: [] })).indexOf('Idea ') === 0);
+
   const arahan = await hal.evaluate(() => TPelabel.arahanUji({ tagFavorit: [], hashtag: [] }));
   cek('AI ikut diberi tahu: Link, bukan Tautan', /JANGAN "Tautan"/.test(arahan));
   cek('AI ikut diberi tahu memilih yang paling khusus',
