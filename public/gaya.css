@@ -10,12 +10,18 @@
   --m:#8d939c;   /* redup   */
   --l:#262a31;   /* garis   */
   --lt:#2f343c;  /* garis terang */
-  --a:#CBA158;   /* aksen   */
-  --at:#20160a;  /* tinta di atas aksen */
+  /* Aksen teal tua. Dua nada, karena tugasnya dua: --a dipakai sebagai TINTA
+     (tag, tautan, tenggat dekat) jadi dia harus cukup terang di atas dasar
+     gelap; --ap dipakai sebagai ALAS tombol utama, jadi dia harus cukup pekat
+     supaya tinta putih di atasnya terbaca. Satu warna tidak bisa keduanya. */
+  --a:#5FA79E;   /* aksen   */
+  --ap:#2F6B63;  /* aksen padat: alas */
+  --at:#ffffff;  /* tinta di atas aksen */
   --bahaya:#c96a5c;
 }
 @media (prefers-color-scheme: light){
-  :root{--g:#F4F2EC;--p:#fff;--i:#1b1e22;--m:#6b7178;--l:#e2dfd6;--lt:#d3cec0;--a:#8a6520;--at:#fff;--bahaya:#a33c2c}
+  :root{--g:#F4F2EC;--p:#fff;--i:#1b1e22;--m:#6b7178;--l:#e2dfd6;--lt:#d3cec0;
+        --a:#2E6E67;--ap:#2E6E67;--at:#fff;--bahaya:#a33c2c}
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -110,7 +116,18 @@ button,input,textarea{font:inherit;color:inherit}
   border:1px solid var(--l);background:none;color:var(--m);border-radius:8px;
   padding:7px 11px;font-size:12px;font-weight:500;white-space:nowrap;cursor:pointer;
 }
-.cip.nyala{background:var(--a);border-color:var(--a);color:var(--at);font-weight:700}
+/* Label yang menyala pakai alas TIPIS bertinta aksen, bukan blok penuh: di
+   satu baris berisi sepuluh label, satu blok pekat berteriak lebih keras
+   daripada hasil pencarian yang ada di bawahnya. */
+.cip.nyala{
+  background:color-mix(in srgb, var(--a) 20%, transparent);
+  border-color:color-mix(in srgb, var(--a) 55%, transparent);
+  color:var(--a);font-weight:700;
+}
+/* Label tanpa isi tetap di tempatnya - hafalan jari lebih mahal daripada
+   satu label yang kebetulan kosong bulan ini. */
+.cip.sepi{opacity:.45}
+.cip-jumlah{margin-left:5px;font-weight:700;opacity:.75}
 
 /* --- tombol --- */
 .tombol-baris{display:flex;gap:7px;margin-top:10px}
@@ -129,7 +146,7 @@ button,input,textarea{font:inherit;color:inherit}
   font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;
   cursor:pointer;padding:0 6px;white-space:nowrap;
 }
-.tbl.utama{background:var(--a);border-color:var(--a);color:var(--at);font-weight:700}
+.tbl.utama{background:var(--ap);border-color:var(--ap);color:var(--at);font-weight:700}
 .tbl:disabled{opacity:.4}
 
 /* --- kaki --- */
@@ -322,7 +339,7 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 .set-input.tinggi{min-height:104px;line-height:1.6;resize:vertical;font-size:14px}
 .set-tbl{margin-top:11px;width:100%;min-height:46px;border:1px solid var(--lt);border-radius:10px;
   background:none;font-size:14px;font-weight:600;cursor:pointer}
-.set-tbl.emas{background:var(--a);border-color:var(--a);color:var(--at);font-weight:700}
+.set-tbl.emas{background:var(--ap);border-color:var(--ap);color:var(--at);font-weight:700}
 .set-tbl.bahaya{color:var(--bahaya);border-color:color-mix(in srgb, var(--bahaya) 45%, transparent)}
 .set-pilih{display:flex;gap:7px;margin-top:11px}
 .set-pilih .cip{flex:1;text-align:center}
@@ -333,7 +350,7 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 /* --- pesan sekilas --- */
 .pesan{
   position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 22px);transform:translate(-50%,14px);
-  background:var(--a);color:var(--at);font-size:13.5px;font-weight:700;padding:11px 18px;border-radius:11px;
+  background:var(--ap);color:var(--at);font-size:13.5px;font-weight:700;padding:11px 18px;border-radius:11px;
   opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;z-index:9;max-width:88vw;text-align:center;
 }
 .pesan.tampil{opacity:1;transform:translate(-50%,0)}
@@ -369,7 +386,7 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 .kaki-tbl:active{border-color:var(--a);color:var(--a)}
 .kaki-jumlah{
   min-width:20px;height:20px;padding:0 6px;border-radius:10px;
-  background:var(--a);color:var(--at);font-size:11px;font-weight:700;
+  background:var(--ap);color:var(--at);font-size:11px;font-weight:700;
   display:flex;align-items:center;justify-content:center;
 }
 
@@ -384,7 +401,7 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   display:flex;align-items:center;justify-content:center;padding:0;
 }
 .tugas-centang .ik{width:14px;height:14px;stroke-width:3}
-.tugas-centang.kena{background:var(--a);border-color:var(--a)}
+.tugas-centang.kena{background:var(--ap);border-color:var(--ap)}
 .tugas-centang.kecil{width:20px;height:20px}
 .tugas-centang.kecil .ik{width:12px;height:12px}
 .tugas-teks{flex:1;min-width:0}
@@ -395,6 +412,8 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 .titik-pisah{opacity:.5}
 /* Yang lewat tenggat merah, dan cuma itu yang merah di layar ini - kalau
    banyak yang berteriak, tidak ada yang terdengar. */
+.tugas-ulang{display:inline-flex;align-items:center;opacity:.8}
+.tugas-ulang .ik{width:12px;height:12px;stroke-width:2}
 .tugas-tenggat{display:inline-flex;align-items:center;gap:4px}
 .tugas-tenggat .ik{width:12px;height:12px;stroke-width:2}
 .tugas-tenggat.dekat{color:var(--a);font-weight:600}

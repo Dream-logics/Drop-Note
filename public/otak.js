@@ -520,28 +520,93 @@
     return buangSerpihan(gabung).slice(0, 20);
   }
 
-  var BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  var BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+               'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
-  /* Di daftar hasil, waktu itu keterangan - bukan isi. "28 Agustus 2026 ·
-     18.27" memakan selebar judulnya sendiri untuk menjawab pertanyaan yang
-     jarang ditanya. Yang ditulis cuma bagian yang membedakan: jam kalau hari
-     ini, tanggal kalau tahun ini, tahunnya kalau lebih lama. */
+  /* Bulannya selalu disingkat. "6 September" dan "6 Sep" menjawab pertanyaan
+     yang sama persis, tapi yang panjang mendorong judulnya menyempit - dan
+     judul itulah yang sebenarnya dibaca. */
+  function tanggalPendek(ts) {
+    var d = new Date(ts || Date.now());
+    var pendek = d.getDate() + ' ' + BULAN[d.getMonth()];
+    return d.getFullYear() === new Date().getFullYear()
+      ? pendek : pendek + ' ' + String(d.getFullYear()).slice(2);
+  }
+
+  /* Jamnya sengaja dibuang. Tidak ada satu pun keputusan di aplikasi ini yang
+     berubah karena catatannya jatuh pukul 08.02 atau 17.40 - yang menolong
+     cuma "hari ini" lawan "sudah lama". Menuliskan jam berarti membayar
+     selebar enam huruf untuk keterangan yang tidak pernah dipakai. */
   function waktuRingkas(ts) {
     var d = new Date(ts || Date.now());
     var kini = new Date();
-    var p = function (n) { return (n < 10 ? '0' : '') + n; };
-    if (d.toDateString() === kini.toDateString()) return p(d.getHours()) + '.' + p(d.getMinutes());
-    var pendek = d.getDate() + ' ' + BULAN[d.getMonth()].slice(0, 3);
-    return d.getFullYear() === kini.getFullYear() ? pendek
-                                                  : pendek + ' ' + String(d.getFullYear()).slice(2);
+    if (d.toDateString() === kini.toDateString()) return 'Hari ini';
+    var kemarin = new Date(kini.getFullYear(), kini.getMonth(), kini.getDate() - 1);
+    if (d.toDateString() === kemarin.toDateString()) return 'Kemarin';
+    return tanggalPendek(ts);
   }
 
   function tanggalIndo(ts) {
     var d = new Date(ts || Date.now());
-    var p = function (n) { return (n < 10 ? '0' : '') + n; };
-    return d.getDate() + ' ' + BULAN[d.getMonth()] + ' ' + d.getFullYear() +
-           ' · ' + p(d.getHours()) + '.' + p(d.getMinutes());
+    return d.getDate() + ' ' + BULAN[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  /* ===================== LABEL RAK =====================
+     Pemakainya tidak berpikir dalam "kategori" - dia berpikir dalam nama
+     proyek, divisi, dan perusahaan. Itu jumlahnya terbatas dan hampir tidak
+     pernah berubah, jadi dia pantas jadi barisan tetap yang selalu ada di
+     tempat yang sama, bukan daftar yang menyusun ulang dirinya sendiri.
+
+     Namanya sengaja disingkat ("Cons", "Intr Dev") karena yang muat dalam
+     satu baris itulah yang benar-benar dipakai. Tapi singkatan cuma hidup di
+     kepala pemakainya - AI melabeli dengan kata utuh. Karena itu tiap label
+     boleh membawa kata lain sesudah tanda '=', dan semuanya dihitung sebagai
+     label yang sama. Tanpa itu, label yang rapi justru tidak menemukan
+     apa-apa. */
+
+  function uraiLabel(teks) {
+    var keluar = [];
+    String(teks || '').split(/[\r\n]+/).forEach(function (baris) {
+      var potong = baris.split('=');
+      var nama = potong[0].replace(/^#+/, '').trim().slice(0, 16);
+      if (!nama) return;
+      var istilah = [normal(nama)];
+      (potong[1] || '').split(',').forEach(function (a) {
+        var v = normal(a);
+        if (v && istilah.indexOf(v) < 0) istilah.push(v);
+      });
+      if (!keluar.some(function (x) { return x.nama.toLowerCase() === nama.toLowerCase(); })) {
+        keluar.push({ nama: nama, istilah: istilah });
+      }
+    });
+    return keluar.slice(0, 40);
+  }
+
+  function tulisLabel(daftar) {
+    return (daftar || []).map(function (l) {
+      var lain = (l.istilah || []).slice(1);
+      return lain.length ? l.nama + ' = ' + lain.join(', ') : l.nama;
+    }).join('\n');
+  }
+
+  function cocokLabel(e, istilah) {
+    if (!istilah || !istilah.length) return true;
+    var kat = normal(e.kategori).split(' ').filter(Boolean);
+    var katUtuh = normal(e.kategori);
+    var tag = (e.tag || []).map(normal);
+    return istilah.some(function (t) {
+      if (!t) return false;
+      if (kat.indexOf(t) >= 0 || tag.indexOf(t) >= 0) return true;
+      /* Tag ditulis mepet ("AmaraLiving"), labelnya cuma sepenggal ("Amara").
+         Awalan dicocokkan - tapi cuma dari empat huruf ke atas, karena "PS"
+         atau "MAP" sebagai awalan akan menyeret hampir semua isi rak. */
+      var rapat = t.replace(/\s+/g, '');
+      if (rapat.length >= 4 && tag.some(function (x) {
+        return x.replace(/\s+/g, '').indexOf(rapat) === 0;
+      })) return true;
+      if (t.indexOf(' ') >= 0 && katUtuh.indexOf(t) >= 0) return true;
+      return false;
+    });
   }
 
   /* ===================== PENCARIAN =====================
@@ -555,8 +620,14 @@
       if (e.pensiun) return false;
       if (saringJenis && saringJenis !== 'semua' && e.jenis !== saringJenis) return false;
       /* Kategori boleh berisi beberapa keyword yang dipisah spasi, jadi
-         saringannya mencocokkan SALAH SATU - bukan seluruh isian. */
-      if (saringKat && normal(e.kategori).split(' ').indexOf(normal(saringKat)) < 0) return false;
+         saringannya mencocokkan SALAH SATU - bukan seluruh isian. Kalau yang
+         dikirim berupa daftar, itu label rak: satu label boleh punya beberapa
+         kata, dan tag pun ikut dihitung. */
+      if (saringKat && saringKat.length) {
+        if (typeof saringKat === 'string') {
+          if (normal(e.kategori).split(' ').indexOf(normal(saringKat)) < 0) return false;
+        } else if (!cocokLabel(e, saringKat)) return false;
+      }
       return true;
     });
 
@@ -618,7 +689,9 @@
     elemenOtomatis: elemenOtomatis, gabungElemen: gabungElemen,
     samarkanPenanda: samarkanPenanda,
     buangSerpihan: buangSerpihan,
+    uraiLabel: uraiLabel, tulisLabel: tulisLabel, cocokLabel: cocokLabel,
     normal: normal, jarak: jarak, waktuPendek: waktuPendek,
-    tanggalIndo: tanggalIndo, waktuRingkas: waktuRingkas
+    tanggalIndo: tanggalIndo, waktuRingkas: waktuRingkas,
+    tanggalPendek: tanggalPendek
   };
 })(window);

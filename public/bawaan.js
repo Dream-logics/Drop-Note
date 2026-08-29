@@ -35,6 +35,27 @@
               'linkdev', 'linkexec', 'prompt', 'script', 'password',
               'Akun', 'titip'],
 
+    /* Label rak: barisan tetap di layar hasil, satu ketuk sama dengan menyaring.
+       Isinya nama proyek, divisi, dan perusahaan - bukan jenis catatan - karena
+       itulah yang benar-benar dipakai orangnya untuk memilah.
+
+       Namanya disingkat supaya sebaris muat banyak; yang tidak muat di satu
+       baris tidak akan pernah dipakai. Kata sesudah '=' ikut dihitung sebagai
+       label yang sama: singkatannya cuma ada di kepala pemakainya, sementara
+       AI melabeli dengan kata utuh. Sama seperti tagAwal, ini cuma NILAI AWAL. */
+    labelAwal: [
+      'MAP',
+      'Amara = amaraliving',
+      'Ngoffee = ngopi, coffee',
+      'PS = projectspace',
+      'Ultima',
+      'Cons = construction, konstruksi, bangunan',
+      'FnB Dev = fnb, makanan, minuman',
+      'Intr Dev = interior, interiordev',
+      'Kiddo = kids, anak',
+      'Various = lain, umum'
+    ],
+
     /* Alamat proxy AI milik PEMBUAT aplikasi (Apps Script /exec).
        Kunci Gemini tinggal di sana, tidak pernah di perangkat siapa pun.
        Pemakai tidak membawa kunci, tidak membeli kunci, tidak tahu ada kunci -

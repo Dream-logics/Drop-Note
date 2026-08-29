@@ -216,7 +216,7 @@
     if (beda === -1) return 'Kemarin';
     if (beda < 0) return Math.abs(beda) + ' hari lewat';
     if (beda < 7) return HARI[new Date(ts).getDay()];
-    return TOtak.tanggalIndo(ts).split(' · ')[0];
+    return TOtak.tanggalPendek(ts);
   }
 
   /* --------------------------------------------------------------- simpan */
@@ -334,7 +334,16 @@
                '<path d="M8 3v4"/><path d="M16 3v4"/><path d="M3 10h18"/></svg>' +
                H(tulisTenggat(e.tenggat)) + '</span>');
     }
-    if (e.ulang) ket.push('<span>berulang ' + H(e.ulang) + '</span>');
+    /* "berulang bulanan" itu dua kata untuk satu keterangan yang jarang
+       dibaca, dan dia berdiri persis di sebelah tenggat - yang justru selalu
+       dibaca. Ikon panah melingkar mengatakan hal yang sama tanpa merebut
+       lebar; kata lengkapnya tetap ada di title untuk yang butuh. */
+    if (e.ulang) {
+      ket.push('<span class="tugas-ulang" title="Berulang ' + H(e.ulang) + '">' +
+               '<svg viewBox="0 0 24 24" class="ik"><path d="M20 11a8 8 0 0 0-14-4.5L4 9"/>' +
+               '<path d="M4 5v4h4"/><path d="M4 13a8 8 0 0 0 14 4.5L20 15"/>' +
+               '<path d="M20 19v-4h-4"/></svg></span>');
+    }
     if (langkah.length) ket.push('<span>' + kelar + '/' + langkah.length + ' langkah</span>');
     if (e.kategori) ket.push('<span>#' + H(e.kategori) + '</span>');
 

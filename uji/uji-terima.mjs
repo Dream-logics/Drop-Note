@@ -501,7 +501,19 @@ console.log('\ntag: label yang kelihatan dan bisa ditekan');
   cek('tag dipakai mencari', bersih.length === 1 && bersih[0].id === 'a');
 
   const tgl = await hal.evaluate(() => TOtak.tanggalIndo(new Date(2026, 2, 9, 7, 5).getTime()));
-  cek('tanggal ditulis dengan bulan Indonesia', /9 Maret 2026/.test(tgl), tgl);
+  cek('tanggal ringkas: bulan disingkat, tanpa jam', /^9 Mar 2026$/.test(tgl), tgl);
+
+  /* Jam dibuang seluruhnya. Kalau dia menyelinap balik, satu-satunya yang
+     terjadi adalah keterangan melebar dan judulnya menyempit. */
+  const jam = await hal.evaluate(() => [
+    TOtak.waktuRingkas(Date.now()),
+    TOtak.waktuRingkas(Date.now() - 86400000),
+    TOtak.waktuRingkas(new Date(2026, 8, 6, 20, 41).getTime())
+  ]);
+  cek('hari ini ditulis "Hari ini", bukan jam', jam[0] === 'Hari ini', jam[0]);
+  cek('kemarin punya katanya sendiri', jam[1] === 'Kemarin', jam[1]);
+  cek('tanggal lama: "6 Sep", bukan September dan bukan jam',
+      /^6 Sep( 2\d)?$/.test(jam[2]), jam[2]);
 
   /* Tag boleh banyak - tiap tag yang tepat satu pintu lagi. Yang dibatasi
      tampilannya, bukan simpanannya. */
@@ -739,6 +751,50 @@ console.log('\nlayar kosong harus menyebut sebabnya');
   await hal.waitForTimeout(250);
   cek('rak yang menyaring ikut disebut',
       /rakyangtidakada/.test(await hal.textContent('#hasil .kosong')));
+  await hal.evaluate(() => TAlur.keSemua());
+  await hal.waitForTimeout(200);
+}
+
+console.log('\nlabel rak: barisan tetap, satu ketuk sama dengan menyaring');
+{
+  const urai = await hal.evaluate(() => TOtak.uraiLabel(
+    'MAP\nCons = construction, konstruksi\n\n#Kiddo\nMAP'));
+  cek('tiap baris satu label', urai.length === 3, JSON.stringify(urai.map(l => l.nama)));
+  cek('nama kembar tidak digandakan', urai.filter(l => l.nama === 'MAP').length === 1);
+  cek('pagar di depan nama dibuang', urai[2].nama === 'Kiddo', urai[2].nama);
+  cek('kata sesudah = ikut jadi istilah label',
+      urai[1].istilah.join(',') === 'cons,construction,konstruksi', urai[1].istilah.join(','));
+
+  /* Singkatan cuma hidup di kepala pemakainya - AI melabeli dengan kata utuh.
+     Kalau label rapi tidak menangkap tag buatan AI, dia cuma hiasan. */
+  const cocok = await hal.evaluate(() => {
+    const l = TOtak.uraiLabel('Amara = amaraliving\nCons = construction\nPS = projectspace');
+    return [
+      TOtak.cocokLabel({ tag: ['AmaraLiving'], kategori: '' }, l[0].istilah),
+      TOtak.cocokLabel({ tag: ['Construction'], kategori: '' }, l[1].istilah),
+      TOtak.cocokLabel({ tag: [], kategori: 'ngoffee projectspace' }, l[2].istilah),
+      TOtak.cocokLabel({ tag: ['password'], kategori: 'resep' }, l[1].istilah)
+    ];
+  });
+  cek('singkatan menangkap tag panjang buatan AI', cocok[0] === true);
+  cek('kata sesudah = menangkap tag utuh', cocok[1] === true);
+  cek('keyword di kategori juga dihitung', cocok[2] === true);
+  cek('yang tidak berhubungan tetap di luar', cocok[3] === false);
+
+  /* Dua huruf tidak boleh dipakai sebagai awalan - "PS" akan menyeret hampir
+     seluruh rak dan saringannya jadi tidak berarti apa-apa. */
+  const pendek = await hal.evaluate(() => TOtak.cocokLabel(
+    { tag: ['psikologi'], kategori: '' }, TOtak.uraiLabel('PS')[0].istilah));
+  cek('nama dua huruf tidak dipakai sebagai awalan', pendek === false);
+
+  await hal.evaluate(() => TAlur.keSemua());
+  await hal.waitForTimeout(300);
+  const cipNama = await hal.locator('#saring-kat .cip').allTextContents();
+  cek('barisan label tergambar di layar hasil', cipNama.length > 5, cipNama.join('|'));
+  cek('cip pertama "Semua"', /^Semua/.test(cipNama[0]), cipNama[0]);
+  cek('urutannya persis daftar bawaan, tidak diacak isi',
+      cipNama[1].indexOf('MAP') === 0 && cipNama[2].indexOf('Amara') === 0,
+      cipNama.slice(1, 3).join('|'));
   await hal.evaluate(() => TAlur.keSemua());
   await hal.waitForTimeout(200);
 }
