@@ -64,14 +64,17 @@
        bawah - makin ke kiri makin jauh diraih. Jadi yang paling sering ditekan
        duduk paling kanan, dan yang paling jarang dibuang ke ujung kiri.
        Membacanya seperti kalimat Inggris (kiri ke kanan) akan terasa rapi di
-       layar laptop dan salah di tangan. -->
+       layar laptop dan salah di tangan.
+
+       TIDAK ADA TOMBOL "CARI", DAN TIDAK PERLU ADA. Kotak di atas ini SUDAH
+       pencariannya: tiap huruf yang diketik langsung menyaring daftar di
+       bawahnya. Tombol yang cuma memindahkan hal yang sama ke layar lain
+       bukan jalan pintas, dia langkah tambahan. Sama seperti WhatsApp -
+       ikon carinya adalah kotaknya itu sendiri. -->
   <div class="tombol-baris" id="tombol-utama">
     <button class="tbl" id="b-label" aria-haspopup="listbox" aria-expanded="false">
       <svg viewBox="0 0 24 24" class="ik"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg><span id="b-label-teks">Label</span>
       <svg viewBox="0 0 24 24" class="ik kecil"><path d="M6 9l6 6 6-6"/></svg>
-    </button>
-    <button class="tbl" id="b-cari">
-      <svg viewBox="0 0 24 24" class="ik"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>Cari
     </button>
     <button class="tbl" id="b-drop">
       <svg viewBox="0 0 24 24" class="ik"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg>Drop
@@ -157,42 +160,6 @@
   <div class="kaki" id="kaki-utama">Tersimpan langsung di perangkat, tanpa menunggu jaringan.</div>
 </section>
 
-<!-- ===================== LAYAR HASIL ===================== -->
-<section class="layar" id="l-hasil">
-  <header class="atas rapat">
-    <button class="ikon-btn" data-kembali aria-label="Kembali">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-    </button>
-    <input id="cari-input" class="cari-input" placeholder="Cari&#8230;" autocomplete="off">
-  </header>
-
-  <div class="cip-gulir" id="saring-jenis"></div>
-  <!-- Rak dan urutan satu baris: dua-duanya menjawab pertanyaan yang sama. -->
-  <div class="cip-gulir">
-    <span id="saring-kat" class="cip-bagian"></span>
-    <span id="urut-baris" class="cip-bagian"></span>
-  </div>
-  <div class="hasil-ket" id="hasil-ket"></div>
-  <div id="hasil"></div>
-  <div class="tumbuh"></div>
-
-  <!-- Tombol yang sama, urutan yang sama, lebih kecil: dari layar hasil, yang
-       paling sering terjadi berikutnya adalah menjatuhkan sesuatu yang baru
-       teringat. Urutannya WAJIB sama persis dengan layar utama - jempol yang
-       sudah hafal satu tempat tidak boleh menemukan tombol lain di sana. -->
-  <div class="tombol-baris kecil jempol">
-    <button class="tbl" id="b-hasil-semua">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>Semua
-    </button>
-    <button class="tbl" id="b-hasil-cari">
-      <svg viewBox="0 0 24 24" class="ik"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>Cari
-    </button>
-    <button class="tbl" id="b-hasil-drop">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg>Drop
-    </button>
-  </div>
-</section>
-
 <!-- ===================== LAYAR TUGAS (to-do) ===================== -->
 <section class="layar" id="l-tugas">
   <header class="atas">
@@ -221,6 +188,7 @@
     </button>
   </div>
 </section>
+
 
 <!-- ===================== LAYAR NOTE (berkas bertingkat) =====================
      Pengganti Notepad, tapi dipanggil dengan MENCARI, bukan dibuka dari pohon

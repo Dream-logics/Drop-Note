@@ -81,8 +81,14 @@ button,input,textarea{font:inherit;color:inherit}
    yang sama sudah ratusan baris. Latarnya WAJIB pekat: kalau tembus, kartu
    yang lewat di belakangnya membuat kotaknya terlihat rusak. */
 .kepala-tetap{
-  position:sticky;top:0;z-index:6;background:var(--g);
-  padding:calc(env(safe-area-inset-top) * 0 + 4px) 0 8px;
+  position:sticky;top:0;z-index:6;background:var(--g);padding:4px 0 8px;
+}
+/* Menyusut waktu hasilnya terbuka dan kamu tidak sedang mengetik: tiga baris
+   kosong di atas daftar cuma memakan tempat yang seharusnya jadi hasil.
+   Mengetuknya mengembalikannya, jadi tidak ada yang hilang. */
+.kepala-tetap.ringkas .kotak{
+  min-height:46px;height:46px;padding:12px 15px;overflow:hidden;
+  transition:height .14s ease, min-height .14s ease;
 }
 
 /* --- lampiran (jenis dropping) --- */
@@ -133,8 +139,6 @@ button,input,textarea{font:inherit;color:inherit}
 .cip-baris{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
 .cip-gulir{display:flex;gap:6px;overflow-x:auto;padding-bottom:7px;scrollbar-width:none}
 .cip-gulir::-webkit-scrollbar{display:none}
-.cip-bagian{display:flex;gap:6px}
-.cip-pisah{width:1px;flex:0 0 auto;background:var(--l);margin:4px 3px}
 .cip{
   border:1px solid var(--l);background:none;color:var(--m);border-radius:8px;
   padding:7px 11px;font-size:12px;font-weight:500;white-space:nowrap;cursor:pointer;
@@ -149,8 +153,6 @@ button,input,textarea{font:inherit;color:inherit}
 }
 /* Label tanpa isi tetap di tempatnya - hafalan jari lebih mahal daripada
    satu label yang kebetulan kosong bulan ini. */
-.cip.sepi{opacity:.45}
-.cip-jumlah{margin-left:5px;font-weight:700;opacity:.75}
 
 /* --- daftar label di layar depan ---
    Satu kolom, bukan cip yang membungkus jadi tiga baris: label dibaca dari
@@ -188,16 +190,6 @@ button,input,textarea{font:inherit;color:inherit}
 
 /* --- tombol --- */
 .tombol-baris{display:flex;gap:7px;margin-top:10px}
-/* Menempel di bawah layar hasil: daftar hasil bisa ratusan baris, dan tombol
-   yang ikut tergulir ke atas sama saja dengan tidak ada.
-   Latarnya wajib pekat - kalau tembus, kartu yang lewat di belakangnya
-   membuat tombol terlihat rusak. */
-.tombol-baris.jempol{
-  position:sticky;bottom:calc(env(safe-area-inset-bottom) - 10px);z-index:5;
-  background:var(--g);padding:10px 0 4px;margin-top:10px;
-}
-.tombol-baris.kecil .tbl{min-height:44px;font-size:13px;gap:5px;font-weight:600}
-.tombol-baris.kecil .ik{width:16px;height:16px}
 .tbl{
   flex:1;min-width:0;min-height:52px;border:1px solid var(--lt);border-radius:12px;background:none;
   font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;
@@ -222,7 +214,6 @@ button,input,textarea{font:inherit;color:inherit}
   padding:0 14px;min-height:48px;outline:none;font-size:16px;
 }
 .cari-input:focus{border-color:var(--a)}
-.hasil-ket{font-size:11.5px;color:var(--m);padding:1px 2px 8px}
 
 /* --- daftar hasil ---
    BUKAN kartu. Kotak berlatar, bergaris, dan bersudut membuat tiap hasil minta
@@ -284,7 +275,6 @@ button,input,textarea{font:inherit;color:inherit}
 .aksi:active{background:var(--p);opacity:1}
 .kosong{text-align:center;color:var(--m);font-size:13.5px;line-height:1.7;padding:34px 20px}
 .kosong b{color:var(--i);font-weight:600}
-.kosong-tbl{max-width:220px;margin:16px auto 0}
 
 /* --- arsip di setelan --- */
 .kartu-cuplik.terkunci{display:flex;align-items:center;gap:7px;color:var(--m);font-style:italic}
@@ -347,13 +337,7 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 .kartu-tanggal{font-size:11px;color:var(--m);white-space:nowrap;margin-left:auto}
 
 /* --- kepala kelompok saat diurut per tag --- */
-.kelompok{
-  display:flex;align-items:baseline;gap:8px;margin:16px 0 9px;
-  border-top:1px solid var(--l);padding-top:13px;
-}
 .kelompok:first-child{border-top:none;margin-top:2px;padding-top:0}
-.kelompok-nama{font-size:13px;font-weight:700;color:var(--a)}
-.kelompok-jumlah{font-size:11px;color:var(--m)}
 /* --- catat (memo pad) --- */
 .catat-judul{
   width:100%;border:none;background:none;outline:none;font-size:21px;font-weight:700;

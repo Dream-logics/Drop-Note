@@ -66,7 +66,11 @@ terpikir, dan itu membatalkan seluruh gunanya.
    Yang memutuskan seseorang berhak itu proxy, bukan aplikasi; kalau keputusan
    itu pindah ke sisi klien, siapa pun bisa mengubahnya.
 3. **Pencarian tanpa jaringan.** Berjalan di atas salinan lokal. Ini tindakan
-   yang paling sering dilakukan, jadi harus yang paling murah.
+   yang paling sering dilakukan, jadi harus yang paling murah — dan karena itu
+   **kotak drop ITU kotak pencariannya**: tiap huruf langsung menyaring daftar
+   di bawahnya, tanpa Enter, tanpa pindah layar. Jangan pernah menambahkan
+   tombol atau layar Cari terpisah; kalau isinya sama, layar kedua cuma
+   menyalin dan tombolnya jadi langkah tambahan.
 4. **Tidak ada yang benar-benar terhapus.** Yang basi tenggelam.
 5. **Layar depan kosong.**
 6. **Judul yang diketik sendiri tidak pernah ditimpa AI** (`judulManual`).
@@ -84,8 +88,10 @@ terpikir, dan itu membatalkan seluruh gunanya.
 
 ```
 public/index.html   kerangka semua layar (mulai, utama/Drop, tugas/To Do,
-                    note, hasil, catat, setelan). Tiga pintu di kepala:
+                    note, catat, setelan). Tiga pintu di kepala:
                     Drop - To Do - Note, digambar dari alur.js ke <div data-tab>
+                    TIDAK ADA layar hasil dan TIDAK ADA tombol Cari: kotak drop
+                    itu sendiri pencariannya, hasilnya di bawahnya
                     Catat BUKAN tombol - layar tulis didatangi dari hasil
 public/bawaan.js    SATU-SATUNYA tempat nama aplikasi & model AI ditulis
 public/gaya.css     gaya; SATU tema putih, tidak mengikuti setelan HP
@@ -130,7 +136,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (242 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (239 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

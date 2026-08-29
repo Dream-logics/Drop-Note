@@ -285,27 +285,25 @@ console.log('\ndrop -> cari (jaringan mati total)');
   await hal.waitForFunction(() => window.TAlur.semuaEntri().length === 1);
   cek('kotak dikosongkan setelah drop', (await hal.inputValue('#kotak')) === '');
 
-  await hal.fill('#kotak', '');
-  await hal.click('#b-cari');
-  await hal.fill('#cari-input', 'uji');
+  /* Kotak yang sama: yang barusan dijatuhkan dicari dari tempat yang sama,
+     tanpa pindah ke mana-mana. */
+  await hal.fill('#kotak', 'uji');
   await hal.waitForTimeout(300);
-  cek('yang di-drop ketemu lagi tanpa jaringan', await hal.locator('#hasil .kartu').count() === 1);
+  cek('yang di-drop ketemu lagi tanpa jaringan', await hal.locator('#hasil-depan .kartu').count() === 1);
   cek('judulnya menyebut uji coba', /uji coba/.test(await hal.locator('.kartu-judul').first().innerText()));
 
-  await hal.fill('#cari-input', 'staging');
+  await hal.fill('#kotak', 'staging');
   await hal.waitForTimeout(300);
-  cek('ketemu lewat kata yang tidak tertulis (label /dev)', await hal.locator('#hasil .kartu').count() === 1);
+  cek('ketemu lewat kata yang tidak tertulis (label /dev)', await hal.locator('#hasil-depan .kartu').count() === 1);
 }
 
 console.log('\ncatat: satu baris, banyak versi');
 {
-  await hal.fill('#cari-input', '');
-  await hal.waitForTimeout(250);
   /* Kartunya ringkas: sentuh judulnya untuk membuka rincian, lalu tombol
      pensil untuk benar-benar menyunting. Pindah layar hanya kalau memang
      diminta - saat memindai, pindah layar itu kehilangan posisi gulir. */
-  await hal.locator('#hasil .kartu .kartu-judul').first().click();
-  await hal.locator('#hasil .kartu [data-sunting]').first().click();
+  await hal.locator('#hasil-depan .kartu .kartu-judul').first().click();
+  await hal.locator('#hasil-depan .kartu [data-sunting]').first().click();
   await hal.waitForSelector('#l-catat.aktif');
   cek('dipakai naik saat kartunya dibuka', (await hal.evaluate(() => TAlur.semuaEntri()[0].dipakai)) === 1);
 
@@ -349,8 +347,9 @@ console.log('\ncadangan ke Drive & Sheets');
   await hal.evaluate(() => TSimpan.setel('cadanganDicoba', 0));
   await hal.click('#l-catat [data-kembali]');
   await hal.waitForTimeout(200);
-  await hal.click('#l-hasil [data-kembali]');
   await hal.waitForSelector('#l-utama.aktif');
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(200);
   const sebelum = google.negara.panggilan;
   await hal.fill('#kotak', 'catatan baru saat jaringan tidak boleh disentuh');
   await hal.click('#b-drop');
@@ -580,7 +579,7 @@ console.log('\ntag: label yang kelihatan dan bisa ditekan');
 console.log('\nkeyword: tidak lagi ditagih di jalur masuk');
 {
   const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
-  const utama = html.slice(html.indexOf('id="l-utama"'), html.indexOf('id="l-hasil"'));
+  const utama = html.slice(html.indexOf('id="l-utama"'), html.indexOf('id="l-note"'));
 
   /* Mencocokkan catatan dengan raknya itu pekerjaan berpikir, dan dia berdiri
      tepat di jalur masuk - tempat yang aturan nomor satu bilang harus gratis.
@@ -600,7 +599,7 @@ console.log('\nkeyword: tidak lagi ditagih di jalur masuk');
 console.log('\ntata letak: sedekat mungkin ke jempol');
 {
   const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
-  const utama = html.slice(html.indexOf('id="l-utama"'), html.indexOf('id="l-hasil"'));
+  const utama = html.slice(html.indexOf('id="l-utama"'), html.indexOf('id="l-note"'));
   /* Lampiran pindah ke DALAM laci label: empat ikon yang memakan satu baris
      penuh sepanjang hari untuk sesuatu yang dipakai sekali-sekali. */
   cek('lampiran tinggal di dalam laci label, bukan di atas kotak',
@@ -634,25 +633,23 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
      diraih. Yang paling sering ditekan duduk paling kanan. Urutan kiri-ke-kanan
      akan terasa rapi di laptop dan salah di tangan. */
   cek('Drop paling kanan, Label paling kiri',
-      utama.indexOf('id="b-label"') < utama.indexOf('id="b-cari"') &&
-      utama.indexOf('id="b-cari"') < utama.indexOf('id="b-drop"'));
+      utama.indexOf('id="b-label"') < utama.indexOf('id="b-drop"'));
 
-  const hasil = html.slice(html.indexOf('id="l-hasil"'), html.indexOf('id="l-catat"'));
-  cek('layar hasil punya tombol yang sama', /id="b-hasil-drop"/.test(hasil) &&
-      /id="b-hasil-cari"/.test(hasil) && /id="b-hasil-semua"/.test(hasil));
-  cek('tidak ada tombol Catat di layar hasil', !/id="b-hasil-catat"/.test(hasil));
-  /* Jempol yang sudah hafal satu tempat tidak boleh menemukan tombol lain di
-     sana waktu pindah layar. */
-  cek('urutan di layar hasil sama persis dengan layar utama',
-      hasil.indexOf('id="b-hasil-semua"') < hasil.indexOf('id="b-hasil-cari"') &&
-      hasil.indexOf('id="b-hasil-cari"') < hasil.indexOf('id="b-hasil-drop"'));
+  /* TIDAK ADA LAYAR HASIL, DAN TIDAK ADA TOMBOL CARI. Kalau isinya identik
+     dengan yang sudah tampil di bawah kotak, layar kedua cuma menyalin - dan
+     tombol yang memindahkan hal yang sama ke sana bukan jalan pintas, dia
+     langkah tambahan. Kotaknya SENDIRI yang jadi pencariannya. */
+  cek('layar hasil sudah tidak ada', !/id="l-hasil"/.test(html));
+  cek('tombol Cari sudah tidak ada', !/id="b-cari"/.test(html));
+  cek('tidak ada kotak cari kedua di layar depan', !/id="cari-input"/.test(utama));
   cek('layar tulis tetap ada, cuma tidak lagi jadi pintu masuk',
       /id="l-catat"/.test(html));
-  cek('di layar hasil tombolnya lebih kecil dan menempel', /tombol-baris kecil jempol/.test(hasil));
-
   const css = fs.readFileSync(path.join(AKAR, 'gaya.css'), 'utf8');
-  cek('menempelnya benar-benar diatur di gaya', /\.tombol-baris\.jempol\{[^}]*position:sticky/.test(css));
-  cek('ukuran kecilnya benar-benar diatur di gaya', /\.tombol-baris\.kecil \.tbl\{/.test(css));
+  /* Kendali yang ikut tergulir waktu hasilnya ratusan baris sama saja dengan
+     tidak ada, jadi menempelnya harus benar-benar diatur - bukan kebetulan. */
+  cek('kepala tetap benar-benar menempel di gaya',
+      /\.kepala-tetap\{[^}]*position:sticky/.test(css));
+  cek('menyusutnya juga diatur di gaya', /\.kepala-tetap\.ringkas \.kotak\{/.test(css));
 }
 
 console.log('\nAI: kunci milik pembuat, pemakai tinggal pakai');
@@ -739,77 +736,59 @@ console.log('\nAI: kunci milik pembuat, pemakai tinggal pakai');
 
 console.log('\nSemua: melihat seluruh timbunan, atas permintaan');
 {
-  await hal.evaluate(() => TAlur.keSemua());
-  await hal.waitForSelector('#l-hasil.aktif');
-  cek('tombol Semua membuka seluruh isi tanpa kata kunci',
-      (await hal.inputValue('#cari-input')) === '' &&
-      (await hal.locator('#hasil .kartu').count()) > 1);
-  cek('dua cara mengurut tersedia', (await hal.locator('#urut-baris .cip').count()) === 2);
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.pilihLabelUji('*'); });
+  await hal.waitForTimeout(300);
+  cek('"Semua" di laci membuka seluruh isi tanpa kata kunci',
+      (await hal.inputValue('#kotak')) === '' &&
+      (await hal.locator('#hasil-depan .kartu').count()) > 1);
+  cek('layarnya tetap layar depan - tidak ada layar hasil lagi',
+      await hal.locator('#l-utama').isVisible());
 
-  await hal.click('[data-urut="tag"]');
+  /* Mengurut per tag pindah ke layar Note: di sana tiap folder ITU satu tag,
+     dan urutannya terbanyak-dulu. Satu tempat, bukan dua yang mengucapkan
+     hal yang sama. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-note'));
+  await hal.waitForTimeout(300);
+  const hitung = (await hal.locator('#note-isi .note-folder .note-hitung').allTextContents()).map(Number);
+  cek('folder terbanyak berada di atas',
+      hitung.every((n, i) => i === 0 || hitung[i - 1] >= n), hitung.join(','));
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(200);
-  const kepala = await hal.locator('#hasil .kelompok-nama').allTextContents();
-  cek('diurut per tag, dan yang tanpa tag tetap ikut - bukan hilang',
-      kepala.length > 0 && kepala[kepala.length - 1] === 'Belum bertag', kepala.join(' | '));
-
-  /* Terbanyak dulu. Ini yang menaruh rak yang benar-benar dipakai di atas
-     tanpa perlu ditata sendiri. */
-  const jumlah = (await hal.locator('#hasil .kelompok-jumlah').allTextContents())
-    .slice(0, -1).map(Number);
-  const menurun = jumlah.every((n, i) => i === 0 || jumlah[i - 1] >= n);
-  cek('kelompok terbanyak berada di atas', menurun, jumlah.join(','));
-
-  await hal.click('[data-urut="waktu"]');
-  await hal.waitForTimeout(150);
-  cek('kembali ke urutan terbaru tanpa kepala kelompok',
-      (await hal.locator('#hasil .kelompok').count()) === 0);
 }
 
 console.log('\nlayar kosong harus menyebut sebabnya');
 {
-  await hal.evaluate(() => TAlur.keHasil('katayangpastitidakada'));
-  await hal.waitForTimeout(250);
-  const teks = await hal.textContent('#hasil .kosong');
-  /* "Tidak ada yang cocok" saat timbunannya sebenarnya penuh membuat orang
-     menyimpulkan aplikasinya rusak, lalu berhenti memakainya. */
-  cek('sebab kosongnya disebut, bukan cuma "tidak ada"',
-      /katayangpastitidakada/.test(teks), teks);
-  cek('ada jalan keluar satu ketukan',
-      (await hal.locator('#hasil [data-bersihkan]').count()) === 1);
-
-  await hal.click('#hasil [data-bersihkan]');
-  await hal.waitForTimeout(300);
-  cek('menekannya benar-benar mengembalikan seluruh isi',
-      (await hal.locator('#hasil .kartu').count()) > 1 &&
-      (await hal.inputValue('#cari-input')) === '');
-
-  /* Saringan rak juga disebut - bukan cuma kata pencariannya. */
-  await hal.evaluate(() => TAlur.saringRakUji('rakyangtidakada'));
-  await hal.waitForTimeout(250);
-  cek('rak yang menyaring ikut disebut',
-      /rakyangtidakada/.test(await hal.textContent('#hasil .kosong')));
-  /* Saringan yang tertinggal menyala adalah cara paling halus untuk membuat
-     pencarian TERLIHAT rusak: catatan yang baru dijatuhkan tidak muncul, dan
-     yang disimpulkan bukan "ada label menyala" tapi "aplikasinya tidak
-     bekerja". Pencarian baru wajib mulai bersih. */
-  await hal.evaluate(() => TAlur.saringRakUji('Cons'));
-  await hal.waitForTimeout(250);
-  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  /* Labelnya dilepas dulu: kalau masih ada label yang menyala, mengosongkan
+     kotak memang TIDAK boleh menutup hasilnya - labelnya yang menahan. */
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.fill('#kotak', 'password wifi kantor baru 99aabbcc');
   await hal.click('#b-drop');
   await hal.waitForTimeout(350);
-  await hal.click('#b-cari');
-  await hal.waitForTimeout(250);
-  await hal.fill('#cari-input', 'wifi');
-  await hal.waitForTimeout(500);
-  cek('pencarian baru tidak mewarisi saringan label yang tertinggal',
-      (await hal.locator('#hasil .kartu').count()) >= 1,
-      await hal.locator('#saring-kat .cip.nyala').first().textContent());
-  cek('yang menyala kembali ke Semua',
-      /^Semua/.test(await hal.locator('#saring-kat .cip.nyala').first().textContent()));
+  await hal.fill('#kotak', 'katayangpastitidakada');
+  await hal.waitForTimeout(350);
+  /* "Tidak ada yang cocok" saat timbunannya sebenarnya penuh membuat orang
+     menyimpulkan aplikasinya rusak, lalu berhenti memakainya. */
+  cek('kosongnya dijelaskan, bukan dibiarkan diam',
+      /memaafkan/.test(await hal.textContent('#hasil-depan .kosong')));
+  cek('kata yang sedang menyaring disebut di kepalanya',
+      /katayangpastitidakada/.test(await hal.textContent('#hasil-depan-ket')));
 
-  await hal.evaluate(() => TAlur.keSemua());
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(300);
+  cek('mengosongkan kotak mengembalikan layar depan yang kosong',
+      await hal.locator('#petak-hasil-depan').evaluate((n) => n.classList.contains('sembunyi')));
+
+  /* Saringan label yang tertinggal menyala adalah cara paling halus untuk
+     membuat pencarian TERLIHAT rusak. Sekarang labelnya selalu kelihatan di
+     tombolnya sendiri, jadi tidak bisa menyaring diam-diam. */
+  await hal.evaluate(() => TAlur.pilihLabelUji('Cons'));
+  await hal.waitForTimeout(300);
+  cek('label yang menyaring selalu tertulis di tombolnya',
+      (await hal.textContent('#b-label-teks')) === 'Cons');
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
   await hal.waitForTimeout(200);
+  cek('menutupnya mengembalikan tombolnya ke "Label"',
+      (await hal.textContent('#b-label-teks')) === 'Label');
 }
 
 console.log('\nlabel rak: barisan tetap, satu ketuk sama dengan menyaring');
@@ -844,15 +823,17 @@ console.log('\nlabel rak: barisan tetap, satu ketuk sama dengan menyaring');
     { tag: ['psikologi'], kategori: '' }, TOtak.uraiLabel('PS')[0].istilah));
   cek('nama dua huruf tidak dipakai sebagai awalan', pendek === false);
 
-  await hal.evaluate(() => TAlur.keSemua());
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.click('#b-label');
   await hal.waitForTimeout(300);
-  const cipNama = await hal.locator('#saring-kat .cip').allTextContents();
-  cek('barisan label tergambar di layar hasil', cipNama.length > 5, cipNama.join('|'));
-  cek('cip pertama "Semua"', /^Semua/.test(cipNama[0]), cipNama[0]);
+  const nama = await hal.locator('#label-daftar .label-baris').allTextContents();
+  cek('daftar labelnya tergambar', nama.length > 5, String(nama.length));
+  cek('barisan pertama "Semua"', /^Semua/.test(nama[0]), nama[0]);
   cek('urutannya persis daftar bawaan, tidak diacak isi',
-      cipNama[1].indexOf('MAP') === 0 && cipNama[2].indexOf('Amara') === 0,
-      cipNama.slice(1, 3).join('|'));
-  await hal.evaluate(() => TAlur.keSemua());
+      nama[1].indexOf('MAP') === 0 && nama[2].indexOf('Amara') === 0,
+      nama.slice(1, 3).join('|'));
+  await hal.click('#b-label');   /* tutup lacinya lagi */
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
   await hal.waitForTimeout(200);
 }
 
@@ -985,13 +966,13 @@ console.log('\ntiga pintu di kepala, dan layar Note');
 
 console.log('\narsip: geser ke kiri, bukan hapus');
 {
-  await hal.evaluate(() => TAlur.keSemua());
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.pilihLabelUji('*'); });
   await hal.waitForTimeout(300);
-  const sebelum = await hal.locator('#hasil .kartu').count();
+  const sebelum = await hal.locator('#hasil-depan .kartu').count();
 
   /* Mulai dari baris judulnya, bukan tepi kanan: di tepi kanan ada tombol
      salin, dan gestur yang dimulai di atas tombol memang sengaja diabaikan. */
-  const kotak = await hal.locator('#hasil .kartu').first().boundingBox();
+  const kotak = await hal.locator('#hasil-depan .kartu').first().boundingBox();
   const y = kotak.y + 14;
   await hal.mouse.move(kotak.x + kotak.width * 0.6, y);
   await hal.mouse.down();
@@ -1001,7 +982,7 @@ console.log('\narsip: geser ke kiri, bukan hapus');
   await hal.waitForTimeout(600);
 
   cek('geser ke kiri mengeluarkannya dari hasil',
-      (await hal.locator('#hasil .kartu').count()) === sebelum - 1);
+      (await hal.locator('#hasil-depan .kartu').count()) === sebelum - 1);
 
   /* ATURAN NOMOR EMPAT: tidak ada yang benar-benar terhapus. Yang diarsipkan
      cuma berhenti muncul - datanya harus masih utuh. */
@@ -1016,20 +997,20 @@ console.log('\narsip: geser ke kiri, bukan hapus');
 
   await hal.locator('#arsip-daftar [data-balik]').first().click();
   await hal.waitForTimeout(300);
-  await hal.evaluate(() => TAlur.keSemua());
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.pilihLabelUji('*'); });
   await hal.waitForTimeout(300);
   cek('bisa dikembalikan, dan muncul lagi di hasil',
-      (await hal.locator('#hasil .kartu').count()) === sebelum);
+      (await hal.locator('#hasil-depan .kartu').count()) === sebelum);
 
   /* Gulir tegak tidak boleh berubah jadi arsip di tengah jalan. */
-  const kotak2 = await hal.locator('#hasil .kartu').first().boundingBox();
+  const kotak2 = await hal.locator('#hasil-depan .kartu').first().boundingBox();
   await hal.mouse.move(kotak2.x + kotak2.width * 0.6, kotak2.y + 14);
   await hal.mouse.down();
   await hal.mouse.move(kotak2.x + kotak2.width * 0.5, kotak2.y + 160, { steps: 8 });
   await hal.mouse.up();
   await hal.waitForTimeout(400);
   cek('gulir tegak tidak ikut mengarsipkan',
-      (await hal.locator('#hasil .kartu').count()) === sebelum);
+      (await hal.locator('#hasil-depan .kartu').count()) === sebelum);
 }
 
 console.log('\nmengetik = mencari, tanpa Enter');
@@ -1058,14 +1039,15 @@ console.log('\nmengetik = mencari, tanpa Enter');
       await hal.locator('#l-utama').isVisible());
   cek('isi kotak tetap utuh', (await hal.inputValue('#kotak')) === 'wifi');
 
-  /* Layar hasil tetap ada, dan tombol Cari tetap pintu ke sana - di situ ada
-     saringan jenis dan urutan yang tidak muat di layar depan. */
-  await hal.click('#b-cari');
-  await hal.waitForSelector('#l-hasil.aktif');
-  cek('tombol Cari tetap membawa ke layar hasil',
-      (await hal.inputValue('#cari-input')) === 'wifi');
+  /* Kotaknya menyusut begitu jari pindah ke daftar di bawah: tiga baris
+     kosong di atas hasil cuma memakan tempat. Mengetuknya mengembalikannya. */
+  cek('kotaknya menyusut waktu tidak sedang diketik',
+      await hal.locator('.kepala-tetap').first().evaluate((n) => n.classList.contains('ringkas')));
+  await hal.focus('#kotak');
+  await hal.waitForTimeout(200);
+  cek('mengetuknya mengembalikan kotaknya jadi lega',
+      !(await hal.locator('.kepala-tetap').first().evaluate((n) => n.classList.contains('ringkas'))));
 
-  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.fill('#kotak', 'baris satu');
   await hal.press('#kotak', 'Shift+Enter');
   cek('Shift+Enter tetap baris baru', /\n/.test(await hal.inputValue('#kotak')),
