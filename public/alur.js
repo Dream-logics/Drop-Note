@@ -291,79 +291,6 @@
     return String(s || '').split(/\s+/).filter(Boolean);
   }
 
-  /* Pilihan bawaan supaya tidak ada yang perlu dipikirkan. Mengetik keyword
-     dari nol itu keputusan kecil yang diulang tiap kali nge-drop - dan
-     keputusan berulang persis yang membunuh sistem-sistem sebelumnya.
-     Yang sering dipakai naik sendiri di depan daftar ini. */
-  var KEYWORD_UMUM = ['kerja', 'klien', 'proyek', 'keuangan', 'pribadi', 'rumah',
-                      'kesehatan', 'kendaraan', 'belanja', 'kontak', 'sandi', 'dokumen'];
-
-  function perbaruiUsulKategori() {
-    var wadah = $('#kat-usul');
-    var dipilih = pecahKeyword($('#kat').value).map(function (k) { return k.toLowerCase(); });
-
-    var urut = [];
-    function tambah(k) {
-      if (k && urut.indexOf(k) < 0) urut.push(k);
-    }
-
-    var contoh = { isi: $('#kotak').value, judul: '', namaBerkas: draf ? draf.namaBerkas : '' };
-    tambah(TOtak.usulKategori(contoh, daftarKategori()));
-    daftarKategori().slice(0, 6).forEach(function (r) { tambah(r.kategori); });
-    dipilih.forEach(tambah);
-    KEYWORD_UMUM.forEach(tambah);
-
-    wadah.innerHTML = urut.slice(0, 14).map(function (k) {
-      var nyala = dipilih.indexOf(k.toLowerCase()) >= 0;
-      return '<button class="cip' + (nyala ? ' nyala' : '') + '" data-kat="' + H(k) + '">#' +
-             H(k) + '</button>';
-    }).join('');
-  }
-
-  /* Centang = tambah, centang lagi = buang. Bukan mengganti: satu catatan
-     boleh masuk beberapa rak sekaligus, dan memaksa memilih satu adalah
-     keputusan yang tidak perlu diadakan. */
-  function alihKeyword(k) {
-    var isian = $('#kat');
-    var ada = pecahKeyword(isian.value);
-    var i = -1;
-    ada.forEach(function (x, n) { if (x.toLowerCase() === k.toLowerCase()) i = n; });
-    if (i >= 0) ada.splice(i, 1);
-    else ada.push(k);
-    isian.value = ada.join(' ');
-    $('#b-kat-hapus').classList.toggle('sembunyi', !isian.value);
-    perbaruiUsulKategori();
-  }
-
-  /* Koreksi kategori sengaja DITAMPILKAN, tidak diam-diam. Tebakan yang tidak
-     terlihat itu yang bikin sebuah alat terasa tidak bisa ditebak - dan alat
-     yang tidak bisa ditebak akan ditinggalkan. */
-  function benahiKotakKategori() {
-    var kotak = $('#kat');
-    var tanda = $('#kat-koreksi');
-    var rak = daftarKategori().map(function (r) { return r.kategori; });
-
-    /* Dibetulkan per kata, bukan sekaligus: "kerja klien" itu dua rak, dan
-       mencocokkannya sebagai satu kalimat tidak akan pernah ketemu. */
-    var koreksi = [];
-    var keluar = pecahKeyword(kotak.value).map(function (k) {
-      var h = TOtak.benahiKategori(k, rak);
-      if (h.dibetulkan) koreksi.push('<s>' + H(h.asli) + '</s> → <b>' + H(h.kategori) + '</b>');
-      return h.kategori;
-    }).filter(Boolean);
-
-    var gabung = keluar.join(' ');
-    kotak.value = gabung;
-    if (koreksi.length) {
-      tanda.innerHTML = koreksi.join(' · ');
-      tanda.classList.remove('sembunyi');
-    } else {
-      tanda.classList.add('sembunyi');
-    }
-    $('#b-kat-hapus').classList.toggle('sembunyi', !gabung);
-    perbaruiUsulKategori();
-    return gabung;
-  }
 
   function barisDaftarBaru(teks, selesai) {
     var baris = document.createElement('div');
@@ -409,8 +336,6 @@
     draf = null;
     $$('.lamp').forEach(function (b) { b.classList.remove('nyala'); });
     $('#tebakan').classList.add('sembunyi');
-    $('#kat-koreksi').classList.add('sembunyi');
-    perbaruiUsulKategori();
   }
 
   /* JALUR MASUK. Tidak ada satu pun panggilan jaringan di sini, dan tidak
@@ -423,7 +348,6 @@
     if (!teks && !daftar.length && !draf) { pesan('Kotaknya masih kosong'); return; }
 
     var e = entriBaru(jenis);
-    e.kategori = benahiKotakKategori();
     e.isi = jenis === 'tautan' ? TOtak.ambilUrl(teks) : teks;
     e.daftar = daftar;
     if (draf) {
@@ -521,7 +445,6 @@
           b.classList.toggle('nyala', b.getAttribute('data-lamp') === jenis);
         });
         perbaruiTebakan();
-        perbaruiUsulKategori();
       });
     });
   }
@@ -1501,7 +1424,7 @@
       simpanSetelan('dipasang', true).then(function () {
         tampilkanLayar('l-utama');
         $('#kotak').focus();
-        muatSemua().then(function () { perbaruiUsulKategori(); });
+        muatSemua();
       });
     });
   }
@@ -2019,7 +1942,6 @@
         };
       }
       perbaruiTebakan();
-      perbaruiUsulKategori();
       pesan('Diterima dari Bagikan');
       return TSimpan.setel('bagikanTertunda', null);
     }).then(function () {
@@ -2044,7 +1966,6 @@
     /* --- layar utama --- */
     var bacaTertunda = tunda(function () {
       perbaruiTebakan();
-      perbaruiUsulKategori();
     }, JEDA_BACA);
     $('#kotak').addEventListener('input', bacaTertunda);
 
@@ -2131,24 +2052,6 @@
     $('#b-setelan').addEventListener('click', function () {
       gambarSetelan();
       keLayar('l-setelan');
-    });
-
-    $('#kat').addEventListener('blur', benahiKotakKategori);
-    $('#kat').addEventListener('input', function () {
-      $('#b-kat-hapus').classList.toggle('sembunyi', !$('#kat').value);
-      perbaruiUsulKategori();
-    });
-    $('#b-kat-hapus').addEventListener('click', function () {
-      $('#kat').value = '';
-      $('#kat-koreksi').classList.add('sembunyi');
-      $('#b-kat-hapus').classList.add('sembunyi');
-      perbaruiUsulKategori();
-    });
-    $('#kat-usul').addEventListener('click', function (ev) {
-      var cip = ev.target.closest('[data-kat]');
-      if (!cip) return;
-      $('#kat-koreksi').classList.add('sembunyi');
-      alihKeyword(cip.getAttribute('data-kat'));
     });
 
     $('#b-tambah-baris').addEventListener('click', tambahBarisDaftar);
@@ -2373,7 +2276,6 @@
     }).then(function () {
       return ambilBagikan();
     }).then(function () {
-      perbaruiUsulKategori();
       /* Minta status penyimpanan permanen sekali di awal: tanpa itu browser
          boleh membuang seluruh timbunan saat penyimpanan HP sesak, diam-diam. */
       mintaPermanen();
@@ -2402,7 +2304,6 @@
   global.TAlur = {
     keHasil: keHasil, keCatat: keCatat, drop: drop,
     gambarMulai: gambarMulai, gambarSetelan: gambarSetelan,
-    alihKeyword: alihKeyword, perbaruiUsulKategori: perbaruiUsulKategori,
     keSemua: keSemua, uraiTagFavorit: uraiTagFavorit, kartuHtmlUji: kartuHtml,
     saringRakUji: function (k) { saringKat = k; gambarSaringLabel(); jalankanCari(); },
     daftarLabelUji: daftarLabel,

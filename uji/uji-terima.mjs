@@ -171,7 +171,15 @@ console.log('\npemasangan swalayan');
 console.log('\notak');
 {
   const r = await hal.evaluate(() => TOtak.benahiKategori('apps desig', ['apps design']));
-  cek('salah ketik mendarat di rak yang ada', r.kategori === 'apps design' && r.dibetulkan === true, JSON.stringify(r));
+  cek('ketikan yang terputus dilengkapi', r.kategori === 'apps design' && r.dibetulkan === true, JSON.stringify(r));
+
+  /* Mesin di otak.js cuma bisa membandingkan EJAAN. "project" dan
+     "ProjectSpace" berawalan sama tapi tidak berhubungan sama sekali -
+     ProjectSpace itu nama tempat. Menukarnya diam-diam menaruh catatan di rak
+     yang keliru, dan itu baru ketahuan enam bulan kemudian waktu dicari. */
+  const beda = await hal.evaluate(() => TOtak.benahiKategori('project', ['ProjectSpace']));
+  cek('kata utuh tidak ditukar jadi kata lain yang kebetulan seawalan',
+      beda.kategori === 'project' && beda.dibetulkan === false, JSON.stringify(beda));
   const dev = await hal.evaluate(() => TOtak.judulTautan('https://script.google.com/macros/s/AAA/dev'));
   const exec = await hal.evaluate(() => TOtak.judulTautan('https://script.google.com/macros/s/AAA/exec'));
   cek('/dev disebut uji coba', /uji coba/.test(dev), dev);
@@ -270,14 +278,12 @@ console.log('\nlayar depan');
 console.log('\ndrop -> cari (jaringan mati total)');
 {
   await hal.fill('#kotak', 'https://script.google.com/macros/s/AKfycbCONTOH/dev');
-  await hal.fill('#kat', 'apps design');
   await hal.waitForTimeout(400);
   cek('tautan terbaca sebelum di-drop', await hal.locator('#tebakan').isVisible());
 
   await hal.click('#b-drop');
   await hal.waitForFunction(() => window.TAlur.semuaEntri().length === 1);
   cek('kotak dikosongkan setelah drop', (await hal.inputValue('#kotak')) === '');
-  cek('kategori tetap menempel untuk drop berikutnya', (await hal.inputValue('#kat')) === 'apps design');
 
   await hal.fill('#kotak', '');
   await hal.click('#b-cari');
@@ -478,7 +484,6 @@ console.log('\nelemen: yang disalin, bukan yang dibaca');
 
   await hal.evaluate(() => {
     document.querySelector('#kotak').value = 'sandi router 8899aabb';
-    document.querySelector('#kat').value = '';
     return TAlur.drop();
   });
   await hal.waitForTimeout(300);
@@ -572,28 +577,24 @@ console.log('\ntag: label yang kelihatan dan bisa ditekan');
       berelemen.indexOf('Ibu Nani') > berelemen.indexOf('kartu-rinci sembunyi'));
 }
 
-console.log('\nkeyword: dicentang, bukan diketik');
+console.log('\nkeyword: tidak lagi ditagih di jalur masuk');
 {
-  await hal.evaluate(() => { document.querySelector('#kat').value = ''; TAlur.perbaruiUsulKategori(); });
-  const adaPilihan = await hal.locator('#kat-usul .cip').count();
-  cek('pilihan umum tersedia tanpa perlu mengetik', adaPilihan > 3, String(adaPilihan));
+  const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
+  const utama = html.slice(html.indexOf('id="l-utama"'), html.indexOf('id="l-hasil"'));
 
-  await hal.evaluate(() => { TAlur.alihKeyword('kerja'); TAlur.alihKeyword('klien'); });
-  const dua = await hal.inputValue('#kat');
-  cek('dua keyword bisa menempel sekaligus, dipisah spasi', dua === 'kerja klien', dua);
+  /* Mencocokkan catatan dengan raknya itu pekerjaan berpikir, dan dia berdiri
+     tepat di jalur masuk - tempat yang aturan nomor satu bilang harus gratis.
+     Rak diisi AI sesudahnya, karena cuma dia yang membaca isinya. */
+  cek('tidak ada isian keyword di layar depan', !/id="kat"/.test(utama));
+  cek('tidak ada deretan cip usulan di layar depan', !/id="kat-usul"/.test(utama));
 
-  const nyala = await hal.locator('#kat-usul .cip.nyala').count();
-  cek('yang tercentang terlihat tercentang', nyala === 2, String(nyala));
-
-  await hal.evaluate(() => TAlur.alihKeyword('kerja'));
-  cek('centang lagi berarti buang', (await hal.inputValue('#kat')) === 'klien');
-
+  /* Saringan raknya sendiri TETAP jalan - yang dibuang cara mengisinya,
+     bukan gunanya. */
   const saring = await hal.evaluate(() => TOtak.cari(
     [{ id: 'a', judul: '', isi: '', label: [], kategori: 'kerja klien' },
      { id: 'b', judul: '', isi: '', label: [], kategori: 'rumah' }], '', '', 'klien'));
   cek('saringan rak mencocokkan salah satu keyword, bukan seluruh isian',
       saring.length === 1 && saring[0].id === 'a');
-  await hal.evaluate(() => { document.querySelector('#kat').value = ''; TAlur.perbaruiUsulKategori(); });
 }
 
 console.log('\ntata letak: sedekat mungkin ke jempol');
@@ -604,8 +605,6 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
   /* Tepat di bawah kotak, bukan di dasar layar: di layar panjang, dasar layar
      itu jauh dari yang barusan diketik. */
   cek('tombol tepat di BAWAH kotak', utama.indexOf('id="b-drop"') > utama.indexOf('id="kotak"'));
-  cek('tombol tidak terlempar ke bawah keyword',
-      utama.indexOf('id="b-drop"') < utama.indexOf('id="kat-usul"'));
 
   /* TIDAK ADA TOMBOL "CATAT". Dulu ada, dan dia menagih pilihan yang tidak bisa
      dijawab: kamu belum tahu tulisanmu pendek atau panjang sebelum mengetiknya -
