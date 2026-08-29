@@ -988,11 +988,30 @@ console.log('\nto-do: daftar yang mengurut sendiri');
 
   const id = await hal.evaluate(() => TAlur.semuaEntri().filter((e) => e.jenis === 'tugas')[0].id);
 
-  /* Tugas disimpan sebagai entri biasa, jadi ikut cadangan dan pencarian
-     tanpa satu baris pun kode tambahan. */
+  /* Tugas menumpang di toko yang sama supaya tidak ada basis data kedua - dan
+     karena itu dia ikut cadangan tanpa kode tambahan. Tapi dia BUKAN catatan:
+     di layar hasil dia cuma barang yang harus dilewati, dan tugas yang sudah
+     selesai pun ikut naik ke permukaan. */
   const ketemu = await hal.evaluate(() => TSimpan.semua().then(
     (a) => TOtak.cari(a, 'invoice').length));
-  cek('tugas ikut ditemukan pencarian biasa', ketemu >= 1, String(ketemu));
+  cek('tugas tidak ikut muncul di pencarian catatan', ketemu === 0, String(ketemu));
+
+  const utuhAwal = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => e.jenis === 'tugas').length));
+  cek('tapi datanya tetap tersimpan, jadi ikut cadangan', utuhAwal >= 1, String(utuhAwal));
+
+  const kosong = await hal.evaluate(() => TOtak.cari(
+    [{ id: 't', jenis: 'tugas', judul: 'apa saja', isi: '', label: [], tag: [] }], ''));
+  cek('tanpa kata kunci pun tugas tidak ikut terdaftar', kosong.length === 0);
+
+  /* Judul tugas ITU tugasnya - diketik sendiri dan sudah benar. Kalau AI
+     menyusunnya ulang, yang dibaca besok bukan lagi yang ditulis. */
+  const antreAI = await hal.evaluate(() => TPelabel.antreUji(
+    [{ id: 't', jenis: 'tugas', judul: 'Bayar listrik', isi: 'catatan tugas',
+       daftar: [{ teks: 'langkah', selesai: false }] },
+     { id: 'c', jenis: 'teks', judul: '', isi: 'catatan biasa', daftar: [] }]));
+  cek('tugas tidak pernah dikirim ke AI',
+      antreAI.length === 1 && antreAI[0] === 'c', antreAI.join(','));
 
   await hal.evaluate((i) => {
     const e = TAlur.semuaEntri().filter((x) => x.id === i)[0];

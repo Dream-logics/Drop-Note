@@ -226,15 +226,20 @@
     w.classList.toggle('sembunyi', !n);
   }
 
+  /* Tugas menumpang di toko yang sama, tapi dia bukan bagian dari timbunan
+     catatan: dia tidak dihitung, tidak menyumbang rak, dan tidak pernah muncul
+     di layar hasil. Satu-satunya tempatnya adalah layar to-do. */
+  function catatanSaja(e) { return !e.pensiun && e.jenis !== 'tugas'; }
+
   function perbaruiJumlah() {
-    var n = semuaEntri.filter(function (e) { return !e.pensiun; }).length;
+    var n = semuaEntri.filter(catatanSaja).length;
     $('#jumlah').textContent = n + ' tersimpan';
   }
 
   function daftarKategori() {
     var hitung = {};
     semuaEntri.forEach(function (e) {
-      if (e.pensiun || !e.kategori) return;
+      if (!catatanSaja(e) || !e.kategori) return;
       /* Satu catatan boleh punya beberapa keyword, dipisah spasi. Dihitung
          satu per satu, kalau tidak "klien urgent" jadi rak sendiri yang
          terpisah dari "klien". */
@@ -573,7 +578,7 @@
   function gambarSaringJenis() {
     var ada = {};
     semuaEntri.forEach(function (e) {
-      if (!e.pensiun) ada[e.jenis === 'teks' ? 'catatan' : e.jenis] = true;
+      if (catatanSaja(e)) ada[e.jenis === 'teks' ? 'catatan' : e.jenis] = true;
     });
     var punya = Object.keys(ada).length;
 
@@ -614,7 +619,7 @@
      ditulis di tempatnya - kalau dia loncat-loncat mengikuti isi, hafalannya
      hilang dan tiap kali jadi harus dibaca ulang. */
   function gambarSaringLabel() {
-    var hidup = semuaEntri.filter(function (e) { return !e.pensiun; });
+    var hidup = semuaEntri.filter(catatanSaja);
     var cip = ['<button class="cip' + (saringKat ? '' : ' nyala') + '" data-katsaring="">Semua</button>'];
     daftarLabel().forEach(function (l) {
       var n = hidup.filter(function (e) { return TOtak.cocokLabel(e, l.istilah); }).length;
@@ -918,7 +923,7 @@
      orang menyimpulkan aplikasinya rusak, lalu berhenti memakainya. Yang
      dibutuhkan bukan penghiburan, tapi jalan keluar satu ketukan. */
   function kosongHtml(kueri) {
-    var isiTimbunan = semuaEntri.some(function (e) { return !e.pensiun; });
+    var isiTimbunan = semuaEntri.some(catatanSaja);
     if (!isiTimbunan) {
       return '<div class="kosong">Belum ada apa-apa di sini.<br>' +
              'Jatuhkan sesuatu dulu lewat tombol Drop.</div>';
@@ -1669,7 +1674,12 @@
   function gambarArsip() {
     var wadah = $('#arsip-daftar');
     if (!wadah) return;
-    var arsip = semuaEntri.filter(function (e) { return e.pensiun && !e.dihapus; });
+    /* Tugas yang dibuang juga ditandai pensiun - tapi arsip ini milik layar
+       hasil, dan mengembalikan tugas dari sini akan memunculkannya di tempat
+       yang salah. */
+    var arsip = semuaEntri.filter(function (e) {
+      return e.pensiun && !e.dihapus && e.jenis !== 'tugas';
+    });
 
     if (!arsip.length) {
       wadah.innerHTML = '<div class="set-ket">Belum ada yang diarsipkan.</div>';
@@ -1941,7 +1951,10 @@
      itu yang membunuh semua sistem sebelumnya. */
 
   function adaAntrean() {
-    return semuaEntri.some(function (e) { return !e.diLabeliAI && !e.pensiun; });
+    /* Tugas tidak pernah dilabeli AI, jadi diLabeliAI-nya tetap false
+       selamanya - tanpa saringan ini antreannya kelihatan tidak pernah habis
+       dan putarannya jalan terus tanpa ada yang bisa dikerjakan. */
+    return semuaEntri.some(function (e) { return !e.diLabeliAI && catatanSaja(e); });
   }
 
   /* Sekali saja walau lima catatan jatuh beruntun: yang terakhir yang menang. */

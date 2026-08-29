@@ -247,14 +247,27 @@
     }).join('\n');
   }
 
-  function labeli(setelan, semua) {
-    var antre = semua.filter(function (e) {
+  /* Siapa yang boleh berangkat. Dipisah jadi fungsi sendiri karena ini
+     satu-satunya tempat yang memutuskan apa yang meninggalkan perangkat -
+     dan yang seperti itu pantas bisa diuji langsung. */
+  function antreLabel(semua) {
+    return semua.filter(function (e) {
       /* JANJI YANG MENENTUKAN: yang ditandai rahasia tidak pernah berangkat.
          Bukan disaring di layanan - tidak pernah dikirim sama sekali. Ini
          saringan pertama; penanda diLabeliAI di kunci.js penjaga keduanya. */
       if (e.rahasia) return false;
+      /* Judul tugas ITU tugasnya - diketik sendiri, pendek, dan sudah benar.
+         Membiarkan AI menyusun ulangnya berarti "Bayar listrik" bisa kembali
+         sebagai kalimat lain, dan yang dibaca orangnya besok bukan lagi yang
+         dia tulis. Langkah tugas tersimpan di kolom daftar, jadi tanpa
+         saringan ini dia memang ikut terkirim. */
+      if (e.jenis === 'tugas') return false;
       return !e.diLabeliAI && !e.pensiun && !e.dihapus && (e.isi || e.namaBerkas || (e.daftar || []).length);
     }).slice(0, SEKALI);
+  }
+
+  function labeli(setelan, semua) {
+    var antre = antreLabel(semua);
     if (!antre.length) return Promise.resolve(0);
 
     return tanya(setelan, [{ text: pesanan(antre) }], arahanLabel(daftarTag(setelan)))
@@ -475,6 +488,7 @@
     putaran: putaran, coba: coba, siap: siap, model: model, lewatProxy: lewatProxy,
     /* Cuma untuk uji: melihat arahan yang benar-benar dikirim, bukan menebak
        dari kodenya. */
-    arahanUji: function (setelan) { return arahanLabel(daftarTag(setelan)); }
+    arahanUji: function (setelan) { return arahanLabel(daftarTag(setelan)); },
+    antreUji: function (semua) { return antreLabel(semua).map(function (e) { return e.id; }); }
   };
 })(window);
