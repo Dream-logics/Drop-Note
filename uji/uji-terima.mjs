@@ -656,7 +656,39 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
      tidak ada, jadi menempelnya harus benar-benar diatur - bukan kebetulan. */
   cek('kepala tetap benar-benar menempel di gaya',
       /\.kepala-tetap\{[^}]*position:sticky/.test(css));
-  cek('menyusutnya juga diatur di gaya', /\.kepala-tetap\.ringkas \.kotak\{/.test(css));
+  /* Tingginya mengikuti isinya - bawaannya satu baris, dan batasnya ada
+     supaya catatan sepuluh baris tidak mendorong tombol Drop keluar layar. */
+  cek('kotak mulai dari satu baris', /id="kotak"[^>]*rows="1"/.test(html));
+  cek('tingginya dibatasi di gaya', /\.kotak\{[^}]*max-height:140px/.test(css));
+}
+
+console.log('\nGoogle: token basi diulang sekali, bukan menyerah');
+{
+  /* Tokennya cuma hidup di memori - tidak pernah disimpan, karena token yang
+     tersimpan di perangkat adalah kunci yang bisa dipungut orang lain. Tiap
+     halaman dimuat ulang, tokennya nol; permintaan pertama harus meminta yang
+     baru diam-diam, dan Google kadang menjawab dengan token yang sudah dicabut
+     di sisinya. Itulah 401-nya - dan itu tokennya basi, bukan kegagalan. */
+  const alamatUji = 'https://www.googleapis.com/drive/v3/files?q=uji401';
+  google.negara.tolakSekali = true;
+  const sebelumTolak = google.negara.ditolak;
+  const hasil401 = await hal.evaluate((a) => TSimpan.semuaSetelan()
+    .then((s) => TAwan.panggilUji(s, a))
+    .then(() => 'lolos', (e) => 'gagal: ' + e.message), alamatUji);
+  cek('401 pertama diperlakukan sebagai token basi, bukan kegagalan',
+      hasil401 === 'lolos', hasil401);
+  cek('dan 401-nya memang benar-benar terjadi',
+      google.negara.ditolak === sebelumTolak + 1, String(google.negara.ditolak));
+
+  /* Yang kedua baru menyerah - kalau tidak, satu izin yang benar-benar dicabut
+     bikin aplikasinya mengulang selamanya. */
+  google.negara.tolakSekali = true;
+  await hal.evaluate(() => TAwan.keluar());
+  const dua = await hal.evaluate((a) => TSimpan.semuaSetelan()
+    .then((s) => TAwan.panggilUji(s, a))
+    .then(() => 'lolos', () => 'gagal'), alamatUji);
+  cek('mengulangnya cuma sekali, tidak selamanya', dua === 'lolos' || dua === 'gagal', dua);
+  google.negara.tolakSekali = false;
 }
 
 console.log('\nAI: kunci milik pembuat, pemakai tinggal pakai');
@@ -1085,8 +1117,11 @@ console.log('\nukuran petak: cuma muncul waktu yang tampil gambar');
       !(await hal.locator('#tampil-baris').evaluate((n) => n.classList.contains('sembunyi'))));
   cek('empat ukuran tersedia',
       (await hal.locator('#tampil-baris .tampil-tbl').count()) === 4);
-  cek('bawaannya petak sedang',
-      (await hal.locator('#hasil-depan .petak.sedang').count()) === 1);
+  /* Bawaannya petak KECIL: pertanyaan tersering di sini bukan "yang mana yang
+     ini" tapi "ada apa saja" - dan itu dijawab dengan sebanyak mungkin masuk
+     satu layar. */
+  cek('bawaannya petak kecil',
+      (await hal.locator('#hasil-depan .petak.kecil').count()) === 1);
 
   await hal.click('[data-gaya="besar"]');
   await hal.waitForTimeout(350);
@@ -1184,14 +1219,25 @@ console.log('\nmengetik = mencari, tanpa Enter');
       await hal.locator('#l-utama').isVisible());
   cek('isi kotak tetap utuh', (await hal.inputValue('#kotak')) === 'wifi');
 
-  /* Kotaknya menyusut begitu jari pindah ke daftar di bawah: tiga baris
-     kosong di atas hasil cuma memakan tempat. Mengetuknya mengembalikannya. */
-  cek('kotaknya menyusut waktu tidak sedang diketik',
-      await hal.locator('.kepala-tetap').first().evaluate((n) => n.classList.contains('ringkas')));
-  await hal.focus('#kotak');
-  await hal.waitForTimeout(200);
-  cek('mengetuknya mengembalikan kotaknya jadi lega',
-      !(await hal.locator('.kepala-tetap').first().evaluate((n) => n.classList.contains('ringkas'))));
+  /* Tingginya mengikuti isinya: satu kata = satu baris. Yang panjang
+     mengembang sampai batas, lalu menggulir di dalam dirinya sendiri. */
+  const satuBaris = await hal.locator('#kotak').evaluate((n) => n.getBoundingClientRect().height);
+  await hal.fill('#kotak', 'baris satu\nbaris dua\nbaris tiga');
+  await hal.waitForTimeout(250);
+  const tigaBaris = await hal.locator('#kotak').evaluate((n) => n.getBoundingClientRect().height);
+  cek('kotak mengembang waktu isinya lebih dari satu baris',
+      tigaBaris > satuBaris, satuBaris + ' -> ' + tigaBaris);
+
+  await hal.fill('#kotak', 'a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\nl');
+  await hal.waitForTimeout(250);
+  const banyak = await hal.locator('#kotak').evaluate((n) => n.getBoundingClientRect().height);
+  cek('mengembangnya berhenti di batas, tidak mendorong tombol keluar layar',
+      banyak <= 141, String(banyak));
+
+  await hal.fill('#kotak', 'wifi');
+  await hal.waitForTimeout(250);
+  cek('kembali ke satu baris begitu isinya pendek lagi',
+      (await hal.locator('#kotak').evaluate((n) => n.getBoundingClientRect().height)) <= satuBaris + 1);
 
   await hal.fill('#kotak', 'baris satu');
   await hal.press('#kotak', 'Shift+Enter');
