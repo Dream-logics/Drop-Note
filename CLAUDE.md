@@ -97,6 +97,9 @@ public/pelabel.js   satu-satunya bagian ber-AI: judul + elemen + tag + OCR.
                     Lewat proxy milik PEMBUAT; kunci tidak pernah ada di
                     perangkat pemakai. Daftar tag lama ikut dikirim supaya
                     tag tidak beranak sendiri
+public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
+                    ulang, langkah, catatan. Daftar ganda lewat keyword yang
+                    sudah ada - opsional, tidak pernah wajib
 public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
                     dikunci, judul & tag tetap terbuka supaya masih bisa
                     ditemukan. Yang terkunci tidak pernah dikirim ke AI
@@ -120,12 +123,12 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (146 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (155 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
-Yang belum: catatan sekali pakai, pencarian pakai bahasa manusia, to-do & habit
-sebagai keadaan. Urutannya di
+Yang belum: catatan sekali pakai, pencarian pakai bahasa manusia, habit sebagai
+keadaan. Urutannya di
 `docs/PROPOSAL-V2.md`, rinciannya di `docs/SISA-KERJA.md`.
 
 ## Konvensi

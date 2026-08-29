@@ -176,9 +176,22 @@
   var KOLOM = ['id', 'jenis', 'judul', 'judulManual', 'isi', 'kategori', 'label',
                'daftar', 'berkasId', 'driveId', 'namaBerkas', 'tipeBerkas', 'ukuran',
                'dibuat', 'diubah', 'dipakai', 'diLabeliAI', 'pensiun', 'dihapus', 'riwayat',
-               'tag', 'elemen', 'rahasia', 'elemenTerkunci'];
+               'tag', 'elemen', 'rahasia', 'elemenTerkunci',
+               'selesai', 'selesaiPada', 'penting', 'hariIni', 'tenggat', 'ulang'];
 
-  var HURUF_AKHIR = String.fromCharCode(64 + KOLOM.length);   /* X untuk 24 kolom */
+  /* Lewat 26 kolom, Sheets memakai dua huruf (AA, AB, ...). Menghitungnya
+     dengan satu fromCharCode menghasilkan '[' dan seluruh cadangan gagal
+     diam-diam. */
+  function hurufKolom(n) {
+    var s = '';
+    while (n > 0) {
+      var sisa = (n - 1) % 26;
+      s = String.fromCharCode(65 + sisa) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s;
+  }
+  var HURUF_AKHIR = hurufKolom(KOLOM.length);   /* AD untuk 30 kolom - lewat Z, jadi hurufnya dihitung, bukan ditebak */
 
   /* Tab kedua: kumpulan tag yang pernah dibuat AI. Gunanya supaya tag tidak
      beranak - dan supaya kamu bisa melihat sendiri daftarnya tanpa membuka

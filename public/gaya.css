@@ -353,3 +353,78 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 .mulai-judul{font-size:27px;font-weight:800;letter-spacing:-.02em}
 .mulai-tagline{font-size:15px;color:var(--m);margin-top:5px}
 .set-ket a{color:var(--a);font-weight:600}
+
+
+/* ============================ TO-DO ============================
+   Layar sendiri, dan sengaja terasa beda dari layar hasil: di sini yang
+   dikerjakan bukan memindai timbunan, tapi menatap daftar pendek yang harus
+   selesai hari ini. Barisnya lebih lega, centangnya besar - itu sasaran
+   sentuh yang paling sering dituju di layar ini. */
+.kaki-baris{display:flex;justify-content:center;padding-top:6px}
+.kaki-tbl{
+  display:flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;
+  border:1px solid var(--l);border-radius:11px;background:none;color:var(--m);
+  font-size:13px;font-weight:600;cursor:pointer;
+}
+.kaki-tbl:active{border-color:var(--a);color:var(--a)}
+.kaki-jumlah{
+  min-width:20px;height:20px;padding:0 6px;border-radius:10px;
+  background:var(--a);color:var(--at);font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+
+.tugas{border-bottom:1px solid var(--l);padding:4px 2px}
+.tugas:last-child{border-bottom:none}
+.tugas.terbuka{background:color-mix(in srgb, var(--p) 55%, transparent);
+               border-radius:10px;padding:4px 9px 10px}
+.tugas-atas{display:flex;align-items:flex-start;gap:11px;padding:9px 0;cursor:pointer}
+.tugas-centang{
+  width:24px;height:24px;flex:0 0 auto;margin-top:1px;border:2px solid var(--lt);
+  border-radius:50%;background:none;color:var(--at);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;
+}
+.tugas-centang .ik{width:14px;height:14px;stroke-width:3}
+.tugas-centang.kena{background:var(--a);border-color:var(--a)}
+.tugas-centang.kecil{width:20px;height:20px}
+.tugas-centang.kecil .ik{width:12px;height:12px}
+.tugas-teks{flex:1;min-width:0}
+.tugas-judul{font-size:14.5px;line-height:1.4;word-break:break-word}
+.tugas.kelar .tugas-judul{text-decoration:line-through;color:var(--m)}
+.tugas-ket{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:3px;
+           font-size:11.5px;color:var(--m)}
+.titik-pisah{opacity:.5}
+/* Yang lewat tenggat merah, dan cuma itu yang merah di layar ini - kalau
+   banyak yang berteriak, tidak ada yang terdengar. */
+.tugas-tenggat.lewat{color:var(--bahaya);font-weight:600}
+.tugas-bintang{
+  width:40px;height:40px;flex:0 0 auto;border:none;background:none;color:var(--m);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.5;
+  margin:-8px -8px -8px 0;
+}
+.tugas-bintang .ik{width:17px;height:17px}
+.tugas-bintang.nyala{color:var(--a);opacity:1;fill:currentColor}
+
+.tugas-rinci{padding:2px 0 6px 35px}
+.tugas-label{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+             color:var(--m);margin:14px 0 6px}
+.tugas-langkah{display:flex;flex-direction:column;gap:2px}
+.langkah-baris{display:flex;align-items:center;gap:9px;min-height:34px;font-size:13px}
+.langkah-baris span{flex:1;min-width:0;word-break:break-word}
+.langkah-buang{width:32px;height:32px;border:none;background:none;color:var(--m);
+               display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.6}
+.langkah-buang .ik{width:13px;height:13px}
+.tugas-input{
+  width:100%;background:var(--p);border:1px solid var(--l);border-radius:11px;
+  padding:0 13px;min-height:46px;outline:none;font-size:15px;margin-top:8px;
+}
+.tugas-input:focus{border-color:var(--a)}
+.tugas-input.kecil{min-height:38px;font-size:13px;padding:0 11px}
+.tugas-input.catatan{min-height:62px;padding:10px 12px;line-height:1.5;resize:vertical}
+
+.tugas-tambah{display:flex;gap:8px;align-items:center}
+.tugas-tambah .tugas-input{margin-top:0}
+.tugas-tambah .tbl{flex:0 0 54px;min-height:46px}
+.tugas-tambah.jempol{
+  position:sticky;bottom:calc(env(safe-area-inset-bottom) - 10px);z-index:5;
+  background:var(--g);padding:10px 0 4px;
+}

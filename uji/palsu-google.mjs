@@ -8,7 +8,14 @@ export function buatGooglePalsu() {
 
   const idBaru = (aw) => aw + (++urut);
 
-  function huruf(k) { return k.charCodeAt(0) - 64; }           /* A -> 1 */
+  /* Lewat 26 kolom, Sheets memakai dua huruf: AA, AB, ... Membaca cuma huruf
+     pertama membuat tiruan ini memotong rentang diam-diam, dan uji pulihkan
+     gagal seolah aplikasinya yang salah. */
+  function huruf(k) {
+    let n = 0;
+    for (let i = 0; i < k.length; i++) n = n * 26 + (k.charCodeAt(i) - 64);
+    return n;
+  }
 
   function uraiRentang(r) {
     const t = decodeURIComponent(r).replace(/^'|'$/g, '');
