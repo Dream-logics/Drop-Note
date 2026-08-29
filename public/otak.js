@@ -120,38 +120,77 @@
         Telepon. Dengan begitu daftar hasil bisa dipindai dari tepi kiri saja,
         tanpa membaca seluruh barisnya. */
 
+  /* URUTANNYA ADALAH PRIORITAS, bukan sekadar daftar. "kode otp bca" memuat
+     dua istilah sekaligus; yang menang harus yang lebih KHUSUS (OTP), bukan
+     yang kebetulan lebih dulu tertulis (Code). Jadi yang khusus ditaruh di
+     atas, dan pemilihnya membandingkan peringkat - bukan berhenti di temuan
+     pertama. */
   var ISTILAH = [
-    ['Link', ['link', 'tautan', 'url', 'alamat web', 'links']],
-    ['API', ['api', 'apikey', 'api key', 'kunci api', 'endpoint']],
-    ['Password', ['password', 'sandi', 'kata sandi', 'pass', 'pw', 'passwd']],
-    ['Email', ['email', 'surel', 'e-mail', 'mail']],
-    ['Telepon', ['telepon', 'telpon', 'telp', 'hp', 'phone', 'nomor hp', 'wa']],
-    ['Nomor', ['nomor', 'no', 'nomer', 'number']],
+    ['OTP', ['otp', 'kode otp', 'verifikasi', 'sandi sekali pakai']],
+    ['PIN', ['pin', 'kode pin']],
+    ['API', ['api', 'apikey', 'apikeys', 'endpoint']],
+    ['Token', ['token', 'bearer', 'secret']],
+    ['Prompt', ['prompt', 'prompts', 'promt', 'instruksi ai']],
+    ['Menu', ['menu', 'menus', 'daftar menu', 'paket menu']],
+    ['Link', ['link', 'tautan', 'url', 'alamat web', 'links', 'linknya']],
+    /* Code, bukan Kode. Dia mengetik "code" waktu mencari potongan program,
+       dan itu istilah yang memang hidup dalam bahasa Inggris di kepalanya. */
+    ['Code', ['code', 'kode', 'coding', 'snippet', 'script', 'syntax', 'sintaks',
+              'potongan code', 'potongan kode', 'source']],
+    /* Password paling sering dipakai di sini, dan sebagian besar memang bukan
+       yang paling rahasia: wifi, akun aplikasi, sandi tamu. Yang benar-benar
+       rahasia ditandai gemboknya sendiri - istilahnya tidak menentukan itu. */
+    ['Password', ['password', 'sandi', 'kata sandi', 'pass', 'pw', 'passwd', 'pwd']],
+    ['Email', ['email', 'surel', 'e-mail', 'mail', 'emailnya']],
+    ['Telepon', ['telepon', 'telpon', 'telp', 'hp', 'phone', 'nomor hp', 'wa', 'whatsapp']],
     ['Akun', ['akun', 'account', 'login', 'username', 'user']],
+    /* "rekening" sengaja TIDAK dianggap sinonim "nomor": dia jenis barangnya,
+       bukan kata lain untuk hal yang sama. Kalau disamakan, "Nomor rekening
+       BCA" kehilangan kata "rekening" - padahal itu yang diketik saat mencari. */
+    ['Nomor', ['nomor', 'no', 'nomer', 'number']],
     ['Alamat', ['alamat', 'address', 'lokasi']],
-    ['Kode', ['kode', 'code', 'otp', 'pin', 'token']],
-    ['Prompt', ['prompt']],
     ['Resep', ['resep', 'obat', 'dosis']],
     ['Berkas', ['berkas', 'file', 'dokumen', 'document']],
     ['Jadwal', ['jadwal', 'schedule', 'agenda']],
-    ['Harga', ['harga', 'price', 'tarif', 'biaya']]
+    ['Harga', ['harga', 'price', 'tarif', 'biaya']],
+    ['Ide', ['ide', 'idea', 'gagasan', 'konsep']]
   ];
+
+  /* Kata yang dipakai apa adanya sebagai penanda, walau bukan istilah yang
+     dikenal. Begitu satu kebiasaan menulis judul terbentuk - dan kebiasaan itu
+     memang yang sedang tumbuh - penanda buatannya sendiri harus dihormati,
+     bukan diganti dengan tebakan dari elemen. */
+  function penandaSendiri(kata) {
+    var w = String(kata || '').replace(/[^\wÀ-ÿ]/g, '');
+    if (w.length < 3 || w.length > 14) return '';
+    if (/\d/.test(w)) return '';
+    if (BUANG.indexOf(normal(w)) >= 0) return '';
+    /* Ditulis berhuruf besar di awal = dia memang memaksudkannya sebagai
+       penanda, bukan kata biasa yang kebetulan di depan. */
+    if (w[0] !== w[0].toUpperCase() || w[0] === w[0].toLowerCase()) return '';
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }
 
   /* Penanda yang diturunkan dari elemen, dipakai kalau judulnya sendiri belum
      menyebut satu pun istilah yang dikenal. */
   var PENANDA_JENIS = {
     tautan: 'Link', surel: 'Email', telepon: 'Telepon',
-    kode: 'Kode', nomor: 'Nomor', alamat: 'Alamat', berkas: 'Berkas',
+    kode: 'Code', nomor: 'Nomor', alamat: 'Alamat', berkas: 'Berkas',
     jadwal: 'Jadwal', harga: 'Harga', prompt: 'Prompt'
   };
 
-  function bakuIstilah(kata) {
+  function peringkatIstilah(kata) {
     var k = normal(kata);
-    if (!k) return '';
+    if (!k) return -1;
     for (var i = 0; i < ISTILAH.length; i++) {
-      if (ISTILAH[i][1].indexOf(k) >= 0) return ISTILAH[i][0];
+      if (ISTILAH[i][1].indexOf(k) >= 0) return i;
     }
-    return '';
+    return -1;
+  }
+
+  function bakuIstilah(kata) {
+    var i = peringkatIstilah(kata);
+    return i < 0 ? '' : ISTILAH[i][0];
   }
 
   /* Kata kembar dibuang, yang pertama menang. Yang dibandingkan bentuk
@@ -200,15 +239,30 @@
     /* Penanda di depan. Kalau judulnya sudah menyebut istilahnya, istilah itu
        yang diangkat ke depan - bukan ditambahi penanda kedua yang artinya
        sama. */
-    var adaIstilah = -1, istilah = '';
+    var adaIstilah = -1, istilah = '', terbaik = 999;
     for (var i = 0; i < kata.length && i < 6; i++) {
-      var b = bakuIstilah(kata[i].replace(/[^\wÀ-ÿ]/g, ''));
-      if (b) { adaIstilah = i; istilah = b; break; }
+      var p = peringkatIstilah(kata[i].replace(/[^\wÀ-ÿ]/g, ''));
+      if (p >= 0 && p < terbaik) { terbaik = p; adaIstilah = i; istilah = ISTILAH[p][0]; }
     }
     if (adaIstilah >= 0) {
       kata.splice(adaIstilah, 1);
+      /* Kata umum yang menempel tepat SEBELUM istilah khususnya ikut dibuang:
+         "kode otp" -> OTP, "nomor telepon" -> Telepon. Yang umum di situ cuma
+         ancang-ancang menuju yang khusus, dan menyisakannya berarti judulnya
+         menyebut jenis yang sama dua kali. Yang datang SESUDAHNYA dibiarkan -
+         "Nomor rekening BCA" masih menyimpan "rekening", dan kata itu dipakai
+         orangnya waktu mencari. */
+      var sebelum = adaIstilah - 1;
+      if (sebelum >= 0) {
+        var pUmum = peringkatIstilah(kata[sebelum].replace(/[^\wÀ-ÿ]/g, ''));
+        if (pUmum > terbaik) kata.splice(sebelum, 1);
+      }
     } else {
-      istilah = penandaDari(entri);
+      /* Penanda buatannya sendiri lebih tahu daripada tebakan dari elemen -
+         dia yang tahu catatan ini barang apa. */
+      istilah = penandaSendiri(kata[0]);
+      if (istilah) kata.shift();
+      else istilah = penandaDari(entri);
     }
 
     var sisa = kata.join(' ').replace(/^[\s,;:.\-]+/, '').trim();
