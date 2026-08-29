@@ -65,12 +65,6 @@
 
   var SERING = 5;
 
-  var JENIS_SARING = [
-    ['semua', 'Semua'], ['tautan', 'Tautan'], ['gambar', 'Gambar'],
-    ['berkas', 'Berkas'], ['daftar', 'Daftar'], ['suara', 'Suara'],
-    ['catatan', 'Catatan'], ['tugas', 'Tugas']
-  ];
-
   /* ===================== alat kecil ===================== */
 
   function $(pemilih, akar) { return (akar || document).querySelector(pemilih); }
@@ -128,12 +122,11 @@
   var draf = null;            /* lampiran yang sudah siap tapi belum di-drop */
   var entriCatat = null;
   var labelDepan = null;   /* label yang sedang ditampilkan di layar depan */
-  var saringJenis = '';    /* '' = semua jenis; 'gambar', 'berkas', 'suara', ... */
+  var saringJenis = '';    /* '' = semua jenis; 'gambar', 'berkas', 'daftar', ... */
   var gayaGambar = 'kecil';    /* besar | sedang | kecil | daftar */
   var laciBuka = '';       /* laci mana yang sedang terbuka: label | drop | filter */
+  var posisiDok = 'atas';  /* atas | bawah - dipilih di Setelan */
   var urlSementara = [];
-  var perekam = null;
-  var rekamJam = null;
   var layarSaat = 'l-utama';
   var tumpukan = [];
   var pakaiRiwayatBrowser = true;
@@ -515,45 +508,6 @@
     });
   }
 
-  function tombolSuara() {
-    return $$('.lamp').filter(function (b) { return b.getAttribute('data-lamp') === 'suara'; })[0];
-  }
-
-  function mulaiRekam() {
-    if (!navigator.mediaDevices || !global.MediaRecorder) {
-      pesan('Perangkat ini tidak bisa merekam');
-      return;
-    }
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (arus) {
-      var potongan = [];
-      perekam = new MediaRecorder(arus);
-      perekam.ondataavailable = function (e) { if (e.data && e.data.size) potongan.push(e.data); };
-      perekam.onstop = function () {
-        arus.getTracks().forEach(function (t) { t.stop(); });
-        clearInterval(rekamJam);
-        var tombol = tombolSuara();
-        tombol.classList.remove('rekam');
-        tombol.querySelector('span').textContent = 'Suara';
-        perekam = null;
-        var blob = new Blob(potongan, { type: potongan.length ? potongan[0].type : 'audio/webm' });
-        blob.name = 'rekaman ' + TOtak.waktuPendek(Date.now()) + '.webm';
-        pasangBerkas(blob, 'suara');
-      };
-      perekam.start();
-
-      var mulai = Date.now();
-      var tombol = tombolSuara();
-      tombol.classList.add('rekam', 'nyala');
-      rekamJam = setInterval(function () {
-        var d = Math.floor((Date.now() - mulai) / 1000);
-        tombol.querySelector('span').textContent =
-          'Stop ' + Math.floor(d / 60) + ':' + (d % 60 < 10 ? '0' : '') + (d % 60);
-      }, 250);
-    }).catch(function () {
-      pesan('Izin mikrofon ditolak');
-    });
-  }
-
   /* ===================== layar hasil ===================== */
 
   function bersihkanUrl() {
@@ -629,6 +583,17 @@
     filter: ['#panel-filter', '#b-filter']
   };
 
+  /* Menempel di atas atau di bawah. Di bawah itu bentuk yang paling enak
+     diketik satu tangan - jempol tidak menyeberang layar - dan itu sebabnya
+     WhatsApp dan hampir semua aplikasi yang dipakai berjam-jam menaruhnya di
+     sana. Tapi ini pilihan, bukan keyakinan: yang enak buat satu orang belum
+     tentu enak buat tangan yang lain. */
+  function pasangPosisiDok(p) {
+    posisiDok = p === 'bawah' ? 'bawah' : 'atas';
+    $('#l-utama').classList.toggle('dok-bawah', posisiDok === 'bawah');
+    setelTinggiKotak();
+  }
+
   function tutupLaci() {
     Object.keys(LACI).forEach(function (k) {
       $(LACI[k][0]).classList.add('sembunyi');
@@ -662,7 +627,6 @@
     ['', 'Semua jenis', '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
     ['gambar', 'Gambar', '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>'],
     ['berkas', 'Berkas', '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>'],
-    ['suara', 'Suara', '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/>'],
     ['daftar', 'Daftar', '<rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/>'],
     ['tautan', 'Link', '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>']
   ];
@@ -1721,6 +1685,16 @@
           'Ini mode pengembang — untuk pemakai biasa, kuncinya tinggal di layanan dan tidak pernah sampai ke perangkat.</div></div>'
         : '',
 
+      '<div class="set-bagian">Tata letak</div>',
+      '<div class="set-kotak">',
+      '<div class="set-judul">Posisi kotak drop</div>',
+      '<div class="set-ket">Di bawah, jempol tidak perlu menyeberang layar untuk mengetik — bentuk yang dipakai WhatsApp dan hampir semua aplikasi yang dibuka berjam-jam. Di atas, yang barusan diketik duduk sejajar mata. Tidak ada yang lebih benar; yang enak buat satu tangan belum tentu enak buat tangan lain.</div>',
+      '<div class="cip-baris" id="set-dok">',
+      '<button class="cip' + (posisiDok === 'atas' ? ' nyala' : '') + '" data-dok="atas">Di atas</button>',
+      '<button class="cip' + (posisiDok === 'bawah' ? ' nyala' : '') + '" data-dok="bawah">Di bawah</button>',
+      '</div>',
+      '</div>',
+
       '<div class="set-bagian">Label rak</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">Barisan tetap di layar hasil</div>',
@@ -1949,6 +1923,15 @@
 
     var model = $('#set-model');
     if (model) model.addEventListener('change', function () { simpanSetelan('model', model.value.trim()); });
+
+    var dok = $('#set-dok');
+    if (dok) dok.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-dok]');
+      if (!b) return;
+      pasangPosisiDok(b.getAttribute('data-dok'));
+      simpanSetelan('posisiDok', posisiDok);
+      gambarSetelan();
+    });
 
     var isianLabel = $('#set-label');
     if (isianLabel) {
@@ -2306,15 +2289,20 @@
       if (!tombol) return;
       var apa = tombol.getAttribute('data-lamp');
       if (apa === 'gambar') $('#pilih-gambar').click();
+      /* Kamera memakai jalur yang sama persis dengan Gambar - bedanya cuma
+         atribut capture, yang menyuruh HP membuka kamera alih-alih galeri.
+         Sesudahnya sama: dikecilkan, disimpan lokal, dicadangkan belakangan. */
+      else if (apa === 'kamera') $('#pilih-kamera').click();
       else if (apa === 'berkas') $('#pilih-berkas').click();
       else if (apa === 'daftar') setelDaftarNyala($('#petak-daftar').classList.contains('sembunyi'));
-      else if (apa === 'suara') {
-        if (perekam) perekam.stop();
-        else mulaiRekam();
-      }
     });
 
     $('#pilih-gambar').addEventListener('change', function (ev) {
+      var f = ev.target.files && ev.target.files[0];
+      if (f) pasangBerkas(f, 'gambar');
+      ev.target.value = '';
+    });
+    $('#pilih-kamera').addEventListener('change', function (ev) {
       var f = ev.target.files && ev.target.files[0];
       if (f) pasangBerkas(f, 'gambar');
       ev.target.value = '';
@@ -2513,6 +2501,7 @@
          kebiasaan orang menetap di satu ukuran, dan memilihnya lagi tiap kali
          adalah keputusan berulang tanpa guna. */
       if (setelanSaat.gayaGambar) gayaGambar = setelanSaat.gayaGambar;
+      pasangPosisiDok(setelanSaat.posisiDok);
       return muatSemua();
     }).then(function () {
       return ambilBagikan();
@@ -2555,6 +2544,8 @@
     keLayarUji: keLayar,
     tutupHasilDepanUji: tutupHasilDepan,
     alamatNoteUji: alamatNote,
+    posisiDokUji: function (p) { pasangPosisiDok(p); return simpanSetelan('posisiDok', posisiDok); },
+    tutupLaciUji: tutupLaci,
     muatUlangUji: muatSemua,
     semuaEntri: function () { return semuaEntri; }
   };

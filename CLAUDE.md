@@ -117,7 +117,10 @@ public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
                     dikunci, judul & tag tetap terbuka supaya masih bisa
                     ditemukan. Yang terkunci tidak pernah dikirim ke AI
 public/sinkron.js   cadangan satu arah ke Drive; tidak pernah di jalur drop
-public/alur.js      alur UI — semua layar, drop, cari, catat, setelan
+public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
+                    Kotak + tombol + ketiga lacinya satu blok "dok" yang bisa
+                    menempel di ATAS atau di BAWAH (pilihan di Setelan);
+                    lacinya SELALU membuka ke bawah di kedua posisi
 public/sw.js        service worker — singgahan kerangka + penerima "Bagikan"
 public/manifest.webmanifest   supaya bisa dipasang di HP
 uji/uji-terima.mjs            uji terima (Playwright)
@@ -136,7 +139,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (264 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (273 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
