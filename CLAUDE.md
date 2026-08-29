@@ -128,7 +128,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (212 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (214 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
@@ -154,6 +154,8 @@ dan supaya tidak perlu belajar gaya baru:
   `--l` garis, `--a` aksen). Gelap bawaan, terang lewat
   `@media (prefers-color-scheme: light)`.
 - Sasaran sentuh minimal 44px. Ini dipakai satu tangan sambil mengerjakan hal lain.
+- Baris tombol dibaca dari KANAN: jempol kanan bertumpu di sudut kanan bawah,
+  jadi yang paling sering ditekan duduk paling kanan (Semua · Cari · Drop).
 - Uji terima pakai Playwright (`node uji/…`), Chromium di
   `/opt/pw-browsers/chromium`.
 

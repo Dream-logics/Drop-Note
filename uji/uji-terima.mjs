@@ -620,10 +620,23 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
      pekat yang berteriak tiap layar dibuka. */
   cek('tidak ada tombol yang beralas warna', !/tbl utama/.test(html));
 
+  /* Dibaca dari KANAN. Dipakai satu tangan sambil mengerjakan hal lain, dan
+     jempol kanan bertumpu di sudut kanan bawah - makin ke kiri makin jauh
+     diraih. Yang paling sering ditekan duduk paling kanan. Urutan kiri-ke-kanan
+     akan terasa rapi di laptop dan salah di tangan. */
+  cek('Drop paling kanan, Semua paling kiri',
+      utama.indexOf('id="b-semua"') < utama.indexOf('id="b-cari"') &&
+      utama.indexOf('id="b-cari"') < utama.indexOf('id="b-drop"'));
+
   const hasil = html.slice(html.indexOf('id="l-hasil"'), html.indexOf('id="l-catat"'));
   cek('layar hasil punya tombol yang sama', /id="b-hasil-drop"/.test(hasil) &&
       /id="b-hasil-cari"/.test(hasil) && /id="b-hasil-semua"/.test(hasil));
   cek('tidak ada tombol Catat di layar hasil', !/id="b-hasil-catat"/.test(hasil));
+  /* Jempol yang sudah hafal satu tempat tidak boleh menemukan tombol lain di
+     sana waktu pindah layar. */
+  cek('urutan di layar hasil sama persis dengan layar utama',
+      hasil.indexOf('id="b-hasil-semua"') < hasil.indexOf('id="b-hasil-cari"') &&
+      hasil.indexOf('id="b-hasil-cari"') < hasil.indexOf('id="b-hasil-drop"'));
   cek('layar tulis tetap ada, cuma tidak lagi jadi pintu masuk',
       /id="l-catat"/.test(html));
   cek('di layar hasil tombolnya lebih kecil dan menempel', /tombol-baris kecil jempol/.test(hasil));
