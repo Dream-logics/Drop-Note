@@ -354,10 +354,24 @@
 
     for (i = 0; i < ada.length; i++) if (normal(ada[i]) === k) return { kategori: ada[i], dibetulkan: false, asli: asli };
 
-    /* Awalan: "apps desig" -> "apps design". Yang terpendek menang supaya
-       ketikan pendek tidak melompat ke kategori yang jauh lebih panjang. */
-    var awalan = ada.filter(function (c) { return normal(c).indexOf(k) === 0; })
-                    .sort(function (a, b) { return a.length - b.length; });
+    /* Awalan: "apps desig" -> "apps design". TAPI cuma kalau yang kurang
+       tinggal satu-dua huruf.
+
+       Tanpa batas itu, aturan ini menukar satu kata dengan kata LAIN yang
+       kebetulan diawali sama: "project" jadi "ProjectSpace" - padahal
+       ProjectSpace itu nama tempat, bukan proyek. Mesin di berkas ini cuma
+       bisa membandingkan EJAAN; dia tidak tahu apa-apa soal makna. Ejaan yang
+       mirip tidak berarti maknanya berhubungan, dan tebakan makna yang salah
+       lebih merusak daripada tidak menebak sama sekali - karena diam-diam dia
+       menaruh catatanmu di rak yang keliru, dan kamu baru tahu enam bulan lagi
+       waktu mencarinya.
+
+       Dua huruf itu batas antara "ketikannya terputus" dan "ini kata lain". */
+    var EKOR_MAKS = 2;
+    var awalan = ada.filter(function (c) {
+      var n = normal(c);
+      return n.indexOf(k) === 0 && n.length - k.length <= EKOR_MAKS;
+    }).sort(function (a, b) { return a.length - b.length; });
     if (awalan.length) return { kategori: awalan[0], dibetulkan: normal(awalan[0]) !== k, asli: asli };
 
     /* Salah ketik: toleransi tumbuh dengan panjang kata, tapi tidak pernah
@@ -372,22 +386,6 @@
     if (terbaik) return { kategori: terbaik, dibetulkan: true, asli: asli };
 
     return { kategori: asli, dibetulkan: false, asli: asli, baru: true };
-  }
-
-  /* Usul kategori dari isi: kategori lama yang kata-katanya paling banyak
-     muncul di entri ini. Sederhana, tapi menang telak dibanding kosong. */
-  function usulKategori(entri, riwayatKategori) {
-    var bahan = normal([entri.isi, entri.judul, entri.namaBerkas].filter(Boolean).join(' '));
-    var terbaik = '', nilaiTerbaik = 0;
-    (riwayatKategori || []).forEach(function (r) {
-      var kata = normal(r.kategori).split(' ').filter(function (w) { return w.length > 2; });
-      if (!kata.length) return;
-      var cocok = kata.filter(function (w) { return bahan.indexOf(w) >= 0; }).length;
-      if (!cocok) return;
-      var nilai = (cocok / kata.length) * 10 + Math.min(r.jumlah, 20) * 0.1;
-      if (nilai > nilaiTerbaik) { nilaiTerbaik = nilai; terbaik = r.kategori; }
-    });
-    return nilaiTerbaik >= 5 ? terbaik : '';
   }
 
   /* ===================== LABEL =====================
@@ -690,7 +688,7 @@
     bacaJenis: bacaJenis, ambilUrl: ambilUrl,
     judulTautan: judulTautan, judulTeks: judulTeks, judulOtomatis: judulOtomatis,
     susunJudul: susunJudul, bakuIstilah: bakuIstilah,
-    benahiKategori: benahiKategori, usulKategori: usulKategori,
+    benahiKategori: benahiKategori,
     labelOtomatis: labelOtomatis, cari: cari,
     elemenOtomatis: elemenOtomatis, gabungElemen: gabungElemen,
     samarkanPenanda: samarkanPenanda,

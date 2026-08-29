@@ -104,16 +104,19 @@
     <button class="tambah-baris" id="b-tambah-baris">+ baris</button>
   </div>
 
-  <div class="label-kecil">Keyword — centang, tidak perlu mengetik</div>
-  <div class="kat-baris">
-    <span class="kat-pagar">#</span>
-    <input id="kat" class="kat-input" placeholder="boleh disingkat, pisahkan dengan spasi" autocomplete="off" spellcheck="false">
-    <button class="kat-hapus sembunyi" id="b-kat-hapus" aria-label="Kosongkan keyword">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
-    </button>
-  </div>
-  <div class="kat-koreksi sembunyi" id="kat-koreksi"></div>
-  <div class="cip-baris" id="kat-usul"></div>
+  <!-- TIDAK ADA ISIAN KEYWORD DI SINI, DAN JANGAN DIKEMBALIKAN. Dulu ada:
+       satu kotak "#" plus dua belas cip usulan. Dua alasan dia dibuang.
+
+       Pertama, mencocokkan catatan dengan raknya itu pekerjaan berpikir, dan
+       dia berdiri tepat di jalur masuk - tempat yang aturan nomor satu bilang
+       harus benar-benar gratis. Hasilnya bukan dipakai sesekali; hasilnya
+       tidak dipakai sama sekali.
+
+       Kedua, usulannya sering salah konteks, dan itu bukan bug yang bisa
+       ditambal di sini: mesin tanpa AI cuma bisa membandingkan EJAAN. Ejaan
+       yang mirip tidak berarti maknanya berhubungan. Rak diisi AI sesudahnya,
+       karena cuma dia yang membaca isinya - dan kalau AI mati, raknya kosong,
+       dan itu keadaan yang sah. Pencarian tetap jalan di atas judul dan isi. -->
 
   <div class="tumbuh"></div>
 
