@@ -129,7 +129,6 @@
     ['OTP', ['otp', 'kode otp', 'verifikasi', 'sandi sekali pakai']],
     ['PIN', ['pin', 'kode pin']],
     ['API', ['api', 'apikey', 'apikeys', 'endpoint']],
-    ['Token', ['token', 'bearer', 'secret']],
     ['Prompt', ['prompt', 'prompts', 'promt', 'instruksi ai']],
     ['Menu', ['menu', 'menus', 'daftar menu', 'paket menu']],
     ['Link', ['link', 'tautan', 'url', 'alamat web', 'links', 'linknya']],
@@ -153,8 +152,31 @@
     ['Berkas', ['berkas', 'file', 'dokumen', 'document']],
     ['Jadwal', ['jadwal', 'schedule', 'agenda']],
     ['Harga', ['harga', 'price', 'tarif', 'biaya']],
-    ['Ide', ['ide', 'idea', 'gagasan', 'konsep']]
+    /* Idea, bukan Ide - aturan Inggris-dulu berlaku juga di sini, dan
+       konsistensinya lebih berharga daripada satu kata yang lebih pendek. */
+    ['Idea', ['idea', 'ide', 'gagasan', 'konsep']]
   ];
+
+  /* PENANDA DUA KATA, dan ini bukan kerapian - "Client ID" memang namanya di
+     Google. Memotongnya jadi "Client" atau menggantinya jadi "Token" membuat
+     orangnya mencari dengan kata yang tidak pernah dia dengar dari sumbernya.
+
+     Frasa selalu menang atas kata tunggal: dia lebih khusus, dan yang lebih
+     khusus selalu lebih berguna sebagai penanda. */
+  var FRASA = [
+    ['Client ID', ['client id', 'clientid', 'oauth client id', 'id client']],
+    ['Client Secret', ['client secret', 'clientsecret', 'secret client']],
+    ['API Key', ['api key', 'apikey', 'kunci api']]
+  ];
+
+  function cariFrasa(kata, i) {
+    if (i + 1 >= kata.length) return '';
+    var dua = normal(kata[i].replace(/[^\wÀ-ÿ]/g, '') + ' ' + kata[i + 1].replace(/[^\wÀ-ÿ]/g, ''));
+    for (var f = 0; f < FRASA.length; f++) {
+      if (FRASA[f][1].indexOf(dua) >= 0) return FRASA[f][0];
+    }
+    return '';
+  }
 
   /* Kata yang dipakai apa adanya sebagai penanda, walau bukan istilah yang
      dikenal. Begitu satu kebiasaan menulis judul terbentuk - dan kebiasaan itu
@@ -239,13 +261,21 @@
     /* Penanda di depan. Kalau judulnya sudah menyebut istilahnya, istilah itu
        yang diangkat ke depan - bukan ditambahi penanda kedua yang artinya
        sama. */
-    var adaIstilah = -1, istilah = '', terbaik = 999;
-    for (var i = 0; i < kata.length && i < 6; i++) {
-      var p = peringkatIstilah(kata[i].replace(/[^\wÀ-ÿ]/g, ''));
-      if (p >= 0 && p < terbaik) { terbaik = p; adaIstilah = i; istilah = ISTILAH[p][0]; }
+    /* Frasa dicari lebih dulu dan langsung menang - dua kata yang dikenal
+       selalu lebih khusus daripada satu kata mana pun di kalimat yang sama. */
+    var adaIstilah = -1, istilah = '', terbaik = 999, panjangnya = 1;
+    for (var f = 0; f < kata.length && f < 6; f++) {
+      var fr = cariFrasa(kata, f);
+      if (fr) { istilah = fr; adaIstilah = f; panjangnya = 2; terbaik = -1; break; }
+    }
+    if (adaIstilah < 0) {
+      for (var i = 0; i < kata.length && i < 6; i++) {
+        var p = peringkatIstilah(kata[i].replace(/[^\wÀ-ÿ]/g, ''));
+        if (p >= 0 && p < terbaik) { terbaik = p; adaIstilah = i; istilah = ISTILAH[p][0]; }
+      }
     }
     if (adaIstilah >= 0) {
-      kata.splice(adaIstilah, 1);
+      kata.splice(adaIstilah, panjangnya);
       /* Kata umum yang menempel tepat SEBELUM istilah khususnya ikut dibuang:
          "kode otp" -> OTP, "nomor telepon" -> Telepon. Yang umum di situ cuma
          ancang-ancang menuju yang khusus, dan menyisakannya berarti judulnya
