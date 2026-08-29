@@ -607,10 +607,19 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
   cek('tombol tidak terlempar ke bawah keyword',
       utama.indexOf('id="b-drop"') < utama.indexOf('id="kat-usul"'));
 
+  /* TIDAK ADA TOMBOL "CATAT". Dulu ada, dan dia menagih pilihan yang tidak bisa
+     dijawab: kamu belum tahu tulisanmu pendek atau panjang sebelum mengetiknya -
+     dan salah pilih tidak berakibat apa-apa, karena dua-duanya menyimpan hal yang
+     sama dan sama-sama bisa disunting nanti. Pilihan palsu tetap menagih tenaga.
+     Layar tulisnya tetap ada, tapi didatangi dari hasil pencarian. */
+  cek('tidak ada tombol Catat di layar depan', !/id="b-catat"/.test(html));
+
   const hasil = html.slice(html.indexOf('id="l-hasil"'), html.indexOf('id="l-catat"'));
   cek('layar hasil punya tombol yang sama', /id="b-hasil-drop"/.test(hasil) &&
-      /id="b-hasil-cari"/.test(hasil) && /id="b-hasil-catat"/.test(hasil) &&
-      /id="b-hasil-semua"/.test(hasil));
+      /id="b-hasil-cari"/.test(hasil) && /id="b-hasil-semua"/.test(hasil));
+  cek('tidak ada tombol Catat di layar hasil', !/id="b-hasil-catat"/.test(hasil));
+  cek('layar tulis tetap ada, cuma tidak lagi jadi pintu masuk',
+      /id="l-catat"/.test(html));
   cek('di layar hasil tombolnya lebih kecil dan menempel', /tombol-baris kecil jempol/.test(hasil));
 
   const css = fs.readFileSync(path.join(AKAR, 'gaya.css'), 'utf8');

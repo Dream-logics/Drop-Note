@@ -58,16 +58,22 @@
   <textarea id="kotak" class="kotak" rows="4" placeholder="Tempel atau tulis apa saja&#8230;  (Enter untuk mencari)" autocomplete="off" spellcheck="false"></textarea>
 
   <!-- Tombol menempel tepat di bawah kotak, bukan di dasar layar: di layar
-       panjang, dasar layar itu jauh dari yang barusan diketik. -->
+       panjang, dasar layar itu jauh dari yang barusan diketik.
+
+       TIDAK ADA TOMBOL "CATAT" DI SINI, DAN JANGAN DIKEMBALIKAN. Dulu ada, dan
+       dia menagih satu pilihan yang tidak bisa dijawab: kamu belum tahu tulisanmu
+       akan pendek atau panjang sebelum mengetiknya. Lebih buruk lagi, salah pilih
+       tidak ada akibatnya - dua-duanya menyimpan hal yang sama dan sama-sama
+       bisa disunting nanti. Pilihan yang salahnya tidak berakibat apa-apa itu
+       pilihan palsu, dan pilihan palsu tetap menagih tenaga tanpa memberi apa pun.
+       Layar tulisnya tetap ada; dia didatangi dari hasil pencarian, bukan
+       diputuskan di depan. -->
   <div class="tombol-baris" id="tombol-utama">
     <button class="tbl utama" id="b-drop">
       <svg viewBox="0 0 24 24" class="ik"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg>Drop
     </button>
     <button class="tbl" id="b-cari">
       <svg viewBox="0 0 24 24" class="ik"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>Cari
-    </button>
-    <button class="tbl" id="b-catat">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M4 20h16"/><path d="M14.5 4.5l5 5L8 21H3v-5z"/></svg>Catat
     </button>
     <button class="tbl" id="b-semua">
       <svg viewBox="0 0 24 24" class="ik"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>Semua
@@ -143,9 +149,6 @@
     </button>
     <button class="tbl" id="b-hasil-cari">
       <svg viewBox="0 0 24 24" class="ik"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>Cari
-    </button>
-    <button class="tbl" id="b-hasil-catat">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M4 20h16"/><path d="M14.5 4.5l5 5L8 21H3v-5z"/></svg>Catat
     </button>
     <button class="tbl" id="b-hasil-semua">
       <svg viewBox="0 0 24 24" class="ik"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>Semua
