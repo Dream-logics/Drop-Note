@@ -195,7 +195,7 @@ console.log('\njudul: kata yang ada di kepalanya, bukan yang paling rapi');
      kiri tanpa membaca seluruh barisnya. */
   cek('penanda diambil dari elemen kalau judulnya belum menyebut',
       (await susun('wifi kntr 8899aabb',
-        { elemen: [{ jenis: 'kode', nilai: '8899aabb' }] })).indexOf('Kode ') === 0);
+        { elemen: [{ jenis: 'kode', nilai: '8899aabb' }] })).indexOf('Code ') === 0);
   cek('penanda yang sudah ada diangkat ke depan, bukan ditambahi yang kedua',
       (await susun('rekening nomor BCA', { elemen: [] })) === 'Nomor rekening BCA');
 
@@ -205,8 +205,39 @@ console.log('\njudul: kata yang ada di kepalanya, bukan yang paling rapi');
   cek('kata sambung pendek boleh berulang',
       (await susun('bayar ke Andi dan ke Budi', { elemen: [] })).split(' ke ').length === 3);
 
+  /* Kosakata yang dipakai sehari-hari, dan Inggris dulu di semua yang bentrok. */
+  cek('prompt jadi penanda sendiri',
+      /^Prompt /.test(await susun('prompt buat ringkas rapat', { elemen: [] })));
+  cek('menu jadi penanda sendiri',
+      /^Menu /.test(await susun('menu katering mingguan', { elemen: [] })));
+  cek('kode program jadi Code, bukan Kode',
+      /^Code /.test(await susun('kode buat parsing tanggal', { elemen: [] })));
+
+  /* Yang KHUSUS menang atas yang umum, dan kata umum yang cuma jadi
+     ancang-ancang ikut dibuang - kalau tidak, jenisnya disebut dua kali. */
+  cek('kode otp mendarat di OTP, bukan Code',
+      (await susun('kode otp bca jgn dishare', { elemen: [] })) === 'OTP bca jgn dishare');
+  cek('nomor telepon mendarat di Telepon, bukan Nomor',
+      (await susun('nomor telepon pak har', { elemen: [] })) === 'Telepon pak har');
+  cek('kode api mendarat di API',
+      (await susun('kode api gemini buat proxy', { elemen: [] })) === 'API gemini buat proxy');
+
+  /* "rekening" bukan sinonim "nomor" - dia jenis barangnya, dan itu kata yang
+     diketik saat mencari. */
+  cek('kata yang datang sesudah penanda tidak ikut dibuang',
+      (await susun('Nomor rekening BCA ibu nani', { elemen: [] })) === 'Nomor rekening BCA ibu nani');
+
+  /* Kebiasaan menulis judulnya sendiri dihormati: penanda buatannya menang
+     atas tebakan dari elemen. */
+  cek('penanda buatan sendiri dipakai apa adanya',
+      (await susun('Ngoffee stok gelas menipis', { elemen: [{ jenis: 'kode', nilai: 'x1234' }] }))
+        === 'Ngoffee stok gelas menipis');
+
   const arahan = await hal.evaluate(() => TPelabel.arahanUji({ tagFavorit: [], hashtag: [] }));
   cek('AI ikut diberi tahu: Link, bukan Tautan', /JANGAN "Tautan"/.test(arahan));
+  cek('AI ikut diberi tahu memilih yang paling khusus',
+      /Pilih yang paling KHUSUS/.test(arahan));
+  cek('daftar penanda disebut bukan kandang', /bukan kandang/.test(arahan));
   cek('AI ikut diberi tahu kata pertama itu penanda jenis',
       /KATA PERTAMA adalah penanda jenisnya/.test(arahan));
   cek('AI ikut dilarang menulis kata kembar makna',
