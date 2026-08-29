@@ -589,13 +589,49 @@
     }).join('');
   }
 
-  function gambarSaringKategori() {
-    var cip = ['<button class="cip' + (saringKat ? '' : ' nyala') + '" data-katsaring="">Semua rak</button>'];
-    daftarKategori().slice(0, 8).forEach(function (r) {
-      cip.push('<button class="cip' + (saringKat === r.kategori ? ' nyala' : '') +
-               '" data-katsaring="' + H(r.kategori) + '">#' + H(r.kategori) + ' ' + r.jumlah + '</button>');
+  /* Nilai awal dari bawaan.js dipakai HANYA sampai pemakainya menyuntingnya
+     sekali. Sesudah itu daftarnya miliknya, termasuk kalau dia mengosongkannya. */
+  function daftarLabel(s) {
+    var teks = (s || setelanSaat || {}).label;
+    if (teks == null) teks = (TBawaan.labelAwal || []).join('\n');
+    return TOtak.uraiLabel(teks);
+  }
+
+  /* Label yang sedang menyaring. Kalau namanya tidak ada di daftar - misalnya
+     ditekan dari tag - dia tetap dilayani sebagai label sekali pakai, supaya
+     saringannya tidak diam-diam gagal. */
+  function labelSaat() {
+    if (!saringKat) return null;
+    var ketemu = null;
+    daftarLabel().forEach(function (l) {
+      if (l.nama.toLowerCase() === saringKat.toLowerCase()) ketemu = l;
+    });
+    return ketemu || { nama: saringKat, istilah: [TOtak.normal(saringKat)] };
+  }
+
+  /* Barisan label seperti label obrolan WhatsApp: urutannya TETAP, jadi jari
+     hafal tempatnya dan menyaring tidak perlu dibaca dulu. Yang kosong tetap
+     ditulis di tempatnya - kalau dia loncat-loncat mengikuti isi, hafalannya
+     hilang dan tiap kali jadi harus dibaca ulang. */
+  function gambarSaringLabel() {
+    var hidup = semuaEntri.filter(function (e) { return !e.pensiun; });
+    var cip = ['<button class="cip' + (saringKat ? '' : ' nyala') + '" data-katsaring="">Semua</button>'];
+    daftarLabel().forEach(function (l) {
+      var n = hidup.filter(function (e) { return TOtak.cocokLabel(e, l.istilah); }).length;
+      cip.push('<button class="cip' + (saringKat === l.nama ? ' nyala' : '') + (n ? '' : ' sepi') +
+               '" data-katsaring="' + H(l.nama) + '">' + H(l.nama) +
+               (n ? '<span class="cip-jumlah">' + n + '</span>' : '') + '</button>');
     });
     $('#saring-kat').innerHTML = cip.join('');
+
+    /* Label yang menyala tapi berada di luar layar sama saja dengan saringan
+       yang menyala diam-diam: hasilnya menyusut tanpa ada yang menjelaskan
+       kenapa. Barisannya digeser sampai yang aktif kelihatan. */
+    var gulir = $('#saring-kat').parentNode;
+    var aktif = $('#saring-kat .cip.nyala');
+    if (gulir && aktif) {
+      gulir.scrollLeft = Math.max(0, aktif.offsetLeft - gulir.offsetLeft - 40);
+    }
   }
 
   function cuplikan(e) {
@@ -849,7 +885,8 @@
        tidak berarti apa-apa buat orang yang sedang mencari - jadi satu cip
        menutup keduanya. */
     var pakaiJenis = saringJenis === 'catatan' ? '' : saringJenis;
-    var hasil = TOtak.cari(semuaEntri, kueri, pakaiJenis, saringKat);
+    var lbl = labelSaat();
+    var hasil = TOtak.cari(semuaEntri, kueri, pakaiJenis, lbl ? lbl.istilah : '');
     if (saringJenis === 'catatan') {
       hasil = hasil.filter(function (e) { return e.jenis === 'catatan' || e.jenis === 'teks'; });
     }
@@ -889,7 +926,7 @@
 
     var sebab = [];
     if (kueri) sebab.push('kata <b>' + H(kueri) + '</b>');
-    if (saringKat) sebab.push('rak <b>#' + H(saringKat) + '</b>');
+    if (saringKat) sebab.push('label <b>' + H(saringKat) + '</b>');
     if (saringJenis && saringJenis !== 'semua') sebab.push('jenis <b>' + H(saringJenis) + '</b>');
 
     if (!sebab.length) {
@@ -907,7 +944,7 @@
   function keHasil(kueri) {
     $('#cari-input').value = kueri || '';
     gambarSaringJenis();
-    gambarSaringKategori();
+    gambarSaringLabel();
     gambarUrut();
     keLayar('l-hasil');
     jalankanCari();
@@ -1554,6 +1591,20 @@
           'Ini mode pengembang — untuk pemakai biasa, kuncinya tinggal di layanan dan tidak pernah sampai ke perangkat.</div></div>'
         : '',
 
+      '<div class="set-bagian">Label rak</div>',
+      '<div class="set-kotak">',
+      '<div class="set-judul">Barisan tetap di layar hasil</div>',
+      '<div class="set-ket">Satu baris satu label — nama proyek, divisi, atau perusahaan. ' +
+        'Pendekkan namanya supaya sebaris muat banyak; yang harus digulir jauh tidak akan dipakai. ' +
+        'Kalau singkatannya cuma ada di kepalamu, tulis kata panjangnya sesudah <b>=</b> ' +
+        '(<i>Cons = construction, konstruksi</i>) supaya tag buatan AI ikut tertangkap. ' +
+        'Urutannya tidak diacak ulang, jadi jarimu bisa hafal tempatnya.</div>',
+      '<textarea class="set-input tinggi" id="set-label" spellcheck="false" ' +
+        'placeholder="MAP&#10;Cons = construction">' +
+        H((s.label != null ? s.label : (TBawaan.labelAwal || []).join('\n'))) + '</textarea>',
+      '<div class="set-ket" id="label-jumlah">…</div>',
+      '</div>',
+
       '<div class="set-bagian">Tag andalan</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">Rak yang kamu sudah tahu akan dipakai</div>',
@@ -1763,6 +1814,28 @@
 
     var model = $('#set-model');
     if (model) model.addEventListener('change', function () { simpanSetelan('model', model.value.trim()); });
+
+    var isianLabel = $('#set-label');
+    if (isianLabel) {
+      var tampilJumlahLabel = function () {
+        var n = TOtak.uraiLabel(isianLabel.value).length;
+        $('#label-jumlah').textContent = n ? n + ' label' : 'Belum ada label — barisannya cuma "Semua".';
+      };
+      tampilJumlahLabel();
+      isianLabel.addEventListener('input', tampilJumlahLabel);
+      isianLabel.addEventListener('change', function () {
+        /* Ditulis ulang dari hasil uraian, bukan disimpan apa adanya: begitu
+           dia kembali ke sini besok, yang dilihatnya persis yang dipakai
+           aplikasinya - tidak ada baris yang diam-diam terbuang. */
+        var daftar = TOtak.uraiLabel(isianLabel.value);
+        isianLabel.value = TOtak.tulisLabel(daftar);
+        tampilJumlahLabel();
+        /* Label yang sedang menyaring bisa saja baru dihapus - kalau
+           saringannya dibiarkan, hasilnya kosong tanpa sebab yang kelihatan. */
+        saringKat = '';
+        simpanSetelan('label', isianLabel.value);
+      });
+    }
 
     var isianTag = $('#set-tag');
     if (isianTag) {
@@ -2114,7 +2187,7 @@
       var cip = ev.target.closest('[data-katsaring]');
       if (!cip) return;
       saringKat = cip.getAttribute('data-katsaring');
-      gambarSaringKategori();
+      gambarSaringLabel();
       jalankanCari();
     });
     $('#hasil').addEventListener('click', function (ev) {
@@ -2136,7 +2209,7 @@
         saringJenis = 'semua';
         $('#cari-input').value = cipTag.getAttribute('data-tag');
         gambarSaringJenis();
-        gambarSaringKategori();
+        gambarSaringLabel();
         jalankanCari();
         return;
       }
@@ -2319,7 +2392,8 @@
     gambarMulai: gambarMulai, gambarSetelan: gambarSetelan,
     alihKeyword: alihKeyword, perbaruiUsulKategori: perbaruiUsulKategori,
     keSemua: keSemua, uraiTagFavorit: uraiTagFavorit, kartuHtmlUji: kartuHtml,
-    saringRakUji: function (k) { saringKat = k; gambarSaringKategori(); jalankanCari(); },
+    saringRakUji: function (k) { saringKat = k; gambarSaringLabel(); jalankanCari(); },
+    daftarLabelUji: daftarLabel,
     /* Cuma untuk uji: memindah layar tanpa lewat tombol. */
     keLayarUji: keLayar,
     semuaEntri: function () { return semuaEntri; }
