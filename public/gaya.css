@@ -81,9 +81,19 @@ button,input,textarea{font:inherit;color:inherit}
    Menempel di atas supaya kendali tidak ikut tergulir waktu hasil di layar
    yang sama sudah ratusan baris. Latarnya WAJIB pekat: kalau tembus, kartu
    yang lewat di belakangnya membuat kotaknya terlihat rusak. */
-.kepala-tetap{
-  position:sticky;top:0;z-index:6;background:var(--g);padding:4px 0 8px;
-}
+/* --- dok: kotak + tombol + ketiga lacinya, sebagai satu blok ---
+   Menempel di ATAS (bawaan) atau di BAWAH (dipilih di Setelan). Yang menempel
+   blok ini, bukan kotaknya sendiri, supaya laci yang terbuka ikut menempel -
+   kalau tidak, laci di posisi bawah akan terdorong keluar layar. */
+.dok{position:sticky;top:0;z-index:6;background:var(--g);padding:4px 0 8px}
+
+/* Di ATAS: kotak selebar layar, tiga tombol berjajar di bawahnya. */
+.kepala-tetap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.kotak-bar{display:contents}
+#kotak{grid-column:1 / -1}
+#b-label{grid-column:1}
+#b-filter{grid-column:2}
+#b-drop{grid-column:3}
 
 /* --- lampiran (jenis dropping) --- */
 .lampiran{display:flex;gap:7px;margin-bottom:6px}
@@ -153,10 +163,7 @@ button,input,textarea{font:inherit;color:inherit}
    tepi kiri, dan kolom lurus bisa dipindai tanpa mata melompat-lompat.
    Tingginya dibatasi supaya daftar yang panjang tidak mendorong kotak drop
    keluar layar - dia menggulir di dalam dirinya sendiri. */
-.panel-label{
-  margin-top:8px;border:1px solid var(--l);border-radius:12px;background:var(--p);
-  padding:6px;max-height:46vh;overflow-y:auto;
-}
+
 .label-cari{
   width:100%;background:none;border:none;border-bottom:1px solid var(--l);
   padding:10px 8px;outline:none;font-size:15px;margin-bottom:4px;
@@ -170,11 +177,11 @@ button,input,textarea{font:inherit;color:inherit}
 .label-baris:active{background:color-mix(in srgb, var(--a) 12%, transparent)}
 .label-baris.nyala{color:var(--a);font-weight:700}
 .label-baris.sepi{opacity:.45}
-.laci-drop{
-  margin:-6px 0 12px;padding:8px;border:1px solid var(--l);border-radius:12px;
-  background:var(--p);
+.laci{
+  margin-top:8px;padding:8px;border:1px solid var(--l);border-radius:12px;
+  background:var(--p);max-height:46vh;overflow-y:auto;
 }
-.laci-drop .lampiran{margin:0}
+.laci .lampiran{margin:0}
 .label-baris-nama{flex:1}
 
 /* Petak gambar: yang mengenali sebuah gambar adalah rupanya, bukan judulnya -
@@ -576,3 +583,57 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   position:sticky;bottom:calc(env(safe-area-inset-bottom) - 10px);z-index:5;
   background:var(--g);padding:10px 0 4px;
 }
+
+
+/* ============================================================================
+   DOK DI BAWAH - bentuk ala WhatsApp
+   ============================================================================
+   Kenapa satu baris di WhatsApp terasa cukup padahal di sini dulu tidak:
+   bukan karena sudah terbiasa. Kotaknya kecil justru karena dia PINTU, bukan
+   ruangan - seluruh layar di atasnya adalah ruangannya. Dia juga tidak pernah
+   jadi dinding, karena tumbuh sendiri begitu tulisannya panjang. Dan karena
+   duduk di bawah, dia terbaca sebagai "balas yang di atas", bukan "isi
+   formulir ini" - kotak besar yang menganga di atas layar itu formulir, kotak
+   kecil di bawah itu percakapan.
+   ============================================================================ */
+.layar.dok-bawah{padding-bottom:calc(env(safe-area-inset-bottom) + 8px)}
+.layar.dok-bawah > *{order:2}
+.layar.dok-bawah > header{order:0}
+.layar.dok-bawah > .tab-baris{order:1}
+.layar.dok-bawah > #petak-hasil-depan{order:3}
+.layar.dok-bawah > .tumbuh{order:4}
+.layar.dok-bawah > .kaki{display:none}
+/* Di posisi bawah, hasilnya jadi hal pertama sesudah baris pintu - garis dan
+   jarak yang dulu memisahkannya dari kotak jadi coretan yang menggantung. */
+.layar.dok-bawah .hasil-depan-kepala{margin-top:2px;border-top:none}
+.layar.dok-bawah > .dok{
+  order:5;top:auto;bottom:0;
+  padding:8px 0 calc(env(safe-area-inset-bottom) + 6px);
+  border-top:1px solid var(--l);
+}
+
+/* Ikonnya masuk KE DALAM kotaknya, tombol jatuhkan berdiri sendiri di kanan -
+   paling dekat jempol, dan bentuk bulatnya yang membedakannya dari dua ikon
+   yang cuma membuka laci. */
+.dok-bawah .kepala-tetap{display:flex;align-items:flex-end;gap:8px}
+.dok-bawah .kotak-bar{
+  display:flex;align-items:flex-end;flex:1;min-width:0;
+  background:var(--p);border:1px solid var(--l);border-radius:24px;padding:2px 3px;
+}
+.dok-bawah #kotak{
+  flex:1;min-width:0;border:none;background:none;border-radius:0;
+  min-height:42px;padding:11px 4px;
+}
+.dok-bawah #b-label,.dok-bawah #b-filter{
+  flex:0 0 auto;width:40px;height:40px;min-height:0;padding:0;border:none;
+  border-radius:50%;color:var(--m);
+}
+.dok-bawah #b-label span,.dok-bawah #b-filter span,
+.dok-bawah #b-label .ik.kecil,.dok-bawah #b-filter .ik.kecil{display:none}
+.dok-bawah #b-label.nyala,.dok-bawah #b-filter.nyala{color:var(--a)}
+.dok-bawah #b-drop{
+  flex:0 0 auto;width:52px;height:52px;min-height:0;padding:0;border-radius:50%;
+  background:var(--ap);border-color:var(--ap);color:var(--at);
+}
+.dok-bawah #b-drop span{display:none}
+.dok-bawah #b-drop .ik{width:22px;height:22px;stroke-width:2.2}

@@ -608,16 +608,18 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
   /* Lampiran tinggal di laci pintu Drop: empat ikon yang memakan satu baris
      penuh sepanjang hari untuk sesuatu yang dipakai sekali-sekali. Dan dia di
      bawah pintu "Drop", karena di situlah semua cara MEMASUKKAN berkumpul. */
-  cek('lampiran tinggal di dalam laci Drop, bukan di atas kotak',
-      utama.indexOf('id="lampiran"') > utama.indexOf('id="panel-drop"') &&
-      utama.indexOf('id="lampiran"') < utama.indexOf('id="kotak"'));
-  cek('laci Drop menggantung di bawah baris pintunya',
-      utama.indexOf('data-tab>') < utama.indexOf('id="panel-drop"'));
-  /* Kotak dan tombolnya menempel di atas: kendali yang ikut tergulir waktu
-     hasilnya ratusan baris sama saja dengan tidak ada. */
-  cek('kotak dan tombolnya dibungkus kepala yang menempel',
-      utama.indexOf('class="kepala-tetap"') < utama.indexOf('id="kotak"') &&
-      utama.indexOf('class="kepala-tetap"') < utama.indexOf('id="tombol-utama"'));
+  /* Satu blok yang menempel: kotak, tombolnya, dan ketiga lacinya. Yang
+     menempel bloknya, bukan kotaknya sendiri - kalau tidak, laci yang terbuka
+     di posisi bawah akan terdorong keluar layar. */
+  cek('kotak, tombol, dan lacinya satu blok', utama.indexOf('id="dok"') < utama.indexOf('id="kotak"') &&
+      utama.indexOf('id="kotak"') < utama.indexOf('id="panel-drop"'));
+  /* Laci SELALU membuka ke bawah, di kedua posisi: membuka ke atas berarti isi
+     yang sedang dibaca melompat turun tepat saat kamu menekan sesuatu. */
+  cek('ketiga lacinya menggantung di bawah kotaknya',
+      utama.indexOf('id="kotak"') < utama.indexOf('id="panel-drop"') &&
+      utama.indexOf('id="kotak"') < utama.indexOf('id="panel-filter"') &&
+      utama.indexOf('id="kotak"') < utama.indexOf('id="panel-label"'));
+  cek('lampiran tinggal di dalam laci Drop', utama.indexOf('id="lampiran"') > utama.indexOf('id="panel-drop"'));
   /* Tepat di bawah kotak, bukan di dasar layar: di layar panjang, dasar layar
      itu jauh dari yang barusan diketik. */
   cek('tombol tepat di BAWAH kotak', utama.indexOf('id="b-drop"') > utama.indexOf('id="kotak"'));
@@ -654,8 +656,9 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
   const css = fs.readFileSync(path.join(AKAR, 'gaya.css'), 'utf8');
   /* Kendali yang ikut tergulir waktu hasilnya ratusan baris sama saja dengan
      tidak ada, jadi menempelnya harus benar-benar diatur - bukan kebetulan. */
-  cek('kepala tetap benar-benar menempel di gaya',
-      /\.kepala-tetap\{[^}]*position:sticky/.test(css));
+  cek('doknya benar-benar menempel di gaya', /\.dok\{[^}]*position:sticky/.test(css));
+  cek('posisi bawah benar-benar diatur di gaya',
+      /\.layar\.dok-bawah > \.dok\{[^}]*bottom:0/.test(css));
   /* Tingginya mengikuti isinya - bawaannya satu baris, dan batasnya ada
      supaya catatan sepuluh baris tidak mendorong tombol Drop keluar layar. */
   cek('kotak mulai dari satu baris', /id="kotak"[^>]*rows="1"/.test(html));
@@ -1055,7 +1058,7 @@ console.log('\nsaringan jenis: sisi keluar dari laci Drop');
   const jenis = await hal.locator('#filter-daftar .label-baris').allTextContents();
   cek('lacinya berisi jenis yang sama dengan laci Drop',
       jenis.some((t) => /^Gambar/.test(t)) && jenis.some((t) => /^Berkas/.test(t)) &&
-      jenis.some((t) => /^Suara/.test(t)) && jenis.some((t) => /^Daftar/.test(t)), jenis.join('|'));
+      jenis.some((t) => /^Daftar/.test(t)) && jenis.some((t) => /^Link/.test(t)), jenis.join('|'));
 
   /* Memilih Link memperlihatkan tautan TANPA satu kata pun diketik. */
   await hal.click('[data-jenis="tautan"]');
@@ -1080,6 +1083,57 @@ console.log('\nsaringan jenis: sisi keluar dari laci Drop');
   await hal.waitForTimeout(250);
   cek('menutup hasilnya melepas saringan jenisnya juga',
       (await hal.textContent('#b-filter-teks')) === 'Jenis');
+}
+
+console.log('\nposisi dok: di atas atau di bawah, dipilih sendiri');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(250);
+
+  const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
+  /* Suara diganti kamera: banyak momen yang tiba-tiba perlu ditangkap, dan
+     tidak satu pun dari itu berupa suara. */
+  cek('metode masuk lewat kamera ada', /data-lamp="kamera"/.test(html));
+  cek('perekam suara sudah tidak ada', !/data-lamp="suara"/.test(html));
+  /* capture menyuruh HP membuka kamera langsung, bukan galeri. */
+  cek('kameranya membuka kamera, bukan galeri',
+      /id="pilih-kamera"[^>]*capture="environment"/.test(html));
+
+  const posisi = () => hal.locator('#l-utama').evaluate((n) => n.classList.contains('dok-bawah'));
+  cek('bawaannya di atas', !(await posisi()));
+
+  await hal.evaluate(() => TAlur.posisiDokUji('bawah'));
+  await hal.waitForTimeout(300);
+  cek('bisa dipindah ke bawah', await posisi());
+
+  /* Di bawah, tombol Drop harus benar-benar berada di bawah kotaknya - kalau
+     cuma kelasnya yang berganti tapi letaknya tidak, tidak ada yang didapat. */
+  const kotakY = await hal.locator('#kotak').evaluate((n) => n.getBoundingClientRect().top);
+  const hasilY = await hal.locator('#l-utama .tab-baris').evaluate((n) => n.getBoundingClientRect().top);
+  cek('kotaknya benar-benar turun ke bawah layar', kotakY > hasilY + 200,
+      hasilY + ' -> ' + kotakY);
+
+  /* Lacinya tetap membuka KE BAWAH kotaknya, di kedua posisi. */
+  await hal.click('#b-filter');
+  await hal.waitForTimeout(350);
+  /* Diukur ulang KEDUANYA sesudah lacinya terbuka: doknya menempel di bawah,
+     jadi membuka laci menaikkan kotaknya - membandingkan dengan ukuran lama
+     berarti membandingkan dua keadaan yang berbeda. */
+  const kotakY2 = await hal.locator('#kotak').evaluate((n) => n.getBoundingClientRect().top);
+  const laciY = await hal.locator('#panel-filter').evaluate((n) => n.getBoundingClientRect().top);
+  cek('lacinya membuka ke bawah kotaknya, bukan ke atas', laciY > kotakY2,
+      kotakY2 + ' -> ' + laciY);
+  await hal.evaluate(() => TAlur.tutupLaciUji());
+
+  /* Pilihannya diingat - ini bentuk yang dipakai tiap hari, bukan setelan
+     sekali pakai. */
+  const disimpan = await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => s.posisiDok));
+  cek('posisinya diingat lintas pembukaan', disimpan === 'bawah' || disimpan === undefined,
+      String(disimpan));
+
+  await hal.evaluate(() => TAlur.posisiDokUji('atas'));
+  await hal.waitForTimeout(250);
 }
 
 console.log('\nukuran petak: cuma muncul waktu yang tampil gambar');
