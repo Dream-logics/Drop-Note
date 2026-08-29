@@ -27,8 +27,8 @@
   /* Aksen teal tua. Dua nada, karena tugasnya dua: --a dipakai sebagai TINTA
      (tag, tautan, tenggat dekat), --ap sebagai ALAS tombol dengan tinta putih
      di atasnya. Di atas dasar putih keduanya kebetulan sama pekatnya. */
-  --a:#2E6E67;   /* aksen   */
-  --ap:#2E6E67;  /* aksen padat: alas */
+  --a:#0F766E;   /* aksen - teal */
+  --ap:#0F766E;  /* aksen padat: alas */
   --at:#ffffff;  /* tinta di atas aksen */
   --bahaya:#a33c2c;
 }
@@ -71,7 +71,8 @@ button,input,textarea{font:inherit;color:inherit}
 /* --- kotak masuk --- */
 .kotak{
   width:100%;background:var(--p);border:1px solid var(--l);border-radius:14px;
-  padding:15px;font-size:16px;line-height:1.5;resize:vertical;min-height:118px;outline:none;
+  padding:13px 15px;font-size:16px;line-height:1.5;resize:none;outline:none;
+  min-height:50px;max-height:140px;overflow-y:auto;display:block;
 }
 .kotak:focus{border-color:var(--a)}
 .kotak::placeholder{color:var(--m);opacity:.75}
@@ -82,13 +83,6 @@ button,input,textarea{font:inherit;color:inherit}
    yang lewat di belakangnya membuat kotaknya terlihat rusak. */
 .kepala-tetap{
   position:sticky;top:0;z-index:6;background:var(--g);padding:4px 0 8px;
-}
-/* Menyusut waktu hasilnya terbuka dan kamu tidak sedang mengetik: tiga baris
-   kosong di atas daftar cuma memakan tempat yang seharusnya jadi hasil.
-   Mengetuknya mengembalikannya, jadi tidak ada yang hilang. */
-.kepala-tetap.ringkas .kotak{
-  min-height:46px;height:46px;padding:12px 15px;overflow:hidden;
-  transition:height .14s ease, min-height .14s ease;
 }
 
 /* --- lampiran (jenis dropping) --- */

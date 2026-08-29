@@ -135,13 +135,32 @@
 
   /* ------------------------------------------------------------------ dasar */
 
-  function panggil(setelan, alamat, pilihan) {
+  /* KENAPA 401 SERING MUNCUL WAKTU APLIKASINYA BARU DIBUKA.
+     Tokennya cuma hidup di memori - tidak pernah disimpan, dan itu memang
+     disengaja: token yang tersimpan di perangkat adalah kunci yang bisa
+     dipungut orang lain. Akibatnya tiap kali halaman dimuat ulang, tokennya
+     nol, dan permintaan pertama harus meminta yang baru diam-diam ke Google.
+
+     Permintaan diam-diam itu kadang menjawab dengan token yang sudah dicabut
+     di sisi Google (sesi berganti, izin ditinjau ulang, jam perangkat meleset).
+     Tokennya kelihatan sah dari sini - belum lewat masa berlakunya - tapi
+     Google menolaknya: itulah 401-nya.
+
+     Jadi 401 diperlakukan sebagai "tokennya basi", bukan sebagai kegagalan:
+     dibuang, diminta yang baru, dan permintaannya diulang SEKALI. Kalau yang
+     kedua masih 401, baru menyerah - dan menyerahnya pun diam, karena tidak
+     ada satu pun jalur Google yang berada di jalur drop. */
+  function panggil(setelan, alamat, pilihan, ulangi) {
     return ambilToken(setelan, true).then(function (t) {
       var p = pilihan || {};
       p.headers = p.headers || {};
       p.headers.Authorization = 'Bearer ' + t;
       return fetch(alamat, p);
     }).then(function (r) {
+      if (r.status === 401 && !ulangi) {
+        keluar();
+        return panggil(setelan, alamat, pilihan, true);
+      }
       if (r.status === 401) { keluar(); throw new Error('Izin Google kedaluwarsa'); }
       return r.text().then(function (teks) {
         var j = null;
@@ -405,6 +424,10 @@
     tulisBaris: tulisBaris, bacaSemuaBaris: bacaSemuaBaris, hapusBaris: hapusBaris,
     unggahBerkas: unggahBerkas, unduhBerkas: unduhBerkas, hapusBerkas: hapusBerkas,
     tulisTag: tulisTag,
-    KOLOM: KOLOM, TAB_TAG: TAB_TAG
+    KOLOM: KOLOM, TAB_TAG: TAB_TAG,
+    /* Cuma untuk uji: memanggil satu alamat Google lewat jalur yang sama
+       dengan semua panggilan lain, supaya perlakuan 401-nya benar-benar diuji
+       dan bukan ditebak dari kodenya. */
+    panggilUji: function (setelan, alamat) { return panggil(setelan, alamat); }
   };
 })(window);

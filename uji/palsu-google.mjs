@@ -4,7 +4,7 @@ export function buatGooglePalsu() {
   const berkas = new Map();        /* id -> {name, mimeType, parents, isi} */
   const lembar = new Map();        /* sheetId -> baris[][] */
   let urut = 0;
-  const negara = { panggilan: 0 };
+  const negara = { panggilan: 0, tolakSekali: false, ditolak: 0 };
 
   const idBaru = (aw) => aw + (++urut);
 
@@ -31,6 +31,10 @@ export function buatGooglePalsu() {
 
   function tangani(url, metode, badan) {
     negara.panggilan++;
+    /* Menirukan token yang sudah dicabut di sisi Google: kelihatan sah dari
+       sisi aplikasi (belum lewat masa berlakunya) tapi ditolak. Ini keadaan
+       yang sebenarnya bikin 401 muncul tiap kali aplikasinya baru dibuka. */
+    if (negara.tolakSekali) { negara.tolakSekali = false; negara.ditolak++; return jawab({ error: { message: 'Invalid Credentials' } }, 401); }
     const u = new URL(url);
     const j = badan ? (() => { try { return JSON.parse(badan); } catch (e) { return null; } })() : null;
 

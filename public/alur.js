@@ -129,7 +129,7 @@
   var entriCatat = null;
   var labelDepan = null;   /* label yang sedang ditampilkan di layar depan */
   var saringJenis = '';    /* '' = semua jenis; 'gambar', 'berkas', 'suara', ... */
-  var gayaGambar = 'sedang';   /* besar | sedang | kecil | daftar */
+  var gayaGambar = 'kecil';    /* besar | sedang | kecil | daftar */
   var laciBuka = '';       /* laci mana yang sedang terbuka: label | drop | filter */
   var urlSementara = [];
   var perekam = null;
@@ -373,8 +373,27 @@
     if (nyala && !$$('#daftar-baris .baris-daftar').length) barisDaftarBaru('', false);
   }
 
+  /* TINGGINYA MENGIKUTI ISINYA. Bawaannya satu baris - dan itu bentuk yang
+     benar, karena hampir tiap kali kotak ini disentuh yang diketik cuma satu
+     dua kata untuk mencari. Kotak tiga baris yang menganga sepanjang hari
+     memakan tempat yang seharusnya jadi hasil, dan tidak menjanjikan apa pun
+     yang tidak bisa dijanjikan satu baris.
+
+     Yang panjang tetap dilayani: dia mengembang sampai batas, lalu menggulir
+     di dalam dirinya sendiri. Batasnya ada supaya catatan sepuluh baris tidak
+     mendorong tombol Drop keluar layar tepat saat mau ditekan. */
+  var TINGGI_KOTAK_MAKS = 140;
+
+  function setelTinggiKotak() {
+    var k = $('#kotak');
+    if (!k) return;
+    k.style.height = 'auto';
+    k.style.height = Math.min(k.scrollHeight, TINGGI_KOTAK_MAKS) + 'px';
+  }
+
   function kosongkanKotak() {
     $('#kotak').value = '';
+    setelTinggiKotak();
     $('#daftar-baris').innerHTML = '';
     setelDaftarNyala(false);
     draf = null;
@@ -703,8 +722,6 @@
     saringJenis = '';
     var tf = $('#b-filter-teks');
     if (tf) tf.textContent = 'Jenis';
-    var kepala = $('.kepala-tetap');
-    if (kepala) kepala.classList.remove('ringkas');
     $('#petak-hasil-depan').classList.add('sembunyi');
     $('#hasil-depan').innerHTML = '';
     $('#b-label-teks').textContent = 'Label';
@@ -749,16 +766,12 @@
     ket.push(hasil.length ? hasil.length + ' hasil' : 'Kosong');
     if (labelDepan && labelDepan !== '*') ket.push(labelDepan);
     if (saringJenis) JENIS_SARING.forEach(function (x) { if (x[0] === saringJenis) ket.push(x[1]); });
-    if (kueri) ket.push('“' + kueri + '”');
+    /* Kata yang panjang dipotong di kepala: keterangan yang membungkus jadi
+       dua baris mendorong hasil pertama ke bawah - dan hasil pertama itu yang
+       dicari. Yang lengkap tetap terbaca di kotaknya sendiri, tepat di atas. */
+    if (kueri) ket.push('“' + (kueri.length > 28 ? kueri.slice(0, 27) + '…' : kueri) + '”');
     $('#hasil-depan-ket').textContent = ket.join(' · ');
     gambarBarisTampilan();
-
-    /* Kotaknya menyusut begitu hasilnya terbuka DAN kamu tidak sedang
-       mengetik di dalamnya. Waktu mengetik dia harus tetap lega - itu jalur
-       masuknya; begitu jarimu pindah ke daftar di bawah, tiga baris kosong
-       cuma memakan tempat yang seharusnya jadi hasil. */
-    $('.kepala-tetap').classList.toggle('ringkas',
-      document.activeElement !== $('#kotak'));
 
     var wadah = $('#hasil-depan');
     if (!hasil.length) {
@@ -2129,6 +2142,7 @@
           tipeBerkas: t.tipeBerkas, ukuran: t.ukuran
         };
       }
+      setelTinggiKotak();
       perbaruiTebakan();
       pesan('Diterima dari Bagikan');
       return TSimpan.setel('bagikanTertunda', null);
@@ -2155,13 +2169,8 @@
     var bacaTertunda = tunda(function () {
       perbaruiTebakan();
     }, JEDA_BACA);
-    $('#kotak').addEventListener('focus', function () {
-      $('.kepala-tetap').classList.remove('ringkas');
-    });
-    $('#kotak').addEventListener('blur', function () {
-      if (hasilDepanAktif()) $('.kepala-tetap').classList.add('ringkas');
-    });
     $('#kotak').addEventListener('input', function () {
+      setelTinggiKotak();
       bacaTertunda();
       /* Tanpa jeda: pencarian jalan di atas salinan lokal, jadi menundanya
          cuma menahan hasil yang sudah siap. Tebakan jenis tetap ditunda -
@@ -2347,6 +2356,7 @@
       if (layarSaat === 'l-note') { $('#note-cari').value = kata; gambarNote(); return; }
       labelDepan = null;
       $('#kotak').value = kata;
+      setelTinggiKotak();
       gambarHasilDepan();
       global.scrollTo(0, 0);
       return;
@@ -2487,8 +2497,11 @@
     /* Nama aplikasi dituliskan dari satu tempat saja (bawaan.js), supaya
        menggantinya besok tidak menyentuh apa pun selain kulitnya. */
     $$('#merek, #merek-mulai').forEach(function (n) { n.textContent = TBawaan.nama; });
-    $('#kaki-utama').textContent = TBawaan.tagline +
-      ' Tersimpan langsung di perangkat, tanpa menunggu jaringan.';
+    /* Taglinenya sengaja TIDAK ikut di sini. Slogan di layar yang dibuka
+       puluhan kali sehari berhenti dibaca setelah hari kedua, dan yang tersisa
+       cuma dua baris yang memakan tempat. Yang tinggal cuma janji yang
+       benar-benar perlu diketahui: ini tersimpan tanpa jaringan. */
+    $('#kaki-utama').textContent = 'Tersimpan langsung di perangkat, tanpa menunggu jaringan.';
 
     pasang();
 
@@ -2506,6 +2519,7 @@
     }).then(function () {
       /* Minta status penyimpanan permanen sekali di awal: tanpa itu browser
          boleh membuang seluruh timbunan saat penyimpanan HP sesak, diam-diam. */
+      setelTinggiKotak();
       mintaPermanen();
       perbaruiJumlahTugas();
 
