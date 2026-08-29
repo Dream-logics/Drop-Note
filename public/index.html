@@ -103,6 +103,16 @@
   <div class="cip-baris" id="kat-usul"></div>
 
   <div class="tumbuh"></div>
+
+  <!-- Tugas berdiri sendiri di kaki: dia menjawab pertanyaan yang berbeda
+       ("apa yang harus kukerjakan"), jadi tidak dicampur ke baris tombol
+       yang semuanya soal catatan. -->
+  <div class="kaki-baris">
+    <button class="kaki-tbl" id="b-tugas">
+      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/></svg>
+      To-do list<span class="kaki-jumlah" id="tugas-jumlah"></span>
+    </button>
+  </div>
   <div class="kaki" id="kaki-utama">Tersimpan langsung di perangkat, tanpa menunggu jaringan.</div>
 </section>
 
@@ -139,6 +149,33 @@
     </button>
     <button class="tbl" id="b-hasil-semua">
       <svg viewBox="0 0 24 24" class="ik"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>Semua
+    </button>
+  </div>
+</section>
+
+<!-- ===================== LAYAR TUGAS (to-do) ===================== -->
+<section class="layar" id="l-tugas">
+  <header class="atas rapat">
+    <button class="ikon-btn" data-kembali aria-label="Kembali">
+      <svg viewBox="0 0 24 24" class="ik"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+    </button>
+    <div class="atas-judul">To-do list</div>
+    <span class="jumlah" id="tugas-ket"></span>
+  </header>
+
+  <div class="cip-gulir" id="tugas-saring"></div>
+  <!-- Daftar lahir dari keyword yang dipakai, bukan dari layar "buat daftar".
+       Barisnya hilang sendiri kalau memang belum ada satu pun. -->
+  <div class="cip-gulir" id="tugas-daftar-rak"></div>
+  <div id="tugas-daftar"></div>
+  <div class="tumbuh"></div>
+
+  <!-- Satu isian, menempel di bawah. Menambah tugas harus semurah nge-drop:
+       ketik, Enter, selesai - tanpa memilih daftar, tanpa mengisi tenggat. -->
+  <div class="tugas-tambah jempol">
+    <input id="tugas-baru" class="tugas-input" placeholder="Tambah tugas — Enter untuk simpan" autocomplete="off">
+    <button class="tbl utama" id="b-tugas-tambah" aria-label="Tambah">
+      <svg viewBox="0 0 24 24" class="ik"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
     </button>
   </div>
 </section>
@@ -192,6 +229,7 @@
 <script src="otak.js"></script>
 <script src="awan.js"></script>
 <script src="kunci.js"></script>
+<script src="tugas.js"></script>
 <script src="pelabel.js"></script>
 <script src="sinkron.js"></script>
 <script src="alur.js"></script>

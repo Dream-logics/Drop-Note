@@ -835,6 +835,73 @@ console.log('\nkunci: yang rahasia tidak pernah berangkat');
   cek('sandi benar membukanya lagi', await hal.evaluate(() => TKunci.terbuka()));
 }
 
+console.log('\nto-do: daftar yang mengurut sendiri');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-tugas'); TTugas.saring('semua'); TTugas.rak(''); TTugas.buka(); });
+  await hal.waitForTimeout(200);
+
+  await hal.fill('#tugas-baru', 'Kirim invoice AAA');
+  await hal.press('#tugas-baru', 'Enter');
+  await hal.waitForTimeout(250);
+  cek('tambah cukup ketik lalu Enter',
+      (await hal.locator('#tugas-daftar .tugas').count()) === 1 &&
+      (await hal.inputValue('#tugas-baru')) === '');
+
+  const id = await hal.evaluate(() => TAlur.semuaEntri().filter((e) => e.jenis === 'tugas')[0].id);
+
+  /* Tugas disimpan sebagai entri biasa, jadi ikut cadangan dan pencarian
+     tanpa satu baris pun kode tambahan. */
+  const ketemu = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => TOtak.cari(a, 'invoice').length));
+  cek('tugas ikut ditemukan pencarian biasa', ketemu >= 1, String(ketemu));
+
+  await hal.evaluate((i) => {
+    const e = TAlur.semuaEntri().filter((x) => x.id === i)[0];
+    e.tenggat = TTugas.hariMulai(Date.now()) - 86400000;
+    return TSimpan.taruh(e).then(() => TTugas.gambar());
+  }, id);
+  await hal.waitForTimeout(200);
+  cek('yang lewat tenggat ditandai', (await hal.locator('.tugas-tenggat.lewat').count()) === 1);
+
+  /* Berulang: menyelesaikannya melahirkan yang berikutnya, bukan sekadar
+     mencoretnya - kalau tidak, tiap pekan harus diketik ulang. */
+  await hal.evaluate((i) => {
+    const e = TAlur.semuaEntri().filter((x) => x.id === i)[0];
+    e.ulang = 'mingguan';
+    e.tenggat = TTugas.hariMulai(Date.now());
+    return TSimpan.taruh(e).then(() => TTugas.selesaikan(e));
+  }, id);
+  await hal.waitForTimeout(250);
+  const tugasSemua = await hal.evaluate(() => TAlur.semuaEntri().filter((e) => e.jenis === 'tugas'));
+  cek('tugas berulang melahirkan yang berikutnya', tugasSemua.length === 2, String(tugasSemua.length));
+  const lanjut = tugasSemua.filter((e) => !e.selesai)[0];
+  cek('tenggat berikutnya maju sepekan',
+      lanjut && lanjut.tenggat > Date.now(), lanjut && String(lanjut.tenggat));
+  cek('yang lama tercatat selesai, bukan terhapus',
+      tugasSemua.filter((e) => e.selesai).length === 1);
+
+  /* ATURAN NOMOR EMPAT tetap berlaku di sini juga. */
+  await hal.evaluate(() => {
+    const e = TAlur.semuaEntri().filter((x) => x.jenis === 'tugas' && !x.selesai)[0];
+    e.pensiun = true;
+    return TSimpan.taruh(e);
+  });
+  const utuh = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => e.jenis === 'tugas').length));
+  cek('tugas yang dibuang tetap ada datanya', utuh === 2, String(utuh));
+
+  /* Daftar lahir dari keyword, tidak pernah dari layar "buat daftar baru". */
+  await hal.evaluate(() => {
+    const e = TAlur.semuaEntri().filter((x) => x.jenis === 'tugas' && !x.selesai)[0];
+    if (e) { e.pensiun = false; e.kategori = 'kerja'; return TSimpan.taruh(e); }
+  });
+  const rak = await hal.evaluate(() => TTugas.daftarYangAda());
+  cek('daftar lahir sendiri dari keyword yang dipakai',
+      rak.some((r) => r.nama === 'kerja'), JSON.stringify(rak));
+  cek('tanpa keyword pun tugas tetap sah - daftarnya opsional',
+      (await hal.evaluate(() => TTugas.tugasBaru('apa saja').kategori)) === '');
+}
+
 console.log('\nnama cuma kulit');
 {
   const berkasKode = ['bawaan.js', 'simpan.js', 'otak.js', 'awan.js', 'pelabel.js', 'sinkron.js', 'alur.js', 'sw.js'];

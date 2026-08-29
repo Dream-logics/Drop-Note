@@ -69,7 +69,7 @@
   var JENIS_SARING = [
     ['semua', 'Semua'], ['tautan', 'Tautan'], ['gambar', 'Gambar'],
     ['berkas', 'Berkas'], ['daftar', 'Daftar'], ['suara', 'Suara'],
-    ['catatan', 'Catatan']
+    ['catatan', 'Catatan'], ['tugas', 'Tugas']
   ];
 
   /* ===================== alat kecil ===================== */
@@ -116,6 +116,8 @@
       dibuat: t, diubah: t, dipakai: 0,
       diLabeliAI: false, diBacaAI: false,
       rahasia: false, elemenTerkunci: '',
+      selesai: false, selesaiPada: 0, penting: false, hariIni: 0,
+      tenggat: 0, ulang: '',
       pensiun: false, dihapus: false, riwayat: []
     };
   }
@@ -170,11 +172,11 @@
   function tampilkanLayar(id) {
     if (layarSaat === 'l-catat' && id !== 'l-catat') simpanCatat();
     if (layarSaat === 'l-hasil' && id !== 'l-hasil') bersihkanUrl();
-    ['l-mulai', 'l-utama', 'l-hasil', 'l-catat', 'l-setelan'].forEach(function (x) {
+    ['l-mulai', 'l-utama', 'l-hasil', 'l-catat', 'l-setelan', 'l-tugas'].forEach(function (x) {
       $('#' + x).classList.toggle('aktif', x === id);
     });
     layarSaat = id;
-    if (id === 'l-utama') perbaruiJumlah();
+    if (id === 'l-utama') { perbaruiJumlah(); perbaruiJumlahTugas(); }
     global.scrollTo(0, 0);
   }
 
@@ -209,6 +211,19 @@
       if (semuaEntri[i].id === e.id) { semuaEntri[i] = e; return; }
     }
     semuaEntri.unshift(e);
+  }
+
+  /* Angka di tombolnya cuma yang BELUM selesai. Menampilkan seluruh jumlah
+     berarti angkanya tidak pernah turun, dan angka yang tidak pernah turun
+     berhenti dibaca. */
+  function perbaruiJumlahTugas() {
+    var w = $('#tugas-jumlah');
+    if (!w) return;
+    var n = semuaEntri.filter(function (e) {
+      return e.jenis === 'tugas' && !e.selesai && !e.pensiun && !e.dihapus;
+    }).length;
+    w.textContent = n ? String(n) : '';
+    w.classList.toggle('sembunyi', !n);
   }
 
   function perbaruiJumlah() {
@@ -1974,6 +1989,41 @@
 
     pasangGeser($('#hasil'));
 
+    /* Tugas dipinjami alat yang sudah ada di sini, bukan menyalinnya sendiri:
+       satu tempat saja yang tahu cara menggambar pesan dan menyegarkan
+       salinan lokal. */
+    TTugas.pasang({
+      $: $, H: H, pesan: pesan,
+      entri: function () { return semuaEntri; },
+      segarkan: function (e) { segarkanCache(e); perbaruiJumlah(); perbaruiJumlahTugas(); }
+    });
+
+    $('#b-tugas').addEventListener('click', function () {
+      TTugas.buka();
+      keLayar('l-tugas');
+    });
+    $('#tugas-saring').addEventListener('click', TTugas.tanganiKlik);
+    $('#tugas-daftar').addEventListener('click', TTugas.tanganiKlik);
+    $('#tugas-daftar').addEventListener('change', TTugas.tanganiUbah);
+    $('#tugas-daftar').addEventListener('keydown', TTugas.tanganiTekan);
+
+    function tambahTugas() {
+      var isian = $('#tugas-baru');
+      var teks = isian.value.trim();
+      if (!teks) return;
+      TTugas.tambah(teks).then(function () {
+        isian.value = '';
+        TTugas.gambar();
+        isian.focus();
+      });
+    }
+    $('#b-tugas-tambah').addEventListener('click', tambahTugas);
+    $('#tugas-baru').addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Enter') return;
+      ev.preventDefault();
+      tambahTugas();
+    });
+
     $('#urut-baris').addEventListener('click', function (ev) {
       var cip = ev.target.closest('[data-urut]');
       if (!cip) return;
@@ -2230,6 +2280,7 @@
       /* Minta status penyimpanan permanen sekali di awal: tanpa itu browser
          boleh membuang seluruh timbunan saat penyimpanan HP sesak, diam-diam. */
       mintaPermanen();
+      perbaruiJumlahTugas();
 
       /* Layar pemasangan cuma muncul sekali, dan hanya kalau kotaknya masih
          benar-benar kosong. Kalau sudah ada isinya - misalnya masuk lewat
