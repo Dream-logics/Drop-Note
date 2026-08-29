@@ -130,6 +130,7 @@
   var entriCatat = null;
   var saringJenis = 'semua';
   var saringKat = '';
+  var labelDepan = null;   /* label yang sedang ditampilkan di layar depan */
   var urutSaat = 'waktu';
   var urlSementara = [];
   var perekam = null;
@@ -374,6 +375,7 @@
       pesan('Tersimpan' + (e.kategori ? ' · #' + e.kategori : ''));
       kosongkanKotak();
       $('#kotak').focus();
+      if (labelDepan) gambarHasilDepan();
       sundulLabel();
     }).catch(function (err) {
       pesan('Gagal menyimpan: ' + err.message);
@@ -560,6 +562,112 @@
     if (gulir && aktif) {
       gulir.scrollLeft = Math.max(0, aktif.offsetLeft - gulir.offsetLeft - 40);
     }
+  }
+
+  /* ===================== LABEL DI LAYAR DEPAN =====================
+     Percobaan: memilih label tidak memindahkan layar, hasilnya digambar di
+     bawah tombolnya. Alasannya sama dengan alasan tombol "Semua" dulu boleh
+     ada - yang dilarang aturan nomor lima adalah dinding kartu yang MENYAMBUT
+     tanpa diminta, bukan hasil yang muncul karena kamu sendiri memintanya.
+     Kotaknya kosong sampai kamu memilih, dan tertutup lagi lewat silang. */
+
+  var CARI_LABEL_MIN = 8;   /* di bawah ini seluruh daftar sudah kelihatan */
+
+  function labelDenganJumlah() {
+    var hidup = semuaEntri.filter(catatanSaja);
+    return daftarLabel().map(function (l) {
+      return {
+        nama: l.nama, istilah: l.istilah,
+        jumlah: hidup.filter(function (e) { return TOtak.cocokLabel(e, l.istilah); }).length
+      };
+    });
+  }
+
+  function gambarDaftarLabel() {
+    var semua = labelDenganJumlah();
+    var kotak = $('#label-cari');
+    var kueri = TOtak.normal(kotak.value);
+
+    kotak.classList.toggle('sembunyi', semua.length < CARI_LABEL_MIN);
+
+    var baris = ['<button class="label-baris' + (labelDepan === '*' ? ' nyala' : '') +
+                 '" data-label="*">Semua<span class="label-jumlah">' +
+                 semuaEntri.filter(catatanSaja).length + '</span></button>'];
+
+    semua.filter(function (l) {
+      if (!kueri) return true;
+      /* Dicocokkan ke istilahnya juga, bukan cuma namanya: mengetik
+         "construction" harus menemukan label yang tertulis "Cons". */
+      return l.istilah.some(function (t) { return t.indexOf(kueri) >= 0; });
+    }).forEach(function (l) {
+      baris.push('<button class="label-baris' + (labelDepan === l.nama ? ' nyala' : '') +
+                 (l.jumlah ? '' : ' sepi') + '" data-label="' + H(l.nama) + '">' +
+                 H(l.nama) + '<span class="label-jumlah">' + l.jumlah + '</span></button>');
+    });
+
+    if (baris.length === 1 && kueri) {
+      baris.push('<div class="label-kosong">Tidak ada label bernama itu.</div>');
+    }
+    $('#label-daftar').innerHTML = baris.join('');
+  }
+
+  function alihPanelLabel(buka) {
+    var panel = $('#panel-label');
+    var mau = buka === undefined ? panel.classList.contains('sembunyi') : buka;
+    panel.classList.toggle('sembunyi', !mau);
+    $('#b-label').setAttribute('aria-expanded', mau ? 'true' : 'false');
+    if (!mau) return;
+    $('#label-cari').value = '';
+    gambarDaftarLabel();
+  }
+
+  function pilihLabelDepan(nama) {
+    labelDepan = nama;
+    alihPanelLabel(false);
+    gambarHasilDepan();
+  }
+
+  function tutupHasilDepan() {
+    labelDepan = null;
+    $('#petak-hasil-depan').classList.add('sembunyi');
+    $('#hasil-depan').innerHTML = '';
+    $('#b-label-teks').textContent = 'Label';
+    bersihkanUrl();
+  }
+
+  function gambarHasilDepan() {
+    if (!labelDepan) { tutupHasilDepan(); return; }
+
+    var istilah = null;
+    if (labelDepan !== '*') {
+      daftarLabel().forEach(function (l) { if (l.nama === labelDepan) istilah = l.istilah; });
+      if (!istilah) istilah = [TOtak.normal(labelDepan)];
+    }
+
+    bersihkanUrl();
+    var hasil = TOtak.cari(semuaEntri, '', '', istilah || '');
+    $('#b-label-teks').textContent = labelDepan === '*' ? 'Semua' : labelDepan;
+    $('#petak-hasil-depan').classList.remove('sembunyi');
+    $('#hasil-depan-ket').textContent = hasil.length
+      ? hasil.length + ' hasil' + (labelDepan === '*' ? '' : ' · ' + labelDepan)
+      : 'Kosong' + (labelDepan === '*' ? '' : ' · ' + labelDepan);
+
+    var wadah = $('#hasil-depan');
+    if (!hasil.length) {
+      wadah.innerHTML = '<div class="kosong">Belum ada yang masuk label ini.<br>' +
+                        'Label diisi AI sesudah catatannya jatuh.</div>';
+      return;
+    }
+    wadah.innerHTML = hasil.slice(0, 200).map(kartuHtml).join('');
+    pasangGambarKartu(wadah);
+  }
+
+  /* Satu pintu untuk menggambar ulang apa pun yang sedang tampil. Hasil
+     sekarang bisa berada di DUA tempat, dan tiap pemanggil yang memilih
+     sendiri mana yang disegarkan pasti akan melupakan salah satunya. */
+  function segarkanTampilan() {
+    if (layarSaat === 'l-hasil') jalankanCari();
+    if (labelDepan) gambarHasilDepan();
   }
 
   function cuplikan(e) {
@@ -1268,7 +1376,7 @@
           TSimpan.taruh(e).then(function () {
             segarkanCache(e);
             perbaruiJumlah();
-            if (layarSaat === 'l-hasil') jalankanCari();
+            segarkanTampilan();
           });
         }
       });
@@ -1297,7 +1405,7 @@
           TSimpan.taruh(e).then(function () {
             segarkanCache(e);
             perbaruiJumlah();
-            if (layarSaat === 'l-hasil') jalankanCari();
+            segarkanTampilan();
           });
         }
       });
@@ -1831,7 +1939,7 @@
         TKunci.buka(setelanSaat, $('#set-sandi').value).then(function () {
           pesan('Kuncinya terbuka');
           gambarSetelan();
-          if (layarSaat === 'l-hasil') jalankanCari();
+          segarkanTampilan();
         }, function (err) { $('#kunci-ket').textContent = err.message; });
       });
     }
@@ -1891,7 +1999,7 @@
   function putaranLabel() {
     if (!TPelabel.siap(setelanSaat) || !adaAntrean()) return;
     TPelabel.putaran(setelanSaat).then(function (n) {
-      if (n) muatSemua().then(function () { if (layarSaat === 'l-hasil') jalankanCari(); });
+      if (n) muatSemua().then(function () { segarkanTampilan(); });
     });
   }
 
@@ -1905,7 +2013,7 @@
       return muatSemua();
     }).then(function () {
       if (layarSaat === 'l-setelan') perbaruiStatusSetelan();
-      if (layarSaat === 'l-hasil') jalankanCari();
+      segarkanTampilan();
       /* Entri yang sedang dibuka ikut disegarkan, kalau dia belum disunting. */
       if (entriCatat) {
         var segar = null;
@@ -1984,7 +2092,13 @@
 
     $('#b-drop').addEventListener('click', drop);
     $('#b-cari').addEventListener('click', function () { keHasil($('#kotak').value.trim()); });
-    $('#b-semua').addEventListener('click', function () { keSemua(); });
+    $('#b-label').addEventListener('click', function () { alihPanelLabel(); });
+    $('#label-cari').addEventListener('input', gambarDaftarLabel);
+    $('#label-daftar').addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-label]');
+      if (b) pilihLabelDepan(b.getAttribute('data-label'));
+    });
+    $('#b-tutup-hasil').addEventListener('click', tutupHasilDepan);
 
     /* Dari layar hasil, yang paling sering terjadi berikutnya bukan mencari
        lagi - tapi menjatuhkan sesuatu yang barusan teringat gara-gara hasil
@@ -2105,61 +2219,72 @@
       gambarSaringLabel();
       jalankanCari();
     });
-    $('#hasil').addEventListener('click', function (ev) {
-      if (ev.target.closest('[data-bersihkan]')) { keSemua(); return; }
-      /* Membuka lipatan tag: bukan mencari, bukan membuka kartunya. */
-      var lipat = ev.target.closest('[data-tag-lagi]');
-      if (lipat) {
-        var kotakTag = lipat.parentNode;
-        $$('.tag.terlipat', kotakTag).forEach(function (t) { t.classList.remove('terlipat'); });
-        lipat.remove();
-        return;
-      }
+    $('#hasil').addEventListener('click', klikHasil);
+    $('#hasil-depan').addEventListener('click', klikHasil);
+    pasangGeser($('#hasil-depan'));
+    pasangSisanya();
+  }
 
-      /* Tag dibaca lebih dulu, sebelum kartunya: menekan tag berarti
-         "carikan yang lain seperti ini", bukan "buka yang ini". */
-      var cipTag = ev.target.closest('[data-tag]');
-      if (cipTag) {
-        saringKat = '';
-        saringJenis = 'semua';
-        $('#cari-input').value = cipTag.getAttribute('data-tag');
-        gambarSaringJenis();
-        gambarSaringLabel();
-        jalankanCari();
-        return;
-      }
+  /* Satu penangan untuk DUA wadah hasil - layar hasil dan hasil di layar
+     depan. Menyalinnya jadi dua berarti perbaikan di satu tempat diam-diam
+     tidak sampai ke tempat lain, dan itu jenis bug yang paling lama tidak
+     ketahuan. */
+  function klikHasil(ev) {
+    if (ev.target.closest('[data-bersihkan]')) { keSemua(); return; }
+    /* Membuka lipatan tag: bukan mencari, bukan membuka kartunya. */
+    var lipat = ev.target.closest('[data-tag-lagi]');
+    if (lipat) {
+      var kotakTag = lipat.parentNode;
+      $$('.tag.terlipat', kotakTag).forEach(function (t) { t.classList.remove('terlipat'); });
+      lipat.remove();
+      return;
+    }
 
-      var kartu = ev.target.closest('.kartu');
-      if (!kartu) return;
-      var id = kartu.getAttribute('data-id');
-      var e = null;
-      semuaEntri.forEach(function (x) { if (x.id === id) e = x; });
+    /* Tag dibaca lebih dulu, sebelum kartunya: menekan tag berarti
+       "carikan yang lain seperti ini", bukan "buka yang ini". */
+    var cipTag = ev.target.closest('[data-tag]');
+    if (cipTag) {
+      saringKat = '';
+      saringJenis = 'semua';
+      $('#cari-input').value = cipTag.getAttribute('data-tag');
+      gambarSaringJenis();
+      gambarSaringLabel();
+      jalankanCari();
+      return;
+    }
 
-      var satuan = ev.target.closest('[data-elemen]');
-      if (satuan && e) {
-        var x = (e.elemen || [])[Number(satuan.getAttribute('data-elemen'))];
-        if (x) salin(x.nilai);
-        return;
-      }
+    var kartu = ev.target.closest('.kartu');
+    if (!kartu) return;
+    var id = kartu.getAttribute('data-id');
+    var e = null;
+    semuaEntri.forEach(function (x) { if (x.id === id) e = x; });
 
-      if (ev.target.closest('[data-salin]')) { if (e) salin(isiSalin(e)); return; }
-      if (ev.target.closest('[data-sunting]')) { bukaKartu(id); return; }
-      if (ev.target.closest('[data-pensiun]')) { if (e) pensiunkanKartu(e); return; }
+    var satuan = ev.target.closest('[data-elemen]');
+    if (satuan && e) {
+      var x = (e.elemen || [])[Number(satuan.getAttribute('data-elemen'))];
+      if (x) salin(x.nilai);
+      return;
+    }
 
-      if (ev.target.closest('a')) return;   /* tautan dibuka, bukan kartunya */
+    if (ev.target.closest('[data-salin]')) { if (e) salin(isiSalin(e)); return; }
+    if (ev.target.closest('[data-sunting]')) { bukaKartu(id); return; }
+    if (ev.target.closest('[data-pensiun]')) { if (e) pensiunkanKartu(e); return; }
 
-      /* Menyentuh kartunya = membuka rinciannya di tempat, bukan pindah layar.
-         Pindah layar itu mahal saat sedang memindai: kamu kehilangan posisi
-         gulir dan harus mencari lagi dari atas. Yang benar-benar mau menyunting
-         menekan tombol pensil yang baru saja muncul. */
-      var rinci = kartu.querySelector('.kartu-rinci');
-      if (rinci) {
-        var buka = rinci.classList.contains('sembunyi');
-        rinci.classList.toggle('sembunyi', !buka);
-        kartu.classList.toggle('terbuka', buka);
-      }
-    });
+    if (ev.target.closest('a')) return;   /* tautan dibuka, bukan kartunya */
 
+    /* Menyentuh kartunya = membuka rinciannya di tempat, bukan pindah layar.
+       Pindah layar itu mahal saat sedang memindai: kamu kehilangan posisi
+       gulir dan harus mencari lagi dari atas. Yang benar-benar mau menyunting
+       menekan tombol pensil yang baru saja muncul. */
+    var rinci = kartu.querySelector('.kartu-rinci');
+    if (rinci) {
+    var buka = rinci.classList.contains('sembunyi');
+    rinci.classList.toggle('sembunyi', !buka);
+    kartu.classList.toggle('terbuka', buka);
+    }
+  }
+
+  function pasangSisanya() {
     /* --- layar catat --- */
     var simpanTertunda = tunda(simpanCatat, JEDA_SIMPAN);
     $('#catat-judul').addEventListener('input', function () {
@@ -2307,8 +2432,11 @@
     keSemua: keSemua, uraiTagFavorit: uraiTagFavorit, kartuHtmlUji: kartuHtml,
     saringRakUji: function (k) { saringKat = k; gambarSaringLabel(); jalankanCari(); },
     daftarLabelUji: daftarLabel,
-    /* Cuma untuk uji: memindah layar tanpa lewat tombol. */
+    /* Cuma untuk uji: memindah layar tanpa lewat tombol, dan memuat ulang
+       salinan lokal tanpa menyegarkan halaman - menyegarkan halaman membuang
+       setelan yang cuma hidup di memori. */
     keLayarUji: keLayar,
+    muatUlangUji: muatSemua,
     semuaEntri: function () { return semuaEntri; }
   };
 })(window);

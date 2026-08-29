@@ -129,6 +129,40 @@ button,input,textarea{font:inherit;color:inherit}
 .cip.sepi{opacity:.45}
 .cip-jumlah{margin-left:5px;font-weight:700;opacity:.75}
 
+/* --- daftar label di layar depan ---
+   Satu kolom, bukan cip yang membungkus jadi tiga baris: label dibaca dari
+   tepi kiri, dan kolom lurus bisa dipindai tanpa mata melompat-lompat.
+   Tingginya dibatasi supaya daftar yang panjang tidak mendorong kotak drop
+   keluar layar - dia menggulir di dalam dirinya sendiri. */
+.panel-label{
+  margin-top:8px;border:1px solid var(--l);border-radius:12px;background:var(--p);
+  padding:6px;max-height:46vh;overflow-y:auto;
+}
+.label-cari{
+  width:100%;background:none;border:none;border-bottom:1px solid var(--l);
+  padding:10px 8px;outline:none;font-size:15px;margin-bottom:4px;
+}
+.label-cari::placeholder{color:var(--m);opacity:.75}
+.label-baris{
+  display:flex;align-items:center;width:100%;min-height:44px;gap:8px;
+  border:none;background:none;color:var(--i);border-radius:9px;
+  padding:0 10px;font-size:14.5px;text-align:left;cursor:pointer;
+}
+.label-baris:active{background:color-mix(in srgb, var(--a) 12%, transparent)}
+.label-baris.nyala{color:var(--a);font-weight:700}
+.label-baris.sepi{opacity:.45}
+.label-jumlah{margin-left:auto;font-size:12px;color:var(--m);font-weight:600}
+.label-kosong{padding:12px 10px;font-size:13px;color:var(--m)}
+.ik.kecil{width:15px;height:15px;margin-left:auto;opacity:.6}
+
+/* --- hasil di layar depan --- */
+.hasil-depan-kepala{
+  display:flex;align-items:center;gap:8px;margin-top:14px;
+  border-top:1px solid var(--l);padding-top:8px;
+}
+.hasil-depan-kepala span{flex:1;font-size:11.5px;color:var(--m)}
+.hasil-depan-kepala .ikon-btn{width:36px;height:36px}
+
 /* --- tombol --- */
 .tombol-baris{display:flex;gap:7px;margin-top:10px}
 /* Menempel di bawah layar hasil: daftar hasil bisa ratusan baris, dan tombol

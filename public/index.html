@@ -76,8 +76,9 @@
        Membacanya seperti kalimat Inggris (kiri ke kanan) akan terasa rapi di
        layar laptop dan salah di tangan. -->
   <div class="tombol-baris" id="tombol-utama">
-    <button class="tbl" id="b-semua">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>Semua
+    <button class="tbl" id="b-label" aria-haspopup="listbox" aria-expanded="false">
+      <svg viewBox="0 0 24 24" class="ik"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg><span id="b-label-teks">Label</span>
+      <svg viewBox="0 0 24 24" class="ik kecil"><path d="M6 9l6 6 6-6"/></svg>
     </button>
     <button class="tbl" id="b-cari">
       <svg viewBox="0 0 24 24" class="ik"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>Cari
@@ -85,6 +86,28 @@
     <button class="tbl" id="b-drop">
       <svg viewBox="0 0 24 24" class="ik"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg>Drop
     </button>
+  </div>
+
+  <!-- Daftar label, terbuka dari tombol di atasnya. Kotak carinya muncul cuma
+       kalau labelnya sudah banyak - di bawah itu dia mengambil tempat untuk
+       menyaring sesuatu yang seluruhnya sudah kelihatan. -->
+  <div class="panel-label sembunyi" id="panel-label">
+    <input id="label-cari" class="label-cari sembunyi" placeholder="Cari label&#8230;" autocomplete="off" spellcheck="false">
+    <div id="label-daftar"></div>
+  </div>
+
+  <!-- HASIL DI LAYAR YANG SAMA. Ini tidak melanggar "layar depan kosong":
+       yang dilarang adalah dinding kartu yang menyambut tanpa diminta. Kotak
+       ini kosong sampai kamu sendiri memilih satu label, dan tertutup lagi
+       lewat tanda silang di kepalanya. -->
+  <div class="sembunyi" id="petak-hasil-depan">
+    <div class="hasil-depan-kepala">
+      <span id="hasil-depan-ket"></span>
+      <button class="ikon-btn" id="b-tutup-hasil" aria-label="Tutup hasil">
+        <svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="hasil-depan"></div>
   </div>
 
   <!-- Yang dibaca otomatis dari isi kotak -->
