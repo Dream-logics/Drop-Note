@@ -947,6 +947,18 @@
   }
 
   function keHasil(kueri) {
+    /* PENCARIAN BARU SELALU MULAI BERSIH. Saringan itu lensa untuk satu kali
+       lihat, bukan setelan yang menetap. Kalau label yang ditekan tadi pagi
+       masih menyala waktu kamu mencari sore ini, catatan yang baru saja kamu
+       jatuhkan tidak akan muncul - dan yang disimpulkan bukan "ada saringan
+       menyala", tapi "pencariannya rusak". Sekali itu terjadi, kepercayaannya
+       hilang dan orangnya balik ke WhatsApp.
+
+       Yang TIDAK direset: mengetik di kotak pencarian saat sudah berada di
+       layar hasil. Di sana saringan memang sengaja dipakai bersama - "yang
+       MAP saja, yang ada kata invoice". */
+    saringKat = '';
+    saringJenis = 'semua';
     $('#cari-input').value = kueri || '';
     gambarSaringJenis();
     gambarSaringLabel();

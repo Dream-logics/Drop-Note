@@ -751,6 +751,26 @@ console.log('\nlayar kosong harus menyebut sebabnya');
   await hal.waitForTimeout(250);
   cek('rak yang menyaring ikut disebut',
       /rakyangtidakada/.test(await hal.textContent('#hasil .kosong')));
+  /* Saringan yang tertinggal menyala adalah cara paling halus untuk membuat
+     pencarian TERLIHAT rusak: catatan yang baru dijatuhkan tidak muncul, dan
+     yang disimpulkan bukan "ada label menyala" tapi "aplikasinya tidak
+     bekerja". Pencarian baru wajib mulai bersih. */
+  await hal.evaluate(() => TAlur.saringRakUji('Cons'));
+  await hal.waitForTimeout(250);
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.fill('#kotak', 'password wifi kantor baru 99aabbcc');
+  await hal.click('#b-drop');
+  await hal.waitForTimeout(350);
+  await hal.click('#b-cari');
+  await hal.waitForTimeout(250);
+  await hal.fill('#cari-input', 'wifi');
+  await hal.waitForTimeout(500);
+  cek('pencarian baru tidak mewarisi saringan label yang tertinggal',
+      (await hal.locator('#hasil .kartu').count()) >= 1,
+      await hal.locator('#saring-kat .cip.nyala').first().textContent());
+  cek('yang menyala kembali ke Semua',
+      /^Semua/.test(await hal.locator('#saring-kat .cip.nyala').first().textContent()));
+
   await hal.evaluate(() => TAlur.keSemua());
   await hal.waitForTimeout(200);
 }
