@@ -185,7 +185,22 @@ button,input,textarea{font:inherit;color:inherit}
 
 /* Petak gambar: yang mengenali sebuah gambar adalah rupanya, bukan judulnya -
    judul gambar hampir selalu nama berkas yang tidak berarti apa-apa. */
-.petak{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-top:6px}
+.petak{display:grid;gap:6px;padding-top:6px}
+.petak.besar{grid-template-columns:repeat(2,1fr);gap:8px}
+.petak.sedang{grid-template-columns:repeat(3,1fr)}
+.petak.kecil{grid-template-columns:repeat(4,1fr);gap:4px}
+.petak.kecil .petak-nama{display:none}
+
+/* Pilihan ukuran duduk di kepala hasil, bukan di baris sendiri: dia cuma
+   berlaku untuk apa yang ada tepat di bawahnya, dan satu baris tambahan di
+   sini berarti satu baris gambar lebih sedikit yang terlihat. */
+.tampil-baris{display:flex;gap:2px;align-items:center}
+.tampil-tbl{
+  width:32px;height:32px;border:none;background:none;color:var(--m);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.tampil-tbl .ik{width:16px;height:16px;stroke-width:1.7}
+.tampil-tbl.nyala{color:var(--a);background:color-mix(in srgb, var(--a) 12%, transparent)}
 .petak-satu{
   border:none;background:none;padding:0;cursor:pointer;text-align:left;
   display:flex;flex-direction:column;gap:4px;

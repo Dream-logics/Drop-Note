@@ -95,14 +95,14 @@
        ikon carinya adalah kotaknya itu sendiri. -->
   <div class="tombol-baris" id="tombol-utama">
     <button class="tbl" id="b-label" aria-haspopup="listbox" aria-expanded="false">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg><span id="b-label-teks">Label</span>
+      <svg viewBox="0 0 24 24" class="ik"><path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.4"/></svg><span id="b-label-teks">Label</span>
       <svg viewBox="0 0 24 24" class="ik kecil"><path d="M6 9l6 6 6-6"/></svg>
     </button>
     <!-- Kembarannya tombol Gambar/Berkas di laci Drop, tapi arahnya terbalik:
          yang di atas MEMASUKKAN, yang ini MENGELUARKAN. Ikonnya sengaja dibuat
          sama supaya pasangannya kebaca tanpa dijelaskan. -->
     <button class="tbl" id="b-filter" aria-haspopup="listbox" aria-expanded="false">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M4 5h16"/><path d="M7 12h10"/><path d="M10 19h4"/></svg><span id="b-filter-teks">Jenis</span>
+      <svg viewBox="0 0 24 24" class="ik"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg><span id="b-filter-teks">Jenis</span>
       <svg viewBox="0 0 24 24" class="ik kecil"><path d="M6 9l6 6 6-6"/></svg>
     </button>
     <button class="tbl" id="b-drop">
@@ -151,6 +151,10 @@
   <div class="sembunyi" id="petak-hasil-depan">
     <div class="hasil-depan-kepala">
       <span id="hasil-depan-ket"></span>
+      <!-- Cuma muncul kalau yang tampil gambar. Untuk jenis lain, ukuran
+           thumbnail tidak menjawab pertanyaan apa pun - yang dikenali di sana
+           judulnya, dan judul tidak punya ukuran. -->
+      <span class="tampil-baris sembunyi" id="tampil-baris"></span>
       <button class="ikon-btn" id="b-tutup-hasil" aria-label="Tutup hasil">
         <svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
       </button>
