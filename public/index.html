@@ -173,7 +173,11 @@
   <!-- Satu isian, menempel di bawah. Menambah tugas harus semurah nge-drop:
        ketik, Enter, selesai - tanpa memilih daftar, tanpa mengisi tenggat. -->
   <div class="tugas-tambah jempol">
-    <input id="tugas-baru" class="tugas-input" placeholder="Tambah tugas — Enter untuk simpan" autocomplete="off">
+    <!-- Tenggat yang terbaca dari kalimatnya ditunjukkan SEBELUM disimpan.
+         Tebakan yang tidak terlihat bikin alat terasa tidak bisa ditebak, dan
+         alat yang tidak bisa ditebak akan ditinggalkan. -->
+    <div class="tugas-tebak sembunyi" id="tugas-tebak"></div>
+    <input id="tugas-baru" class="tugas-input" placeholder="Tambah tugas — tulis &#8220;besok&#8221;, &#8220;jumat&#8221;, &#8220;tgl 25&#8221;" autocomplete="off">
     <button class="tbl utama" id="b-tugas-tambah" aria-label="Tambah">
       <svg viewBox="0 0 24 24" class="ik"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
     </button>
