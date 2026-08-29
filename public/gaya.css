@@ -146,7 +146,14 @@ button,input,textarea{font:inherit;color:inherit}
   font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;
   cursor:pointer;padding:0 6px;white-space:nowrap;
 }
-.tbl.utama{background:var(--ap);border-color:var(--ap);color:var(--at);font-weight:700}
+/* TIDAK ADA TOMBOL UTAMA BERWARNA, DAN JANGAN DITAMBAHKAN LAGI. Dulu Drop
+   beralas aksen penuh. Alas pekat itu gunanya menuntun orang yang belum tahu
+   harus menekan apa - dan di sini tidak ada yang seperti itu: barisnya cuma
+   tiga, urutannya tidak pernah berubah, dan jari sudah hafal tempatnya sejak
+   minggu pertama. Yang tersisa cuma satu blok yang berteriak tiap kali layar
+   dibuka, bersaing dengan isi yang justru mau dibaca. Warna di sini disimpan
+   untuk KEADAAN - label yang menyala, tenggat yang lewat, bintang yang aktif -
+   bukan untuk menunjuk tombol. */
 .tbl:disabled{opacity:.4}
 
 /* --- kaki --- */

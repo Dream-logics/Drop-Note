@@ -614,6 +614,12 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
      Layar tulisnya tetap ada, tapi didatangi dari hasil pencarian. */
   cek('tidak ada tombol Catat di layar depan', !/id="b-catat"/.test(html));
 
+  /* Warna disimpan untuk KEADAAN - label menyala, tenggat lewat, bintang aktif -
+     bukan untuk menunjuk tombol. Barisnya cuma tiga dan urutannya tidak pernah
+     berubah, jadi tidak ada yang perlu dituntun; yang tersisa cuma satu blok
+     pekat yang berteriak tiap layar dibuka. */
+  cek('tidak ada tombol yang beralas warna', !/tbl utama/.test(html));
+
   const hasil = html.slice(html.indexOf('id="l-hasil"'), html.indexOf('id="l-catat"'));
   cek('layar hasil punya tombol yang sama', /id="b-hasil-drop"/.test(hasil) &&
       /id="b-hasil-cari"/.test(hasil) && /id="b-hasil-semua"/.test(hasil));
