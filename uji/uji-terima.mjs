@@ -973,6 +973,42 @@ console.log('\nto-do: daftar yang mengurut sendiri');
     (a) => a.filter((e) => e.jenis === 'tugas').length));
   cek('tugas yang dibuang tetap ada datanya', utuh === 2, String(utuh));
 
+  /* TENGGAT DARI KALIMAT. Tombol tanggal masih satu ketukan lagi, dan ketukan
+     itu ditagih tiap kali menambah tugas. Todoist dan TickTick sudah
+     membuktikan jalan yang lebih murah: tanggalnya diketik di dalam
+     kalimatnya, lalu dicabut dari judulnya. */
+  const baca = (t) => hal.evaluate((x) => TTugas.bacaTenggat(x), t);
+  const hariIni = await hal.evaluate(() => TTugas.hariMulai(Date.now()));
+
+  const besok = await baca('bayar sewa ruko besok');
+  cek('"besok" jadi tenggat, dan dicabut dari judulnya',
+      besok.teks === 'bayar sewa ruko' && besok.tenggat === hariIni + 86400000,
+      JSON.stringify(besok));
+  cek('"3 hari lagi" ikut terbaca',
+      (await baca('kontrol dokter 3 hari lagi')).tenggat === hariIni + 3 * 86400000);
+  cek('hari bernama terbaca, dan yang diambil yang AKAN DATANG',
+      (await baca('kirim invoice jumat')).tenggat > hariIni);
+  cek('"tgl 25" terbaca', (await baca('bayar pajak tgl 25')).tenggat > 0);
+  cek('kalimat tanpa tanggal dibiarkan utuh',
+      (await baca('tidak ada tanggalnya')).tenggat === 0);
+
+  await hal.evaluate(() => { TTugas.saring('semua'); TTugas.rak(''); TTugas.buka(); });
+  await hal.fill('#tugas-baru', 'rapat tim minggu depan');
+  await hal.dispatchEvent('#tugas-baru', 'input');
+  await hal.waitForTimeout(150);
+  /* Tebakan yang tidak terlihat bikin alat terasa tidak bisa ditebak. */
+  cek('tenggat yang terbaca ditunjukkan sebelum disimpan',
+      !(await hal.locator('#tugas-tebak').getAttribute('class')).includes('sembunyi'));
+  await hal.press('#tugas-baru', 'Enter');
+  await hal.waitForTimeout(300);
+  const dgnTenggat = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.jenis === 'tugas' && e.judul === 'rapat tim')[0]);
+  cek('judulnya bersih dari kata tanggalnya', !!dgnTenggat, JSON.stringify(dgnTenggat && dgnTenggat.judul));
+  cek('tenggatnya benar-benar tersimpan', dgnTenggat && dgnTenggat.tenggat === hariIni + 7 * 86400000);
+  await hal.evaluate(() => { const e = TAlur.semuaEntri()
+    .filter((x) => x.jenis === 'tugas' && x.judul === 'rapat tim')[0];
+    if (e) { e.pensiun = true; return TSimpan.taruh(e); } });
+
   /* Daftar lahir dari keyword, tidak pernah dari layar "buat daftar baru". */
   await hal.evaluate(() => {
     const e = TAlur.semuaEntri().filter((x) => x.jenis === 'tugas' && !x.selesai)[0];

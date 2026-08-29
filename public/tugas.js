@@ -138,9 +138,74 @@
     });
   }
 
-  /* -------------------------------------------------------------- tulisan */
+  /* ===================== TENGGAT DARI KALIMAT =====================
+     Yang paling menolong di aplikasi tugas bukan tombol tanggal - itu masih
+     satu ketukan lagi, dan ketukan itu ditagih tiap kali menambah tugas.
+     Todoist dan TickTick sudah membuktikan jalan yang lebih murah: tanggalnya
+     DIKETIK DI DALAM KALIMATNYA, lalu dicabut dari judulnya.
+
+     "bayar sewa ruko besok" -> tugas "Bayar sewa ruko", tenggat besok.
+
+     Yang ditangkap sengaja cuma bentuk yang benar-benar dipakai sehari-hari.
+     Penanggalan pintar yang menebak terlalu jauh lebih menakutkan daripada
+     menolong: satu salah tebak, dan orangnya berhenti memercayai seluruh
+     isian ini. */
 
   var HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  var HARI_CARI = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+
+  function tambahHari(n) { return hariMulai(Date.now() + n * 86400000); }
+
+  /* Hari bernama selalu yang AKAN DATANG. "senin" yang diketik hari Senin
+     berarti Senin depan, bukan hari ini - kalau maksudnya hari ini, yang
+     diketik orang adalah "hari ini". */
+  function hariBerikut(indeks) {
+    var kini = new Date().getDay();
+    var maju = (indeks - kini + 7) % 7;
+    return tambahHari(maju === 0 ? 7 : maju);
+  }
+
+  function bacaTenggat(teks) {
+    var t = ' ' + String(teks || '') + ' ';
+    var hasil = { tenggat: 0, teks: String(teks || '') };
+
+    function kena(pola, hitung) {
+      if (hasil.tenggat) return;
+      var m = t.match(pola);
+      if (!m) return;
+      hasil.tenggat = hitung(m);
+      hasil.teks = (t.slice(0, m.index) + ' ' + t.slice(m.index + m[0].length))
+                     .replace(/\s+/g, ' ').trim();
+    }
+
+    kena(/\s(hari ini|hr ini)\s/i, function () { return tambahHari(0); });
+    kena(/\s(besok|bsk|besuk)\s/i, function () { return tambahHari(1); });
+    kena(/\s(lusa)\s/i, function () { return tambahHari(2); });
+    kena(/\s(\d{1,3})\s?(hari|hr)\s?(lagi|kedepan|ke depan)\s/i,
+         function (m) { return tambahHari(Number(m[1])); });
+    kena(/\s(minggu|pekan)\s?depan\s/i, function () { return tambahHari(7); });
+    kena(/\s(bulan)\s?depan\s/i, function () {
+      var d = new Date(); d.setMonth(d.getMonth() + 1); return hariMulai(d.getTime());
+    });
+    kena(/\s(?:tgl|tanggal)\s?(\d{1,2})\s/i, function (m) {
+      var d = new Date(); d.setHours(0, 0, 0, 0);
+      var n = Number(m[1]);
+      /* Tanggal yang sudah lewat berarti bulan depan - orang menulis "tgl 3"
+         di tanggal 28 dengan maksud bulan berikutnya, bukan 25 hari yang lalu. */
+      if (n < d.getDate()) d.setMonth(d.getMonth() + 1);
+      d.setDate(n);
+      return d.getTime();
+    });
+    for (var i = 0; i < HARI_CARI.length; i++) {
+      (function (idx) {
+        kena(new RegExp('\\s' + HARI_CARI[idx] + '\\s', 'i'),
+             function () { return hariBerikut(idx); });
+      })(i);
+    }
+    return hasil;
+  }
+
+  /* -------------------------------------------------------------- tulisan */
 
   function tulisTenggat(ts) {
     if (!ts) return '';
@@ -163,7 +228,9 @@
 
   function tambah(teks) {
     if (!String(teks || '').trim()) return Promise.resolve(null);
-    var e = tugasBaru(teks);
+    var baca = bacaTenggat(teks);
+    var e = tugasBaru(baca.teks || teks);
+    if (baca.tenggat) e.tenggat = baca.tenggat;
     /* Ditambah dari layar "Hari ini" berarti memang untuk hari ini. Menanyakan
        ulang setelah orangnya sudah berdiri di layar itu adalah pertanyaan yang
        jawabannya sudah dia berikan. */
@@ -257,12 +324,20 @@
 
     var ket = [];
     if (e.tenggat) {
-      ket.push('<span class="tugas-tenggat' + (tertunggak(e) ? ' lewat' : '') + '">' +
+      /* Tiga keadaan, tiga warna - dan cuma tiga. Tertunggak merah, hari ini
+         beraksen, sisanya redup. Kalau tiap tanggal punya warnanya sendiri,
+         tidak ada yang menonjol lagi dan yang tertunggak ikut tenggelam. */
+      var kelas = tertunggak(e) ? ' lewat'
+                : (e.tenggat <= hariMulai(Date.now()) + 86400000 ? ' dekat' : '');
+      ket.push('<span class="tugas-tenggat' + kelas + '">' +
+               '<svg viewBox="0 0 24 24" class="ik"><rect x="3" y="5" width="18" height="16" rx="2"/>' +
+               '<path d="M8 3v4"/><path d="M16 3v4"/><path d="M3 10h18"/></svg>' +
                H(tulisTenggat(e.tenggat)) + '</span>');
     }
     if (e.ulang) ket.push('<span>berulang ' + H(e.ulang) + '</span>');
     if (langkah.length) ket.push('<span>' + kelar + '/' + langkah.length + ' langkah</span>');
     if (e.kategori) ket.push('<span>#' + H(e.kategori) + '</span>');
+
 
     b.push('<div class="tugas-atas">' +
       '<button class="tugas-centang' + (e.selesai ? ' kena' : '') + '" data-centang aria-label="Selesai">' +
@@ -270,7 +345,16 @@
       '</button>' +
       '<div class="tugas-teks">' +
         '<div class="tugas-judul">' + H(e.judul || '(tanpa judul)') + '</div>' +
-        (ket.length ? '<div class="tugas-ket">' + ket.join('<span class="titik-pisah">·</span>') + '</div>' : '') +
+        /* Tanggal dibuat berdiri di luar deret yang dipisah titik - kalau ikut
+         digabung, titik pemisahnya menggantung sendirian saat tanggalnya
+         didorong ke tepi kanan. Dan yang dipakai tanggal DIBUAT, bukan diubah:
+         yang menolong di daftar tugas adalah "sudah berapa lama ini
+         menganggur", dan mencentang satu langkah tidak boleh membuat tugas
+         lama tampak baru. */
+      '<div class="tugas-ket">' +
+        ket.join('<span class="titik-pisah">·</span>') +
+        '<span class="tugas-dibuat">' + H(TOtak.waktuRingkas(e.dibuat)) + '</span>' +
+      '</div>' +
       '</div>' +
       '<button class="tugas-bintang' + (e.penting ? ' nyala' : '') + '" data-penting aria-label="Penting">' +
         '<svg viewBox="0 0 24 24" class="ik"><path d="M12 3l2.6 5.8 6.4.7-4.8 4.3 1.4 6.2L12 17l-5.6 3 1.4-6.2L3 9.5l6.4-.7z"/></svg>' +
@@ -479,6 +563,7 @@
     rak: function (r) { if (r != null) daftarSaat = r; return daftarSaat; },
     daftarYangAda: daftarYangAda,
     hariMulai: hariMulai, tulisTenggat: tulisTenggat, tugasBaru: tugasBaru,
+    bacaTenggat: bacaTenggat,
     selesaikan: selesaikan, tersaring: tersaring
   };
 })(window);

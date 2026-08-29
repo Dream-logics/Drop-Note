@@ -2013,10 +2013,22 @@
       if (!teks) return;
       TTugas.tambah(teks).then(function () {
         isian.value = '';
+        $('#tugas-tebak').classList.add('sembunyi');
         TTugas.gambar();
         isian.focus();
       });
     }
+    /* Ditunjukkan sambil mengetik, bukan setelah disimpan: kalau tebakannya
+       meleset, dia masih bisa membetulkan kalimatnya sebelum menekan Enter. */
+    $('#tugas-baru').addEventListener('input', function () {
+      var baca = TTugas.bacaTenggat($('#tugas-baru').value);
+      var w = $('#tugas-tebak');
+      w.classList.toggle('sembunyi', !baca.tenggat);
+      if (baca.tenggat) {
+        w.innerHTML = 'Tenggat <b>' + H(TTugas.tulisTenggat(baca.tenggat)) + '</b>' +
+                      ' · tugasnya: ' + H(baca.teks || '(kosong)');
+      }
+    });
     $('#b-tugas-tambah').addEventListener('click', tambahTugas);
     $('#tugas-baru').addEventListener('keydown', function (ev) {
       if (ev.key !== 'Enter') return;
