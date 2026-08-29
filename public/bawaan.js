@@ -17,7 +17,7 @@
   'use strict';
 
   global.TBawaan = {
-    nama: 'Drop Memory',
+    nama: 'Cortex Space',
     tagline: 'Simpan dulu, cari nanti.',
 
     /* Model Gemini. Flash-Lite dipilih bukan karena murah saja: tugasnya cuma

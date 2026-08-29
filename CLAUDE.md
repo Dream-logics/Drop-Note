@@ -16,7 +16,7 @@ Notes bawaan — menumpuk sampai tidak bisa dicari lagi.
 
 Aplikasi ini menggantikan semua itu dengan satu pintu masuk dan satu pencarian.
 
-**Namanya sekarang "Drop Memory", dan nama itu kulit.** Dia cuma ditulis di
+**Namanya sekarang "Cortex Space", dan nama itu kulit.** Dia cuma ditulis di
 `public/bawaan.js`, judul `index.html`, dan manifest. Nama basis data, nama
 berkas, nama global, dan nama kolom sengaja tidak menyebut merek sama sekali —
 menggantinya besok tidak boleh menyentuh satu baris pun data pemakainya.
@@ -136,7 +136,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (239 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (252 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

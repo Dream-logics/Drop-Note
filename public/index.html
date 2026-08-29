@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Drop Memory</title>
+<title>Cortex Space</title>
 <meta name="description" content="Satu kotak untuk menimbun catatan, satu pencarian untuk mengambilnya kembali.">
 <meta name="theme-color" content="#f5f5f3">
 <link rel="manifest" href="manifest.webmanifest">
@@ -19,7 +19,7 @@
 <!-- ===================== LAYAR MULAI (sekali saat dipasang) ===================== -->
 <section class="layar" id="l-mulai">
   <header class="atas">
-    <div class="merek" id="merek-mulai">Drop Memory</div>
+    <div class="merek" id="merek-mulai">Cortex Space</div>
   </header>
   <div class="gulung" id="mulai-isi"></div>
 </section>
@@ -27,7 +27,7 @@
 <!-- ===================== LAYAR UTAMA ===================== -->
 <section class="layar aktif" id="l-utama">
   <header class="atas">
-    <div class="merek" id="merek">Drop Memory</div>
+    <div class="merek" id="merek">Cortex Space</div>
     <div class="atas-kanan">
       <span class="jumlah" id="jumlah">0 tersimpan</span>
       <button class="ikon-btn" id="b-setelan" aria-label="Setelan">
@@ -39,6 +39,28 @@
        bukan disalin tiga kali - baris yang disalin akan berbeda-beda begitu
        salah satunya disunting. -->
   <div class="tab-baris" data-tab></div>
+
+  <!-- LACI DROP. Menempel di bawah pintu "Drop", karena di situlah semua cara
+       MEMASUKKAN sesuatu berkumpul. Bawaannya teks - kotak di bawah sudah siap
+       diketik tanpa memilih apa pun; laci ini cuma dibuka kalau yang mau masuk
+       bukan teks. Dulu empat ikon ini berdiri permanen di atas kotak, memakan
+       satu baris penuh sepanjang hari untuk sesuatu yang dipakai sekali-sekali. -->
+  <div class="laci-drop sembunyi" id="panel-drop">
+  <div class="lampiran" id="lampiran">
+    <button class="lamp" data-lamp="gambar">
+      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span>Gambar</span>
+    </button>
+    <button class="lamp" data-lamp="berkas">
+      <svg viewBox="0 0 24 24" class="ik"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span>Berkas</span>
+    </button>
+    <button class="lamp" data-lamp="suara">
+      <svg viewBox="0 0 24 24" class="ik"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/></svg><span>Suara</span>
+    </button>
+    <button class="lamp" data-lamp="daftar">
+      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/></svg><span>Daftar</span>
+    </button>
+  </div>
+  </div>
 
   <!-- KOTAK DAN TOMBOLNYA MENEMPEL DI ATAS. Begitu hasil digambar di layar
        yang sama, daftarnya bisa ratusan baris - dan kendali yang ikut tergulir
@@ -76,35 +98,31 @@
       <svg viewBox="0 0 24 24" class="ik"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg><span id="b-label-teks">Label</span>
       <svg viewBox="0 0 24 24" class="ik kecil"><path d="M6 9l6 6 6-6"/></svg>
     </button>
+    <!-- Kembarannya tombol Gambar/Berkas di laci Drop, tapi arahnya terbalik:
+         yang di atas MEMASUKKAN, yang ini MENGELUARKAN. Ikonnya sengaja dibuat
+         sama supaya pasangannya kebaca tanpa dijelaskan. -->
+    <button class="tbl" id="b-filter" aria-haspopup="listbox" aria-expanded="false">
+      <svg viewBox="0 0 24 24" class="ik"><path d="M4 5h16"/><path d="M7 12h10"/><path d="M10 19h4"/></svg><span id="b-filter-teks">Jenis</span>
+      <svg viewBox="0 0 24 24" class="ik kecil"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
     <button class="tbl" id="b-drop">
       <svg viewBox="0 0 24 24" class="ik"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg>Drop
     </button>
   </div>
   </div>
 
+  <!-- Laci jenis: sisi keluar dari laci Drop. Memilih "Gambar" di sini berarti
+       "perlihatkan gambar-gambarku", tanpa satu kata pun diketik - dan itu
+       pertanyaan yang tidak bisa dijawab kata kunci, karena gambar memang
+       tidak punya kata. -->
+  <div class="panel-label sembunyi" id="panel-filter">
+    <div id="filter-daftar"></div>
+  </div>
+
   <!-- Daftar label, terbuka dari tombol di atasnya. Kotak carinya muncul cuma
        kalau labelnya sudah banyak - di bawah itu dia mengambil tempat untuk
        menyaring sesuatu yang seluruhnya sudah kelihatan. -->
   <div class="panel-label sembunyi" id="panel-label">
-  <!-- LAMPIRAN TINGGAL DI DALAM SINI, bukan di atas kotak. Empat ikon yang
-       memakan satu baris penuh sepanjang hari untuk sesuatu yang dipakai
-       sekali-sekali - dan yang dibayar layar depan yang lebih sempit. Di
-       dalam laci, keduanya dapat: layarnya lapang, dan lampirannya tetap
-       satu ketukan dari tempat yang sama. -->
-  <div class="lampiran" id="lampiran">
-    <button class="lamp" data-lamp="gambar">
-      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span>Gambar</span>
-    </button>
-    <button class="lamp" data-lamp="berkas">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span>Berkas</span>
-    </button>
-    <button class="lamp" data-lamp="suara">
-      <svg viewBox="0 0 24 24" class="ik"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/></svg><span>Suara</span>
-    </button>
-    <button class="lamp" data-lamp="daftar">
-      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/></svg><span>Daftar</span>
-    </button>
-  </div>
     <input id="label-cari" class="label-cari sembunyi" placeholder="Cari label&#8230;" autocomplete="off" spellcheck="false">
     <div id="label-daftar"></div>
   </div>
@@ -163,7 +181,7 @@
 <!-- ===================== LAYAR TUGAS (to-do) ===================== -->
 <section class="layar" id="l-tugas">
   <header class="atas">
-    <div class="merek" data-merek>Drop Memory</div>
+    <div class="merek" data-merek>Cortex Space</div>
     <span class="jumlah" id="tugas-ket"></span>
   </header>
   <div class="tab-baris" data-tab></div>
@@ -202,7 +220,7 @@
      Jadi tidak pernah ada catatan tanpa alamat. -->
 <section class="layar" id="l-note">
   <header class="atas">
-    <div class="merek" data-merek>Drop Memory</div>
+    <div class="merek" data-merek>Cortex Space</div>
     <span class="jumlah" id="note-jumlah"></span>
   </header>
   <div class="tab-baris" data-tab></div>
