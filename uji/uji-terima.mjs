@@ -1050,6 +1050,65 @@ console.log('\nsaringan jenis: sisi keluar dari laci Drop');
       (await hal.textContent('#b-filter-teks')) === 'Jenis');
 }
 
+console.log('\nukuran petak: cuma muncul waktu yang tampil gambar');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(250);
+
+  /* Satu gambar supaya ada yang bisa digambar sebagai petak. */
+  await hal.evaluate(() => TSimpan.taruh({
+    id: 'gbr-uji', jenis: 'gambar', judul: 'Moodboard interior',
+    isi: '', kategori: 'interior', tag: ['Interior'], label: [], elemen: [], daftar: [],
+    thumb: 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==',
+    namaBerkas: 'IMG_1001.jpg', dibuat: Date.now(), diubah: Date.now(),
+    dipakai: 0, diLabeliAI: true, diBacaAI: true
+  }));
+  await hal.evaluate(() => TAlur.muatUlangUji());
+  await hal.waitForTimeout(300);
+
+  /* Untuk jenis lain, ukuran thumbnail tidak menjawab pertanyaan apa pun -
+     yang dikenali di sana judulnya, dan judul tidak punya ukuran. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.click('#b-filter');
+  await hal.waitForTimeout(250);
+  await hal.click('[data-jenis="tautan"]');
+  await hal.waitForTimeout(350);
+  cek('pilihan ukuran tidak muncul untuk jenis selain gambar',
+      await hal.locator('#tampil-baris').evaluate((n) => n.classList.contains('sembunyi')));
+
+  await hal.click('#b-filter');
+  await hal.waitForTimeout(250);
+  await hal.click('[data-jenis="gambar"]');
+  await hal.waitForTimeout(400);
+  cek('pilihan ukuran muncul begitu yang tampil gambar',
+      !(await hal.locator('#tampil-baris').evaluate((n) => n.classList.contains('sembunyi'))));
+  cek('empat ukuran tersedia',
+      (await hal.locator('#tampil-baris .tampil-tbl').count()) === 4);
+  cek('bawaannya petak sedang',
+      (await hal.locator('#hasil-depan .petak.sedang').count()) === 1);
+
+  await hal.click('[data-gaya="besar"]');
+  await hal.waitForTimeout(350);
+  cek('memilih besar mengganti petaknya', (await hal.locator('#hasil-depan .petak.besar').count()) === 1);
+
+  /* Daftar = baris biasa, bukan petak: kadang yang dicari justru judulnya. */
+  await hal.click('[data-gaya="daftar"]');
+  await hal.waitForTimeout(350);
+  cek('daftar kembali jadi baris, bukan petak',
+      (await hal.locator('#hasil-depan .petak').count()) === 0 &&
+      (await hal.locator('#hasil-depan .kartu').count()) >= 1);
+
+  /* Kebiasaan menetap di satu ukuran - memilihnya lagi tiap kali membuka
+     aplikasi adalah keputusan berulang tanpa guna. */
+  const tersimpan = await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => s.gayaGambar));
+  cek('ukuran yang dipilih diingat untuk pembukaan berikutnya',
+      tersimpan === 'daftar', String(tersimpan));
+
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+  await hal.waitForTimeout(200);
+}
+
 console.log('\narsip: geser ke kiri, bukan hapus');
 {
   await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.pilihLabelUji('*'); });

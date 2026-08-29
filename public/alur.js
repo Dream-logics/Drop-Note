@@ -129,6 +129,7 @@
   var entriCatat = null;
   var labelDepan = null;   /* label yang sedang ditampilkan di layar depan */
   var saringJenis = '';    /* '' = semua jenis; 'gambar', 'berkas', 'suara', ... */
+  var gayaGambar = 'sedang';   /* besar | sedang | kecil | daftar */
   var laciBuka = '';       /* laci mana yang sedang terbuka: label | drop | filter */
   var urlSementara = [];
   var perekam = null;
@@ -639,7 +640,7 @@
      pertanyaan yang tidak bisa dijawab kata kunci, karena gambar memang tidak
      punya kata sampai AI membacanya. */
   var JENIS_SARING = [
-    ['', 'Semua jenis', '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/>'],
+    ['', 'Semua jenis', '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
     ['gambar', 'Gambar', '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>'],
     ['berkas', 'Berkas', '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>'],
     ['suara', 'Suara', '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/>'],
@@ -657,6 +658,35 @@
              '<span class="label-baris-nama">' + H(j[1]) + '</span>' +
              '<span class="label-jumlah">' + n + '</span></button>';
     }).join('');
+  }
+
+  /* UKURAN THUMBNAIL ITU PERTANYAAN NYATA, dan jawabannya berubah menurut apa
+     yang sedang dicari. Mencari satu desain yang diingat rupanya butuh petak
+     besar; menyapu tiga ratus tangkapan layar butuh yang kecil supaya sebanyak
+     mungkin masuk satu layar; mencari lewat judul butuh daftar. Pilihannya
+     diingat, karena kebiasaan orang biasanya menetap di satu ukuran. */
+  var GAYA_GAMBAR = [
+    ['besar', 'Petak besar', '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>'],
+    ['sedang', 'Petak sedang', '<rect x="3" y="3" width="5" height="5" rx="1"/><rect x="10" y="3" width="5" height="5" rx="1"/><rect x="17" y="3" width="4" height="5" rx="1"/><rect x="3" y="10" width="5" height="5" rx="1"/><rect x="10" y="10" width="5" height="5" rx="1"/><rect x="17" y="10" width="4" height="5" rx="1"/><rect x="3" y="17" width="5" height="4" rx="1"/><rect x="10" y="17" width="5" height="4" rx="1"/><rect x="17" y="17" width="4" height="4" rx="1"/>'],
+    ['kecil', 'Petak kecil', '<rect x="3" y="3" width="3.6" height="3.6" rx=".8"/><rect x="8.4" y="3" width="3.6" height="3.6" rx=".8"/><rect x="13.8" y="3" width="3.6" height="3.6" rx=".8"/><rect x="19.2" y="3" width="1.8" height="3.6" rx=".8"/><rect x="3" y="8.4" width="3.6" height="3.6" rx=".8"/><rect x="8.4" y="8.4" width="3.6" height="3.6" rx=".8"/><rect x="13.8" y="8.4" width="3.6" height="3.6" rx=".8"/><rect x="19.2" y="8.4" width="1.8" height="3.6" rx=".8"/><rect x="3" y="13.8" width="3.6" height="3.6" rx=".8"/><rect x="8.4" y="13.8" width="3.6" height="3.6" rx=".8"/><rect x="13.8" y="13.8" width="3.6" height="3.6" rx=".8"/><rect x="19.2" y="13.8" width="1.8" height="3.6" rx=".8"/>'],
+    ['daftar', 'Daftar', '<rect x="3" y="4" width="4" height="4" rx="1"/><rect x="3" y="10" width="4" height="4" rx="1"/><rect x="3" y="16" width="4" height="4" rx="1"/><path d="M10 6h11"/><path d="M10 12h11"/><path d="M10 18h11"/>']
+  ];
+
+  function gambarBarisTampilan() {
+    var baris = $('#tampil-baris');
+    baris.classList.toggle('sembunyi', saringJenis !== 'gambar');
+    if (saringJenis !== 'gambar') { baris.innerHTML = ''; return; }
+    baris.innerHTML = GAYA_GAMBAR.map(function (g) {
+      return '<button class="tampil-tbl' + (gayaGambar === g[0] ? ' nyala' : '') +
+             '" data-gaya="' + g[0] + '" title="' + H(g[1]) + '" aria-label="' + H(g[1]) + '">' +
+             '<svg viewBox="0 0 24 24" class="ik">' + g[2] + '</svg></button>';
+    }).join('');
+  }
+
+  function pilihGayaGambar(g) {
+    gayaGambar = g;
+    simpanSetelan('gayaGambar', g);
+    gambarHasilDepan();
   }
 
   function pilihJenis(j) {
@@ -721,6 +751,7 @@
     if (saringJenis) JENIS_SARING.forEach(function (x) { if (x[0] === saringJenis) ket.push(x[1]); });
     if (kueri) ket.push('“' + kueri + '”');
     $('#hasil-depan-ket').textContent = ket.join(' · ');
+    gambarBarisTampilan();
 
     /* Kotaknya menyusut begitu hasilnya terbuka DAN kamu tidak sedang
        mengetik di dalamnya. Waktu mengetik dia harus tetap lega - itu jalur
@@ -744,8 +775,8 @@
        nama berkas yang tidak berarti apa-apa; yang mengenalinya kembali adalah
        rupanya. Jenis lain tetap baris, karena di sana justru judulnya yang
        dikenali. */
-    if (saringJenis === 'gambar') {
-      wadah.innerHTML = '<div class="petak">' + hasil.slice(0, 120).map(function (e) {
+    if (saringJenis === 'gambar' && gayaGambar !== 'daftar') {
+      wadah.innerHTML = '<div class="petak ' + gayaGambar + '">' + hasil.slice(0, 200).map(function (e) {
         var gambar = e.thumb
           ? '<img src="' + H(e.thumb) + '" alt="">'
           : (e.berkasId ? '<img data-berkas="' + H(e.berkasId) + '" alt="">' : '<span class="petak-kosong"></span>');
@@ -2180,6 +2211,10 @@
       if (b) pilihLabelDepan(b.getAttribute('data-label'));
     });
     $('#b-tutup-hasil').addEventListener('click', tutupHasilDepan);
+    $('#tampil-baris').addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-gaya]');
+      if (b) pilihGayaGambar(b.getAttribute('data-gaya'));
+    });
 
 
 
@@ -2461,6 +2496,10 @@
 
     TSimpan.semuaSetelan().then(function (s) {
       setelanSaat = s || {};
+      /* Ukuran petak yang dipilih ikut dibawa ke pembukaan berikutnya:
+         kebiasaan orang menetap di satu ukuran, dan memilihnya lagi tiap kali
+         adalah keputusan berulang tanpa guna. */
+      if (setelanSaat.gayaGambar) gayaGambar = setelanSaat.gayaGambar;
       return muatSemua();
     }).then(function () {
       return ambilBagikan();
