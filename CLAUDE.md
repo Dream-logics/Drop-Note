@@ -86,7 +86,7 @@ terpikir, dan itu membatalkan seluruh gunanya.
 public/index.html   kerangka semua layar (mulai, utama, hasil, catat, setelan)
                     Catat BUKAN tombol - layar tulis didatangi dari hasil
 public/bawaan.js    SATU-SATUNYA tempat nama aplikasi & model AI ditulis
-public/gaya.css     gaya; gelap dulu, terang lewat prefers-color-scheme
+public/gaya.css     gaya; SATU tema putih, tidak mengikuti setelan HP
 public/simpan.js    IndexedDB — entri, berkas (blob), setelan, cadangan
 public/otak.js      SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
                     alamat, bakukan istilah judul (Inggris dulu kalau bentrok:
@@ -128,7 +128,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (221 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (228 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
@@ -151,8 +151,10 @@ dan supaya tidak perlu belajar gaya baru:
   di kepala tiap berkas.
 - Kepala berkas pakai blok `/* ===== … ===== */`.
 - CSS: variabel pendek (`--g` dasar, `--p` permukaan, `--i` tinta, `--m` redup,
-  `--l` garis, `--a` aksen). Gelap bawaan, terang lewat
-  `@media (prefers-color-scheme: light)`.
+  `--l` garis, `--a` aksen tinta, `--ap` aksen alas, `--at` tinta di atas
+  aksen). SATU tema, putih, di semua layar - `prefers-color-scheme` sengaja
+  TIDAK dipakai lagi: dua tema berarti tiap suntingan gaya harus diperiksa dua
+  kali, dan aplikasinya berganti rupa tanpa diminta.
 - Sasaran sentuh minimal 44px. Ini dipakai satu tangan sambil mengerjakan hal lain.
 - Baris tombol dibaca dari KANAN: jempol kanan bertumpu di sudut kanan bawah,
   jadi yang paling sering ditekan duduk paling kanan (Semua · Cari · Drop).

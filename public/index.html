@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Drop Memory</title>
 <meta name="description" content="Satu kotak untuk menimbun catatan, satu pencarian untuk mengambilnya kembali.">
-<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#F4F2EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#ffffff">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="ikon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="ikon-192.png">
@@ -37,25 +36,12 @@
     </div>
   </header>
 
-  <!-- Lampiran DI ATAS kotak: yang dipilih lebih dulu adalah jenisnya, dan
-       menaruhnya di bawah membuat kotak yang memanjang mendorongnya ke luar
-       layar tepat saat mau dipakai. -->
-  <div class="lampiran" id="lampiran">
-    <button class="lamp" data-lamp="gambar">
-      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span>Gambar</span>
-    </button>
-    <button class="lamp" data-lamp="berkas">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span>Berkas</span>
-    </button>
-    <button class="lamp" data-lamp="suara">
-      <svg viewBox="0 0 24 24" class="ik"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/></svg><span>Suara</span>
-    </button>
-    <button class="lamp" data-lamp="daftar">
-      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/></svg><span>Daftar</span>
-    </button>
-  </div>
-
-  <textarea id="kotak" class="kotak" rows="4" placeholder="Tempel atau tulis apa saja&#8230;  (Enter untuk mencari)" autocomplete="off" spellcheck="false"></textarea>
+  <!-- KOTAK DAN TOMBOLNYA MENEMPEL DI ATAS. Begitu hasil digambar di layar
+       yang sama, daftarnya bisa ratusan baris - dan kendali yang ikut tergulir
+       ke atas sama saja dengan tidak ada. Menempel berarti apa pun yang sedang
+       kamu lihat, satu ketukan untuk menyaring atau menjatuhkan yang baru. -->
+  <div class="kepala-tetap">
+  <textarea id="kotak" class="kotak" rows="3" placeholder="Tempel atau tulis apa saja&#8230;" autocomplete="off" spellcheck="false"></textarea>
 
   <!-- Tombol menempel tepat di bawah kotak, bukan di dasar layar: di layar
        panjang, dasar layar itu jauh dari yang barusan diketik.
@@ -87,27 +73,33 @@
       <svg viewBox="0 0 24 24" class="ik"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg>Drop
     </button>
   </div>
+  </div>
 
   <!-- Daftar label, terbuka dari tombol di atasnya. Kotak carinya muncul cuma
        kalau labelnya sudah banyak - di bawah itu dia mengambil tempat untuk
        menyaring sesuatu yang seluruhnya sudah kelihatan. -->
   <div class="panel-label sembunyi" id="panel-label">
+  <!-- LAMPIRAN TINGGAL DI DALAM SINI, bukan di atas kotak. Empat ikon yang
+       memakan satu baris penuh sepanjang hari untuk sesuatu yang dipakai
+       sekali-sekali - dan yang dibayar layar depan yang lebih sempit. Di
+       dalam laci, keduanya dapat: layarnya lapang, dan lampirannya tetap
+       satu ketukan dari tempat yang sama. -->
+  <div class="lampiran" id="lampiran">
+    <button class="lamp" data-lamp="gambar">
+      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span>Gambar</span>
+    </button>
+    <button class="lamp" data-lamp="berkas">
+      <svg viewBox="0 0 24 24" class="ik"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span>Berkas</span>
+    </button>
+    <button class="lamp" data-lamp="suara">
+      <svg viewBox="0 0 24 24" class="ik"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/></svg><span>Suara</span>
+    </button>
+    <button class="lamp" data-lamp="daftar">
+      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/></svg><span>Daftar</span>
+    </button>
+  </div>
     <input id="label-cari" class="label-cari sembunyi" placeholder="Cari label&#8230;" autocomplete="off" spellcheck="false">
     <div id="label-daftar"></div>
-  </div>
-
-  <!-- HASIL DI LAYAR YANG SAMA. Ini tidak melanggar "layar depan kosong":
-       yang dilarang adalah dinding kartu yang menyambut tanpa diminta. Kotak
-       ini kosong sampai kamu sendiri memilih satu label, dan tertutup lagi
-       lewat tanda silang di kepalanya. -->
-  <div class="sembunyi" id="petak-hasil-depan">
-    <div class="hasil-depan-kepala">
-      <span id="hasil-depan-ket"></span>
-      <button class="ikon-btn" id="b-tutup-hasil" aria-label="Tutup hasil">
-        <svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div id="hasil-depan"></div>
   </div>
 
   <!-- Yang dibaca otomatis dari isi kotak -->
@@ -126,6 +118,21 @@
     <div id="daftar-baris"></div>
     <button class="tambah-baris" id="b-tambah-baris">+ baris</button>
   </div>
+
+  <!-- HASIL DI LAYAR YANG SAMA. Ini tidak melanggar "layar depan kosong":
+       yang dilarang adalah dinding kartu yang menyambut tanpa diminta. Kotak
+       ini kosong sampai kamu sendiri memilih satu label, dan tertutup lagi
+       lewat tanda silang di kepalanya. -->
+  <div class="sembunyi" id="petak-hasil-depan">
+    <div class="hasil-depan-kepala">
+      <span id="hasil-depan-ket"></span>
+      <button class="ikon-btn" id="b-tutup-hasil" aria-label="Tutup hasil">
+        <svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="hasil-depan"></div>
+  </div>
+
 
   <!-- TIDAK ADA ISIAN KEYWORD DI SINI, DAN JANGAN DIKEMBALIKAN. Dulu ada:
        satu kotak "#" plus dua belas cip usulan. Dua alasan dia dibuang.
