@@ -1,27 +1,31 @@
 /* ============================================================================
    Drop Note — gaya
-   Warna dan huruf mengikuti Text Image Editor supaya satu keluarga.
-   Gelap dulu (layar HP dipakai malam), terang menyusul lewat media query.
+   Huruf mengikuti Text Image Editor supaya satu keluarga.
+   Satu tema: putih, di semua layar, tidak mengikuti setelan HP.
    ============================================================================ */
+/* SATU TEMA, PUTIH, DI SEMUA LAYAR - dan tidak lagi mengikuti setelan HP.
+   Dulu gelap dulu lalu terang lewat prefers-color-scheme, dan artinya
+   aplikasinya berganti rupa tanpa diminta: satu kali dilihat malam, satu kali
+   dilihat siang, dan dua-duanya harus diperiksa tiap kali menyunting gaya.
+   Satu tema berarti apa yang kamu lihat waktu merancang persis yang dilihat
+   orangnya. color-scheme dipatok supaya papan ketik, penggulir, dan kotak
+   bawaan browser ikut terang - kalau tidak, HP bermode gelap akan menyisipkan
+   potongan hitam di tengah halaman putih. */
 :root{
-  --g:#0f1115;   /* dasar   */
-  --p:#16181b;   /* permukaan */
-  --i:#f2f4f7;   /* tinta   */
-  --m:#8d939c;   /* redup   */
-  --l:#262a31;   /* garis   */
-  --lt:#2f343c;  /* garis terang */
+  color-scheme:light;
+  --g:#ffffff;   /* dasar   */
+  --p:#f5f5f6;   /* permukaan - abu tipis supaya kotak terlihat di atas putih */
+  --i:#16181b;   /* tinta   */
+  --m:#6b7178;   /* redup   */
+  --l:#e6e6e9;   /* garis   */
+  --lt:#d8d8dc;  /* garis terang */
   /* Aksen teal tua. Dua nada, karena tugasnya dua: --a dipakai sebagai TINTA
-     (tag, tautan, tenggat dekat) jadi dia harus cukup terang di atas dasar
-     gelap; --ap dipakai sebagai ALAS tombol utama, jadi dia harus cukup pekat
-     supaya tinta putih di atasnya terbaca. Satu warna tidak bisa keduanya. */
-  --a:#5FA79E;   /* aksen   */
-  --ap:#2F6B63;  /* aksen padat: alas */
+     (tag, tautan, tenggat dekat), --ap sebagai ALAS tombol dengan tinta putih
+     di atasnya. Di atas dasar putih keduanya kebetulan sama pekatnya. */
+  --a:#2E6E67;   /* aksen   */
+  --ap:#2E6E67;  /* aksen padat: alas */
   --at:#ffffff;  /* tinta di atas aksen */
-  --bahaya:#c96a5c;
-}
-@media (prefers-color-scheme: light){
-  :root{--g:#F4F2EC;--p:#fff;--i:#1b1e22;--m:#6b7178;--l:#e2dfd6;--lt:#d3cec0;
-        --a:#2E6E67;--ap:#2E6E67;--at:#fff;--bahaya:#a33c2c}
+  --bahaya:#a33c2c;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -67,8 +71,22 @@ button,input,textarea{font:inherit;color:inherit}
 .kotak:focus{border-color:var(--a)}
 .kotak::placeholder{color:var(--m);opacity:.75}
 
+/* --- kepala tetap: kotak + tombolnya ---
+   Menempel di atas supaya kendali tidak ikut tergulir waktu hasil di layar
+   yang sama sudah ratusan baris. Latarnya WAJIB pekat: kalau tembus, kartu
+   yang lewat di belakangnya membuat kotaknya terlihat rusak. */
+.kepala-tetap{
+  position:sticky;top:0;z-index:6;background:var(--g);
+  padding:calc(env(safe-area-inset-top) * 0 + 4px) 0 8px;
+}
+
 /* --- lampiran (jenis dropping) --- */
-.lampiran{display:flex;gap:7px;margin-bottom:10px}
+.lampiran{display:flex;gap:7px;margin-bottom:6px}
+/* Di dalam laci label dia tamu, bukan tuan rumah: garis bawah memisahkannya
+   dari daftar label supaya dua daftar tidak terbaca jadi satu. */
+.panel-label .lampiran{
+  margin:0;padding:2px 2px 8px;border-bottom:1px solid var(--l);margin-bottom:6px;
+}
 .lamp{
   flex:1;min-height:46px;border:1px solid var(--l);background:none;border-radius:11px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;

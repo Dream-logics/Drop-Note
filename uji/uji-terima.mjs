@@ -601,7 +601,17 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
 {
   const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
   const utama = html.slice(html.indexOf('id="l-utama"'), html.indexOf('id="l-hasil"'));
-  cek('ikon lampiran di ATAS kotak', utama.indexOf('id="lampiran"') < utama.indexOf('id="kotak"'));
+  /* Lampiran pindah ke DALAM laci label: empat ikon yang memakan satu baris
+     penuh sepanjang hari untuk sesuatu yang dipakai sekali-sekali. */
+  cek('lampiran tinggal di dalam laci label, bukan di atas kotak',
+      utama.indexOf('id="lampiran"') > utama.indexOf('id="panel-label"'));
+  cek('lampiran berdiri sebelum daftar labelnya',
+      utama.indexOf('id="lampiran"') < utama.indexOf('id="label-daftar"'));
+  /* Kotak dan tombolnya menempel di atas: kendali yang ikut tergulir waktu
+     hasilnya ratusan baris sama saja dengan tidak ada. */
+  cek('kotak dan tombolnya dibungkus kepala yang menempel',
+      utama.indexOf('class="kepala-tetap"') < utama.indexOf('id="kotak"') &&
+      utama.indexOf('class="kepala-tetap"') < utama.indexOf('id="tombol-utama"'));
   /* Tepat di bawah kotak, bukan di dasar layar: di layar panjang, dasar layar
      itu jauh dari yang barusan diketik. */
   cek('tombol tepat di BAWAH kotak', utama.indexOf('id="b-drop"') > utama.indexOf('id="kotak"'));
@@ -889,6 +899,30 @@ console.log('\nlabel di layar depan: hasil di tempat, bukan pindah layar');
       (await hal.locator('#hasil-depan .kartu').count()) >= 1);
   cek('tombolnya menyebut label yang sedang tampil',
       (await hal.textContent('#b-label-teks')) === 'Cons');
+
+  /* MENGETIK LANGSUNG MENYARING, tanpa Enter. Pencarian jalan di atas salinan
+     lokal, jadi menahannya sampai Enter cuma menunda hasil yang sudah siap -
+     dan menunggu itu yang bikin orang menyerah setengah jalan. */
+  const sebelumKetik = await hal.locator('#hasil-depan .kartu').count();
+  await hal.fill('#kotak', 'granit');
+  await hal.waitForTimeout(350);
+  cek('mengetik menyaring tanpa perlu Enter',
+      (await hal.locator('#hasil-depan .kartu').count()) >= 1, String(sebelumKetik));
+  cek('kata yang sedang menyaring ikut disebut di kepalanya',
+      /granit/.test(await hal.textContent('#hasil-depan-ket')),
+      await hal.textContent('#hasil-depan-ket'));
+  cek('layarnya tetap tidak berpindah', await hal.locator('#l-utama').isVisible());
+
+  await hal.fill('#kotak', 'katayangpastitidakadadisini');
+  await hal.waitForTimeout(350);
+  cek('yang tidak cocok mengosongkan daftarnya, bukan diam saja',
+      (await hal.locator('#hasil-depan .kartu').count()) === 0 &&
+      (await hal.locator('#hasil-depan .kosong').count()) === 1);
+
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(350);
+  cek('mengosongkan kotak mengembalikan seluruh isi labelnya',
+      (await hal.locator('#hasil-depan .kartu').count()) >= 1);
 
   /* Kepalanya membawa jalan keluarnya sendiri - kalau tidak, saringan ini
      menetap tanpa ada yang menutupnya. */

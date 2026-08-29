@@ -447,6 +447,9 @@
           b.classList.toggle('nyala', b.getAttribute('data-lamp') === jenis);
         });
         perbaruiTebakan();
+        /* Lacinya menutup sendiri: lampirannya sudah terpilih, dan daftar
+           label yang menggantung terbuka cuma menutupi kotaknya. */
+        alihPanelLabel(false);
       });
     });
   }
@@ -635,6 +638,16 @@
     bersihkanUrl();
   }
 
+  /* MENGETIK LANGSUNG MENYARING, tanpa Enter, tiap huruf. Pencarian jalan di
+     atas salinan lokal - tidak ada jaringan, tidak ada tunggu - jadi menunda
+     hasilnya sampai Enter cuma menahan sesuatu yang sudah siap. Dan menunggu
+     itu yang bikin orang menyerah setengah jalan lalu mengetik ulang.
+
+     Kotaknya tetap kotak DROP. Selama hasilnya terbuka, apa yang kamu ketik
+     berfungsi sebagai penyaring; kalau ternyata mau disimpan, tombol Drop di
+     sebelah kanan tetap menyimpannya apa adanya. Satu kotak, tapi tidak
+     ambigu: yang menentukan artinya bukan mode tersembunyi, melainkan apakah
+     daftar hasilnya sedang terbuka di depan matamu. */
   function gambarHasilDepan() {
     if (!labelDepan) { tutupHasilDepan(); return; }
 
@@ -644,18 +657,24 @@
       if (!istilah) istilah = [TOtak.normal(labelDepan)];
     }
 
+    var kueri = $('#kotak').value.trim();
     bersihkanUrl();
-    var hasil = TOtak.cari(semuaEntri, '', '', istilah || '');
+    var hasil = TOtak.cari(semuaEntri, kueri, '', istilah || '');
     $('#b-label-teks').textContent = labelDepan === '*' ? 'Semua' : labelDepan;
     $('#petak-hasil-depan').classList.remove('sembunyi');
-    $('#hasil-depan-ket').textContent = hasil.length
-      ? hasil.length + ' hasil' + (labelDepan === '*' ? '' : ' · ' + labelDepan)
-      : 'Kosong' + (labelDepan === '*' ? '' : ' · ' + labelDepan);
+
+    var ket = [];
+    ket.push(hasil.length ? hasil.length + ' hasil' : 'Kosong');
+    if (labelDepan !== '*') ket.push(labelDepan);
+    if (kueri) ket.push('“' + kueri + '”');
+    $('#hasil-depan-ket').textContent = ket.join(' · ');
 
     var wadah = $('#hasil-depan');
     if (!hasil.length) {
-      wadah.innerHTML = '<div class="kosong">Belum ada yang masuk label ini.<br>' +
-                        'Label diisi AI sesudah catatannya jatuh.</div>';
+      wadah.innerHTML = '<div class="kosong">' + (kueri
+        ? 'Tidak ada yang cocok di label ini.<br>Coba satu kata saja — pencarian ini memaafkan.'
+        : 'Belum ada yang masuk label ini.<br>Label diisi AI sesudah catatannya jatuh.') +
+        '</div>';
       return;
     }
     wadah.innerHTML = hasil.slice(0, 200).map(kartuHtml).join('');
@@ -2075,7 +2094,13 @@
     var bacaTertunda = tunda(function () {
       perbaruiTebakan();
     }, JEDA_BACA);
-    $('#kotak').addEventListener('input', bacaTertunda);
+    $('#kotak').addEventListener('input', function () {
+      bacaTertunda();
+      /* Tanpa jeda: pencarian jalan di atas salinan lokal, jadi menundanya
+         cuma menahan hasil yang sudah siap. Tebakan jenis tetap ditunda -
+         dia menyusun judul dan itu memang lebih berat. */
+      if (labelDepan) gambarHasilDepan();
+    });
 
     /* Enter = cari. Kotak ini pintu masuk DAN pintu keluar: mengetik satu kata
        lalu menekan Enter adalah gerakan yang paling sering terjadi, dan
@@ -2087,6 +2112,10 @@
       var isi = $('#kotak').value.trim();
       if (!isi) return;
       ev.preventDefault();
+      /* Hasilnya sudah terbuka di layar ini dan sudah menyaring tiap huruf -
+         memindahkannya ke layar hasil sekarang cuma membuang yang sedang
+         dilihat. Yang dibutuhkan cuma papan ketiknya minggir. */
+      if (labelDepan) { $('#kotak').blur(); return; }
       keHasil(isi);
     });
 
