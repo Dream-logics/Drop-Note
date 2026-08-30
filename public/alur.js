@@ -377,16 +377,106 @@
      mendorong tombol Drop keluar layar tepat saat mau ditekan. */
   var TINGGI_KOTAK_MAKS = 140;
 
+  /* ===================== TEKS BAYANGAN & GUDANG =====================
+     Melengkapi nama gudang sambil diketik, di dalam kotaknya. Yang dilengkapi
+     cuma nama gudang yang SUDAH ada, dan cuma di dua kata pertama - sesudah
+     itu kamu menulis isi, bukan alamat.
+
+     Bayangannya disembunyikan begitu kursormu tidak di ujung teks: melengkapi
+     sesuatu di tengah kalimat bukan bantuan, itu tebakan yang salah tempat.
+     Papan ketik HP juga menyusun kata di tengah pengetikan (composition), dan
+     selama itu berlangsung apa pun yang digambar di belakang pasti meleset. */
+  var ruangSaat = null;      /* gudang yang akan menampung drop berikutnya */
+  var lengkapSaat = null;    /* kelengkapan yang sedang ditawarkan */
+  var sedangMenyusun = false;
+
+  function daftarRuang() {
+    return TOtak.pohonLabel(daftarLabel());
+  }
+
+  function gambarBayang() {
+    var kotak = $('#kotak');
+    var bayang = $('#kotak-bayang');
+    if (!kotak || !bayang) return;
+    var teks = kotak.value;
+
+    lengkapSaat = null;
+    var diUjung = kotak.selectionStart === teks.length && kotak.selectionEnd === teks.length;
+    if (!sedangMenyusun && diUjung) lengkapSaat = TOtak.lengkapiRuang(teks, daftarLabel());
+
+    bayang.innerHTML = H(teks) + (lengkapSaat
+      ? '<span class="bayang-ekor">' + H(lengkapSaat.ekor) + '</span>'
+      : '');
+
+    /* Gudangnya dibaca dari teks yang SUDAH diketik, bukan dari yang sedang
+       ditawarkan - kalau tawarannya ikut dihitung, cipnya menyala untuk gudang
+       yang belum tentu kamu pilih. */
+    ruangSaat = TOtak.bacaRuang(teks, daftarLabel());
+    gambarCipRuang();
+  }
+
+  function terimaLengkap() {
+    if (!lengkapSaat) return;
+    var kotak = $('#kotak');
+    kotak.value = lengkapSaat.nama + ' ';
+    kotak.focus();
+    kotak.setSelectionRange(kotak.value.length, kotak.value.length);
+    setelTinggiKotak();
+    gambarBayang();
+    gambarHasilDepan();
+  }
+
+  /* Cip gudang: KABAR, bukan gerbang. Dia memberi tahu ke mana barangnya akan
+     mendarat, dan kamu tidak perlu menyentuhnya sama sekali. Turunannya ikut
+     tampil supaya kamu melihat pilihan yang ada tanpa harus mengingatnya. */
+  function gambarCipRuang() {
+    var wadah = $('#ruang-baris');
+    if (!wadah) return;
+    var pohon = daftarRuang();
+    var teks = $('#kotak').value;
+    var cip = [];
+
+    /* Tawaran kelengkapan duduk di baris ini, bukan di ekor bayangannya:
+       ekornya tertutup kotak teks dan tidak bisa disentuh sama sekali. Di sini
+       dia justru mendarat di tempat yang paling dekat dengan jempol. */
+    if (lengkapSaat) {
+      /* Yang ditulis nama gudang yang SEBENARNYA, bukan sambungan huruf yang
+         kamu ketik: "amara a" + "pps" terbaca "amara apps" dan itu bukan nama
+         gudang mana pun. */
+      cip.push('<button class="ruang-cip usul" data-terima>' +
+               H(lengkapSaat.nama) + '</button>');
+    }
+
+    if (ruangSaat) {
+      cip.push('<span class="ruang-cip nyala">' + H(ruangSaat.nama) + '</span>');
+      /* Turunan gudang yang sedang menyala - inilah "ketik amara, muncul
+         cip anaknya". Mengetuknya menuliskannya ke kotak, bukan membuka
+         layar: drop harus tetap satu gerakan. */
+      pohon.filter(function (l) { return l.induk === ruangSaat.nama; })
+           .slice(0, 5).forEach(function (l) {
+        cip.push('<button class="ruang-cip" data-ruang="' + H(l.nama) + '">' + H(l.ekor) + '</button>');
+      });
+    }
+
+    var ada = !!cip.length && !!teks.trim();
+    wadah.classList.toggle('sembunyi', !ada);
+    wadah.innerHTML = ada ? cip.join('') : '';
+  }
+
   function setelTinggiKotak() {
     var k = $('#kotak');
     if (!k) return;
     k.style.height = 'auto';
     k.style.height = Math.min(k.scrollHeight, TINGGI_KOTAK_MAKS) + 'px';
+    var b = $('#kotak-bayang');
+    if (b) b.style.height = k.style.height;
   }
 
   function kosongkanKotak() {
     $('#kotak').value = '';
     setelTinggiKotak();
+    if ($('#kotak-bayang')) { $('#kotak-bayang').innerHTML = ''; ruangSaat = null; lengkapSaat = null; }
+    if ($('#ruang-baris')) $('#ruang-baris').classList.add('sembunyi');
     $('#daftar-baris').innerHTML = '';
     setelDaftarNyala(false);
     draf = null;
@@ -404,6 +494,11 @@
     if (!teks && !daftar.length && !draf) { pesan('Kotaknya masih kosong'); return; }
 
     var e = entriBaru(jenis);
+    /* Gudangnya dibaca dari teksnya sendiri, bukan dari isian terpisah - kata
+       yang kamu ketik toh sudah menyebutkannya. Kalau tidak menyebut apa pun,
+       kategorinya kosong dan AI yang menyortirnya belakangan. */
+    var ruang = TOtak.bacaRuang(teks, daftarLabel());
+    if (ruang) e.kategori = ruang.nama;
     e.isi = jenis === 'tautan' ? TOtak.ambilUrl(teks) : teks;
     e.daftar = daftar;
     if (draf) {
@@ -430,6 +525,7 @@
       pesan('Tersimpan' + (e.kategori ? ' · #' + e.kategori : ''));
       kosongkanKotak();
       $('#kotak').focus();
+      gambarBayang();
       gambarHasilDepan();
       sundulLabel();
     }).catch(function (err) {
@@ -1246,10 +1342,26 @@
     }).join('');
   }
 
+  /* Gudang yang sudah ada, ditawarkan di kolom kategori. Diisi ulang tiap
+     kali layarnya dibuka, karena daftarnya bisa berubah di Setelan sementara
+     halaman ini tidak pernah dimuat ulang.
+
+     Ini satu-satunya cara memindahkan barang yang mendarat di gudang yang
+     salah - dan sengaja cuma sebuah tawaran, bukan daftar tertutup: kategori
+     tidak harus nama gudang. */
+  function isiDaftarGudang() {
+    var d = $('#daftar-gudang');
+    if (!d) return;
+    d.innerHTML = daftarLabel().map(function (l) {
+      return '<option value="' + H(l.nama) + '"></option>';
+    }).join('');
+  }
+
   function keCatat(e) {
     entriCatat = e;
     $('#catat-judul').value = e.judul || '';
     $('#catat-kat').value = e.kategori || '';
+    isiDaftarGudang();
     $('#riwayat').classList.add('sembunyi');
     gambarLampiranCatat(e);
     gambarGembok(e);
@@ -2152,8 +2264,46 @@
     var bacaTertunda = tunda(function () {
       perbaruiTebakan();
     }, JEDA_BACA);
+    /* Papan ketik HP menyusun kata di tengah pengetikan. Selama itu
+       berlangsung, apa pun yang digambar di lapisan belakang pasti meleset -
+       jadi bayangannya diam dulu. */
+    $('#kotak').addEventListener('compositionstart', function () { sedangMenyusun = true; });
+    $('#kotak').addEventListener('compositionend', function () {
+      sedangMenyusun = false;
+      gambarBayang();
+    });
+    $('#kotak').addEventListener('keyup', gambarBayang);
+    $('#kotak').addEventListener('click', gambarBayang);
+    /* Papan ketik: Tab, atau panah kanan saat kursornya sudah di ujung -
+       menekan panah kanan di ujung teks tidak ada gunanya yang lain, jadi
+       tidak ada yang direbut. */
+    $('#kotak').addEventListener('keydown', function (ev) {
+      if (!lengkapSaat) return;
+      var kotak = $('#kotak');
+      var diUjung = kotak.selectionStart === kotak.value.length &&
+                    kotak.selectionEnd === kotak.value.length;
+      if (ev.key === 'Tab' || (ev.key === 'ArrowRight' && diUjung)) {
+        ev.preventDefault();
+        terimaLengkap();
+      }
+    });
+    $('#ruang-baris').addEventListener('click', function (ev) {
+      if (ev.target.closest('[data-terima]')) { terimaLengkap(); return; }
+      var b = ev.target.closest('[data-ruang]');
+      if (!b) return;
+      var kotak = $('#kotak');
+      var sisa = kotak.value.slice((ruangSaat ? ruangSaat.nama.length : 0)).replace(/^\s+/, '');
+      kotak.value = b.getAttribute('data-ruang') + (sisa ? ' ' + sisa : ' ');
+      kotak.focus();
+      kotak.setSelectionRange(kotak.value.length, kotak.value.length);
+      setelTinggiKotak();
+      gambarBayang();
+      gambarHasilDepan();
+    });
+
     $('#kotak').addEventListener('input', function () {
       setelTinggiKotak();
+      gambarBayang();
       bacaTertunda();
       /* Tanpa jeda: pencarian jalan di atas salinan lokal, jadi menundanya
          cuma menahan hasil yang sudah siap. Tebakan jenis tetap ditunda -

@@ -1530,6 +1530,127 @@ console.log('\nto-do: daftar yang mengurut sendiri');
       (await hal.evaluate(() => TTugas.tugasBaru('apa saja').kategori)) === '');
 }
 
+console.log('\nteks bayangan: melengkapi nama gudang sambil diketik');
+{
+  /* Gudang bertingkat dibuat lewat layar Setelan, jalur yang sama dengan yang
+     dipakai orangnya - bukan lewat pintu belakang yang cuma ada di uji. */
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.waitForTimeout(200);
+  await hal.fill('#set-label',
+    'Amara = amaraliving\nAmara Apps\nAmara Sales\nNgoffee = ngopi\nUltima');
+  await hal.dispatchEvent('#set-label', 'change');
+  await hal.waitForTimeout(250);
+
+  const pohon = await hal.evaluate(() => TOtak.pohonLabel(TAlur.daftarLabelUji()));
+  const apps = pohon.filter((l) => l.nama === 'Amara Apps')[0];
+  cek('gudang bertingkat terbaca dari namanya sendiri',
+      apps && apps.induk === 'Amara' && apps.ekor === 'Apps', JSON.stringify(apps));
+  cek('gudang tanpa induk berdiri sendiri',
+      pohon.filter((l) => l.nama === 'Ultima')[0].induk === '');
+
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(200);
+
+  const ketik = async (t) => {
+    await hal.fill('#kotak', '');
+    await hal.click('#kotak');
+    await hal.type('#kotak', t, { delay: 12 });
+    await hal.waitForTimeout(200);
+  };
+  const bayang = () => hal.locator('#kotak-bayang').innerText();
+
+  await ketik('Amara a');
+  cek('ekornya muncul samar di belakang yang diketik',
+      (await bayang()).trim() === 'Amara apps', await bayang());
+
+  /* Ekornya TIDAK boleh bisa diketuk: kotak teksnya duduk di atasnya dan
+     menelan setiap sentuhan, jadi ekor yang mengundang ketukan tapi diam
+     saja terbaca sebagai kerusakan. Yang menerima cipnya. */
+  cek('menerimanya lewat cip, bukan lewat ekornya',
+      (await hal.locator('#kotak-bayang [data-terima]').count()) === 0 &&
+      (await hal.locator('#ruang-baris [data-terima]').count()) === 1);
+  cek('cipnya menulis nama gudang yang sebenarnya, bukan sambungan huruf',
+      (await hal.locator('#ruang-baris [data-terima]').innerText()).trim() === 'Amara Apps');
+
+  await hal.click('#ruang-baris [data-terima]');
+  await hal.waitForTimeout(200);
+  cek('sekali ketuk, namanya utuh dan kursornya siap menulis isi',
+      (await hal.inputValue('#kotak')) === 'Amara Apps ');
+
+  /* Papan ketik keras: Tab, dan panah kanan waktu kursornya sudah di ujung -
+     di ujung teks, panah kanan tidak punya kerja lain untuk direbut. */
+  await ketik('ngo');
+  await hal.press('#kotak', 'Tab');
+  await hal.waitForTimeout(150);
+  cek('Tab menerima tawarannya', (await hal.inputValue('#kotak')) === 'Ngoffee ');
+  await ketik('ultim');
+  await hal.press('#kotak', 'ArrowRight');
+  await hal.waitForTimeout(150);
+  cek('panah kanan di ujung ikut menerima', (await hal.inputValue('#kotak')) === 'Ultima ');
+
+  /* Batas dua kata. Tanpa ini, tebakan muncul sepanjang kalimat dan berubah
+     dari membantu jadi mengganggu. */
+  await ketik('kirim invoice ke pak budi besok pagi');
+  cek('kalimat panjang tidak ditebak sama sekali',
+      (await bayang()).indexOf('Amara') < 0 &&
+      (await hal.locator('#ruang-baris [data-terima]').count()) === 0);
+
+  /* Cip turunan: melihat pilihan tanpa harus mengingatnya. */
+  await ketik('Amara');
+  const turunan = await hal.locator('#ruang-baris [data-ruang]').allInnerTexts();
+  cek('turunan gudangnya ikut tampil',
+      turunan.indexOf('Sales') >= 0, JSON.stringify(turunan));
+  await hal.locator('#ruang-baris [data-ruang="Amara Sales"]').click();
+  await hal.waitForTimeout(200);
+  cek('mengetuk turunan menulis ke kotak, bukan membuka layar',
+      (await hal.inputValue('#kotak')) === 'Amara Sales ');
+
+  /* Yang paling penting: drop benar-benar mendarat di gudang yang dibaca dari
+     teksnya, dan yang menang cocokan TERPANJANG. */
+  await ketik('Amara Apps galat masuk halaman kasir');
+  await hal.click('#b-drop');
+  await hal.waitForTimeout(400);
+  const mendarat = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => /halaman kasir/.test((e.teks || '') + ' ' + (e.judul || '')))[0]));
+  cek('drop mendarat di gudang yang paling dalam, bukan berhenti di induknya',
+      mendarat && mendarat.kategori === 'Amara Apps',
+      JSON.stringify(mendarat && mendarat.kategori));
+
+  /* Barang yang mendarat di gudang yang salah harus bisa dipindah, dan
+     tempatnya di layar tulis - bukan di layar "rapikan catatanmu". */
+  await hal.evaluate(() => TSimpan.semua().then((a) => {
+    const e = a.filter((x) => /halaman kasir/.test((x.teks || '') + ' ' + (x.judul || '')))[0];
+    if (e) TAlur.keCatat(e);
+  }));
+  await hal.waitForTimeout(300);
+  const gudang = await hal.locator('#daftar-gudang option').evaluateAll(
+    (n) => n.map((o) => o.value));
+  cek('kolom kategori menawarkan gudang yang sudah ada',
+      gudang.indexOf('Amara Sales') >= 0 && gudang.indexOf('Ultima') >= 0,
+      JSON.stringify(gudang));
+  /* Tawaran, bukan daftar tertutup: kategori tidak harus nama gudang. */
+  cek('kolomnya tetap bisa diketik bebas',
+      (await hal.locator('#catat-kat').getAttribute('list')) === 'daftar-gudang' &&
+      (await hal.locator('#catat-kat').evaluate((n) => n.tagName)) === 'INPUT');
+  await hal.fill('#catat-kat', 'Amara Sales');
+  await hal.dispatchEvent('#catat-kat', 'input');
+  await hal.waitForTimeout(1100);
+  const pindah = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => /halaman kasir/.test((e.teks || '') + ' ' + (e.judul || '')))[0]));
+  cek('gudangnya benar-benar berpindah', pindah && pindah.kategori === 'Amara Sales',
+      JSON.stringify(pindah && pindah.kategori));
+
+  await hal.evaluate(() => TSimpan.semua().then((a) => {
+    const e = a.filter((x) => /halaman kasir/.test((x.teks || '') + ' ' + (x.judul || '')))[0];
+    if (e) { e.pensiun = true; return TSimpan.taruh(e); }
+  }));
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); });
+  await hal.fill('#kotak', '');
+  await hal.evaluate(() => { TAlur.tutupHasilDepanUji(); TAlur.muatUlangUji(); });
+  await hal.waitForTimeout(250);
+}
+
 console.log('\nnama cuma kulit');
 {
   const berkasKode = ['bawaan.js', 'simpan.js', 'otak.js', 'awan.js', 'pelabel.js', 'sinkron.js', 'alur.js', 'sw.js'];
