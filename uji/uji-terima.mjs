@@ -1082,8 +1082,12 @@ console.log('\ntiga pintu di kepala, dan layar Note');
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(250);
   const tab = await hal.locator('#l-utama [data-tab] .tab').allTextContents();
-  cek('tiga pintu: Drop, To Do, Note', tab.length === 3 &&
-      /^Drop/.test(tab[0]) && /^To Do/.test(tab[1]) && /^Note/.test(tab[2]), tab.join('|'));
+  /* "Storage", bukan "Note": layar itu memang gudang - dia memperlihatkan
+     semua yang pernah jatuh, tersusun di raknya. Menulis punya tempatnya
+     sendiri, dan menamai keduanya sama membuat yang mau menulis mendarat di
+     gudang lalu mengira aplikasinya tidak bisa menulis. */
+  cek('tiga pintu: Drop, To Do, Storage', tab.length === 3 &&
+      /^Drop/.test(tab[0]) && /^To Do/.test(tab[1]) && /^Storage/.test(tab[2]), tab.join('|'));
   cek('yang sedang dibuka ditandai',
       (await hal.locator('#l-utama [data-tab] .tab.nyala').textContent()).indexOf('Drop') === 0);
 
@@ -2376,16 +2380,18 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
   await hal.evaluate(() => TAlur.muatUlangUji());
   await hal.waitForTimeout(350);
 
-  /* ENAM CIP, dan yang pertama BUKAN saringan. Reset mengembalikan layar ke
-     keadaan baru dibuka - tanpa dia, membereskan tiga hal yang menyala butuh
-     tiga ketukan di tiga tempat berbeda. */
+  /* ENAM SARINGAN, dan Reset TIDAK lagi di antaranya - dia naik ke kepala, di
+     kiri Setelan. Dia memang bukan saringan: dia menghapus keadaan, bukan
+     menyempitkannya, dan slot yang ditinggalkannya itu yang membuat sisanya
+     plus ikon AI muat sebaris. */
   const semuaJenis = await hal.evaluate(() =>
     TAlur.jenisSaringUji().map((j) => j[0]));
-  cek('saringannya lengkap: reset, semua, teks, gambar, berkas, link, pin',
+  cek('saringannya lengkap: semua, teks, gambar, berkas, link, pin',
       JSON.stringify(semuaJenis) ===
-        JSON.stringify(['*reset', '*semua', 'teks', 'gambar', 'berkas', 'tautan', '*pin']),
+        JSON.stringify(['*semua', 'teks', 'gambar', 'berkas', 'tautan', '*pin']),
       JSON.stringify(semuaJenis));
-  cek('resetnya paling kiri, jauh dari jempol', semuaJenis[0] === '*reset');
+  cek('reset tidak lagi memakan slot di baris saringan',
+      semuaJenis.indexOf('*reset') < 0);
 
   /* BAWAANNYA TEKS, bukan semua. Hasil yang langsung berisi dinding gambar
      memenuhi layar sebelum satu judul pun sempat terbaca; gambar dicari
@@ -2412,18 +2418,14 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
   await hal.click('#saring-baris [data-jenis="*semua"]');
   await hal.waitForTimeout(300);
   cek('dan dia selalu tampil, tidak peduli isinya',
-      (await hal.locator('#saring-baris [data-jenis="*reset"]').count()) === 1);
-  /* Reset bukan saringan: dia tidak pernah menyala. */
-  await hal.click('#saring-baris [data-jenis="*reset"]');
-  await hal.waitForTimeout(300);
-  cek('reset tidak pernah menyala',
-      (await hal.locator('#saring-baris [data-jenis="*reset"].nyala').count()) === 0);
+      (await hal.locator('#saring-baris [data-jenis="*semua"]').count()) === 1);
 
-  /* Yang diuji sungguhan: reset benar-benar mengosongkan layarnya. */
+  /* Yang diuji sungguhan: reset benar-benar mengosongkan layarnya - sekarang
+     dari kepala, di kiri Setelan. */
   await hal.fill('#kotak', 'pinuji');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(350);
-  await hal.click('#saring-baris [data-jenis="*reset"]');
+  await hal.click('#b-reset');
   await hal.waitForTimeout(350);
   cek('reset mengosongkan kotak dan menutup hasilnya',
       (await hal.inputValue('#kotak')) === '' &&
@@ -2544,7 +2546,7 @@ console.log('\nbadge angka, cip Pin, kotak link, dan To Do yang ringkas');
   cek('cip Pin membuka yang dipin tanpa satu kata pun diketik',
       (await hal.locator('#hasil-depan .kartu').count()) === 1 &&
       /badgeuji yang dipin/.test(await hal.locator('#hasil-depan').innerText()));
-  await hal.click('#saring-baris [data-jenis="*reset"]');
+  await hal.click('#b-reset');
   await hal.waitForTimeout(300);
 
   /* KOTAK KHUSUS LINK. Menempel sepuluh tautan lalu menyorot satu per satu
@@ -2616,6 +2618,119 @@ console.log('\nbadge angka, cip Pin, kotak link, dan To Do yang ringkas');
   await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.fill('#kotak', '');
   await hal.waitForTimeout(200);
+}
+
+console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(250);
+
+  /* SATU BARIS, TIDAK MELIPAT. Yang melipat mendorong doknya naik, dan tinggi
+     dok yang berubah-ubah sambil kamu mengetik adalah layar yang bergoyang
+     tepat di bawah jempol. */
+  const saringSebaris = await hal.evaluate(() => {
+    const anak = [...document.querySelectorAll('#saring-cip .saring-cip'),
+                  document.querySelector('#b-ai')];
+    const atas = anak.map((n) => Math.round(n.getBoundingClientRect().top));
+    return { baris: new Set(atas).size, jumlah: anak.length };
+  });
+  cek('enam saringan plus ikon AI muat dalam satu baris',
+      saringSebaris.baris === 1 && saringSebaris.jumlah === 7,
+      JSON.stringify(saringSebaris));
+
+  const muatLebar = await hal.evaluate(() => {
+    const b = document.querySelector('#saring-baris');
+    return b.scrollWidth <= b.clientWidth + 1;
+  });
+  cek('dan muat dalam 100% lebar layar, tanpa menggulir', muatLebar === true);
+
+  /* Angkanya menumpang DI ATAS ikonnya. Di sebelahnya, tujuh benda tidak muat
+     di 412px dan barisnya melipat - itu justru yang mau dihilangkan. */
+  await hal.fill('#kotak', 'badgeuji');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(400);
+  const tumpang = await hal.evaluate(() => {
+    const cip = document.querySelector('#saring-cip [data-jenis="*semua"]');
+    const ang = cip.querySelector('.saring-angka');
+    if (!ang) return 'tidak ada angkanya';
+    const c = cip.getBoundingClientRect(), a = ang.getBoundingClientRect();
+    const menumpang = a.left < c.right && a.right > c.left && a.top < c.bottom;
+    return menumpang ? 'ok' : 'di sebelah, bukan di atas';
+  });
+  cek('angkanya menumpang di atas ikonnya, bukan di sebelahnya', tumpang === 'ok', tumpang);
+
+  /* Yang nol: cipnya TETAP ADA - cip yang muncul-hilang sambil kamu mengetik
+     memindahkan tetangganya dan jari yang sudah hafal jadi salah tekan -
+     tapi angkanya pergi. Nol itu bukan kabar, itu cuma tinta. */
+  const nol = await hal.evaluate(() => {
+    const cip = document.querySelector('#saring-cip [data-jenis="berkas"]');
+    return { ada: !!cip, angka: !!cip.querySelector('.saring-angka'),
+             redup: cip.classList.contains('sepi') };
+  });
+  cek('cip yang kosong tetap di tempatnya', nol.ada === true && nol.redup === true);
+  cek('tapi angka nolnya tidak digambar', nol.angka === false);
+
+  /* Baris gudang juga satu baris. Nama gudangnya tetap boleh sepanjang apa
+     pun - itu janji yang sudah dipegang - yang tidak boleh cuma barisnya
+     melipat. */
+  await hal.fill('#kotak', '');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(400);
+  const gudangSebaris = await hal.evaluate(() => {
+    const cip = [...document.querySelectorAll('#ruang-baris .ruang-cip')];
+    if (!cip.length) return 'tidak ada cip gudang';
+    const atas = cip.map((n) => Math.round(n.getBoundingClientRect().top));
+    return new Set(atas).size === 1 ? 'ok' : (new Set(atas).size + ' baris');
+  });
+  cek('cip gudang tersering juga tidak pernah melipat', gudangSebaris === 'ok', gudangSebaris);
+  const gudangUtuh = await hal.evaluate(() => {
+    const t = [...document.querySelectorAll('#ruang-baris .ruang-cip')]
+      .map((n) => n.textContent);
+    return t.every((x) => x.indexOf('\u2026') < 0);
+  });
+  cek('dan namanya tetap utuh, tidak dipotong', gudangUtuh === true);
+
+  /* Reset naik ke kepala, di KIRI Setelan. Dan "N tersimpan" turun: dia tidak
+     pernah mengubah satu keputusan pun, dan tempatnya justru yang dibutuhkan. */
+  const diKepala = await hal.evaluate(() => {
+    const r = document.querySelector('#l-utama #b-reset');
+    const s = document.querySelector('#l-utama #b-setelan');
+    if (!r || !s) return 'tidak ada';
+    return r.getBoundingClientRect().left < s.getBoundingClientRect().left
+      ? 'ok' : 'reset di kanan setelan';
+  });
+  cek('reset duduk di kepala, di kiri Setelan', diKepala === 'ok', diKepala);
+  cek('angka "N tersimpan" dibuang dari kepala',
+      (await hal.locator('#l-utama .atas .jumlah').count()) === 0);
+
+  /* Menahan kartu tetap jalan, tapi tidak boleh jadi SATU-SATUNYA jalan:
+     gerakan yang tidak kelihatan sama dengan tidak ada bagi orang yang belum
+     pernah diberi tahu. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-note'));
+  await hal.fill('#note-cari', 'pilihuji');
+  await hal.dispatchEvent('#note-cari', 'input');
+  await hal.waitForTimeout(250);
+  cek('bilah pilih masih tertutup sebelum diminta',
+      await hal.locator('#pilih-bilah').isHidden());
+  await hal.click('#b-pilih-mulai');
+  await hal.waitForTimeout(150);
+  cek('ada tombol Pilih yang kelihatan, bukan cuma tekan-lama',
+      await hal.locator('#pilih-bilah').isVisible());
+  /* Belum ada yang ditunjuk, jadi bilahnya menyebut apa yang harus dilakukan -
+     bukan "0 dipilih", yang cuma mengabarkan keadaan tanpa jalan keluarnya. */
+  cek('dan dia menyebut langkah berikutnya, bukan "0 dipilih"',
+      /Ketuk/.test(await hal.locator('#pilih-jumlah').innerText()));
+  cek('Gabung dan Buang belum ada isinya, jadi belum ditawarkan',
+      await hal.locator('#b-pilih-gabung').isHidden() &&
+      await hal.locator('#b-pilih-buang').isHidden());
+  await hal.click('#b-pilih-mulai');
+  await hal.waitForTimeout(150);
+  cek('ketukan kedua di tombol yang sama membatalkannya',
+      await hal.locator('#pilih-bilah').isHidden());
+  await hal.fill('#note-cari', '');
+  await hal.dispatchEvent('#note-cari', 'input');
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
 }
 
 console.log('\nmengisi dengan tenang, daftar yang utuh, berulang, dan pilih banyak');
@@ -2770,13 +2885,25 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
      menyelip di bilah kotak bersama klip dan Todo. Yang mengubah arti tombol
      harus berdiri di tempat yang sama dengan akibatnya. */
   const diAtasDrop = await hal.evaluate(() => {
-    const t = document.querySelector('.drop-tumpuk');
-    if (!t) return 'tidak ada tumpukan';
-    const ai = t.querySelector('#b-ai'), drop = t.querySelector('#b-drop');
-    if (!ai || !drop) return 'tidak satu tumpukan';
-    return ai.getBoundingClientRect().bottom <= drop.getBoundingClientRect().top + 1 ? 'ok' : 'urutannya terbalik';
+    const ai = document.querySelector('#b-ai'), drop = document.querySelector('#b-drop');
+    if (!ai || !drop) return 'tidak ada';
+    const a = ai.getBoundingClientRect(), d = drop.getBoundingClientRect();
+    if (a.bottom > d.top + 1) return 'urutannya terbalik';
+    /* Bukan cuma "di atas": di atas TOMBOLNYA. Kalau melenceng ke kiri, dia
+       terbaca sebagai bagian dari baris saringan, bukan sebagai saklar yang
+       mengubah arti tombol di bawahnya. */
+    return Math.abs((a.left + a.right) / 2 - (d.left + d.right) / 2) < 26
+      ? 'ok' : 'tidak sejajar dengan tombolnya';
   });
   cek('ikon AI duduk tepat di atas tombol Drop', diAtasDrop === 'ok', diAtasDrop);
+  /* Dan dia SEBARIS dengan saringannya - kalau dia memakan barisnya sendiri,
+     doknya naik satu baris untuk satu ikon. */
+  const seBaris = await hal.evaluate(() => {
+    const ai = document.querySelector('#b-ai').getBoundingClientRect();
+    const cip = document.querySelector('#saring-cip .saring-cip').getBoundingClientRect();
+    return Math.abs(ai.top - cip.top) < 6;
+  });
+  cek('dan sebaris dengan cip saringan, bukan memakan baris sendiri', seBaris === true);
 
   cek('sebelum dinyalakan, obrolannya tidak kelihatan sama sekali',
       await hal.locator('#petak-ai').isHidden());
@@ -2787,7 +2914,10 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
   /* Selama mode AI menyala, kotaknya bertanya - bukan mencari. Cip saringan
      yang tetap terpampang padahal tidak lagi menyaring apa pun adalah layar
      yang berbohong. */
-  cek('cip saringan turun panggung', await hal.locator('#saring-baris').isHidden());
+  cek('cip saringan turun panggung', await hal.locator('#saring-cip').isHidden());
+  /* Tapi ikon AI-nya TIDAK ikut hilang - dia satu-satunya jalan pulang. */
+  cek('ikon AI tetap kelihatan, karena dia jalan pulangnya',
+      await hal.locator('#b-ai').isVisible());
   cek('tombolnya berganti jadi panah kirim',
       await hal.locator('#b-drop .ik.kirim').isVisible() &&
       await hal.locator('#b-drop .ik.turun').isHidden());

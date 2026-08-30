@@ -94,7 +94,8 @@ terpikir, dan itu membatalkan seluruh gunanya.
 ```
 public/index.html   kerangka semua layar (mulai, utama/Drop, tugas/To Do,
                     note, catat, setelan). Tiga pintu di kepala:
-                    Drop - To Do - Note, digambar dari alur.js ke <div data-tab>
+                    Drop - To Do - Storage, digambar dari alur.js ke
+                    <div data-tab>
                     TIDAK ADA layar hasil dan TIDAK ADA tombol Cari: kotak drop
                     itu sendiri pencariannya, hasilnya di bawahnya
                     Catat BUKAN tombol - layar tulis didatangi dari hasil
@@ -141,6 +142,12 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     Kotak + tombol + kedua lacinya satu blok "dok" yang SELALU
                     menempel di bawah; lacinya membuka ke bawah.
                     Di atas kotak: cip gudang, lalu cip saringan jenis.
+                    KEDUANYA SATU BARIS, tidak pernah melipat - yang melipat
+                    mendorong dok naik dan layarnya bergoyang di bawah jempol.
+                    Saringan itu ikon telanjang, angkanya menumpang DI ATAS
+                    ikon; yang nol tidak digambar. Reset ada di KEPALA, di kiri
+                    Setelan - dia menghapus keadaan, bukan menyaring. Angka
+                    "N tersimpan" sudah dibuang dan jangan dikembalikan.
                     Bilah kendali: klip - Todo - Drop
                     MODE AI: satu ikon tepat DI ATAS tombol Drop, dan ikon itu
                     yang mengubah arti tombol di bawahnya - selama menyala,
@@ -169,7 +176,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (447 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (462 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

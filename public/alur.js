@@ -289,7 +289,11 @@
        di bawah itu TINDAKAN (jatuhkan sekarang). */
     ['l-utama', 'Drop', '<path d="M4 20h16"/><path d="M14.5 4.5l5 5L8 21H3v-5z"/>'],
     ['l-tugas', 'To Do', '<rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/>'],
-    ['l-note', 'Note', '<path d="M4 5a2 2 0 0 1 2-2h4l2 3h6a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>']
+    /* "Storage", bukan "Note". Layar ini memang gudang: dia memperlihatkan
+       SEMUA yang pernah jatuh, tersusun di raknya masing-masing. Menulis punya
+       tempatnya sendiri, dan menamai keduanya sama membuat yang mau menulis
+       mendarat di gudang - lalu mengira aplikasinya tidak bisa menulis. */
+    ['l-note', 'Storage', '<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4"/><path d="M12 11v10"/>']
   ];
 
   function gambarTab() {
@@ -322,9 +326,15 @@
      di layar hasil. Satu-satunya tempatnya adalah layar to-do. */
   function catatanSaja(e) { return !e.pensiun && e.jenis !== 'tugas'; }
 
+  /* ANGKA "N TERSIMPAN" DIBUANG DARI KEPALA, dan jangan dikembalikan. Dia
+     tidak pernah mengubah satu keputusan pun - tahu ada 38 atau 380 tidak
+     membuat apa pun jadi lebih mudah dikerjakan - dan tempatnya di kepala
+     justru yang dibutuhkan Reset. Angka yang benar-benar menolong sudah ada
+     di cip saringan: bukan "punyaku berapa", tapi "kata ini menemukan
+     berapa". Fungsinya sendiri ditinggal supaya pemanggilnya tidak perlu
+     tahu, dan supaya cip saringan ikut segar tiap kali timbunannya berubah. */
   function perbaruiJumlah() {
-    var n = semuaEntri.filter(catatanSaja).length;
-    $('#jumlah').textContent = n + ' tersimpan';
+    gambarCipSaring();
   }
 
   function daftarKategori() {
@@ -1146,8 +1156,10 @@
      sering terjadi bukan "aku mau melepas yang ini", tapi "aku mau mulai dari
      nol lagi". Dia ditaruh paling KIRI, sengaja jauh dari jempol: yang
      menghapus seluruh keadaan layar tidak pantas mudah tersenggol. */
+  /* RESET TIDAK LAGI DI SINI - dia naik ke kepala, di kiri Setelan. Dia bukan
+     saringan: dia menghapus keadaan, bukan menyempitkannya, dan slot yang
+     ditinggalkannya itu yang membuat sisanya plus ikon AI muat sebaris. */
   var JENIS_SARING = [
-    ['*reset', 'Reset', '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>'],
     ['*semua', 'Semua', '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
     ['teks', 'Teks', '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/>'],
     ['gambar', 'Gambar', '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>'],
@@ -1201,17 +1213,11 @@
   var hitungSaring = {};
 
   function gambarCipSaring() {
-    var wadah = $('#saring-baris');
+    var wadah = $('#saring-cip');
     if (!wadah) return;
     var hidup = semuaEntri.filter(catatanSaja);
     var adaHasil = hasilDepanAktif();
     var cip = JENIS_SARING.map(function (j) {
-      /* Reset bukan saringan: dia selalu ada dan tidak pernah menyala. */
-      if (j[0] === '*reset') {
-        return '<button class="saring-cip reset" data-jenis="*reset" title="' + H(j[1]) +
-               '" aria-label="' + H(j[1]) + '">' +
-               '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
-      }
       /* ANGKANYA ANGKA HASIL PENCARIAN, bukan angka seluruh timbunan. Yang
          menolong waktu kamu mengetik bukan "aku punya berapa gambar", tapi
          "kata ini menemukan berapa gambar" - dan itu yang menjawab kenapa
@@ -1219,15 +1225,21 @@
       var n = adaHasil ? (hitungSaring[j[0]] || 0)
         : (j[0] === '*semua' ? hidup.length
            : hidup.filter(function (e) { return cocokJenis(e, j[0]); }).length);
-      /* Yang isinya nol tetap tampil, cuma diredupkan: cip yang muncul-hilang
-         sambil kamu mengetik lebih mengganggu daripada angka nol. */
+      /* CIPNYA TETAP ADA WAKTU NOL, ANGKANYA YANG PERGI. Cip yang
+         muncul-hilang sambil kamu mengetik memindahkan tetangganya, dan jari
+         yang sudah hafal tempatnya jadi salah tekan. Yang nol cuma diredupkan.
+
+         Angkanya menumpang DI ATAS ikonnya, bukan di sebelahnya: di sebelah,
+         enam saringan plus ikon AI tidak muat sebaris, dan yang melipat
+         mendorong seluruh dok naik. */
       return '<button class="saring-cip' +
              (j[0] === '*semua' ? (saringJenis === '*semua' ? ' nyala' : '')
                                 : (jenisEfektif() === j[0] ? ' nyala' : '')) +
              (n ? '' : ' sepi') +
              '" data-jenis="' + j[0] + '" title="' + H(j[1]) + '" aria-label="' + H(j[1]) + '">' +
              '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg>' +
-             '<span class="saring-angka">' + n + '</span></button>';
+             (n ? '<span class="saring-angka">' + (n > 99 ? '99+' : n) + '</span>' : '') +
+             '</button>';
     }).filter(Boolean);
 
     /* JENIS ELEMEN TIDAK LAGI JADI CIP. Namanya panjang dan jumlahnya banyak -
@@ -1604,8 +1616,19 @@
      bukan dengan kotak centang yang menganga sepanjang hari - dan yang terbuang
      tetap bisa dikembalikan dari arsip di Setelan. */
   var pilihNote = {};
+  /* Keadaannya sendiri, TERPISAH dari "ada yang dipilih". Tanpa ini, menekan
+     tombol Pilih tidak menghasilkan apa-apa yang kelihatan - belum ada yang
+     terpilih, jadi bilahnya belum muncul, dan tombolnya terbaca rusak. */
+  var pilihNyala = false;
 
   function jumlahPilih() { return Object.keys(pilihNote).length; }
+
+  function mulaiPilih(nyala) {
+    pilihNyala = !!nyala;
+    if (!pilihNyala) pilihNote = {};
+    gambarBilahPilih();
+    tandaiPilih();
+  }
 
   function tandaiPilih() {
     $$('#note-isi .kartu').forEach(function (k) {
@@ -1615,13 +1638,20 @@
 
   function gambarBilahPilih() {
     var n = jumlahPilih();
-    $('#pilih-bilah').classList.toggle('sembunyi', !n);
-    $('#l-note').classList.toggle('mode-pilih', !!n);
-    $('#pilih-jumlah').textContent = n + ' dipilih';
+    var hidup = pilihNyala || !!n;
+    $('#pilih-bilah').classList.toggle('sembunyi', !hidup);
+    $('#l-note').classList.toggle('mode-pilih', hidup);
+    $('#b-pilih-mulai').classList.toggle('nyala', hidup);
+    /* Waktu belum ada yang ditunjuk, bilahnya menyebutkan apa yang harus
+       dilakukan - bukan "0 dipilih", yang cuma mengabarkan keadaan tanpa
+       memberi tahu jalan keluarnya. */
+    $('#pilih-jumlah').textContent = n ? n + ' dipilih' : 'Ketuk yang mau dipilih';
     $('#b-pilih-gabung').classList.toggle('sembunyi', n < 2);
+    $('#b-pilih-buang').classList.toggle('sembunyi', !n);
   }
 
   function alihPilih(id) {
+    pilihNyala = true;
     if (pilihNote[id]) delete pilihNote[id]; else pilihNote[id] = true;
     gambarBilahPilih();
     tandaiPilih();
@@ -1629,6 +1659,7 @@
 
   function batalPilih() {
     pilihNote = {};
+    pilihNyala = false;
     gambarBilahPilih();
     tandaiPilih();
   }
@@ -3379,7 +3410,7 @@
       /* Begitu ada yang dipilih, MENYENTUH KARTU BERARTI MEMILIH. Dua arti
          untuk satu ketukan adalah cara tercepat membuat orang ragu, jadi
          selama mode pilih hidup, membuka kartunya ditunda. */
-      if (jumlahPilih()) {
+      if (pilihNyala || jumlahPilih()) {
         var k = ev.target.closest('.kartu');
         if (k) { alihPilih(k.getAttribute('data-id')); return; }
       }
@@ -3400,7 +3431,7 @@
         batal();
         jam = setTimeout(function () {
           jam = null;
-          if (!jumlahPilih()) {
+          if (!pilihNyala && !jumlahPilih()) {
             alihPilih(mulaiId);
             if (navigator.vibrate) navigator.vibrate(12);
           }
@@ -3450,6 +3481,7 @@
       tambahTugas();
     });
 
+    $('#b-reset').addEventListener('click', resetLayar);
     $('#b-setelan').addEventListener('click', function () {
       gambarSetelan();
       keLayar('l-setelan');
@@ -3499,6 +3531,9 @@
       if (ev.target === $('#tanya')) tutupTanya();
     });
 
+    $('#b-pilih-mulai').addEventListener('click', function () {
+      mulaiPilih(!(pilihNyala || jumlahPilih()));
+    });
     $('#b-pilih-batal').addEventListener('click', batalPilih);
     $('#b-pilih-buang').addEventListener('click', buangPilih);
     $('#b-pilih-gabung').addEventListener('click', gabungPilih);

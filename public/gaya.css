@@ -740,28 +740,44 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
    dan nama jenis yang ditulis penuh memakan tempat yang seharusnya milik
    pilihannya sendiri. Jenis elemen tetap bertulisan - namanya lahir dari isi
    timbunanmu, jadi tidak ada ikon yang bisa mewakilinya. */
+/* SATU BARIS, TIDAK MELIPAT. Yang melipat mendorong doknya naik, dan tinggi
+   dok yang berubah-ubah sambil kamu mengetik adalah layar yang bergoyang tepat
+   di bawah jempol. Ikon AI menumpang di ujung kanannya - tetap persis di atas
+   tombol Drop, dan tidak lagi memakan barisnya sendiri. */
 .saring-baris{
-  display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+  display:flex;gap:6px;align-items:center;flex-wrap:nowrap;
   grid-column:1 / -1;padding:2px 2px 0;
 }
-.saring-cip{
-  display:inline-flex;align-items:center;justify-content:center;gap:5px;
-  min-height:34px;min-width:38px;padding:0 9px;
-  border:1px solid var(--l);background:none;color:var(--m);
-  border-radius:17px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;
+/* Kalau suatu hari saringannya bertambah, yang menggulir barisnya - BUKAN
+   melipat. Batang gulirnya disembunyikan: dia menambah tinggi, dan tinggi
+   itulah yang sedang dijaga di sini. */
+.saring-cip-baris{
+  display:flex;gap:6px;align-items:center;flex:1;min-width:0;
+  overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;
 }
-.saring-cip .ik{width:16px;height:16px}
-/* Angkanya kecil dan redup: dia keterangan, bukan isi. Yang dibaca duluan
-   tetap ikonnya - angka yang sama tebalnya dengan ikon bikin baris ini
-   terbaca seperti deretan angka, bukan deretan pilihan. */
-.saring-angka{font-size:11px;font-weight:700;opacity:.75;min-width:8px}
+.saring-cip-baris::-webkit-scrollbar{display:none}
+.saring-cip{
+  position:relative;flex:0 0 auto;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:38px;height:34px;min-height:0;padding:0;
+  border:1px solid var(--l);background:none;color:var(--m);
+  border-radius:17px;cursor:pointer;
+}
+.saring-cip .ik{width:17px;height:17px}
+/* ANGKANYA MENUMPANG DI ATAS IKONNYA, di sudut - bukan di sebelahnya. Di
+   sebelah, enam saringan plus ikon AI tidak muat di layar 412px dan barisnya
+   melipat. Alasnya sewarna alas halaman supaya dia menembus garis cipnya,
+   bukan mengambang di dalamnya. Yang nol tidak digambar sama sekali: nol itu
+   bukan kabar, itu cuma tinta. */
+.saring-angka{
+  position:absolute;top:-3px;right:-4px;
+  display:flex;align-items:center;justify-content:center;
+  min-width:15px;height:15px;padding:0 3px;border-radius:8px;
+  background:var(--g);color:var(--m);
+  font-size:9px;font-weight:700;line-height:1;
+}
 .saring-cip.sepi{opacity:.4}
-.saring-cip.nyala.sepi{opacity:.7}
-/* Reset dibedakan: dia satu-satunya cip di baris ini yang MENGHAPUS keadaan,
-   bukan menyaringnya. Garis putus-putus - bentuk yang sama dengan cip gudang
-   tersering, dan sama-sama berarti "ini jalan pintas, bukan saringan". */
-.saring-cip.reset{border-style:dashed;color:var(--m)}
-.saring-cip.reset:active{color:var(--bahaya);border-color:var(--bahaya)}
+.saring-cip.nyala .saring-angka{color:var(--a)}
 .saring-cip.nyala{
   border-color:transparent;color:var(--a);font-weight:700;
   background:color-mix(in srgb, var(--a) 14%, transparent);
@@ -784,14 +800,22 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 .terima-ekor .ik{width:17px;height:17px;stroke-width:2}
 
 /* --- cip gudang: kabar, bukan gerbang --- */
+/* SATU BARIS JUGA. Nama gudangnya boleh sepanjang apa pun - itu janji yang
+   sudah dipegang - tapi BARISNYA tidak boleh melipat: tujuh nama panjang
+   dulu menumpuk jadi dua baris dan mendorong kotaknya turun setengah layar.
+   Yang tidak muat menggulir ke samping, dan potongan cip terakhir yang
+   setengah kelihatan itu justru yang memberi tahu masih ada lanjutannya. */
 .ruang-baris{
-  display:flex;gap:5px;flex-wrap:wrap;align-items:center;
+  display:flex;gap:5px;flex-wrap:nowrap;align-items:center;
   grid-column:1 / -1;padding:2px 2px 0;
+  overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;
 }
+.ruang-baris::-webkit-scrollbar{display:none}
 .ruang-cip{
-  display:inline-flex;align-items:center;min-height:30px;padding:0 10px;
+  flex:0 0 auto;
+  display:inline-flex;align-items:center;min-height:28px;padding:0 9px;
   border:1px solid var(--l);background:none;color:var(--m);
-  border-radius:15px;font-size:12px;font-weight:600;cursor:pointer;
+  border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;
 }
 .ruang-cip.nyala{
   border-color:transparent;color:var(--a);cursor:default;
@@ -913,18 +937,14 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
    akan membuat dua lingkaran bertumpuk yang sama-sama berteriak "tekan aku",
    dan yang di bawah itulah yang dipakai puluhan kali sehari.
    ============================================================================ */
-.drop-tumpuk{
-  display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;
-  grid-column:3;
-}
-/* flex:0 0 auto WAJIB: .tbl bawaannya flex:1, dan di dalam tumpukan yang
-   tegak itu berarti tingginya ikut dibagi-bagi - lingkarannya jadi lonjong
-   tanpa satu pun ukuran di sini kelihatan salah. */
+/* flex:0 0 auto WAJIB: .tbl bawaannya flex:1, dan di baris yang isinya
+   saringan itu berarti dia melebar memakan tempat saringannya. */
 .dok-bawah #b-ai{
-  flex:0 0 auto;width:36px;height:36px;min-height:0;padding:0;border-radius:50%;
+  flex:0 0 auto;width:38px;height:34px;min-height:0;padding:0;border-radius:17px;
   background:var(--p);border:1px solid var(--l);color:var(--m);
+  margin-left:2px;
 }
-.dok-bawah #b-ai .ik{width:19px;height:19px}
+.dok-bawah #b-ai .ik{width:18px;height:18px}
 .dok-bawah #b-ai.nyala{background:var(--ap);border-color:var(--ap);color:var(--at)}
 #b-drop .ik.kirim{display:none}
 .mode-ai #b-drop .ik.turun{display:none}
@@ -935,7 +955,10 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
    yang tetap terpampang padahal tidak lagi menyaring apa pun adalah layar yang
    berbohong. Klip dan Todo ikut, karena keduanya menyimpan, dan di sini belum
    ada yang bisa disimpan sampai jawabannya datang. */
-.mode-ai #petak-hasil-depan,.mode-ai .saring-baris,.mode-ai .ruang-baris,
+/* Yang disembunyikan CIPNYA, bukan barisnya - ikon AI tinggal di baris itu,
+   dan menyembunyikan barisnya berarti menyembunyikan satu-satunya jalan
+   pulang dari mode AI. */
+.mode-ai #petak-hasil-depan,.mode-ai #saring-cip,.mode-ai .ruang-baris,
 .mode-ai #b-lampir,.mode-ai #b-tugas{display:none}
 /* Yang terbaru MENEMPEL di kotaknya, bukan menggantung di puncak layar dengan
    sejengkal kosong di bawahnya. Ini bentuk yang sudah dikenali dari tiap
@@ -971,3 +994,19 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 /* Yang sedang ditunggu kelihatan sebagai gelembung juga, di tempat jawabannya
    nanti mendarat - supaya layarnya tidak melompat waktu jawabannya sampai. */
 .ai-tunggu{color:var(--m);letter-spacing:.2em}
+
+
+/* Kotak Cari + tombol Pilih sebaris. Pilih redup dan kecil - dia pintu ke
+   pekerjaan sebulan sekali, dan pintu yang jarang dilewati tidak pantas
+   seramai kotak yang dipakai tiap hari. */
+.note-cari-baris{display:flex;align-items:center;gap:8px}
+.note-cari-baris .cari-input{flex:1;min-width:0}
+.pilih-mulai{
+  flex:0 0 auto;min-height:40px;padding:0 13px;border-radius:20px;
+  border:1px solid var(--l);background:none;color:var(--m);
+  font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;
+}
+.pilih-mulai.nyala{
+  border-color:transparent;color:var(--a);
+  background:color-mix(in srgb, var(--a) 14%, transparent);
+}
