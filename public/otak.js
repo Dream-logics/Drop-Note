@@ -510,10 +510,42 @@
       .replace(/(\s*•••\s*)+/g, ' ••• ').trim();
   }
 
-  function gabungElemen(lama, tambahan) {
+  /* NAMA ELEMEN MENYEBUT JENIS BENDANYA, BUKAN PEMILIKNYA.
+
+     "No WhatsApp Bunda" kelihatan lebih informatif, dan justru itu racunnya:
+     dia menempelkan nama orang ke nama jenis, jadi dia tidak akan pernah
+     berkumpul dengan "No WhatsApp" yang lain. Sebulan kemudian ada sepuluh
+     nama untuk satu benda dan tidak satu pun bisa dipakai menyaring.
+     Siapa pemiliknya sudah ada di judul dan di tag; di sini dia cuma merusak.
+
+     Aturannya ditegakkan di sini, bukan cuma diminta ke AI: aturan yang cuma
+     diminta akan bocor persis di hari tersibuk. Yang menang nama LAMA yang
+     jadi awalannya - dan yang terpanjang, supaya "No WhatsApp" mengalahkan
+     "No" untuk "No WhatsApp Bunda". */
+  function bakukanNamaElemen(nama, daftarLama) {
+    var n = String(nama || '').trim();
+    if (!n) return '';
+    var k = normal(n);
+    var terbaik = '';
+    (daftarLama || []).forEach(function (l) {
+      var p = normal(l);
+      if (!p) return;
+      /* Sama persis: pakai penulisan yang sudah ada, huruf besar-kecilnya
+         sekalian - dua nama yang cuma beda huruf besar tetap dua nama. */
+      if (k === p || k.indexOf(p + ' ') === 0) {
+        if (p.length > normal(terbaik).length) terbaik = l;
+      }
+    });
+    return terbaik || n;
+  }
+
+  function gabungElemen(lama, tambahan, namaLama) {
     var gabung = (lama || []).slice();
     (tambahan || []).forEach(function (x) {
-      if (x && x.nilai) tambahElemen(gabung, x.jenis || 'lainnya', x.nilai, x.nama);
+      if (x && x.nilai) {
+        tambahElemen(gabung, x.jenis || 'lainnya', x.nilai,
+                     bakukanNamaElemen(x.nama, namaLama));
+      }
     });
     return buangSerpihan(gabung).slice(0, 20);
   }
@@ -653,14 +685,31 @@
 
   /* Gudang mana yang akan menampung, dibaca dari teksnya sendiri. Yang
      dikembalikan yang PALING PANJANG cocok: "amara apps error login" mendarat
-     di "Amara Apps", bukan berhenti di "Amara". */
+     di "Amara Apps", bukan berhenti di "Amara".
+
+     DICARI DI MANA SAJA DI BARIS PERTAMA, bukan cuma di awal. Dulu nama gudang
+     wajib jadi kata pertama, dan itu keliru membaca cara orang menulis: waktu
+     menyimpan kontak, yang keluar duluan nama ORANGNYA - "Selvi Amara Sales
+     0865..." - dan dengan aturan lama kartu itu tidak mendarat di mana pun.
+     Salah paham yang paling mahal, karena tidak ada tanda apa-apa bahwa
+     gudangnya terlewat.
+
+     Efek sampingnya justru benar: "besok ke Amara Sales bawa sample" ikut
+     mendarat di Amara Sales, dan memang di situlah tempatnya.
+
+     Baris pertama saja - sesudah itu isi catatan, dan nama gudang yang
+     kebetulan disebut di paragraf ketiga bukan alamat, cuma cerita. */
   function bacaRuang(teks, daftar) {
-    var k = normal(teks).replace(/\s+/g, ' ');
+    var baris1 = String(teks || '').split('\n')[0];
+    var k = normal(baris1).replace(/\s+/g, ' ');
     if (!k) return null;
     var terbaik = null;
     (daftar || []).forEach(function (l) {
       var n = normal(l.nama);
-      if (k !== n && k.indexOf(n + ' ') !== 0) return;
+      if (!n) return;
+      /* Dibatasi tepi kata di kedua sisi, supaya "PS" tidak tersangkut di
+         dalam "gips" dan "Cons" tidak tersangkut di "consulting". */
+      if ((' ' + k + ' ').indexOf(' ' + n + ' ') < 0) return;
       if (!terbaik || n.length > normal(terbaik.nama).length) terbaik = l;
     });
     return terbaik;
@@ -777,6 +826,7 @@
     benahiKategori: benahiKategori,
     labelOtomatis: labelOtomatis, cari: cari,
     elemenOtomatis: elemenOtomatis, gabungElemen: gabungElemen,
+    bakukanNamaElemen: bakukanNamaElemen,
     samarkanPenanda: samarkanPenanda,
     buangSerpihan: buangSerpihan,
     uraiLabel: uraiLabel, tulisLabel: tulisLabel, cocokLabel: cocokLabel,
