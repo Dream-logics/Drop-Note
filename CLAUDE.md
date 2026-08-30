@@ -149,7 +149,14 @@ public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
                     Urutan "Semua" = terbaru di atas, titik; yang berprioritas
                     (tertunggak - penting - tenggat terdekat) cuma di saringan
                     lain, karena yang mendesak sudah punya rumahnya sendiri. Dua jalur masuk: layar To Do, dan
-                    cip Todo di layar Drop. Pembedanya ACTION, bukan tenggat -
+                    cip Todo di layar Drop.
+                    Pembaca tenggat dari kalimat mengerti DUA BAHASA sekaligus
+                    dan tidak pernah mengikuti setelan bahasa: yang diketik
+                    jari tidak ikut berganti waktu setelannya digeser. Sisi
+                    Inggrisnya sengaja lebih ketat - nama hari cuma bentuk
+                    lengkap ("sat"/"wed"/"sun" itu kata biasa), dan tanggal
+                    telanjang wajib berakhiran urutan (25th, bukan 25).
+                    Pembedanya ACTION, bukan tenggat -
                     tugas tanpa tanggal itu sah; yang cuma perlu DIINGAT tanpa
                     action itu drop biasa. Daftar ganda lewat keyword yang
                     sudah ada - opsional, tidak pernah wajib.
@@ -262,7 +269,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (567 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (580 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
