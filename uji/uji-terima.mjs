@@ -346,12 +346,13 @@ console.log('\ndrop -> cari (jaringan mati total)');
      sekali. */
   await hal.fill('#kotak', 'uji');
   await hal.waitForTimeout(300);
-  cek('kosongnya menyebut ada berapa di jenis lain',
-      /1.*jenis lain/s.test(await hal.locator('#hasil-depan .kosong').innerText()),
-      await hal.locator('#hasil-depan .kosong').innerText());
-  await hal.click('#saring-baris [data-jenis="*semua"]');
-  await hal.waitForTimeout(300);
+  /* TEKS = BUKAN GAMBAR DAN BUKAN BERKAS, bukan 'jenis === teks'. Kartu berisi
+     link tetap catatan tulisan; menyembunyikannya dari bawaan berarti mencari
+     "photo studio" menjawab kosong padahal barangnya ada. */
   cek('yang di-drop ketemu lagi tanpa jaringan', await hal.locator('#hasil-depan .kartu').count() === 1);
+  cek('tautan ikut terbaca sebagai teks, bukan disembunyikan',
+      (await hal.locator('#saring-baris [data-jenis="teks"] .saring-angka').first().innerText()) === '1',
+      await hal.locator('#saring-baris').innerText());
   cek('judulnya menyebut uji coba', /uji coba/.test(await hal.locator('.kartu-judul').first().innerText()));
 
   await hal.fill('#kotak', 'staging');
@@ -2360,8 +2361,9 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
      tiga ketukan di tiga tempat berbeda. */
   const semuaJenis = await hal.evaluate(() =>
     TAlur.jenisSaringUji().map((j) => j[0]));
-  cek('saringannya lengkap: reset, semua, teks, gambar, berkas, link',
-      JSON.stringify(semuaJenis) === JSON.stringify(['*reset', '*semua', 'teks', 'gambar', 'berkas', 'tautan']),
+  cek('saringannya lengkap: reset, semua, teks, gambar, berkas, link, pin',
+      JSON.stringify(semuaJenis) ===
+        JSON.stringify(['*reset', '*semua', 'teks', 'gambar', 'berkas', 'tautan', '*pin']),
       JSON.stringify(semuaJenis));
   cek('resetnya paling kiri, jauh dari jempol', semuaJenis[0] === '*reset');
 
@@ -2466,6 +2468,132 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
   cek('bisa dikembalikan', /^#0F766E$/i.test(await aksen()));
 
   await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.waitForTimeout(200);
+}
+
+console.log('\nbadge angka, cip Pin, kotak link, dan To Do yang ringkas');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.evaluate(async () => {
+    const b = (id, judul, jenis, isi) => ({
+      id: id, jenis: jenis, judul: judul, isi: isi || judul, kategori: 'badge',
+      tag: ['Badge'], label: [], elemen: [], daftar: [],
+      dibuat: Date.now(), diubah: Date.now(), dipakai: 0, diLabeliAI: true, diBacaAI: true
+    });
+    await TSimpan.taruh(b('bd-1', 'badgeuji catatan biasa', 'teks'));
+    await TSimpan.taruh(b('bd-2', 'badgeuji gambar', 'gambar'));
+    await TSimpan.taruh(b('bd-3', 'badgeuji gambar dua', 'gambar'));
+    const l = b('bd-4', 'badgeuji katalog', 'teks', 'badgeuji katalog https://a.example.id/x');
+    l.elemen = [{ jenis: 'tautan', nilai: 'https://a.example.id/x', nama: 'tautan' }];
+    await TSimpan.taruh(l);
+    const p = b('bd-5', 'badgeuji yang dipin', 'teks');
+    p.pin = true;
+    await TSimpan.taruh(p);
+    return TAlur.muatUlangUji();
+  });
+  await hal.fill('#kotak', 'badgeuji');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(450);
+
+  /* ANGKANYA ANGKA HASIL PENCARIAN, bukan angka seluruh timbunan. Yang
+     menolong waktu kamu mengetik bukan "aku punya berapa gambar", tapi "kata
+     ini menemukan berapa gambar" - dan itu menjawab kenapa layarnya kosong
+     sebelum kamu sempat bertanya. */
+  const angka = async (j) => Number(await hal.locator(
+    '#saring-baris [data-jenis="' + j + '"] .saring-angka').innerText());
+  cek('tiap cip membawa angka hasil pencariannya', (await angka('*semua')) === 5,
+      String(await angka('*semua')));
+  /* TEKS = bukan gambar dan bukan berkas, jadi kartu berisi link ikut terhitung. */
+  cek('teks berisi tiga: catatan, katalog berlink, dan yang dipin',
+      (await angka('teks')) === 3, String(await angka('teks')));
+  cek('gambar dua', (await angka('gambar')) === 2);
+  /* LINK DIBACA DARI ISINYA: kartu 'teks' yang punya elemen tautan tetap
+     terhitung link - dulu cip Link menjawab "mana yang dulu kudrop telanjang". */
+  cek('link dibaca dari elemennya, bukan dari bentuk dropnya',
+      (await angka('tautan')) === 1, String(await angka('tautan')));
+  cek('pin punya cipnya sendiri', (await angka('*pin')) === 1);
+
+  /* Yang dipin bisa ditampilkan TANPA dipancing pencarian - itu seluruh
+     gunanya pin. */
+  await hal.fill('#kotak', '');
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+  await hal.waitForTimeout(300);
+  await hal.click('#saring-baris [data-jenis="*pin"]');
+  await hal.waitForTimeout(400);
+  cek('cip Pin membuka yang dipin tanpa satu kata pun diketik',
+      (await hal.locator('#hasil-depan .kartu').count()) === 1 &&
+      /badgeuji yang dipin/.test(await hal.locator('#hasil-depan').innerText()));
+  await hal.click('#saring-baris [data-jenis="*reset"]');
+  await hal.waitForTimeout(300);
+
+  /* KOTAK KHUSUS LINK. Menempel sepuluh tautan lalu menyorot satu per satu
+     dengan jempol adalah pekerjaan yang justru mau dihapus. */
+  cek('semua alamat terbaca, bukan cuma yang pertama',
+      (await hal.evaluate(() => TOtak.semuaUrl(
+        'katalog https://a.example.id/x, brosur https://b.example.id/y dan www.c.example.id'
+      ).length)) === 3);
+  await hal.click('#b-lampir');
+  await hal.waitForTimeout(250);
+  await hal.click('[data-lamp="link"]');
+  await hal.waitForTimeout(250);
+  cek('kotak tempel link terbuka dari bilah lampiran',
+      !(await hal.locator('#petak-link').evaluate((n) => n.classList.contains('sembunyi'))));
+  await hal.fill('#link-tempel', 'https://x.example.id/satu\nhttps://y.example.id/dua');
+  await hal.dispatchEvent('#link-tempel', 'input');
+  await hal.waitForTimeout(250);
+  cek('jumlahnya disebut sebelum di-drop',
+      /2 link terbaca/.test(await hal.locator('#link-ket').innerText()),
+      await hal.locator('#link-ket').innerText());
+  await hal.click('#b-drop');
+  await hal.waitForTimeout(500);
+  const dualink = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => /x\.example\.id/.test(e.isi || ''))[0]));
+  cek('keduanya jadi elemen sendiri-sendiri, bisa disalin satu per satu',
+      dualink && (dualink.elemen || []).filter((x) => x.jenis === 'tautan').length === 2,
+      JSON.stringify(dualink && (dualink.elemen || []).map((x) => x.nilai)));
+  /* Dan yang kedua TIDAK hilang: dua alamat berdampingan dulu terbaca sebagai
+     satu "tautan", lalu yang kedua dibuang tanpa jejak. */
+  cek('tidak ada alamat yang hilang diam-diam',
+      dualink && /y\.example\.id/.test(dualink.isi || ''));
+
+  /* LAYAR TO DO: urutan saringan, baris rak dibuang, rinciannya diringkas. */
+  const tugasJs2 = fs.readFileSync(path.join(AKAR, 'tugas.js'), 'utf8');
+  const urutSaring = await hal.evaluate(() => {
+    TAlur.keLayarUji('l-tugas'); TTugas.gambar();
+    return Array.from(document.querySelectorAll('#tugas-saring [data-tsaring]'))
+      .map((n) => n.getAttribute('data-tsaring'));
+  });
+  cek('urutannya semua - hari ini - penting - selesai',
+      JSON.stringify(urutSaring) === JSON.stringify(['semua', 'hariini', 'penting', 'selesai']),
+      JSON.stringify(urutSaring));
+  cek('baris rak "#Semua daftar" dibuang',
+      (await hal.locator('#tugas-daftar-rak [data-trak]').count()) === 0);
+
+  await hal.evaluate(() => { TTugas.saring('semua'); TTugas.gambar(); });
+  await hal.waitForTimeout(300);
+  await hal.locator('#tugas-daftar .tugas .tugas-judul').first().click();
+  await hal.waitForTimeout(350);
+  /* Yang terbuka duluan cuma tenggat - sisanya di balik "Lainnya", dan yang
+     tidak pernah dibuka tidak pernah memakan tempat. */
+  cek('yang terbuka duluan cuma tenggat',
+      (await hal.locator('#tugas-daftar .tugas-rinci .cip-baris').first().innerText())
+        .indexOf('Hari ini') >= 0);
+  cek('sisanya di balik "Lainnya"',
+      (await hal.locator('#tugas-daftar [data-lain]').count()) === 1 &&
+      await hal.locator('#tugas-daftar .tugas-lain-isi').first()
+        .evaluate((n) => n.classList.contains('sembunyi')));
+  /* Ulang dibuang dari sini seluruhnya: dia sudah punya tempatnya sendiri. */
+  cek('pilihan Harian/Mingguan/Bulanan tidak lagi di sini',
+      !/ulangCip\('harian'/.test(tugasJs2));
+  await hal.click('#tugas-daftar [data-lain]');
+  await hal.waitForTimeout(300);
+  cek('"Lainnya" membuka sisanya',
+      !(await hal.locator('#tugas-daftar .tugas-lain-isi').first()
+        .evaluate((n) => n.classList.contains('sembunyi'))));
+
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
   await hal.waitForTimeout(200);
 }
 

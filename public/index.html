@@ -118,6 +118,9 @@
     <button class="lamp" data-lamp="kamera">
       <i><svg viewBox="0 0 24 24" class="ik"><path d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/></svg></i><span>Kamera</span>
     </button>
+    <button class="lamp" data-lamp="link">
+      <i><svg viewBox="0 0 24 24" class="ik"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></i><span>Link</span>
+    </button>
     <button class="lamp" data-lamp="daftar">
       <i><svg viewBox="0 0 24 24" class="ik"><rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/></svg></i><span>Daftar</span>
     </button>
@@ -140,6 +143,17 @@
     </div>
     <div class="tebakan-judul" id="tebakan-judul"></div>
     <div class="tebakan-ket" id="tebakan-ket"></div>
+  </div>
+
+  <!-- KOTAK KHUSUS LINK. Menempel sepuluh tautan sekaligus lalu harus
+       menyorot satu per satu dengan jempol untuk menyalinnya adalah pekerjaan
+       yang justru mau dihapus - dan itu dikerjakan tepat waktu kamu paling
+       buru-buru. Di sini ditempel sekali, dipisah sendiri, dan tiap satunya
+       punya tombol salinnya masing-masing di kartunya nanti. -->
+  <div class="sembunyi" id="petak-link">
+    <div class="label-kecil">Tempel link</div>
+    <textarea id="link-tempel" class="kotak tinggi" rows="4" placeholder="Tempel apa saja &#8212; yang berbentuk alamat akan dipisah sendiri" autocomplete="off" spellcheck="false"></textarea>
+    <div class="link-ket" id="link-ket"></div>
   </div>
 
   <!-- Daftar isi untuk jenis "daftar" -->
