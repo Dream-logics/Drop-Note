@@ -664,7 +664,24 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
    kotak teksnya duduk di atas lapisan ini dan menelan setiap sentuhan, jadi
    ekor yang kelihatan bisa diketuk tapi tidak menyahut justru terasa rusak.
    Menerimanya lewat cip di bawah kotak, atau Tab / panah kanan. */
-.bayang-ekor{color:var(--m);opacity:.55;border-bottom:1px dotted var(--m)}
+.bayang-ekor{color:var(--m);opacity:.55}
+
+/* Panah penerima, tepat di ujung ekornya. Sasaran sentuhnya 44px seperti
+   tombol lain, tapi bulatannya cuma 26px - kalau bulatannya sendiri sebesar
+   sasarannya, dia menutupi tulisan yang baru saja kamu ketik. Sasarannya
+   dibiarkan MENJULUR KE KANAN, ke ruang yang memang kosong, jadi tidak ada
+   satu huruf pun yang kehilangan ketukan kursornya. */
+.terima-ekor{
+  position:absolute;z-index:2;width:44px;height:44px;padding:0;border:none;
+  background:none;display:flex;align-items:center;justify-content:flex-start;
+  cursor:pointer;
+}
+.terima-ekor i{
+  width:26px;height:26px;flex:0 0 auto;border-radius:50%;
+  border:1px solid var(--a);background:var(--p);color:var(--a);
+  display:flex;align-items:center;justify-content:center;
+}
+.terima-ekor .ik{width:14px;height:14px;stroke-width:2.4}
 
 /* --- cip gudang: kabar, bukan gerbang --- */
 .ruang-baris{
@@ -683,5 +700,4 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 /* Tawaran kelengkapan: satu-satunya cip yang MENGUBAH isi kotak dengan nama
    yang belum selesai kamu ketik, jadi dia dibedakan dari cip kabar. */
 .ruang-cip{white-space:nowrap}
-.ruang-cip.usul{border-color:var(--a);color:var(--a)}
 .dok-bawah .ruang-baris{order:-1;width:100%;padding-bottom:6px}

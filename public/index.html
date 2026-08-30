@@ -67,6 +67,13 @@
         <div class="kotak-bungkus">
           <div class="kotak-bayang" id="kotak-bayang" aria-hidden="true"></div>
           <textarea id="kotak" class="kotak" rows="1" placeholder="Tulis atau cari&#8230;" autocomplete="off" spellcheck="false"></textarea>
+          <!-- Panah penerima. Dia satu-satunya bagian bayangan yang duduk DI
+               ATAS kotak teksnya - ekornya sendiri ada di belakang dan tidak
+               akan pernah bisa disentuh. Letaknya dihitung dari ujung ekor
+               tiap kali bayangannya digambar ulang. -->
+          <button class="terima-ekor sembunyi" id="b-terima" type="button" aria-label="Terima tebakan">
+            <i><svg viewBox="0 0 24 24" class="ik"><path d="M9 6l6 6-6 6"/></svg></i>
+          </button>
         </div>
         <!-- Kembarannya tombol Gambar/Berkas di laci Drop, tapi arahnya
              terbalik: yang di laci MEMASUKKAN, yang ini MENGELUARKAN. -->

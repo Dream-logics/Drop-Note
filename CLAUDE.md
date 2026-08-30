@@ -126,8 +126,10 @@ public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
 public/sinkron.js   cadangan satu arah ke Drive; tidak pernah di jalur drop
 public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     Teks bayangan melengkapi nama gudang sambil diketik;
-                    yang menerima cipnya (ekor di belakang kotak teks tidak
-                    bisa disentuh), atau Tab / panah kanan di ujung.
+                    yang menerima PANAH di ujung ekornya - satu-satunya bagian
+                    bayangan yang duduk DI ATAS kotak teks, letaknya diukur
+                    dari ujung ekor, bukan ditebak dari jumlah huruf.
+                    Bisa juga Tab / panah kanan di ujung.
                     Kotak + tombol + ketiga lacinya satu blok "dok" yang bisa
                     menempel di ATAS atau di BAWAH (pilihan di Setelan);
                     lacinya SELALU membuka ke bawah di kedua posisi
@@ -149,7 +151,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (295 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (297 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

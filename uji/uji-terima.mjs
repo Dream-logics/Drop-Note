@@ -1601,22 +1601,44 @@ console.log('\nteks bayangan: melengkapi nama gudang sambil diketik');
     await hal.type('#kotak', t, { delay: 12 });
     await hal.waitForTimeout(200);
   };
-  const bayang = () => hal.locator('#kotak-bayang').innerText();
+  /* Penanda ujung ekornya berisi spasi nol-lebar - tidak terlihat, tapi ikut
+     terbaca sebagai teks. Dibersihkan supaya yang dibandingkan cuma yang
+     benar-benar terlihat. */
+  const bayang = () => hal.locator('#kotak-bayang').innerText()
+    .then((t) => t.replace(/[\u200b]/g, ''));
 
   await ketik('Amara a');
   cek('ekornya muncul samar di belakang yang diketik',
       (await bayang()).trim() === 'Amara apps', await bayang());
 
-  /* Ekornya TIDAK boleh bisa diketuk: kotak teksnya duduk di atasnya dan
-     menelan setiap sentuhan, jadi ekor yang mengundang ketukan tapi diam
-     saja terbaca sebagai kerusakan. Yang menerima cipnya. */
-  cek('menerimanya lewat cip, bukan lewat ekornya',
-      (await hal.locator('#kotak-bayang [data-terima]').count()) === 0 &&
-      (await hal.locator('#ruang-baris [data-terima]').count()) === 1);
-  cek('cipnya menulis nama gudang yang sebenarnya, bukan sambungan huruf',
-      (await hal.locator('#ruang-baris [data-terima]').innerText()).trim() === 'Amara Apps');
+  /* Panahnya berdiri TEPAT di ujung ekor, dan letaknya diukur - bukan
+     ditebak dari jumlah huruf. Lebar huruf tidak tetap; menghitungnya dari
+     panjang teks meleset makin jauh tiap kata. */
+  const letak = await hal.evaluate(() => {
+    const b = document.querySelector('#b-terima').getBoundingClientRect();
+    const u = document.querySelector('#bayang-ujung').getBoundingClientRect();
+    return { jarak: b.left - u.left, sebaris: Math.abs((b.top + b.height / 2) - (u.top + u.height / 2)) };
+  });
+  cek('panahnya berdiri tepat di ujung ekornya',
+      letak.jarak >= 0 && letak.jarak < 14 && letak.sebaris < 6, JSON.stringify(letak));
 
-  await hal.click('#ruang-baris [data-terima]');
+  /* Dan dia satu-satunya bagian bayangan yang duduk DI ATAS kotak teksnya.
+     Ekornya sendiri ada di belakang: apa pun yang digambar di sana menelan
+     ketukan lewat textarea-nya, dan ekor yang mengundang ketukan tapi diam
+     saja terbaca sebagai kerusakan. */
+  const kena = await hal.evaluate(() => {
+    const b = document.querySelector('#b-terima').getBoundingClientRect();
+    const n = document.elementFromPoint(b.left + 12, b.top + b.height / 2);
+    return n ? (n.closest('#b-terima') ? 'panah' : n.id || n.tagName) : 'kosong';
+  });
+  cek('ketukan di panahnya sampai ke panah, bukan ditelan kotak teksnya',
+      kena === 'panah', String(kena));
+  cek('sasaran sentuhnya tetap 44px seperti tombol lain',
+      (await hal.locator('#b-terima').evaluate((n) => n.getBoundingClientRect().height)) >= 44);
+  cek('ekornya sendiri tidak mengundang ketukan',
+      (await hal.locator('#kotak-bayang [data-terima]').count()) === 0);
+
+  await hal.click('#b-terima');
   await hal.waitForTimeout(200);
   cek('sekali ketuk, namanya utuh dan kursornya siap menulis isi',
       (await hal.inputValue('#kotak')) === 'Amara Apps ');
@@ -1637,7 +1659,7 @@ console.log('\nteks bayangan: melengkapi nama gudang sambil diketik');
   await ketik('kirim invoice ke pak budi besok pagi');
   cek('kalimat panjang tidak ditebak sama sekali',
       (await bayang()).indexOf('Amara') < 0 &&
-      (await hal.locator('#ruang-baris [data-terima]').count()) === 0);
+      (await hal.locator('#b-terima').getAttribute('class')).includes('sembunyi'));
 
   /* Cip turunan: melihat pilihan tanpa harus mengingatnya. */
   await ketik('Amara');

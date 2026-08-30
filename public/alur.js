@@ -404,15 +404,47 @@
     var diUjung = kotak.selectionStart === teks.length && kotak.selectionEnd === teks.length;
     if (!sedangMenyusun && diUjung) lengkapSaat = TOtak.lengkapiRuang(teks, daftarLabel());
 
+    /* Penanda di ujung ekor: dari situlah letak panah penerima dihitung.
+       Isinya spasi nol-lebar, supaya dia punya tinggi baris - tanda kosong
+       melompong tidak punya ukuran yang bisa diukur. */
     bayang.innerHTML = H(teks) + (lengkapSaat
-      ? '<span class="bayang-ekor">' + H(lengkapSaat.ekor) + '</span>'
+      ? '<span class="bayang-ekor">' + H(lengkapSaat.ekor) + '</span>' +
+        '<span id="bayang-ujung">​</span>'
       : '');
+    taruhTerima();
 
     /* Gudangnya dibaca dari teks yang SUDAH diketik, bukan dari yang sedang
        ditawarkan - kalau tawarannya ikut dihitung, cipnya menyala untuk gudang
        yang belum tentu kamu pilih. */
     ruangSaat = TOtak.bacaRuang(teks, daftarLabel());
     gambarCipRuang();
+  }
+
+  /* Menaruh panah penerima tepat di ujung ekornya, diukur - bukan ditebak dari
+     jumlah huruf. Lebar huruf tidak tetap, jadi menghitungnya dari panjang
+     teks meleset makin jauh tiap kata. */
+  function taruhTerima() {
+    var b = $('#b-terima');
+    if (!b) return;
+    var ujung = $('#bayang-ujung');
+    var bungkus = $('.kotak-bungkus');
+    if (!lengkapSaat || !ujung || !bungkus) { b.classList.add('sembunyi'); return; }
+
+    var w = bungkus.getBoundingClientRect();
+    var u = ujung.getBoundingClientRect();
+    var x = u.left - w.left + 6;
+    var y = u.top - w.top + (u.height / 2) - 22;
+
+    /* Ditarik masuk kalau ekornya sudah mepet pinggir: panah yang setengah
+       badannya di luar kotak bukan cuma jelek, separuh sasaran sentuhnya
+       hilang. */
+    var maks = w.width - 30;
+    if (x > maks) x = maks;
+    if (x < 0) x = 0;
+
+    b.style.left = x + 'px';
+    b.style.top = y + 'px';
+    b.classList.remove('sembunyi');
   }
 
   function terimaLengkap() {
@@ -439,14 +471,6 @@
     /* Tawaran kelengkapan duduk di baris ini, bukan di ekor bayangannya:
        ekornya tertutup kotak teks dan tidak bisa disentuh sama sekali. Di sini
        dia justru mendarat di tempat yang paling dekat dengan jempol. */
-    if (lengkapSaat) {
-      /* Yang ditulis nama gudang yang SEBENARNYA, bukan sambungan huruf yang
-         kamu ketik: "amara a" + "pps" terbaca "amara apps" dan itu bukan nama
-         gudang mana pun. */
-      cip.push('<button class="ruang-cip usul" data-terima>' +
-               H(lengkapSaat.nama) + '</button>');
-    }
-
     if (ruangSaat) {
       cip.push('<span class="ruang-cip nyala">' + H(ruangSaat.nama) + '</span>');
       /* Turunan gudang yang sedang menyala - inilah "ketik amara, muncul
@@ -476,6 +500,7 @@
     $('#kotak').value = '';
     setelTinggiKotak();
     if ($('#kotak-bayang')) { $('#kotak-bayang').innerHTML = ''; ruangSaat = null; lengkapSaat = null; }
+    if ($('#b-terima')) $('#b-terima').classList.add('sembunyi');
     if ($('#ruang-baris')) $('#ruang-baris').classList.add('sembunyi');
     $('#daftar-baris').innerHTML = '';
     setelDaftarNyala(false);
@@ -2290,8 +2315,16 @@
         terimaLengkap();
       }
     });
+    /* mousedown, bukan click: menekan tombol membuat kotaknya kehilangan
+       fokus, dan di HP papan ketiknya ikut turun sebelum ketukannya selesai.
+       Dicegat sebelum itu terjadi, jadi papan ketiknya tidak pernah berkedip. */
+    $('#b-terima').addEventListener('mousedown', function (ev) {
+      ev.preventDefault();
+      terimaLengkap();
+    });
+    $('#b-terima').addEventListener('click', function (ev) { ev.preventDefault(); });
+
     $('#ruang-baris').addEventListener('click', function (ev) {
-      if (ev.target.closest('[data-terima]')) { terimaLengkap(); return; }
       var b = ev.target.closest('[data-ruang]');
       if (!b) return;
       var kotak = $('#kotak');
