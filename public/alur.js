@@ -123,6 +123,11 @@
   var entriCatat = null;
   var labelDepan = null;   /* label yang sedang ditampilkan di layar depan */
   var saringJenis = '';    /* '' = semua jenis; 'gambar', 'berkas', 'daftar', ... */
+  /* Saringan JENIS ELEMEN - "tunjukkan semua nomor telepon". Beda dari
+     saringJenis: yang itu jenis KARTUnya, yang ini jenis potongan DI DALAM
+     kartunya. Keduanya tinggal di laci yang sama dan saling meniadakan, supaya
+     tetap satu keputusan, bukan dua. */
+  var saringElemen = '';
   var gayaGambar = 'kecil';    /* besar | sedang | kecil | daftar */
   var laciBuka = '';       /* laci mana yang sedang terbuka: label | drop | filter */
   var posisiDok = 'atas';  /* atas | bawah - dipilih di Setelan */
@@ -458,6 +463,36 @@
     gambarHasilDepan();
   }
 
+  var SERING_HARI = 30;
+  var SERING_MAKS = 7;
+
+  /* Gudang yang paling sering menampung sebulan terakhir.
+
+     Dihitung dari catatan yang benar-benar jatuh, bukan dari daftar label:
+     yang ada di daftar itu semua gudang yang pernah kamu buat, sementara yang
+     berguna cuma yang sedang kamu pakai. Dan sengaja tidak ada cadangan kalau
+     riwayatnya kosong - pemasangan baru berarti belum ada yang sering, dan
+     menampilkan tujuh nama asal-asalan cuma mengajari orang mengabaikan baris
+     ini sejak hari pertama. */
+  function ruangSering() {
+    var batas = Date.now() - SERING_HARI * 86400000;
+    var punya = {};
+    daftarLabel().forEach(function (l) { punya[TOtak.normal(l.nama)] = l.nama; });
+
+    var hitung = {};
+    semuaEntri.forEach(function (e) {
+      if (e.pensiun || e.dihapus || e.jenis === 'tugas') return;
+      if ((e.diubah || e.dibuat || 0) < batas) return;
+      var nama = punya[TOtak.normal(e.kategori || '')];
+      if (!nama) return;
+      hitung[nama] = (hitung[nama] || 0) + 1;
+    });
+
+    return Object.keys(hitung)
+      .sort(function (a, b) { return hitung[b] - hitung[a] || a.localeCompare(b); })
+      .slice(0, SERING_MAKS);
+  }
+
   /* Cip gudang: KABAR, bukan gerbang. Dia memberi tahu ke mana barangnya akan
      mendarat, dan kamu tidak perlu menyentuhnya sama sekali. Turunannya ikut
      tampil supaya kamu melihat pilihan yang ada tanpa harus mengingatnya. */
@@ -468,9 +503,26 @@
     var teks = $('#kotak').value;
     var cip = [];
 
-    /* Tawaran kelengkapan duduk di baris ini, bukan di ekor bayangannya:
-       ekornya tertutup kotak teks dan tidak bisa disentuh sama sekali. Di sini
-       dia justru mendarat di tempat yang paling dekat dengan jempol. */
+    /* KOTAK KOSONG: gudang yang paling sering dipakai sebulan terakhir.
+       Sebulan itu kira-kira selebar satu fokus - proyek yang sedang berjalan
+       ada di situ, yang sudah lewat menghilang sendiri tanpa kamu merapikan
+       apa pun. Sekali ketuk, kamu sudah di dalam ruangannya tanpa mengetik
+       kata pertama.
+
+       Ini TIDAK melanggar "layar depan kosong": yang dilarang di sana dinding
+       kartu - isi timbunanmu yang menagih untuk dibaca. Ini kendali, bukan
+       isi, dan dia menghilang begitu kamu mulai mengetik. */
+    if (!teks.trim()) {
+      ruangSering().forEach(function (nama) {
+        cip.push('<button class="ruang-cip sering" data-ruang="' + H(nama) + '">' +
+                 H(nama) + '</button>');
+      });
+      var adaSering = !!cip.length;
+      wadah.classList.toggle('sembunyi', !adaSering);
+      wadah.innerHTML = adaSering ? cip.join('') : '';
+      return;
+    }
+
     if (ruangSaat) {
       cip.push('<span class="ruang-cip nyala">' + H(ruangSaat.nama) + '</span>');
       /* Turunan gudang yang sedang menyala - inilah "ketik amara, muncul
@@ -501,7 +553,9 @@
     setelTinggiKotak();
     if ($('#kotak-bayang')) { $('#kotak-bayang').innerHTML = ''; ruangSaat = null; lengkapSaat = null; }
     if ($('#b-terima')) $('#b-terima').classList.add('sembunyi');
-    if ($('#ruang-baris')) $('#ruang-baris').classList.add('sembunyi');
+    /* Digambar ulang, bukan disembunyikan: kotak yang baru dikosongkan justru
+       keadaan yang paling pantas menawarkan gudang tersering. */
+    gambarCipRuang();
     $('#daftar-baris').innerHTML = '';
     setelDaftarNyala(false);
     draf = null;
@@ -752,16 +806,60 @@
     ['tautan', 'Link', '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>']
   ];
 
+  /* Nama elemen yang BENAR-BENAR ADA di timbunan, urut dari yang terbanyak.
+     Tidak diambil dari daftar tetap: rak jenis elemen itu tumbuh sendiri dari
+     apa yang kamu simpan, dan rak yang isinya nol cuma barang yang harus
+     dilewati. */
+  function jenisElemenAda(hidup) {
+    var hitung = {};
+    hidup.forEach(function (e) {
+      var sudah = {};
+      (e.elemen || []).forEach(function (x) {
+        var n = String(x.nama || '').trim();
+        if (!n || sudah[n.toLowerCase()]) return;
+        sudah[n.toLowerCase()] = true;
+        hitung[n] = (hitung[n] || 0) + 1;
+      });
+    });
+    return Object.keys(hitung).map(function (n) { return { nama: n, jumlah: hitung[n] }; })
+      .filter(function (x) { return x.jumlah >= 2 || x.nama === saringElemen; })
+      .sort(function (a, b) { return b.jumlah - a.jumlah || a.nama.localeCompare(b.nama); })
+      .slice(0, 12);
+  }
+
+  function punyaElemen(e, nama) {
+    return (e.elemen || []).some(function (x) {
+      return String(x.nama || '').toLowerCase() === String(nama).toLowerCase();
+    });
+  }
+
   function gambarDaftarFilter() {
     var hidup = semuaEntri.filter(catatanSaja);
     $('#filter-daftar').innerHTML = JENIS_SARING.map(function (j) {
       var n = j[0] ? hidup.filter(function (e) { return e.jenis === j[0]; }).length : hidup.length;
-      return '<button class="label-baris' + (saringJenis === j[0] ? ' nyala' : '') +
+      return '<button class="label-baris' +
+             (!saringElemen && saringJenis === j[0] ? ' nyala' : '') +
              (n ? '' : ' sepi') + '" data-jenis="' + j[0] + '">' +
              '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg>' +
              '<span class="label-baris-nama">' + H(j[1]) + '</span>' +
              '<span class="label-jumlah">' + n + '</span></button>';
     }).join('');
+
+    /* "Tunjukkan semua nomor telepon" tidak bisa dijawab kata kunci: nomornya
+       sendiri tidak mengandung kata "telepon". Yang tahu itu elemen yang sudah
+       ditarik waktu kartunya masuk - jadi raknya sudah ada, tinggal dibuka. */
+    var el = jenisElemenAda(hidup);
+    if (el.length) {
+      $('#filter-daftar').innerHTML += '<div class="laci-judul">Isi di dalamnya</div>' +
+        el.map(function (x) {
+          return '<button class="label-baris' + (saringElemen === x.nama ? ' nyala' : '') +
+                 '" data-elemen="' + H(x.nama) + '">' +
+                 '<svg viewBox="0 0 24 24" class="ik"><rect x="3" y="7" width="18" height="10" rx="2"/>' +
+                 '<path d="M7 12h6"/></svg>' +
+                 '<span class="label-baris-nama">' + H(x.nama) + '</span>' +
+                 '<span class="label-jumlah">' + x.jumlah + '</span></button>';
+        }).join('');
+    }
   }
 
   /* UKURAN THUMBNAIL ITU PERTANYAAN NYATA, dan jawabannya berubah menurut apa
@@ -795,6 +893,7 @@
 
   function pilihJenis(j) {
     saringJenis = j;
+    saringElemen = '';
     tutupLaci();
     var nama = 'Jenis';
     JENIS_SARING.forEach(function (x) { if (x[0] === j && x[0]) nama = x[1]; });
@@ -802,9 +901,20 @@
     gambarHasilDepan();
   }
 
+  function pilihElemen(nama) {
+    /* Mengetuk yang sedang menyala mematikannya - tanpa itu, satu-satunya
+       jalan keluar adalah menebak tombol mana yang berarti "batal". */
+    saringElemen = (saringElemen === nama) ? '' : nama;
+    saringJenis = '';
+    tutupLaci();
+    $('#b-filter-teks').textContent = saringElemen || 'Jenis';
+    gambarHasilDepan();
+  }
+
   function tutupHasilDepan() {
     labelDepan = null;
     saringJenis = '';
+    saringElemen = '';
     var tf = $('#b-filter-teks');
     if (tf) tf.textContent = 'Jenis';
     $('#petak-hasil-depan').classList.add('sembunyi');
@@ -828,7 +938,7 @@
      langsung menyusut. Kotak kosong tanpa label berarti tidak ada apa-apa di
      bawah, dan layar depannya kembali kosong. */
   function hasilDepanAktif() {
-    return !!labelDepan || !!saringJenis || !!$('#kotak').value.trim();
+    return !!labelDepan || !!saringJenis || !!saringElemen || !!$('#kotak').value.trim();
   }
 
   function gambarHasilDepan() {
@@ -843,6 +953,12 @@
     var kueri = $('#kotak').value.trim();
     bersihkanUrl();
     var hasil = TOtak.cari(semuaEntri, kueri, saringJenis, istilah || '');
+    /* Disaring SESUDAH pencarian, bukan di dalamnya: pencarian bekerja atas
+       kata, sementara ini bekerja atas potongan yang sudah ditarik - dua hal
+       berbeda yang kebetulan bertemu di layar yang sama. */
+    if (saringElemen) {
+      hasil = hasil.filter(function (e) { return punyaElemen(e, saringElemen); });
+    }
     $('#b-label-teks').textContent = !labelDepan ? 'Label'
                                    : labelDepan === '*' ? 'Semua' : labelDepan;
     $('#petak-hasil-depan').classList.remove('sembunyi');
@@ -851,6 +967,7 @@
     ket.push(hasil.length ? hasil.length + ' hasil' : 'Kosong');
     if (labelDepan && labelDepan !== '*') ket.push(labelDepan);
     if (saringJenis) JENIS_SARING.forEach(function (x) { if (x[0] === saringJenis) ket.push(x[1]); });
+    if (saringElemen) ket.push(saringElemen);
     /* Kata yang panjang dipotong di kepala: keterangan yang membungkus jadi
        dua baris mendorong hasil pertama ke bawah - dan hasil pertama itu yang
        dicari. Yang lengkap tetap terbaca di kotaknya sendiri, tepat di atas. */
@@ -862,7 +979,9 @@
     if (!hasil.length) {
       wadah.innerHTML = '<div class="kosong">' + (kueri
         ? 'Tidak ada yang cocok.<br>Coba satu kata saja — pencarian ini memaafkan.'
-        : saringJenis
+        : saringElemen
+          ? 'Belum ada yang memuat ' + H(saringElemen) + '.'
+          : saringJenis
           ? 'Belum ada yang berjenis ini.'
           : 'Belum ada yang masuk label ini.<br>Label diisi AI sesudah catatannya jatuh.') +
         '</div>';
@@ -991,6 +1110,10 @@
   function segarkanTampilan() {
     if (layarSaat === 'l-note') gambarNote();
     if (hasilDepanAktif()) gambarHasilDepan();
+    /* Gudang tersering dihitung dari salinan lokal, jadi dia ikut disegarkan
+       tiap kali salinan itu berubah - termasuk sesudah cadangan menyunting
+       entri di belakang layar. */
+    gambarCipRuang();
   }
 
   function cuplikan(e) {
@@ -2347,28 +2470,23 @@
       gambarHasilDepan();
     });
 
-    /* Enter = cari. Kotak ini pintu masuk DAN pintu keluar: mengetik satu kata
-       lalu menekan Enter adalah gerakan yang paling sering terjadi, dan
-       memaksanya lewat tombol menambah satu ketukan pada gerakan tersering.
-       Isi kotaknya tidak hilang - kalau ternyata mau di-drop, tekan Drop.
-       Shift+Enter tetap baris baru buat catatan yang memang berbaris-baris. */
-    $('#kotak').addEventListener('keydown', function (ev) {
-      if (ev.key !== 'Enter' || ev.shiftKey) return;
-      var isi = $('#kotak').value.trim();
-      if (!isi) return;
-      ev.preventDefault();
-      /* Tidak ada lagi tempat lain untuk dituju: hasilnya sudah ada di bawah
-         kotak ini dan sudah menyaring tiap huruf. Yang dibutuhkan cuma papan
-         ketiknya minggir supaya hasilnya kelihatan utuh. */
-      $('#kotak').blur();
-    });
+    /* ENTER ITU BARIS BARU. Titik.
+
+       Dulu Enter dipakai untuk "cari", dan itu masuk akal waktu pencarian
+       masih perlu dipicu. Sekarang tidak: tiap huruf sudah menyaring daftar di
+       bawahnya, jadi tidak ada yang tersisa untuk dipicu. Yang tertinggal cuma
+       kerugiannya - catatan berbaris-baris jadi tidak bisa ditulis di kotak
+       yang justru pintu masuk utamanya. Jadi tidak ada penangan Enter di sini
+       sama sekali, dan itu memang bentuk yang benar. */
 
     $('#b-drop').addEventListener('click', drop);
     $('#b-label').addEventListener('click', function () { alihLaci('label'); });
     $('#b-filter').addEventListener('click', function () { alihLaci('filter'); });
     $('#filter-daftar').addEventListener('click', function (ev) {
       var b = ev.target.closest('[data-jenis]');
-      if (b) pilihJenis(b.getAttribute('data-jenis'));
+      if (b) { pilihJenis(b.getAttribute('data-jenis')); return; }
+      var el = ev.target.closest('[data-elemen]');
+      if (el) pilihElemen(el.getAttribute('data-elemen'));
     });
 
     /* RUANGNYA TERBATAS: laci yang menggantung terbuka menutupi kotak dan
@@ -2712,6 +2830,10 @@
          pemakainya, karena galat di ketukan pertama terbaca sebagai aplikasi
          rusak. Boleh gagal, dan gagalnya diam. */
       TAwan.hangatkan(setelanSaat);
+
+      /* Baris gudang tersering digambar sekali di awal - kotaknya masih kosong,
+         dan justru itu keadaan yang dilayaninya. */
+      gambarCipRuang();
 
       putaranLabel();
       putaranCadangan();

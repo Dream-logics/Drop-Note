@@ -1307,14 +1307,18 @@ console.log('\nmengetik = mencari, tanpa Enter');
       (await hal.locator('#hasil-depan .kartu').count()) >= 1);
   cek('layarnya tidak berpindah', await hal.locator('#l-utama').isVisible());
 
-  /* Enter tidak lagi memindahkan layar: hasilnya sudah di depan mata, dan
-     memindahkannya justru membuang yang sedang dilihat. Yang dibutuhkan cuma
-     papan ketiknya minggir. */
+  /* ENTER ITU BARIS BARU, dan tidak lagi berarti "cari". Pencarian tidak punya
+     apa-apa lagi untuk dipicu - tiap huruf sudah menyaring. Yang tersisa dari
+     Enter-sebagai-cari cuma kerugiannya: catatan berbaris-baris tidak bisa
+     ditulis di kotak yang justru pintu masuk utamanya. */
   await hal.press('#kotak', 'Enter');
   await hal.waitForTimeout(300);
-  cek('Enter tidak memindahkan layar waktu hasilnya sudah terbuka',
-      await hal.locator('#l-utama').isVisible());
-  cek('isi kotak tetap utuh', (await hal.inputValue('#kotak')) === 'wifi');
+  cek('Enter tidak memindahkan layar', await hal.locator('#l-utama').isVisible());
+  cek('Enter menambah baris baru, bukan memicu pencarian',
+      (await hal.inputValue('#kotak')) === 'wifi\n',
+      JSON.stringify(await hal.inputValue('#kotak')));
+  await hal.fill('#kotak', 'wifi');
+  await hal.waitForTimeout(250);
 
   /* Tingginya mengikuti isinya: satu kata = satu baris. Yang panjang
      mengembang sampai batas, lalu menggulir di dalam dirinya sendiri. */
@@ -1729,6 +1733,125 @@ console.log('\nteks bayangan: melengkapi nama gudang sambil diketik');
   await hal.fill('#kotak', '');
   await hal.evaluate(() => { TAlur.tutupHasilDepanUji(); TAlur.muatUlangUji(); });
   await hal.waitForTimeout(250);
+}
+
+console.log('\ngudang di mana saja, elemen tidak beranak, gudang tersering');
+{
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.waitForTimeout(200);
+  await hal.fill('#set-label', 'Amara\nAmara Sales\nAmara Apps\nNgoffee = ngopi\nUltima\nPS = projectspace');
+  await hal.dispatchEvent('#set-label', 'change');
+  await hal.waitForTimeout(250);
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+
+  /* NAMA GUDANG DICARI DI MANA SAJA DI BARIS PERTAMA.
+     Dulu wajib jadi kata pertama, dan itu keliru membaca cara orang menulis:
+     waktu menyimpan kontak yang keluar duluan nama ORANGNYA. "Selvi Amara
+     Sales 0865..." tidak mendarat di mana pun, tanpa satu tanda pun bahwa
+     gudangnya terlewat. */
+  const ruang = await hal.evaluate(() => {
+    const d = TAlur.daftarLabelUji();
+    const baca = (t) => (TOtak.bacaRuang(t, d) || {}).nama || '';
+    return {
+      orangDulu: baca('Selvi Amara sales 08653678975'),
+      gudangDulu: baca('Amara Sales Selvi 0865'),
+      tengah: baca('besok ke Amara Sales bawa sample'),
+      bukan: baca('Selvi 097765675578'),
+      /* Tepi kata dijaga di kedua sisi - kalau tidak, "PS" tersangkut di
+         dalam "gips" dan tiap catatan medis mendarat di ProjectSpace. */
+      dalamKata: baca('pasang gips di kaki'),
+      barisDua: baca('catatan biasa\nAmara Sales di baris kedua')
+    };
+  });
+  cek('nama orang duluan pun gudangnya tetap terbaca',
+      ruang.orangDulu === 'Amara Sales', JSON.stringify(ruang));
+  cek('di awal tetap jalan seperti sebelumnya', ruang.gudangDulu === 'Amara Sales');
+  cek('disebut di tengah kalimat ikut mendarat di sana', ruang.tengah === 'Amara Sales');
+  cek('yang tidak menyebut gudang tetap tidak mendarat di mana pun', ruang.bukan === '');
+  cek('tidak tersangkut di dalam kata lain', ruang.dalamKata === '');
+  cek('baris kedua ke bawah itu isi, bukan alamat', ruang.barisDua === '');
+
+  /* NAMA ELEMEN MENYEBUT JENIS BENDANYA, BUKAN PEMILIKNYA. "No WhatsApp
+     Bunda" tidak akan pernah berkumpul dengan "No WhatsApp" yang lain -
+     sebulan kemudian ada sepuluh nama untuk satu benda. */
+  const baku = await hal.evaluate(() => {
+    const lama = ['No WhatsApp', 'Nomor Rekening'];
+    return {
+      pemilik: TOtak.bakukanNamaElemen('No WhatsApp Bunda', lama),
+      besarKecil: TOtak.bakukanNamaElemen('no whatsapp', lama),
+      bank: TOtak.bakukanNamaElemen('Nomor Rekening BCA', lama),
+      baru: TOtak.bakukanNamaElemen('Alamat Gudang', lama)
+    };
+  });
+  cek('nama pemilik dilepas dari nama elemen', baku.pemilik === 'No WhatsApp', JSON.stringify(baku));
+  cek('penulisan yang sudah ada yang dipakai', baku.besarKecil === 'No WhatsApp');
+  cek('nama bank pun dilepas', baku.bank === 'Nomor Rekening');
+  cek('yang memang baru tetap boleh lahir', baku.baru === 'Alamat Gudang');
+  /* Diminta ke AI JUGA - kodenya menegakkan, arahannya mencegah. */
+  cek('aturannya ikut dikirim ke AI',
+      /NAMA ELEMEN MENYEBUT JENIS BENDANYA/.test(
+        await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TPelabel.arahanUji(s)))));
+
+  /* Saringan jenis elemen: "tunjukkan semua nomor telepon" tidak bisa dijawab
+     kata kunci - nomornya sendiri tidak memuat kata "telepon". */
+  await hal.evaluate(async () => {
+    const a = await TSimpan.semua();
+    const pakai = a.filter((e) => e.jenis !== 'tugas' && !e.pensiun && !e.dihapus).slice(0, 2);
+    for (const e of pakai) {
+      e.elemen = [{ jenis: 'telepon', nama: 'No WhatsApp', nilai: '0865367' + e.id.slice(-4) }];
+      await TSimpan.taruh(e);
+    }
+    return TAlur.muatUlangUji();
+  });
+  await hal.waitForTimeout(300);
+  await hal.click('#b-filter');
+  await hal.waitForTimeout(350);
+  cek('jenis elemen yang benar-benar ada ikut jadi rak',
+      (await hal.locator('#filter-daftar [data-elemen="No WhatsApp"]').count()) === 1,
+      await hal.locator('#filter-daftar').innerText());
+  await hal.click('#filter-daftar [data-elemen="No WhatsApp"]');
+  await hal.waitForTimeout(350);
+  cek('memilihnya menyaring, bukan mencari kata',
+      (await hal.locator('#hasil-depan .kartu').count()) === 2 &&
+      (await hal.locator('#hasil-depan-ket').textContent()).indexOf('No WhatsApp') >= 0);
+  /* Mengetuk yang menyala mematikannya - tanpa itu tidak ada jalan keluar. */
+  await hal.click('#b-filter');
+  await hal.waitForTimeout(300);
+  await hal.click('#filter-daftar [data-elemen="No WhatsApp"]');
+  await hal.waitForTimeout(300);
+  cek('mengetuknya lagi melepas saringannya',
+      (await hal.locator('#b-filter-teks').textContent()) === 'Jenis');
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+
+  /* Kotak kosong: gudang yang paling sering dipakai sebulan terakhir. Ini
+     KENDALI, bukan isi - jadi tidak melanggar "layar depan kosong". */
+  /* Dihitung dari catatan yang benar-benar jatuh, bukan dari daftar label -
+     yang ada di daftar itu semua gudang yang pernah dibuat, sementara yang
+     berguna cuma yang sedang dipakai. Jadi harus ada yang jatuh dulu. */
+  for (const t of ['Amara Sales target bulan depan', 'Amara Sales rapat senin',
+                   'Ngoffee stok biji menipis']) {
+    await hal.fill('#kotak', t);
+    await hal.dispatchEvent('#kotak', 'input');
+    await hal.waitForTimeout(120);
+    await hal.click('#b-drop');
+    await hal.waitForTimeout(300);
+  }
+  await hal.fill('#kotak', '');
+  await hal.evaluate(() => TAlur.muatUlangUji());
+  await hal.waitForTimeout(350);
+  const sering = await hal.locator('#ruang-baris .sering').allInnerTexts();
+  cek('kotak kosong menawarkan gudang tersering', sering.length >= 1 && sering.length <= 7,
+      JSON.stringify(sering));
+  await hal.locator('#ruang-baris .sering').first().click();
+  await hal.waitForTimeout(300);
+  cek('sekali ketuk, kamu sudah di dalam ruangannya',
+      (await hal.inputValue('#kotak')) === sering[0] + ' ');
+  /* Dan dia menghilang begitu kamu mengetik - digantikan tebakan. */
+  cek('tawarannya hilang begitu mulai mengetik',
+      (await hal.locator('#ruang-baris .sering').count()) === 0);
+  await hal.fill('#kotak', '');
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+  await hal.waitForTimeout(200);
 }
 
 console.log('\nnama cuma kulit');

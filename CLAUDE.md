@@ -112,8 +112,9 @@ public/awan.js      Google Drive & Sheets langsung — folder dan spreadsheet
                     dibuat SENDIRI oleh aplikasi; cakupan cuma drive.file
 public/pelabel.js   satu-satunya bagian ber-AI: judul + elemen + tag + OCR.
                     Lewat proxy milik PEMBUAT; kunci tidak pernah ada di
-                    perangkat pemakai. Daftar tag lama ikut dikirim supaya
-                    tag tidak beranak sendiri
+                    perangkat pemakai. Daftar tag lama DAN daftar nama elemen
+                    ikut dikirim supaya keduanya tidak beranak sendiri;
+                    nama elemen menyebut JENIS benda, tidak pernah pemiliknya
 public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
                     ulang, langkah, catatan. Daftar ganda lewat keyword yang
                     sudah ada - opsional, tidak pernah wajib.
@@ -151,7 +152,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (299 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (316 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

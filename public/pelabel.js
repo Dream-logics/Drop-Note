@@ -132,8 +132,9 @@
      Daftar tag lama ikut dikirim supaya tag tidak beranak sendiri. Tanpa itu
      "klien", "pelanggan", dan "customer" jadi tiga tag berbeda dalam sebulan,
      dan tidak ada satu pun yang bisa diandalkan buat menyaring. */
-  function arahanLabel(tagLama) {
+  function arahanLabel(tagLama, namaElemenLama) {
     var daftar = (tagLama || []).slice(0, 150).join(', ');
+    var namaEl = (namaElemenLama || []).slice(0, 80).join(', ');
     return [
       'Kamu membantu seseorang menemukan kembali catatannya sendiri berbulan-bulan kemudian.',
       'Catatannya ditulis dalam tiga detik, jadi konteksnya tidak ikut tertulis. Tugasmu menambalnya.',
@@ -198,6 +199,16 @@
       '   "nomor rekening" - bukan sebutan umum seperti "kode" atau "nomor".',
       '   Kalau satu entri memuat beberapa - misalnya tiga tautan sekaligus - pisahkan semuanya.',
       '   Beri "nama" pendek untuk tiap elemen, sebutan yang menjelaskan itu apa.',
+      '',
+      '   NAMA ELEMEN MENYEBUT JENIS BENDANYA, TIDAK PERNAH PEMILIKNYA.',
+      '   "No WhatsApp Bunda" SALAH - namanya "No WhatsApp", titik. Bunda sudah ada di judul',
+      '   dan di tag. Menempelkan nama orang, proyek, atau bank ke nama jenis membuat elemen',
+      '   itu tidak akan pernah berkumpul dengan saudaranya: sebulan kemudian ada sepuluh nama',
+      '   untuk satu benda, dan tidak satu pun bisa dipakai menyaring.',
+      '   Begitu juga "Nomor Rekening BCA" -> "Nomor Rekening", "Client ID Google" -> "Client ID".',
+      namaEl ? '   Nama yang SUDAH DIPAKAI - kalau maknanya sama, salin PERSIS: ' + namaEl
+             : '   Belum ada nama elemen sama sekali; susun sendiri dari nol.',
+      '',
       '   Kalau memang tidak ada yang menonjol, kembalikan elemen kosong. Itu jawaban yang sah:',
       '   berarti catatan itu utuh sebagai catatan. JANGAN mengarang elemen supaya tidak kosong.',
       '',
@@ -270,11 +281,13 @@
     var antre = antreLabel(semua);
     if (!antre.length) return Promise.resolve(0);
 
-    return tanya(setelan, [{ text: pesanan(antre) }], arahanLabel(daftarTag(setelan)))
+    var namaEl = daftarNamaElemen(setelan);
+    return tanya(setelan, [{ text: pesanan(antre) }], arahanLabel(daftarTag(setelan), namaEl))
       .then(function (jawab) {
         var hasil = (jawab && jawab.hasil) || [];
         if (!hasil.length) throw new Error('Jawaban AI kosong');
         var tagBaru = [];
+        var elBaru = [];
         var tulis = hasil.map(function (h) {
           var e = antre[h.i];
           if (!e) return null;
@@ -290,7 +303,13 @@
           /* Elemen AI DULUAN, baru sisa tebakan pola. AI yang tahu potongan
              itu sebenarnya apa - "Client ID", bukan "kode" - dan yang pertama
              terlihat di kartu ringkas cuma satu. */
-          e.elemen = TOtak.gabungElemen(h.elemen, e.elemen);
+          /* Nama elemennya dibakukan terhadap yang sudah ada SEBELUM disimpan.
+             Daftar lama sudah dikirim ke AI, tapi permintaan bukan jaminan -
+             yang menegakkan aturan ini kodenya. */
+          e.elemen = TOtak.gabungElemen(h.elemen, e.elemen, namaEl);
+          (e.elemen || []).forEach(function (x) {
+            if (x.nama && elBaru.indexOf(x.nama) < 0) elBaru.push(x.nama);
+          });
           e.tag = gabungTag(e.tag, h.tag);
           e.tag.forEach(function (t) { if (tagBaru.indexOf(t) < 0) tagBaru.push(t); });
           e.diLabeliAI = true;
@@ -299,6 +318,7 @@
         }).filter(Boolean);
         return Promise.all(tulis)
           .then(function () { return catatTag(setelan, tagBaru); })
+          .then(function () { return catatNamaElemen(setelan, elBaru); })
           .then(function () { return tulis.length; });
       });
   }
@@ -349,6 +369,28 @@
     return TSimpan.setel('hashtag', lama);
   }
 
+  /* Daftar nama elemen yang sudah dipakai - sama peran dengan daftar tag:
+     rak yang sudah ada, supaya AI memakai ulang alih-alih mengarang nama baru
+     untuk benda yang sama. Yang terbaru di belakang, jadi yang dipangkas kalau
+     kepanjangan adalah yang paling lama tidak muncul. */
+  function daftarNamaElemen(setelan) {
+    return ((setelan && setelan.namaElemen) || []).slice();
+  }
+
+  function catatNamaElemen(setelan, nama) {
+    var lama = daftarNamaElemen(setelan);
+    var berubah = false;
+    (nama || []).forEach(function (n) {
+      var t = String(n || '').trim();
+      if (!t) return;
+      if (!lama.some(function (x) { return samaTag(x, t); })) { lama.push(t); berubah = true; }
+    });
+    if (!berubah) return Promise.resolve();
+    lama = lama.slice(-120);
+    setelan.namaElemen = lama;
+    return TSimpan.setel('namaElemen', lama);
+  }
+
   function gabungLabel(lama, tambahan) {
     var gabung = (lama || []).slice();
     (tambahan || []).map(function (l) { return TOtak.normal(l); }).filter(Boolean)
@@ -358,8 +400,9 @@
 
   /* ===================== baca berkas (OCR) ===================== */
 
-  function arahanBaca(tagLama) {
+  function arahanBaca(tagLama, namaElemenLama) {
     var daftar = (tagLama || []).slice(0, 150).join(', ');
+    var namaEl = (namaElemenLama || []).slice(0, 80).join(', ');
     return [
       'Kamu membaca satu dokumen atau foto milik seseorang, supaya dia bisa menemukannya lagi',
       'bertahun-tahun kemudian saat dia cuma ingat samar-samar isinya.',
@@ -368,6 +411,9 @@
       '- elemen: nomor, kode, nama pihak, tanggal, dan jumlah yang nanti akan dia SALIN dari',
       '  dokumen ini - nomor KTP, nomor faktur, nominal, nama apotek, dosis obat. Persis apa adanya.',
       '  Beri "nama" pendek untuk tiap elemen. Kosongkan kalau memang tidak ada yang menonjol.',
+      '  NAMA ELEMEN MENYEBUT JENIS BENDANYA, TIDAK PERNAH PEMILIKNYA: "No WhatsApp", bukan',
+      '  "No WhatsApp Bunda". Pemiliknya sudah ada di judul dan di tag.',
+      namaEl ? '  Nama yang sudah dipakai - salin persis kalau maknanya sama: ' + namaEl : '',
       '- tag: 8 sampai 20, satu kata masing-masing, seperti tagar di bawah unggahan Instagram:',
       '  tiap satunya pancingan, satu kemungkinan kata yang nanti diketik saat mencari.',
       '  Daftar di bawah rak yang sudah ada, bukan daftar tertutup: pakai ulang kalau maknanya sama',
@@ -421,14 +467,14 @@
             return tanya(setelan, [
               { inline_data: { mime_type: e.tipeBerkas, data: b64 } },
               { text: 'Baca dokumen ini.' }
-            ], arahanBaca(daftarTag(setelan)));
+            ], arahanBaca(daftarTag(setelan), daftarNamaElemen(setelan)));
           }).then(function (h) {
             if (!h) throw new Error('Dokumen tidak terbaca');
             if (!e.judulManual && h.judul) {
               e.judul = TOtak.susunJudul(String(h.judul), e).slice(0, 90);
             }
             e.label = gabungLabel(e.label, h.label);
-            e.elemen = TOtak.gabungElemen(h.elemen, e.elemen);
+            e.elemen = TOtak.gabungElemen(h.elemen, e.elemen, daftarNamaElemen(setelan));
             e.tag = gabungTag(e.tag, h.tag);
             /* Teksnya ditaruh di isi, bukan di kolom baru: dengan begitu
                pencarian yang sudah ada langsung menemukannya, tanpa satu baris
@@ -439,6 +485,9 @@
             e.diubah = Date.now();
             return TSimpan.taruh(e)
               .then(function () { return catatTag(setelan, e.tag); })
+              .then(function () {
+                return catatNamaElemen(setelan, (e.elemen || []).map(function (x) { return x.nama; }));
+              })
               .then(function () { return n + 1; });
           });
         }).catch(function () {
@@ -478,7 +527,8 @@
   /* Uji dari layar Setelan - satu-satunya tempat kegagalan AI boleh berisik. */
   function coba(setelan) {
     var contoh = [{ jenis: 'tautan', kategori: '', isi: 'https://script.google.com/macros/s/AKfycbCONTOH/dev' }];
-    return tanya(setelan, [{ text: pesanan(contoh) }], arahanLabel(daftarTag(setelan))).then(function (j) {
+    return tanya(setelan, [{ text: pesanan(contoh) }],
+                 arahanLabel(daftarTag(setelan), daftarNamaElemen(setelan))).then(function (j) {
       if (!j || !j.hasil || !j.hasil.length) throw new Error('Tersambung, tapi jawabannya tidak dikenali');
       return j.hasil[0];
     });
@@ -488,7 +538,7 @@
     putaran: putaran, coba: coba, siap: siap, model: model, lewatProxy: lewatProxy,
     /* Cuma untuk uji: melihat arahan yang benar-benar dikirim, bukan menebak
        dari kodenya. */
-    arahanUji: function (setelan) { return arahanLabel(daftarTag(setelan)); },
+    arahanUji: function (setelan) { return arahanLabel(daftarTag(setelan), daftarNamaElemen(setelan)); },
     antreUji: function (semua) { return antreLabel(semua).map(function (e) { return e.id; }); }
   };
 })(window);
