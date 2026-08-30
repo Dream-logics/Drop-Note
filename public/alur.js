@@ -130,7 +130,11 @@
   var saringElemen = '';
   var gayaGambar = 'kecil';    /* besar | sedang | kecil | daftar */
   var laciBuka = '';       /* laci mana yang sedang terbuka: label | drop | filter */
-  var posisiDok = 'atas';  /* atas | bawah - dipilih di Setelan */
+  /* Doknya SELALU di bawah. Dulu ini pilihan di Setelan, dan pilihannya
+     dihapus: yang di atas terbukti kalah enak dipakai satu tangan - jempol
+     harus menyeberang layar tiap kali - dan dua tata letak berarti tiap
+     suntingan gaya harus diperiksa dua kali. Kelasnya dipasang langsung di
+     index.html, jadi tidak ada lagi yang perlu dinyalakan dari sini. */
   var urlSementara = [];
   var layarSaat = 'l-utama';
   var tumpukan = [];
@@ -215,6 +219,10 @@
     return TSimpan.semua().then(function (a) {
       semuaEntri = a || [];
       perbaruiJumlah();
+      /* Cip saringan lahir dari salinan lokal ini - jenis yang isinya nol
+         tidak ditampilkan, dan itu berubah tiap kali timbunannya berubah.
+         Kalau tidak digambar ulang di sini, cipnya menyebut keadaan kemarin. */
+      gambarCipSaring();
       return semuaEntri;
     });
   }
@@ -437,6 +445,7 @@
        yang belum tentu kamu pilih. */
     ruangSaat = TOtak.bacaRuang(teks, daftarLabel());
     gambarCipRuang();
+    gambarCipSaring();
   }
 
   /* Menaruh panah penerima tepat di ujung ekornya, diukur - bukan ditebak dari
@@ -536,23 +545,6 @@
       wadah.innerHTML = adaSering ? cip.join('') : '';
       return;
     }
-
-    /* CIP TODO. Pembedanya ACTION, bukan tenggat - dan yang tahu ada action
-       atau tidak cuma kamu, jadi tidak ada satu pun yang ditebak di sini.
-
-       Sekali ketuk langsung masuk daftar, tanpa lewat tombol Drop: menuntut
-       ketukan kedua sesudah kamu menyatakan maksudmu adalah menagih jawaban
-       yang sudah kamu berikan.
-
-       TIDAK ADA CIP REMINDER di sebelahnya, dan itu disengaja. Yang cuma perlu
-       DIINGAT tanpa action - nomor rekening, kunci API, "Eko masih punya hutang
-       tiga juta" - itu persis isi gudang ini, dan tombol Drop di sebelah sana
-       sudah jadi tombol Reminder-nya. Cip kedua yang kerjanya sama persis
-       dengan tombol di sampingnya cuma mengajari orang berhenti percaya
-       tombolnya. */
-    cip.push('<button class="ruang-cip tugas" data-tugas>' +
-             '<svg viewBox="0 0 24 24" class="ik kecil">' +
-             '<path d="M4 12l5 5L20 6"/></svg>Todo</button>');
 
     if (ruangSaat) {
       cip.push('<span class="ruang-cip nyala">' + H(ruangSaat.nama) + '</span>');
@@ -772,54 +764,14 @@
     });
   }
 
-  function gambarDaftarLabel() {
-    var semua = labelDenganJumlah();
-    var kotak = $('#label-cari');
-    var kueri = TOtak.normal(kotak.value);
-
-    kotak.classList.toggle('sembunyi', semua.length < CARI_LABEL_MIN);
-
-    var baris = ['<button class="label-baris' + (labelDepan === '*' ? ' nyala' : '') +
-                 '" data-label="*">Semua<span class="label-jumlah">' +
-                 semuaEntri.filter(catatanSaja).length + '</span></button>'];
-
-    semua.filter(function (l) {
-      if (!kueri) return true;
-      /* Dicocokkan ke istilahnya juga, bukan cuma namanya: mengetik
-         "construction" harus menemukan label yang tertulis "Cons". */
-      return l.istilah.some(function (t) { return t.indexOf(kueri) >= 0; });
-    }).forEach(function (l) {
-      baris.push('<button class="label-baris' + (labelDepan === l.nama ? ' nyala' : '') +
-                 (l.jumlah ? '' : ' sepi') + '" data-label="' + H(l.nama) + '">' +
-                 H(l.nama) + '<span class="label-jumlah">' + l.jumlah + '</span></button>');
-    });
-
-    if (baris.length === 1 && kueri) {
-      baris.push('<div class="label-kosong">Tidak ada label bernama itu.</div>');
-    }
-    $('#label-daftar').innerHTML = baris.join('');
-  }
-
   /* SATU LACI SAJA YANG BOLEH TERBUKA, dan dia menutup begitu kamu menyentuh
      hal lain. Layarnya sempit: laci yang menggantung terbuka menutupi kotak
      dan hasilnya sekaligus, dan yang menutupnya harus kamu sendiri - satu
      ketukan tambahan untuk membereskan sesuatu yang kamu tidak minta. */
   var LACI = {
-    label: ['#panel-label', '#b-label'],
-    drop: ['#panel-drop', null],
+    drop: ['#panel-drop', '#b-lampir'],
     filter: ['#panel-filter', '#b-filter']
   };
-
-  /* Menempel di atas atau di bawah. Di bawah itu bentuk yang paling enak
-     diketik satu tangan - jempol tidak menyeberang layar - dan itu sebabnya
-     WhatsApp dan hampir semua aplikasi yang dipakai berjam-jam menaruhnya di
-     sana. Tapi ini pilihan, bukan keyakinan: yang enak buat satu orang belum
-     tentu enak buat tangan yang lain. */
-  function pasangPosisiDok(p) {
-    posisiDok = p === 'bawah' ? 'bawah' : 'atas';
-    $('#l-utama').classList.toggle('dok-bawah', posisiDok === 'bawah');
-    setelTinggiKotak();
-  }
 
   function tutupLaci() {
     Object.keys(LACI).forEach(function (k) {
@@ -836,7 +788,6 @@
     $(LACI[nama][0]).classList.remove('sembunyi');
     if (LACI[nama][1]) $(LACI[nama][1]).setAttribute('aria-expanded', 'true');
     laciBuka = nama;
-    if (nama === 'label') { $('#label-cari').value = ''; gambarDaftarLabel(); }
     if (nama === 'filter') gambarDaftarFilter();
   }
 
@@ -885,33 +836,51 @@
     });
   }
 
-  function gambarDaftarFilter() {
-    var hidup = semuaEntri.filter(catatanSaja);
-    $('#filter-daftar').innerHTML = JENIS_SARING.map(function (j) {
-      var n = j[0] ? hidup.filter(function (e) { return e.jenis === j[0]; }).length : hidup.length;
-      return '<button class="label-baris' +
-             (!saringElemen && saringJenis === j[0] ? ' nyala' : '') +
-             (n ? '' : ' sepi') + '" data-jenis="' + j[0] + '">' +
-             '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg>' +
-             '<span class="label-baris-nama">' + H(j[1]) + '</span>' +
-             '<span class="label-jumlah">' + n + '</span></button>';
-    }).join('');
+  /* SARINGAN JADI CIP DI ATAS KOTAK, bukan isi laci.
 
-    /* "Tunjukkan semua nomor telepon" tidak bisa dijawab kata kunci: nomornya
-       sendiri tidak mengandung kata "telepon". Yang tahu itu elemen yang sudah
-       ditarik waktu kartunya masuk - jadi raknya sudah ada, tinggal dibuka. */
-    var el = jenisElemenAda(hidup);
-    if (el.length) {
-      $('#filter-daftar').innerHTML += '<div class="laci-judul">Isi di dalamnya</div>' +
-        el.map(function (x) {
-          return '<button class="label-baris' + (saringElemen === x.nama ? ' nyala' : '') +
-                 '" data-elemen="' + H(x.nama) + '">' +
-                 '<svg viewBox="0 0 24 24" class="ik"><rect x="3" y="7" width="18" height="10" rx="2"/>' +
-                 '<path d="M7 12h6"/></svg>' +
-                 '<span class="label-baris-nama">' + H(x.nama) + '</span>' +
-                 '<span class="label-jumlah">' + x.jumlah + '</span></button>';
-        }).join('');
+     Di dalam laci dia butuh dua ketukan untuk sesuatu yang dipakai tiap hari,
+     dan ketukan pertamanya cuma untuk melihat pilihan yang seharusnya sudah
+     kelihatan. Di sini pilihannya terbaca sekali lihat, dan yang sedang aktif
+     ikut terbaca tanpa membuka apa pun.
+
+     Cip Todo dipatok di ujung KANAN baris ini - tepat di atas tombol Drop,
+     tempat jempol kanan sudah bertumpu. */
+  function gambarCipSaring() {
+    var wadah = $('#saring-baris');
+    if (!wadah) return;
+    var hidup = semuaEntri.filter(catatanSaja);
+    var cip = JENIS_SARING.map(function (j) {
+      var n = j[0] ? hidup.filter(function (e) { return e.jenis === j[0]; }).length : hidup.length;
+      /* Jenis yang belum pernah ada isinya tidak ditampilkan sama sekali:
+         cip yang pasti menghasilkan nol cuma barang yang harus dilewati. */
+      if (j[0] && !n) return '';
+      return '<button class="saring-cip' +
+             (!saringElemen && saringJenis === j[0] ? ' nyala' : '') +
+             '" data-jenis="' + j[0] + '" title="' + H(j[1]) + '" aria-label="' + H(j[1]) + '">' +
+             '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
+    }).filter(Boolean);
+
+    /* Jenis elemen ikut naik ke sini - "tunjukkan semua nomor WhatsApp" tidak
+       bisa dijawab kata kunci, dan raknya sudah ada. Bertulisan, bukan berikon:
+       namanya lahir dari isimu sendiri, jadi tidak ada ikon yang bisa mewakili. */
+    jenisElemenAda(hidup).slice(0, 6).forEach(function (x) {
+      cip.push('<button class="saring-cip teks' + (saringElemen === x.nama ? ' nyala' : '') +
+               '" data-elemen="' + H(x.nama) + '">' + H(x.nama) + '</button>');
+    });
+
+    if ($('#kotak').value.trim()) {
+      cip.push('<button class="saring-cip tugas" data-tugas>' +
+               '<svg viewBox="0 0 24 24" class="ik"><path d="M4 12l5 5L20 6"/></svg>Todo</button>');
     }
+    wadah.innerHTML = cip.join('');
+  }
+
+  /* Laci jenis SENGAJA KOSONG untuk sekarang. Isinya sudah naik jadi cip di
+     atas kotak - dua ketukan untuk hal yang dipakai tiap hari itu satu ketukan
+     terlalu banyak. Tempatnya ditinggalkan untuk isian berikutnya, dan
+     dikosongkan tiap kali dibuka supaya tidak ada sisa yang menyesatkan. */
+  function gambarDaftarFilter() {
+    $('#filter-daftar').innerHTML = '';
   }
 
   /* UKURAN THUMBNAIL ITU PERTANYAAN NYATA, dan jawabannya berubah menurut apa
@@ -944,34 +913,31 @@
   }
 
   function pilihJenis(j) {
-    saringJenis = j;
+    /* Mengetuk yang sedang menyala mematikannya - tanpa itu, satu-satunya
+       jalan keluar adalah menebak cip mana yang berarti "batal". */
+    saringJenis = (saringJenis === j && j) ? '' : j;
     saringElemen = '';
-    tutupLaci();
-    var nama = 'Jenis';
-    JENIS_SARING.forEach(function (x) { if (x[0] === j && x[0]) nama = x[1]; });
-    $('#b-filter-teks').textContent = nama;
     gambarHasilDepan();
+    gambarCipSaring();
   }
 
   function pilihElemen(nama) {
-    /* Mengetuk yang sedang menyala mematikannya - tanpa itu, satu-satunya
-       jalan keluar adalah menebak tombol mana yang berarti "batal". */
     saringElemen = (saringElemen === nama) ? '' : nama;
     saringJenis = '';
-    tutupLaci();
-    $('#b-filter-teks').textContent = saringElemen || 'Jenis';
     gambarHasilDepan();
+    gambarCipSaring();
   }
 
   function tutupHasilDepan() {
     labelDepan = null;
     saringJenis = '';
     saringElemen = '';
-    var tf = $('#b-filter-teks');
-    if (tf) tf.textContent = 'Jenis';
     $('#petak-hasil-depan').classList.add('sembunyi');
     $('#hasil-depan').innerHTML = '';
-    $('#b-label-teks').textContent = 'Label';
+    /* Cipnya ikut digambar ulang - saringan yang sudah dilepas tapi cipnya
+       masih menyala adalah cara paling halus untuk membuat layar terlihat
+       berbohong. */
+    gambarCipSaring();
     bersihkanUrl();
   }
 
@@ -1011,8 +977,6 @@
     if (saringElemen) {
       hasil = hasil.filter(function (e) { return punyaElemen(e, saringElemen); });
     }
-    $('#b-label-teks').textContent = !labelDepan ? 'Label'
-                                   : labelDepan === '*' ? 'Semua' : labelDepan;
     $('#petak-hasil-depan').classList.remove('sembunyi');
 
     var ket = [];
@@ -1296,6 +1260,7 @@
   function segarkanTampilan() {
     if (layarSaat === 'l-note') gambarNote();
     if (hasilDepanAktif()) gambarHasilDepan();
+    gambarCipSaring();
     /* Gudang tersering dihitung dari salinan lokal, jadi dia ikut disegarkan
        tiap kali salinan itu berubah - termasuk sesudah cadangan menyunting
        entri di belakang layar. */
@@ -2134,16 +2099,6 @@
           'Ini mode pengembang — untuk pemakai biasa, kuncinya tinggal di layanan dan tidak pernah sampai ke perangkat.</div></div>'
         : '',
 
-      '<div class="set-bagian">Tata letak</div>',
-      '<div class="set-kotak">',
-      '<div class="set-judul">Posisi kotak drop</div>',
-      '<div class="set-ket">Di bawah, jempol tidak perlu menyeberang layar untuk mengetik — bentuk yang dipakai WhatsApp dan hampir semua aplikasi yang dibuka berjam-jam. Di atas, yang barusan diketik duduk sejajar mata. Tidak ada yang lebih benar; yang enak buat satu tangan belum tentu enak buat tangan lain.</div>',
-      '<div class="cip-baris" id="set-dok">',
-      '<button class="cip' + (posisiDok === 'atas' ? ' nyala' : '') + '" data-dok="atas">Di atas</button>',
-      '<button class="cip' + (posisiDok === 'bawah' ? ' nyala' : '') + '" data-dok="bawah">Di bawah</button>',
-      '</div>',
-      '</div>',
-
       '<div class="set-bagian">Label rak</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">Barisan tetap di layar hasil</div>',
@@ -2376,15 +2331,6 @@
 
     var model = $('#set-model');
     if (model) model.addEventListener('change', function () { simpanSetelan('model', model.value.trim()); });
-
-    var dok = $('#set-dok');
-    if (dok) dok.addEventListener('click', function (ev) {
-      var b = ev.target.closest('[data-dok]');
-      if (!b) return;
-      pasangPosisiDok(b.getAttribute('data-dok'));
-      simpanSetelan('posisiDok', posisiDok);
-      gambarSetelan();
-    });
 
     var isianLabel = $('#set-label');
     if (isianLabel) {
@@ -2637,8 +2583,15 @@
     });
     $('#b-terima').addEventListener('click', function (ev) { ev.preventDefault(); });
 
-    $('#ruang-baris').addEventListener('click', function (ev) {
+    $('#saring-baris').addEventListener('click', function (ev) {
       if (ev.target.closest('[data-tugas]')) { keTugas(); return; }
+      var j = ev.target.closest('[data-jenis]');
+      if (j) { pilihJenis(j.getAttribute('data-jenis')); return; }
+      var el = ev.target.closest('[data-elemen]');
+      if (el) pilihElemen(el.getAttribute('data-elemen'));
+    });
+
+    $('#ruang-baris').addEventListener('click', function (ev) {
       var b = ev.target.closest('[data-ruang]');
       if (!b) return;
       var kotak = $('#kotak');
@@ -2671,15 +2624,8 @@
        sama sekali, dan itu memang bentuk yang benar. */
 
     $('#b-drop').addEventListener('click', drop);
-    $('#b-label').addEventListener('click', function () { alihLaci('label'); });
+    $('#b-lampir').addEventListener('click', function () { alihLaci('drop'); });
     $('#b-filter').addEventListener('click', function () { alihLaci('filter'); });
-    $('#filter-daftar').addEventListener('click', function (ev) {
-      var b = ev.target.closest('[data-jenis]');
-      if (b) { pilihJenis(b.getAttribute('data-jenis')); return; }
-      var el = ev.target.closest('[data-elemen]');
-      if (el) pilihElemen(el.getAttribute('data-elemen'));
-    });
-
     /* RUANGNYA TERBATAS: laci yang menggantung terbuka menutupi kotak dan
        hasilnya sekaligus. Jadi dia menutup sendiri begitu kamu menyentuh hal
        lain - mengetuk kotak, menggulir hasil, apa pun di luar lacinya. Kalau
@@ -2688,15 +2634,10 @@
     $('#kotak').addEventListener('focus', tutupLaci);
     document.addEventListener('pointerdown', function (ev) {
       if (!laciBuka) return;
-      if (ev.target.closest('#panel-label, #panel-drop, #panel-filter')) return;
-      if (ev.target.closest('#b-label, #b-filter, [data-tab-ke="l-utama"]')) return;
+      if (ev.target.closest('#panel-drop, #panel-filter')) return;
+      if (ev.target.closest('#b-lampir, #b-filter, [data-tab-ke="l-utama"]')) return;
       tutupLaci();
     }, true);
-    $('#label-cari').addEventListener('input', gambarDaftarLabel);
-    $('#label-daftar').addEventListener('click', function (ev) {
-      var b = ev.target.closest('[data-label]');
-      if (b) pilihLabelDepan(b.getAttribute('data-label'));
-    });
     $('#b-tutup-hasil').addEventListener('click', tutupHasilDepan);
     $('#tampil-baris').addEventListener('click', function (ev) {
       var b = ev.target.closest('[data-gaya]');
@@ -2996,7 +2937,6 @@
          kebiasaan orang menetap di satu ukuran, dan memilihnya lagi tiap kali
          adalah keputusan berulang tanpa guna. */
       if (setelanSaat.gayaGambar) gayaGambar = setelanSaat.gayaGambar;
-      pasangPosisiDok(setelanSaat.posisiDok);
       return muatSemua();
     }).then(function () {
       return ambilBagikan();
@@ -3025,6 +2965,7 @@
       /* Baris gudang tersering digambar sekali di awal - kotaknya masih kosong,
          dan justru itu keadaan yang dilayaninya. */
       gambarCipRuang();
+      gambarCipSaring();
 
       putaranLabel();
       putaranCadangan();
@@ -3050,7 +2991,6 @@
     keLayarUji: keLayar,
     tutupHasilDepanUji: tutupHasilDepan,
     alamatNoteUji: alamatNote,
-    posisiDokUji: function (p) { pasangPosisiDok(p); return simpanSetelan('posisiDok', posisiDok); },
     tutupLaciUji: tutupLaci,
     muatUlangUji: muatSemua,
     semuaEntri: function () { return semuaEntri; }

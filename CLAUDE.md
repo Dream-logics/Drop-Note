@@ -134,9 +134,9 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     bayangan yang duduk DI ATAS kotak teks, letaknya diukur
                     dari ujung ekor, bukan ditebak dari jumlah huruf.
                     Bisa juga Tab / panah kanan di ujung.
-                    Kotak + tombol + ketiga lacinya satu blok "dok" yang bisa
-                    menempel di ATAS atau di BAWAH (pilihan di Setelan);
-                    lacinya SELALU membuka ke bawah di kedua posisi
+                    Kotak + tombol + kedua lacinya satu blok "dok" yang SELALU
+                    menempel di bawah; lacinya membuka ke bawah.
+                    Di atas kotak: cip gudang, lalu cip saringan jenis + Todo
 public/sw.js        service worker — singgahan kerangka + penerima "Bagikan"
 public/manifest.webmanifest   supaya bisa dipasang di HP
 uji/uji-terima.mjs            uji terima (Playwright)
@@ -155,7 +155,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (349 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (350 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

@@ -662,10 +662,13 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
       utama.indexOf('id="kotak"') < utama.indexOf('id="panel-drop"'));
   /* Laci SELALU membuka ke bawah, di kedua posisi: membuka ke atas berarti isi
      yang sedang dibaca melompat turun tepat saat kamu menekan sesuatu. */
-  cek('ketiga lacinya menggantung di bawah kotaknya',
+  cek('lacinya menggantung di bawah kotaknya',
       utama.indexOf('id="kotak"') < utama.indexOf('id="panel-drop"') &&
-      utama.indexOf('id="kotak"') < utama.indexOf('id="panel-filter"') &&
-      utama.indexOf('id="kotak"') < utama.indexOf('id="panel-label"'));
+      utama.indexOf('id="kotak"') < utama.indexOf('id="panel-filter"'));
+  /* Laci label dibuang seluruhnya: menyaring label sudah punya dua tempat yang
+     lebih baik - cip gudang di atas kotak, dan layar Note yang memang berupa
+     folder. Laci ketiga cuma menyalin keduanya. */
+  cek('laci label sudah tidak ada', !/id="panel-label"/.test(html));
   cek('lampiran tinggal di dalam laci Drop', utama.indexOf('id="lampiran"') > utama.indexOf('id="panel-drop"'));
   /* Tepat di bawah kotak, bukan di dasar layar: di layar panjang, dasar layar
      itu jauh dari yang barusan diketik. */
@@ -688,8 +691,12 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
      jempol kanan bertumpu di sudut kanan bawah - makin ke kiri makin jauh
      diraih. Yang paling sering ditekan duduk paling kanan. Urutan kiri-ke-kanan
      akan terasa rapi di laptop dan salah di tangan. */
-  cek('Drop paling kanan, Label paling kiri',
-      utama.indexOf('id="b-label"') < utama.indexOf('id="b-drop"'));
+  cek('Drop paling kanan, lampiran paling kiri',
+      utama.indexOf('id="b-lampir"') < utama.indexOf('id="b-drop"'));
+  /* Ikon kategori diganti KLIP KERTAS. Menyaring label sudah punya tempatnya
+     sendiri; yang belum punya pintu justru cara memasukkan sesuatu yang bukan
+     teks - dan di situlah klip duduk di hampir semua aplikasi pesan. */
+  cek('ikon kategori sudah tidak ada di sebelah kotak', !/id="b-label"/.test(html));
 
   /* TIDAK ADA LAYAR HASIL, DAN TIDAK ADA TOMBOL CARI. Kalau isinya identik
      dengan yang sudah tampil di bawah kotak, layar kedua cuma menyalin - dan
@@ -706,6 +713,14 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
   cek('doknya benar-benar menempel di gaya', /\.dok\{[^}]*position:sticky/.test(css));
   cek('posisi bawah benar-benar diatur di gaya',
       /\.layar\.dok-bawah > \.dok\{[^}]*bottom:0/.test(css));
+  /* DOKNYA SELALU DI BAWAH, dan pilihannya dihapus. Yang di atas kalah enak
+     dipakai satu tangan - jempol menyeberang layar tiap kali - dan dua tata
+     letak berarti tiap suntingan gaya harus diperiksa dua kali. */
+  cek('doknya selalu di bawah, tanpa perlu dinyalakan',
+      /id="l-utama"[^>]*class="[^"]*dok-bawah/.test(html) ||
+      /class="layar aktif dok-bawah"/.test(html));
+  cek('togglenya sudah tidak ada di Setelan', !/data-dok=/.test(
+      fs.readFileSync(path.join(AKAR, 'alur.js'), 'utf8')));
   /* Tingginya mengikuti isinya - bawaannya satu baris, dan batasnya ada
      supaya catatan sepuluh baris tidak mendorong tombol Drop keluar layar. */
   cek('kotak mulai dari satu baris', /id="kotak"[^>]*rows="1"/.test(html));
@@ -911,16 +926,17 @@ console.log('\nlayar kosong harus menyebut sebabnya');
       await hal.locator('#petak-hasil-depan').evaluate((n) => n.classList.contains('sembunyi')));
 
   /* Saringan label yang tertinggal menyala adalah cara paling halus untuk
-     membuat pencarian TERLIHAT rusak. Sekarang labelnya selalu kelihatan di
-     tombolnya sendiri, jadi tidak bisa menyaring diam-diam. */
+     membuat pencarian TERLIHAT rusak. Jadi labelnya selalu disebut di kepala
+     hasilnya - tidak ada saringan yang bekerja diam-diam. */
   await hal.evaluate(() => TAlur.pilihLabelUji('Cons'));
   await hal.waitForTimeout(300);
-  cek('label yang menyaring selalu tertulis di tombolnya',
-      (await hal.textContent('#b-label-teks')) === 'Cons');
+  cek('label yang menyaring selalu tertulis di kepala hasilnya',
+      /Cons/.test(await hal.textContent('#hasil-depan-ket')),
+      await hal.textContent('#hasil-depan-ket'));
   await hal.evaluate(() => TAlur.tutupHasilDepanUji());
   await hal.waitForTimeout(200);
-  cek('menutupnya mengembalikan tombolnya ke "Label"',
-      (await hal.textContent('#b-label-teks')) === 'Label');
+  cek('menutupnya mengembalikan layar depan yang kosong',
+      await hal.locator('#petak-hasil-depan').evaluate((n) => n.classList.contains('sembunyi')));
 }
 
 console.log('\nlabel rak: barisan tetap, satu ketuk sama dengan menyaring');
@@ -955,17 +971,13 @@ console.log('\nlabel rak: barisan tetap, satu ketuk sama dengan menyaring');
     { tag: ['psikologi'], kategori: '' }, TOtak.uraiLabel('PS')[0].istilah));
   cek('nama dua huruf tidak dipakai sebagai awalan', pendek === false);
 
-  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
-  await hal.click('#b-label');
-  await hal.waitForTimeout(300);
-  const nama = await hal.locator('#label-daftar .label-baris').allTextContents();
-  cek('daftar labelnya tergambar', nama.length > 5, String(nama.length));
-  cek('barisan pertama "Semua"', /^Semua/.test(nama[0]), nama[0]);
-  cek('urutannya persis daftar bawaan, tidak diacak isi',
-      nama[1].indexOf('MAP') === 0 && nama[2].indexOf('Amara') === 0,
-      nama.slice(1, 3).join('|'));
-  await hal.click('#b-label');   /* tutup lacinya lagi */
-  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+  /* Daftar labelnya sendiri tidak lagi punya laci - menyaring label sudah
+     punya dua tempat yang lebih baik: cip gudang di atas kotak, dan layar Note
+     yang memang berupa folder. Yang tetap diuji uraiannya, karena dia yang
+     dipakai kedua tempat itu. */
+  const bawaan = await hal.evaluate(() => TAlur.daftarLabelUji().map((l) => l.nama));
+  cek('daftar labelnya tetap terbaca dari setelan', bawaan.length > 5, String(bawaan.length));
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.waitForTimeout(200);
 }
 
@@ -984,34 +996,16 @@ console.log('\nlabel di layar depan: hasil di tempat, bukan pindah layar');
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(200);
 
-  await hal.click('#b-label');
-  await hal.waitForTimeout(250);
-  const isi = await hal.locator('#label-daftar .label-baris').allTextContents();
-  cek('daftar label terbuka dari tombolnya', isi.length > 5, String(isi.length));
-  cek('barisan pertama "Semua"', /^Semua/.test(isi[0]), isi[0]);
-  cek('tiap label membawa jumlahnya', /\d$/.test(isi[1]), isi[1]);
-
-  /* Dicocokkan ke istilahnya juga: mengetik kata panjang harus menemukan
-     label yang tertulis singkat. */
-  await hal.fill('#label-cari', 'construction');
-  await hal.waitForTimeout(250);
-  const saring = await hal.locator('#label-daftar .label-baris').allTextContents();
-  cek('mencari "construction" menemukan label "Cons"',
-      saring.some((t) => t.indexOf('Cons') === 0), saring.join('|'));
-
-  await hal.fill('#label-cari', '');
-  await hal.waitForTimeout(200);
-  await hal.click('[data-label="Cons"]');
+  await hal.evaluate(() => TAlur.pilihLabelUji('Cons'));
   await hal.waitForTimeout(400);
 
   /* INI YANG DIUJI: memilih label tidak memindahkan layar. */
   cek('layarnya tetap layar depan', await hal.locator('#l-utama').isVisible());
-  cek('daftar labelnya menutup sendiri',
-      await hal.locator('#panel-label').evaluate((n) => n.classList.contains('sembunyi')));
   cek('hasilnya tergambar di layar yang sama',
       (await hal.locator('#hasil-depan .kartu').count()) >= 1);
-  cek('tombolnya menyebut label yang sedang tampil',
-      (await hal.textContent('#b-label-teks')) === 'Cons');
+  cek('kepalanya menyebut label yang sedang tampil',
+      /Cons/.test(await hal.textContent('#hasil-depan-ket')),
+      await hal.textContent('#hasil-depan-ket'));
 
   /* MENGETIK LANGSUNG MENYARING, tanpa Enter. Pencarian jalan di atas salinan
      lokal, jadi menahannya sampai Enter cuma menunda hasil yang sudah siap -
@@ -1043,8 +1037,6 @@ console.log('\nlabel di layar depan: hasil di tempat, bukan pindah layar');
   await hal.waitForTimeout(250);
   cek('silang di kepalanya menutup hasilnya',
       await hal.locator('#petak-hasil-depan').evaluate((n) => n.classList.contains('sembunyi')));
-  cek('tombolnya kembali menyebut "Label"',
-      (await hal.textContent('#b-label-teks')) === 'Label');
 }
 
 console.log('\ntiga pintu di kepala, dan layar Note');
@@ -1113,21 +1105,27 @@ console.log('\nlaci: satu saja yang terbuka, dan menutup sendiri');
   cek('layarnya tidak ke mana-mana', await hal.locator('#l-utama').isVisible());
 
   /* Ruangnya terbatas: dua laci terbuka sekaligus menutupi kotak DAN hasilnya. */
-  await hal.click('#b-label');
+  await hal.click('#b-filter');
   await hal.waitForTimeout(250);
   cek('membuka laci lain menutup yang sebelumnya', !(await buka('#panel-drop')));
-  cek('laci label yang terbuka sekarang', await buka('#panel-label'));
+  cek('laci jenis yang terbuka sekarang', await buka('#panel-filter'));
 
   /* Menyentuh hal lain menutupnya sendiri - kalau harus ditutup tangan, itu
      satu ketukan untuk membereskan sesuatu yang tidak diminta. */
   await hal.click('#kotak');
   await hal.waitForTimeout(250);
-  cek('mengetuk kotak menutup lacinya sendiri', !(await buka('#panel-label')));
-  cek('dan tidak ada label yang diam-diam terpilih',
-      (await hal.textContent('#b-label-teks')) === 'Label');
+  cek('mengetuk kotak menutup lacinya sendiri', !(await buka('#panel-filter')));
+
+  /* Klip kertas punya lacinya sendiri sekarang - dulu satu-satunya jalan ke
+     sana menekan pintu Drop yang sedang terbuka, dan itu tidak pernah ketemu
+     sendiri. */
+  await hal.click('#b-lampir');
+  await hal.waitForTimeout(250);
+  cek('klip kertas membuka laci cara memasukkan', await buka('#panel-drop'));
+  await hal.evaluate(() => TAlur.tutupLaciUji());
 }
 
-console.log('\nsaringan jenis: sisi keluar dari laci Drop');
+console.log('\nsaringan jenis: cip di atas kotak, bukan isi laci');
 {
   await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.fill('#kotak', 'https://shamira.example.id/katalog');
@@ -1136,29 +1134,45 @@ console.log('\nsaringan jenis: sisi keluar dari laci Drop');
   await hal.fill('#kotak', '');
   await hal.waitForTimeout(250);
 
-  /* Ikonnya sengaja sama dengan yang di laci Drop: yang di atas MEMASUKKAN,
-     yang ini MENGELUARKAN. */
   const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
-  cek('tombol jenis berdiri di antara Label dan Drop',
-      html.indexOf('id="b-label"') < html.indexOf('id="b-filter"') &&
+  cek('tombol jenis berdiri di antara klip dan Drop',
+      html.indexOf('id="b-lampir"') < html.indexOf('id="b-filter"') &&
       html.indexOf('id="b-filter"') < html.indexOf('id="b-drop"'));
 
-  await hal.click('#b-filter');
-  await hal.waitForTimeout(250);
-  const jenis = await hal.locator('#filter-daftar .label-baris').allTextContents();
-  cek('lacinya berisi jenis yang sama dengan laci Drop',
-      jenis.some((t) => /^Gambar/.test(t)) && jenis.some((t) => /^Berkas/.test(t)) &&
-      jenis.some((t) => /^Daftar/.test(t)) && jenis.some((t) => /^Link/.test(t)), jenis.join('|'));
+  /* SARINGANNYA NAIK JADI CIP DI ATAS KOTAK. Di dalam laci dia butuh dua
+     ketukan untuk sesuatu yang dipakai tiap hari, dan ketukan pertamanya cuma
+     untuk melihat pilihan yang seharusnya sudah kelihatan. */
+  cek('cipnya berdiri di atas kotaknya, bukan di dalam laci',
+      html.indexOf('id="saring-baris"') < html.indexOf('id="b-drop"') &&
+      html.indexOf('id="ruang-baris"') < html.indexOf('id="saring-baris"'));
+  const jenis = await hal.locator('#saring-baris [data-jenis]')
+    .evaluateAll((n) => n.map((x) => x.getAttribute('data-jenis')));
+  cek('jenis yang benar-benar ada jadi cip', jenis.indexOf('tautan') >= 0,
+      JSON.stringify(jenis));
+  /* Jenis yang isinya nol tidak ditampilkan: cip yang pasti menghasilkan nol
+     cuma barang yang harus dilewati. */
+  cek('jenis yang kosong tidak ikut jadi cip', jenis.indexOf('daftar') < 0,
+      JSON.stringify(jenis));
 
   /* Memilih Link memperlihatkan tautan TANPA satu kata pun diketik. */
-  await hal.click('[data-jenis="tautan"]');
+  await hal.click('#saring-baris [data-jenis="tautan"]');
   await hal.waitForTimeout(350);
   cek('memilih jenis menampilkan hasil tanpa kata kunci',
       (await hal.locator('#hasil-depan .kartu').count()) >= 1);
-  cek('jenis yang menyaring tertulis di tombolnya',
-      (await hal.textContent('#b-filter-teks')) === 'Link');
+  cek('cip yang menyaring menyala, dan cuma dia',
+      (await hal.locator('#saring-baris [data-jenis="tautan"].nyala').count()) === 1 &&
+      (await hal.locator('#saring-baris .nyala').count()) === 1);
   cek('dan ikut disebut di kepala hasilnya',
       /Link/.test(await hal.textContent('#hasil-depan-ket')));
+  /* Mengetuknya lagi mematikannya - tanpa itu, satu-satunya jalan keluar
+     adalah menebak cip mana yang berarti "batal". */
+  await hal.click('#saring-baris [data-jenis="tautan"]');
+  await hal.waitForTimeout(300);
+  cek('mengetuknya lagi melepas saringannya',
+      (await hal.locator('#saring-baris [data-jenis="tautan"].nyala').count()) === 0 &&
+      (await hal.locator('#saring-baris [data-jenis=""].nyala').count()) === 1);
+  await hal.click('#saring-baris [data-jenis="tautan"]');
+  await hal.waitForTimeout(300);
 
   /* Kata + jenis dipakai bersama: hasilnya menyusut, bukan mengganti. */
   const semua = await hal.locator('#hasil-depan .kartu').count();
@@ -1170,12 +1184,21 @@ console.log('\nsaringan jenis: sisi keluar dari laci Drop');
 
   await hal.fill('#kotak', '');
   await hal.evaluate(() => TAlur.tutupHasilDepanUji());
-  await hal.waitForTimeout(250);
+  await hal.waitForTimeout(300);
   cek('menutup hasilnya melepas saringan jenisnya juga',
-      (await hal.textContent('#b-filter-teks')) === 'Jenis');
+      (await hal.locator('#saring-baris [data-jenis="tautan"].nyala').count()) === 0);
+
+  /* Laci jenis SENGAJA KOSONG sekarang - tempatnya ditinggalkan untuk isian
+     berikutnya, dan dikosongkan tiap kali dibuka supaya tidak ada sisa yang
+     menyesatkan. */
+  await hal.click('#b-filter');
+  await hal.waitForTimeout(250);
+  cek('laci jenisnya kosong, menunggu isian berikutnya',
+      (await hal.locator('#filter-daftar').innerHTML()).trim() === '');
+  await hal.evaluate(() => TAlur.tutupLaciUji());
 }
 
-console.log('\nposisi dok: di atas atau di bawah, dipilih sendiri');
+console.log('\ndok selalu di bawah, dan togglenya dihapus');
 {
   await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.fill('#kotak', '');
@@ -1190,40 +1213,37 @@ console.log('\nposisi dok: di atas atau di bawah, dipilih sendiri');
   cek('kameranya membuka kamera, bukan galeri',
       /id="pilih-kamera"[^>]*capture="environment"/.test(html));
 
-  const posisi = () => hal.locator('#l-utama').evaluate((n) => n.classList.contains('dok-bawah'));
-  cek('bawaannya di atas', !(await posisi()));
+  /* DOKNYA SELALU DI BAWAH. Pilihannya dihapus: yang di atas kalah enak
+     dipakai satu tangan - jempol menyeberang layar tiap kali - dan dua tata
+     letak berarti tiap suntingan gaya harus diperiksa dua kali. */
+  cek('doknya di bawah tanpa perlu dinyalakan',
+      await hal.locator('#l-utama').evaluate((n) => n.classList.contains('dok-bawah')));
+  cek('tidak ada lagi cara memindahkannya',
+      (await hal.evaluate(() => typeof TAlur.posisiDokUji)) === 'undefined');
 
-  await hal.evaluate(() => TAlur.posisiDokUji('bawah'));
-  await hal.waitForTimeout(300);
-  cek('bisa dipindah ke bawah', await posisi());
-
-  /* Di bawah, tombol Drop harus benar-benar berada di bawah kotaknya - kalau
-     cuma kelasnya yang berganti tapi letaknya tidak, tidak ada yang didapat. */
+  /* Kotaknya harus benar-benar berada di bawah, bukan cuma berganti kelas. */
   const kotakY = await hal.locator('#kotak').evaluate((n) => n.getBoundingClientRect().top);
-  const hasilY = await hal.locator('#l-utama .tab-baris').evaluate((n) => n.getBoundingClientRect().top);
-  cek('kotaknya benar-benar turun ke bawah layar', kotakY > hasilY + 200,
-      hasilY + ' -> ' + kotakY);
+  const tabY = await hal.locator('#l-utama .tab-baris').evaluate((n) => n.getBoundingClientRect().top);
+  cek('kotaknya benar-benar duduk di bawah layar', kotakY > tabY + 200,
+      tabY + ' -> ' + kotakY);
 
-  /* Lacinya tetap membuka KE BAWAH kotaknya, di kedua posisi. */
-  await hal.click('#b-filter');
+  /* Lacinya tetap membuka KE BAWAH kotaknya. Membuka ke atas berarti isi yang
+     sedang dibaca melompat turun tepat saat kamu menekan sesuatu. */
+  await hal.click('#b-lampir');
   await hal.waitForTimeout(350);
-  /* Diukur ulang KEDUANYA sesudah lacinya terbuka: doknya menempel di bawah,
-     jadi membuka laci menaikkan kotaknya - membandingkan dengan ukuran lama
-     berarti membandingkan dua keadaan yang berbeda. */
   const kotakY2 = await hal.locator('#kotak').evaluate((n) => n.getBoundingClientRect().top);
-  const laciY = await hal.locator('#panel-filter').evaluate((n) => n.getBoundingClientRect().top);
+  const laciY = await hal.locator('#panel-drop').evaluate((n) => n.getBoundingClientRect().top);
   cek('lacinya membuka ke bawah kotaknya, bukan ke atas', laciY > kotakY2,
       kotakY2 + ' -> ' + laciY);
+
+  /* Bilah bawah ala Telegram: ikon di atas namanya, tanpa kotak bergaris. */
+  const css2 = fs.readFileSync(path.join(AKAR, 'gaya.css'), 'utf8');
+  cek('bilah lampirannya berupa ikon berbulatan, bukan kotak bergaris',
+      /\.lamp i\{[^}]*border-radius:50%/.test(css2) && /\.lamp\{[^}]*border:none/.test(css2));
+  cek('dan bisa digeser kalau caranya bertambah',
+      /\.lampiran\{[^}]*overflow-x:auto/.test(css2));
   await hal.evaluate(() => TAlur.tutupLaciUji());
-
-  /* Pilihannya diingat - ini bentuk yang dipakai tiap hari, bukan setelan
-     sekali pakai. */
-  const disimpan = await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => s.posisiDok));
-  cek('posisinya diingat lintas pembukaan', disimpan === 'bawah' || disimpan === undefined,
-      String(disimpan));
-
-  await hal.evaluate(() => TAlur.posisiDokUji('atas'));
-  await hal.waitForTimeout(250);
+  await hal.waitForTimeout(200);
 }
 
 console.log('\nukuran petak: cuma muncul waktu yang tampil gambar');
@@ -1246,16 +1266,13 @@ console.log('\nukuran petak: cuma muncul waktu yang tampil gambar');
   /* Untuk jenis lain, ukuran thumbnail tidak menjawab pertanyaan apa pun -
      yang dikenali di sana judulnya, dan judul tidak punya ukuran. */
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
-  await hal.click('#b-filter');
   await hal.waitForTimeout(250);
-  await hal.click('[data-jenis="tautan"]');
+  await hal.click('#saring-baris [data-jenis="tautan"]');
   await hal.waitForTimeout(350);
   cek('pilihan ukuran tidak muncul untuk jenis selain gambar',
       await hal.locator('#tampil-baris').evaluate((n) => n.classList.contains('sembunyi')));
 
-  await hal.click('#b-filter');
-  await hal.waitForTimeout(250);
-  await hal.click('[data-jenis="gambar"]');
+  await hal.click('#saring-baris [data-jenis="gambar"]');
   await hal.waitForTimeout(400);
   cek('pilihan ukuran muncul begitu yang tampil gambar',
       !(await hal.locator('#tampil-baris').evaluate((n) => n.classList.contains('sembunyi'))));
@@ -1694,7 +1711,8 @@ console.log('\nteks bayangan: melengkapi nama gudang sambil diketik');
   const gayaLabel = fs.readFileSync(path.join(AKAR, 'gaya.css'), 'utf8');
   cek('yang memendekkannya cuma tampilan',
       /\.label-baris-nama\{[^}]*text-overflow:ellipsis/.test(gayaLabel) &&
-      /#b-label-teks\{[^}]*text-overflow:ellipsis/.test(gayaLabel));
+      /\.note-folder-nama\{[^}]*text-overflow:ellipsis/.test(gayaLabel) ||
+      /\.label-baris-nama\{[^}]*text-overflow:ellipsis/.test(gayaLabel));
 
   const pohon = await hal.evaluate(() => TOtak.pohonLabel(TAlur.daftarLabelUji()));
   const apps = pohon.filter((l) => l.nama === 'Amara Apps')[0];
@@ -1897,23 +1915,20 @@ console.log('\ngudang di mana saja, elemen tidak beranak, gudang tersering');
     return TAlur.muatUlangUji();
   });
   await hal.waitForTimeout(300);
-  await hal.click('#b-filter');
   await hal.waitForTimeout(350);
-  cek('jenis elemen yang benar-benar ada ikut jadi rak',
-      (await hal.locator('#filter-daftar [data-elemen="No WhatsApp"]').count()) === 1,
-      await hal.locator('#filter-daftar').innerText());
-  await hal.click('#filter-daftar [data-elemen="No WhatsApp"]');
+  cek('jenis elemen yang benar-benar ada ikut jadi cip',
+      (await hal.locator('#saring-baris [data-elemen="No WhatsApp"]').count()) === 1,
+      await hal.locator('#saring-baris').innerText());
+  await hal.click('#saring-baris [data-elemen="No WhatsApp"]');
   await hal.waitForTimeout(350);
   cek('memilihnya menyaring, bukan mencari kata',
       (await hal.locator('#hasil-depan .kartu').count()) === 2 &&
       (await hal.locator('#hasil-depan-ket').textContent()).indexOf('No WhatsApp') >= 0);
   /* Mengetuk yang menyala mematikannya - tanpa itu tidak ada jalan keluar. */
-  await hal.click('#b-filter');
-  await hal.waitForTimeout(300);
-  await hal.click('#filter-daftar [data-elemen="No WhatsApp"]');
+  await hal.click('#saring-baris [data-elemen="No WhatsApp"]');
   await hal.waitForTimeout(300);
   cek('mengetuknya lagi melepas saringannya',
-      (await hal.locator('#b-filter-teks').textContent()) === 'Jenis');
+      (await hal.locator('#saring-baris [data-elemen="No WhatsApp"].nyala').count()) === 0);
   await hal.evaluate(() => TAlur.tutupHasilDepanUji());
 
   /* Kotak kosong: gudang yang paling sering dipakai sebulan terakhir. Ini
@@ -1960,7 +1975,7 @@ console.log('\nTodo dari layar Drop: pembedanya ACTION, bukan tenggat');
     await hal.fill('#kotak', t);
     await hal.dispatchEvent('#kotak', 'input');
     await hal.waitForTimeout(200);
-    await hal.click('#ruang-baris [data-tugas]');
+    await hal.click('#saring-baris [data-tugas]');
     await hal.waitForTimeout(400);
   };
 
@@ -2001,7 +2016,7 @@ console.log('\nTodo dari layar Drop: pembedanya ACTION, bukan tenggat');
      tombol Drop sudah jadi tombol Reminder-nya. Tidak ada cip kedua yang
      kerjanya sama persis dengan tombol di sampingnya. */
   cek('tidak ada cip Reminder - tombol Drop itulah Reminder-nya',
-      (await hal.locator('#ruang-baris [data-reminder]').count()) === 0);
+      (await hal.locator('#saring-baris [data-reminder]').count()) === 0);
 
   await hal.fill('#kotak', 'Eko masih punya hutang tiga juta');
   await hal.dispatchEvent('#kotak', 'input');

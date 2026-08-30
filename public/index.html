@@ -25,7 +25,10 @@
 </section>
 
 <!-- ===================== LAYAR UTAMA ===================== -->
-<section class="layar aktif" id="l-utama">
+<!-- dok-bawah PERMANEN. Dulu ini pilihan di Setelan, dan pilihannya
+     dihapus: yang di atas terbukti kalah enak dipakai satu tangan, dan dua
+     tata letak berarti tiap suntingan gaya harus diperiksa dua kali. -->
+<section class="layar aktif dok-bawah" id="l-utama">
   <header class="atas">
     <div class="merek" id="merek">Cortex Space</div>
     <div class="atas-kanan">
@@ -55,9 +58,12 @@
       <!-- Ala WhatsApp: dua ikon menempel di dalam kotaknya, tombol jatuhkan
            berdiri sendiri di kanan - paling dekat jempol. -->
       <div class="kotak-bar">
-        <button class="tbl" id="b-label" aria-haspopup="listbox" aria-expanded="false">
-          <svg viewBox="0 0 24 24" class="ik"><path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.4"/></svg><span id="b-label-teks">Label</span>
-          <svg viewBox="0 0 24 24" class="ik kecil"><path d="M6 9l6 6 6-6"/></svg>
+        <!-- Klip kertas, bukan ikon kategori. Menyaring label sudah punya
+             tempatnya sendiri - cip gudang di atas kotak dan layar Note - jadi
+             yang pantas duduk di sini yang belum punya pintu: cara memasukkan
+             sesuatu yang bukan teks. Persis letak klip di WhatsApp. -->
+        <button class="tbl" id="b-lampir" aria-haspopup="listbox" aria-expanded="false" aria-label="Lampiran">
+          <svg viewBox="0 0 24 24" class="ik"><path d="M21 11.5l-8.8 8.8a5 5 0 0 1-7.1-7.1l8.8-8.8a3.4 3.4 0 0 1 4.8 4.8l-8.8 8.8a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>
         </button>
         <!-- Teks bayangan digambar di lapisan DI BELAKANG kotaknya, bukan di
              dalam textarea - textarea tidak bisa berisi dua warna. Lapisannya
@@ -86,6 +92,12 @@
            Tidak perlu disentuh sama sekali - mengetuknya cuma jalan pintas
            untuk saat kata berikutnya tidak langsung terpikir. -->
       <div class="ruang-baris sembunyi" id="ruang-baris"></div>
+      <!-- Saringan jenis, naik dari dalam laci ke atas kotaknya. Di dalam laci
+           dia butuh dua ketukan untuk sesuatu yang dipakai tiap hari, dan
+           ketukan pertamanya cuma untuk melihat pilihan yang seharusnya sudah
+           kelihatan. Cip Todo ikut di sini, dipatok di ujung KANAN - tepat di
+           atas tombol Drop, tempat jempol kanan sudah bertumpu. -->
+      <div class="saring-baris" id="saring-baris"></div>
       <button class="tbl" id="b-drop">
         <svg viewBox="0 0 24 24" class="ik"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg><span>Drop</span>
       </button>
@@ -97,34 +109,25 @@
     <div class="laci sembunyi" id="panel-drop">
     <div class="lampiran" id="lampiran">
     <button class="lamp" data-lamp="gambar">
-      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span>Gambar</span>
+      <i><svg viewBox="0 0 24 24" class="ik"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></i><span>Gambar</span>
     </button>
     <button class="lamp" data-lamp="berkas">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span>Berkas</span>
+      <i><svg viewBox="0 0 24 24" class="ik"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></i><span>Berkas</span>
     </button>
     <button class="lamp" data-lamp="kamera">
-      <svg viewBox="0 0 24 24" class="ik"><path d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/></svg><span>Kamera</span>
+      <i><svg viewBox="0 0 24 24" class="ik"><path d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/></svg></i><span>Kamera</span>
     </button>
     <button class="lamp" data-lamp="daftar">
-      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/></svg><span>Daftar</span>
+      <i><svg viewBox="0 0 24 24" class="ik"><rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/></svg></i><span>Daftar</span>
     </button>
     </div>
     </div>
 
-    <!-- Laci jenis: sisi keluar dari laci Drop. Memilih "Gambar" berarti
-         "perlihatkan gambar-gambarku" tanpa satu kata pun diketik - dan itu
-         pertanyaan yang tidak bisa dijawab kata kunci, karena gambar memang
-         tidak punya kata. -->
+    <!-- Laci jenis, SENGAJA KOSONG untuk sekarang. Isinya - saringan gambar,
+         berkas, link - sudah naik jadi cip di atas kotaknya, dan tempat ini
+         menunggu isian berikutnya. -->
     <div class="laci sembunyi" id="panel-filter">
       <div id="filter-daftar"></div>
-    </div>
-
-    <!-- Daftar label. Kotak carinya muncul cuma kalau labelnya sudah banyak -
-         di bawah itu dia mengambil tempat untuk menyaring sesuatu yang
-         seluruhnya sudah kelihatan. -->
-    <div class="laci sembunyi" id="panel-label">
-      <input id="label-cari" class="label-cari sembunyi" placeholder="Cari label&#8230;" autocomplete="off" spellcheck="false">
-      <div id="label-daftar"></div>
     </div>
   </div>
 
