@@ -328,13 +328,46 @@
 </section>
 
 <!-- ===================== LAYAR CATAT (memo pad) ===================== -->
+<!-- LAYAR NOTE: RUANG MENULIS, bukan hasil saringan Drop.
+     Ini pintu keempat, dan dia ada karena satu penemuan: menulis panjang -
+     brief, instruksi, rancangan - itu pekerjaan dua puluh menit yang ditinggal
+     lalu didatangi lagi, sama sekali bukan pekerjaan tiga detik yang dilayani
+     kotak Drop. Selama ini pekerjaan itu lari ke Notepad dan ke chat WhatsApp
+     ke diri sendiri, dan dari sana tidak pernah kembali.
+
+     Pencariannya berdiri sendiri di sini, dan itu yang paling penting: mencari
+     tulisan di antara ribuan potongan drop berarti mengayak yang kamu tahu
+     persis ada. Di layar ini yang dicari cuma tulisan. -->
+<section class="layar" id="l-tulis">
+  <header class="atas">
+    <div class="merek" data-merek>Cortex Space</div>
+    <div class="atas-kanan">
+      <button class="ikon-btn" data-ke-setelan aria-label="Setelan">
+        <svg viewBox="0 0 24 24" class="ik"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+  <div class="tab-baris" data-tab></div>
+
+  <input id="tulis-cari" class="cari-input" placeholder="Cari di catatanmu&#8230;" autocomplete="off">
+  <div id="tulis-isi"></div>
+  <div class="tumbuh"></div>
+
+  <!-- Bulat, beralas aksen, di sudut kanan bawah - bentuk dan tempat yang
+       sama persis dengan tombol Drop, karena artinya sama: inilah tindakan
+       layar ini. Jempol kanan sudah bertumpu di situ. -->
+  <button class="tulis-baru" id="b-tulis-baru" aria-label="Tulis catatan baru">
+    <svg viewBox="0 0 24 24" class="ik"><path d="M4 20h16"/><path d="M14.5 4.5l5 5L8 21H3v-5z"/></svg>
+  </button>
+</section>
+
 <section class="layar" id="l-catat">
   <header class="atas rapat">
     <button class="ikon-btn" data-kembali aria-label="Kembali">
       <svg viewBox="0 0 24 24" class="ik"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
     </button>
     <div class="simpan-tanda" id="simpan-tanda">tersimpan</div>
-    <button class="ikon-btn" id="b-riwayat" aria-label="Riwayat">
+    <button class="ikon-btn" id="b-riwayat" aria-label="Riwayat" title="Riwayat">
       <svg viewBox="0 0 24 24" class="ik"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>
     </button>
     <button class="ikon-btn" id="b-gembok" aria-label="Kunci catatan ini">
@@ -358,6 +391,21 @@
   <div id="catat-lampiran"></div>
   <textarea id="catat-isi" class="catat-isi" placeholder="Tulis di sini. Boleh sepuluh kata hari ini, sepuluh lagi besok."></textarea>
   <div class="riwayat sembunyi" id="riwayat"></div>
+
+  <!-- TOMBOL SIMPAN, DI BAWAH, DAN JANGAN DIHILANGKAN LAGI.
+       Layar ini menyimpan sendiri tiap kali kamu berhenti mengetik, dan
+       secara teknis tombol ini tidak menambah apa-apa. Tapi yang menahan
+       orang menulis dua puluh menit di sini bukan kehilangan yang pernah
+       terjadi - melainkan tidak adanya satu pun bukti bahwa tulisannya aman.
+       Tombolnya membayar keraguan itu, dan itu alasan yang cukup.
+
+       Di bawah, bukan di kepala: tangan sedang di papan ketik, dan sudut
+       kanan bawah tempat jempol sudah bertumpu. -->
+  <div class="catat-dok">
+    <button class="tbl simpan" id="b-simpan">
+      <svg viewBox="0 0 24 24" class="ik"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>Simpan</span>
+    </button>
+  </div>
 </section>
 
 <!-- ===================== LAYAR SETELAN ===================== -->

@@ -1010,3 +1010,40 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   border-color:transparent;color:var(--a);
   background:color-mix(in srgb, var(--a) 14%, transparent);
 }
+
+
+/* ============================================================================
+   LAYAR NOTE - ruang menulis
+   ============================================================================ */
+#tulis-cari{width:100%;flex:none;margin-bottom:4px}
+/* Ruang untuk tombol bulat di sudut: tanpa ini, tulisan terakhir di daftar
+   duduk persis di bawahnya dan tidak pernah bisa disentuh. */
+#tulis-isi{padding-bottom:76px}
+/* Bulat, beralas aksen, di sudut kanan bawah - bentuk dan tempat yang sama
+   persis dengan tombol Drop, karena artinya sama: inilah tindakan layar ini.
+   Melayang di atas daftarnya, bukan ikut tergulir: menulis sesuatu yang baru
+   tidak boleh menunggu kamu menggulir ke ujung. */
+.tulis-baru{
+  position:fixed;right:max(18px, calc((100vw - 620px) / 2 + 18px));
+  bottom:calc(env(safe-area-inset-bottom) + 20px);
+  width:56px;height:56px;border-radius:50%;border:1px solid var(--ap);
+  background:var(--ap);color:var(--at);cursor:pointer;z-index:7;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(0,0,0,.14);
+}
+.tulis-baru .ik{width:23px;height:23px;stroke-width:2.1}
+.layar:not(.aktif) .tulis-baru{display:none}
+
+/* Dok Simpan di layar tulis. Menempel di bawah supaya dia tetap terlihat
+   waktu tulisannya sudah lima layar panjangnya - bukti yang cuma ada di
+   puncak halaman sama saja dengan tidak ada. */
+.catat-dok{
+  position:sticky;bottom:0;z-index:6;background:var(--g);
+  padding:8px 0 calc(env(safe-area-inset-bottom) + 6px);
+  border-top:1px solid var(--l);margin-top:10px;
+}
+.catat-dok .tbl.simpan{
+  width:100%;background:var(--ap);border-color:var(--ap);color:var(--at);
+  border-radius:14px;
+}
+.catat-dok .tbl.simpan .ik{width:18px;height:18px}
