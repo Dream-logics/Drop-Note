@@ -122,6 +122,8 @@
   var draf = null;            /* lampiran yang sudah siap tapi belum di-drop */
   var entriCatat = null;
   var labelDepan = null;   /* label yang sedang ditampilkan di layar depan */
+  var temaSaat = 'teal';   /* warna aksen - dasarnya tetap putih di semua tema */
+  var temaSendiri = '';
   var saringJenis = '';    /* '' = semua jenis; 'gambar', 'berkas', 'daftar', ... */
 
   var gayaGambar = 'kecil';    /* besar | sedang | kecil | daftar */
@@ -273,14 +275,12 @@
   }
 
   function keTab(id) {
-    /* Menekan pintu yang sedang terbuka bukan tidak berarti apa-apa: di pintu
-       Drop, itu membuka laci cara-cara memasukkan (gambar, berkas, suara,
-       daftar). Bawaannya tetap teks - kotaknya sudah siap diketik tanpa
-       memilih apa pun, dan laci ini cuma untuk yang bukan teks. */
-    if (id === layarSaat) {
-      if (id === 'l-utama') alihLaci('drop');
-      return;
-    }
+    /* Pintu ITU pintu, titik. Dulu menekan pintu Drop yang sedang terbuka
+       membuka laci cara-cara memasukkan, dan itu keliru dua kali: satu tombol
+       yang berarti dua hal tergantung kamu sedang di mana, dan laci yang
+       terbuka tanpa diminta waktu kamu cuma mau kembali ke layar Drop.
+       Lacinya sudah punya pintunya sendiri - klip kertas di bilah bawah. */
+    if (id === layarSaat) return;
     tutupLaci();
     if (id === 'l-tugas') TTugas.buka();
     keLayar(id);
@@ -795,11 +795,20 @@
      "Gambar" berarti "perlihatkan gambar-gambarku" tanpa satu kata pun -
      pertanyaan yang tidak bisa dijawab kata kunci, karena gambar memang tidak
      punya kata sampai AI membacanya. */
+  /* Enam cip, dan yang pertama BUKAN saringan.
+
+     RESET mengembalikan layar ke keadaan baru dibuka: kotaknya kosong,
+     saringannya lepas, hasilnya tertutup. Tanpa dia, membereskan tiga hal
+     yang menyala butuh tiga ketukan di tiga tempat berbeda - dan yang paling
+     sering terjadi bukan "aku mau melepas yang ini", tapi "aku mau mulai dari
+     nol lagi". Dia ditaruh paling KIRI, sengaja jauh dari jempol: yang
+     menghapus seluruh keadaan layar tidak pantas mudah tersenggol. */
   var JENIS_SARING = [
-    ['', 'Semua jenis', '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
+    ['*reset', 'Reset', '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>'],
+    ['', 'Semua', '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
+    ['teks', 'Teks', '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/>'],
     ['gambar', 'Gambar', '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>'],
     ['berkas', 'Berkas', '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>'],
-    ['daftar', 'Daftar', '<rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/>'],
     ['tautan', 'Link', '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>']
   ];
 
@@ -808,6 +817,12 @@
     if (!wadah) return;
     var hidup = semuaEntri.filter(catatanSaja);
     var cip = JENIS_SARING.map(function (j) {
+      /* Reset bukan saringan: dia selalu ada dan tidak pernah menyala. */
+      if (j[0] === '*reset') {
+        return '<button class="saring-cip reset" data-jenis="*reset" title="' + H(j[1]) +
+               '" aria-label="' + H(j[1]) + '">' +
+               '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
+      }
       var n = j[0] ? hidup.filter(function (e) { return e.jenis === j[0]; }).length : hidup.length;
       /* Jenis yang belum pernah ada isinya tidak ditampilkan sama sekali:
          cip yang pasti menghasilkan nol cuma barang yang harus dilewati. */
@@ -863,7 +878,50 @@
     gambarHasilDepan();
   }
 
+  /* ===================== TEMA WARNA =====================
+     Yang berganti CUMA AKSENNYA - dasarnya tetap putih redup di semua tema.
+     Alasannya sama dengan alasan tema gelap dulu dibuang: dua alas berarti
+     tiap suntingan gaya harus diperiksa dua kali, dan aksen sudah cukup untuk
+     membuat aplikasi yang dibuka puluhan kali sehari terasa berganti baju.
+
+     Empat pilihan, bukan dua puluh. Dua puluh warna itu keputusan; empat itu
+     pilihan. Yang kelima "sendiri", untuk saat tidak ada satu pun yang cocok. */
+  var TEMA = [
+    ['teal',  'Teal',   '#0F766E'],
+    ['nila',  'Nila',   '#4338CA'],
+    ['plum',  'Plum',   '#9D174D'],
+    ['tanah', 'Tanah',  '#92400E']
+  ];
+
+  function warnaTema(nama, sendiri) {
+    if (nama === 'sendiri') return /^#[0-9a-f]{6}$/i.test(sendiri || '') ? sendiri : TEMA[0][2];
+    for (var i = 0; i < TEMA.length; i++) if (TEMA[i][0] === nama) return TEMA[i][2];
+    return TEMA[0][2];
+  }
+
+  /* Ditulis ke variabel CSS, bukan ke tiap aturan: seluruh gaya sudah memakai
+     --a dan --ap, jadi satu baris di sini sudah cukup mengganti seluruh
+     aplikasi. Warna bilah browser ikut diganti supaya HP tidak menyisipkan
+     sepotong warna lama di atas layar. */
+  function pasangTema(nama, sendiri) {
+    var w = warnaTema(nama, sendiri);
+    var akar = document.documentElement;
+    akar.style.setProperty('--a', w);
+    akar.style.setProperty('--ap', w);
+  }
+
+  /* Kembali ke keadaan baru dibuka: kotaknya kosong, saringannya lepas,
+     hasilnya tertutup, lacinya tertutup, gulirnya di atas. */
+  function resetLayar() {
+    kosongkanKotak();
+    tutupLaci();
+    tutupHasilDepan();
+    global.scrollTo(0, 0);
+    $('#kotak').blur();
+  }
+
   function pilihJenis(j) {
+    if (j === '*reset') { resetLayar(); return; }
     /* Mengetuk yang sedang menyala mematikannya - tanpa itu, satu-satunya
        jalan keluar adalah menebak cip mana yang berarti "batal". */
     saringJenis = (saringJenis === j && j) ? '' : j;
@@ -2114,6 +2172,29 @@
           'Ini mode pengembang — untuk pemakai biasa, kuncinya tinggal di layanan dan tidak pernah sampai ke perangkat.</div></div>'
         : '',
 
+      '<div class="set-bagian">Tampilan</div>',
+      '<div class="set-kotak">',
+      '<div class="set-judul">Warna aksen</div>',
+      '<div class="set-ket">Yang berganti cuma aksennya — dasarnya tetap putih redup. Aplikasi yang dibuka puluhan kali sehari selama bertahun-tahun boleh sesekali ganti baju.</div>',
+      '<div class="tema-baris" id="set-tema">',
+      TEMA.map(function (t) {
+        return '<button class="tema-cip' + (temaSaat === t[0] ? ' nyala' : '') +
+               '" data-tema="' + t[0] + '" aria-label="' + H(t[1]) + '">' +
+               '<span class="tema-bulat" style="background:' + t[2] + '"></span>' +
+               H(t[1]) + '</button>';
+      }).join('') +
+      '<button class="tema-cip' + (temaSaat === 'sendiri' ? ' nyala' : '') +
+        '" data-tema="sendiri" aria-label="Sendiri">' +
+        '<span class="tema-bulat" style="background:' + H(warnaTema('sendiri', temaSendiri)) + '"></span>' +
+        'Sendiri</button>',
+      '</div>',
+      temaSaat === 'sendiri'
+        ? '<div class="kat-baris rapat"><span class="kat-pagar">#</span>' +
+          '<input id="set-tema-warna" class="kat-input" type="color" value="' +
+          H(warnaTema('sendiri', temaSendiri)) + '"></div>'
+        : '',
+      '</div>',
+
       '<div class="set-bagian">Label rak</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">Barisan tetap di layar hasil</div>',
@@ -2346,6 +2427,22 @@
 
     var model = $('#set-model');
     if (model) model.addEventListener('change', function () { simpanSetelan('model', model.value.trim()); });
+
+    var tema = $('#set-tema');
+    if (tema) tema.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-tema]');
+      if (!b) return;
+      temaSaat = b.getAttribute('data-tema');
+      pasangTema(temaSaat, temaSendiri);
+      simpanSetelan('tema', temaSaat);
+      gambarSetelan();
+    });
+    var temaWarna = $('#set-tema-warna');
+    if (temaWarna) temaWarna.addEventListener('input', function () {
+      temaSendiri = temaWarna.value;
+      pasangTema('sendiri', temaSendiri);
+      simpanSetelan('temaSendiri', temaSendiri);
+    });
 
     var isianLabel = $('#set-label');
     if (isianLabel) {
@@ -2968,6 +3065,11 @@
          kebiasaan orang menetap di satu ukuran, dan memilihnya lagi tiap kali
          adalah keputusan berulang tanpa guna. */
       if (setelanSaat.gayaGambar) gayaGambar = setelanSaat.gayaGambar;
+      /* Temanya dipasang SEBELUM apa pun digambar - kalau sesudah, warnanya
+         berkedip dari teal ke pilihanmu tiap kali aplikasinya dibuka. */
+      temaSaat = setelanSaat.tema || 'teal';
+      temaSendiri = setelanSaat.temaSendiri || '';
+      pasangTema(temaSaat, temaSendiri);
       return muatSemua();
     }).then(function () {
       return ambilBagikan();
@@ -3024,6 +3126,7 @@
     alamatNoteUji: alamatNote,
     tutupLaciUji: tutupLaci,
     muatUlangUji: muatSemua,
+    jenisSaringUji: function () { return JENIS_SARING; },
     semuaEntri: function () { return semuaEntri; }
   };
 })(window);

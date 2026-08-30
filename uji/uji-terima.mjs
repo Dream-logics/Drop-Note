@@ -1096,13 +1096,17 @@ console.log('\nlaci: satu saja yang terbuka, dan menutup sendiri');
 
   const buka = (id) => hal.locator(id).evaluate((n) => !n.classList.contains('sembunyi'));
 
-  /* Menekan pintu Drop yang sedang terbuka membuka laci cara memasukkan -
-     seperti Keep. Bawaannya tetap teks: kotaknya sudah siap diketik tanpa
-     memilih apa pun. */
+  /* PINTU ITU PINTU, TITIK. Dulu menekan pintu Drop yang sedang terbuka
+     membuka laci cara memasukkan, dan itu keliru dua kali: satu tombol yang
+     berarti dua hal tergantung kamu sedang di mana, dan laci yang terbuka
+     tanpa diminta waktu kamu cuma mau kembali ke layar Drop. Lacinya sudah
+     punya pintunya sendiri - klip kertas di bilah bawah. */
   await hal.click('#l-utama [data-tab-ke="l-utama"]');
   await hal.waitForTimeout(250);
-  cek('pintu Drop yang ditekan lagi membuka laci lampiran', await buka('#panel-drop'));
+  cek('pintu Drop tidak lagi membuka laci apa pun', !(await buka('#panel-drop')));
   cek('layarnya tidak ke mana-mana', await hal.locator('#l-utama').isVisible());
+  await hal.click('#b-lampir');
+  await hal.waitForTimeout(250);
 
   /* Ruangnya terbatas: dua laci terbuka sekaligus menutupi kotak DAN hasilnya. */
   /* Menyentuh hal lain menutupnya sendiri - kalau harus ditutup tangan, itu
@@ -2278,8 +2282,12 @@ console.log('\npin: yang penting selalu di paling atas');
 
   const judulUrut = () => hal.locator('#hasil-depan .kartu-judul').allInnerTexts();
   const sebelum = await judulUrut();
-  cek('sebelum dipin, urutannya urutan biasa',
-      /paling baru/.test(sebelum[0]), JSON.stringify(sebelum));
+  /* Urutan awalnya tidak dipatok di sini - yang diuji BUKAN cara mengurut
+     biasa, tapi bahwa pin mengangkat apa pun ke atasnya. Memaksa urutan awal
+     berarti uji ini ikut gagal tiap kali peringkatnya disetel ulang. */
+  cek('ketiganya tergambar', sebelum.length === 3, JSON.stringify(sebelum));
+  cek('yang mau dipin belum di atas',
+      !/paling lama/.test(sebelum[0]), JSON.stringify(sebelum));
 
   /* Yang dipin naik ke paling atas - dan itu berlaku di layar depan MAUPUN di
      layar Note; pin yang sama tidak boleh terbaca beda tergantung dari mana
@@ -2300,7 +2308,7 @@ console.log('\npin: yang penting selalu di paling atas');
   await hal.waitForTimeout(400);
   cek('ketukan yang sama melepasnya',
       (await hal.locator('#hasil-depan [data-pin].nyala').count()) === 0 &&
-      /paling baru/.test((await judulUrut())[0]));
+      (await hal.locator('#hasil-depan .kartu.terpin').count()) === 0);
 
   /* Kolom pin ikut naik ke cadangan, DI EKOR - baris lama membaca nilainya
      menurut urutan, jadi menyisipkan kolom di tengah menggeser seluruh
@@ -2318,6 +2326,102 @@ console.log('\npin: yang penting selalu di paling atas');
   });
   await hal.fill('#kotak', '');
   await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+  await hal.waitForTimeout(200);
+}
+
+console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.evaluate(() => TAlur.muatUlangUji());
+  await hal.waitForTimeout(350);
+
+  /* ENAM CIP, dan yang pertama BUKAN saringan. Reset mengembalikan layar ke
+     keadaan baru dibuka - tanpa dia, membereskan tiga hal yang menyala butuh
+     tiga ketukan di tiga tempat berbeda. */
+  const semuaJenis = await hal.evaluate(() =>
+    TAlur.jenisSaringUji().map((j) => j[0]));
+  cek('saringannya lengkap: reset, semua, teks, gambar, berkas, link',
+      JSON.stringify(semuaJenis) === JSON.stringify(['*reset', '', 'teks', 'gambar', 'berkas', 'tautan']),
+      JSON.stringify(semuaJenis));
+  cek('resetnya paling kiri, jauh dari jempol', semuaJenis[0] === '*reset');
+  cek('dan dia selalu tampil, tidak peduli isinya',
+      (await hal.locator('#saring-baris [data-jenis="*reset"]').count()) === 1);
+  /* Reset bukan saringan: dia tidak pernah menyala. */
+  await hal.click('#saring-baris [data-jenis="*reset"]');
+  await hal.waitForTimeout(300);
+  cek('reset tidak pernah menyala',
+      (await hal.locator('#saring-baris [data-jenis="*reset"].nyala').count()) === 0);
+
+  /* Yang diuji sungguhan: reset benar-benar mengosongkan layarnya. */
+  await hal.fill('#kotak', 'pinuji');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(350);
+  await hal.click('#saring-baris [data-jenis="*reset"]');
+  await hal.waitForTimeout(350);
+  cek('reset mengosongkan kotak dan menutup hasilnya',
+      (await hal.inputValue('#kotak')) === '' &&
+      await hal.locator('#petak-hasil-depan').evaluate((n) => n.classList.contains('sembunyi')));
+
+  /* TO DO DIRAPATKAN. Tiap baris dulu setinggi dua baris teks walau tugasnya
+     tidak punya keterangan apa pun, dan daftar setinggi dua baris berhenti
+     bisa dipindai sekali lihat. */
+  await hal.evaluate(async () => {
+    await TSimpan.taruh(TTugas.tugasBaru('tugas polos tanpa keterangan'));
+    const u = TTugas.tugasBaru('bayar wifi tiap bulan');
+    u.ulang = 'bulan';
+    await TSimpan.taruh(u);
+    return TAlur.muatUlangUji();
+  });
+  await hal.evaluate(() => { TAlur.keLayarUji('l-tugas'); TTugas.saring('semua'); TTugas.rak(''); TTugas.gambar(); });
+  await hal.waitForTimeout(350);
+  const polos = hal.locator('#tugas-daftar .tugas').filter({ hasText: 'tugas polos' });
+  cek('tugas tanpa keterangan tidak punya baris kedua',
+      (await polos.locator('.tugas-ket').count()) === 0);
+  cek('tanggalnya naik ke baris judul',
+      (await polos.locator('.tugas-baris1 .tugas-dibuat').count()) === 1);
+  const tinggi = await polos.locator('.tugas-atas').evaluate((n) => n.getBoundingClientRect().height);
+  cek('barisnya jadi satu baris, bukan dua', tinggi < 52, String(Math.round(tinggi)));
+
+  /* BULATAN YANG BERULANG BUKAN KOTAK CENTANG KOSONG. Bulatan kosong berjanji
+     "centang aku, aku hilang" - dan itu bohong untuk tugas berulang. */
+  const wifi = hal.locator('#tugas-daftar .tugas').filter({ hasText: 'bayar wifi' }).first();
+  cek('bulatan yang berulang ditandai, bukan bulatan kosong biasa',
+      (await wifi.locator('.tugas-centang.berulang').count()) === 1);
+  cek('dan isinya panah melingkar, bukan kosong',
+      (await wifi.locator('.tugas-centang .ik.ulang').count()) === 1);
+  cek('yang sekali jalan tetap bulatan kosong',
+      (await polos.locator('.tugas-centang.berulang').count()) === 0);
+
+  /* TEMA WARNA. Yang berganti CUMA aksennya - dasarnya tetap putih redup, dan
+     alasannya sama dengan alasan tema gelap dulu dibuang. */
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.waitForTimeout(300);
+  const tema = await hal.locator('#set-tema [data-tema]')
+    .evaluateAll((n) => n.map((x) => x.getAttribute('data-tema')));
+  cek('empat warna siap pakai plus satu sendiri',
+      tema.length === 5 && tema[4] === 'sendiri', JSON.stringify(tema));
+
+  const aksen = () => hal.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--a').trim());
+  const sebelumTema = await aksen();
+  await hal.click('#set-tema [data-tema="nila"]');
+  await hal.waitForTimeout(350);
+  const sesudahTema = await aksen();
+  cek('memilih warna benar-benar mengganti aksennya',
+      sesudahTema !== sebelumTema && /^#4338CA$/i.test(sesudahTema), sesudahTema);
+  /* Dasarnya TIDAK ikut berubah - dua alas berarti tiap suntingan gaya harus
+     diperiksa dua kali. */
+  cek('dasarnya tetap putih redup di tema mana pun',
+      (await hal.evaluate(() =>
+        getComputedStyle(document.documentElement).getPropertyValue('--g').trim())) === '#f5f5f3');
+  cek('pilihannya diingat',
+      (await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => s.tema))) === 'nila');
+  await hal.click('#set-tema [data-tema="teal"]');
+  await hal.waitForTimeout(300);
+  cek('bisa dikembalikan', /^#0F766E$/i.test(await aksen()));
+
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.waitForTimeout(200);
 }
 
