@@ -580,6 +580,81 @@
     return keluar.slice(0, 40);
   }
 
+  /* HIERARKI DARI PENAMAAN, bukan dari sintaks baru. Label yang namanya
+     diawali nama label lain otomatis jadi anaknya:
+
+         Amara            -> rumah
+         Amara Sales      -> gudang di dalamnya
+         Amara Apps       -> gudang di dalamnya
+
+     Tidak ada tanda khusus yang harus diingat, tidak ada layar baru, dan
+     daftar labelnya tetap datar seperti sebelumnya. Yang berubah cuma cara
+     membacanya. Dua tingkat saja - tingkat ketiga berarti ada tingkat tengah
+     yang harus diingat, dan yang harus diingat pasti terlewat. */
+  function pohonLabel(daftar) {
+    var semua = daftar || [];
+    return semua.map(function (l) {
+      var induk = null;
+      semua.forEach(function (c) {
+        if (c === l) return;
+        var n = normal(c.nama);
+        if (normal(l.nama).indexOf(n + ' ') !== 0) return;
+        /* Yang terpanjang menang: "Amara Apps Satu" milik "Amara Apps",
+           bukan milik "Amara". */
+        if (!induk || normal(c.nama).length > normal(induk.nama).length) induk = c;
+      });
+      return {
+        nama: l.nama, istilah: l.istilah,
+        induk: induk ? induk.nama : '',
+        ekor: induk ? l.nama.slice(induk.nama.length).trim() : l.nama
+      };
+    });
+  }
+
+  /* MELENGKAPI NAMA GUDANG SAMBIL DIKETIK.
+
+     Cuma berlaku di DUA KATA PERTAMA - sesudah itu kamu sedang menulis isinya,
+     bukan menyebut alamatnya, dan teks bayangan yang muncul di tengah kalimat
+     berubah dari membantu jadi mengganggu. Batas dua kata itulah yang membuat
+     dia tidak terasa ada sepanjang hari.
+
+     Yang dilengkapi HANYA nama gudang yang sudah ada. Dia tidak pernah
+     menebak kata biasa, jadi tidak pernah menghalangi kalimat apa pun. */
+  function lengkapiRuang(teks, daftar) {
+    var t = String(teks || '');
+    /* Baris kedua ke bawah sudah pasti isi, bukan alamat. */
+    if (t.indexOf('\n') >= 0) return null;
+    var kata = t.split(/\s+/).filter(Boolean);
+    if (!kata.length || kata.length > 2) return null;
+    /* Spasi di ujung berarti kata itu sudah selesai diketik - kalau sudah dua
+       kata utuh, tidak ada lagi yang perlu dilengkapi. */
+    if (/\s$/.test(t) && kata.length >= 2) return null;
+
+    var k = normal(t).replace(/\s+/g, ' ');
+    var cocok = (daftar || []).filter(function (l) {
+      var n = normal(l.nama);
+      return n.indexOf(k) === 0 && n.length > k.length;
+    }).sort(function (a, b) { return a.nama.length - b.nama.length; });
+
+    if (!cocok.length) return null;
+    return { nama: cocok[0].nama, ekor: cocok[0].nama.slice(t.length), pilihan: cocok };
+  }
+
+  /* Gudang mana yang akan menampung, dibaca dari teksnya sendiri. Yang
+     dikembalikan yang PALING PANJANG cocok: "amara apps error login" mendarat
+     di "Amara Apps", bukan berhenti di "Amara". */
+  function bacaRuang(teks, daftar) {
+    var k = normal(teks).replace(/\s+/g, ' ');
+    if (!k) return null;
+    var terbaik = null;
+    (daftar || []).forEach(function (l) {
+      var n = normal(l.nama);
+      if (k !== n && k.indexOf(n + ' ') !== 0) return;
+      if (!terbaik || n.length > normal(terbaik.nama).length) terbaik = l;
+    });
+    return terbaik;
+  }
+
   function tulisLabel(daftar) {
     return (daftar || []).map(function (l) {
       var lain = (l.istilah || []).slice(1);
@@ -694,6 +769,7 @@
     samarkanPenanda: samarkanPenanda,
     buangSerpihan: buangSerpihan,
     uraiLabel: uraiLabel, tulisLabel: tulisLabel, cocokLabel: cocokLabel,
+    pohonLabel: pohonLabel, lengkapiRuang: lengkapiRuang, bacaRuang: bacaRuang,
     normal: normal, jarak: jarak, waktuPendek: waktuPendek,
     tanggalIndo: tanggalIndo, waktuRingkas: waktuRingkas,
     tanggalPendek: tanggalPendek

@@ -71,7 +71,12 @@ terpikir, dan itu membatalkan seluruh gunanya.
    di bawahnya, tanpa Enter, tanpa pindah layar. Jangan pernah menambahkan
    tombol atau layar Cari terpisah; kalau isinya sama, layar kedua cuma
    menyalin dan tombolnya jadi langkah tambahan.
-4. **Tidak ada yang benar-benar terhapus.** Yang basi tenggelam.
+4. **Tidak ada yang benar-benar terhapus.** Yang basi tenggelam. Tapi
+   peringkat itu saluran keluar, **bukan pengganti rak**: yang tenggelam
+   berhenti muncul, dan itu tidak sama dengan tersusun. Gudang yang isinya
+   sepuluh ribu keping lepas tetap gudang berantakan walau yang basi sudah
+   diam. Karena itu label bukan hiasan — **label itu ruangan**, dan tiap
+   keping harus mendarat di salah satunya tanpa kamu memutuskan apa pun.
 5. **Layar depan kosong.**
 6. **Judul yang diketik sendiri tidak pernah ditimpa AI** (`judulManual`).
 7. **Swalayan.** Folder Drive dan spreadsheet dibuat aplikasi, bukan pemakainya.
@@ -100,7 +105,9 @@ public/otak.js      SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
                     alamat, bakukan istilah judul (Inggris dulu kalau bentrok:
                     Link bukan Tautan), betulkan kategori salah ketik, tarik
                     kata kunci, pisahkan elemen berpola, nilai hasil pencarian,
-                    urai label rak (nama pendek + kata panjang sesudah '=')
+                    urai label rak (nama pendek + kata panjang sesudah '='),
+                    susun gudang bertingkat dari namanya sendiri, lengkapi
+                    nama gudang sambil diketik, baca gudang dari teks drop
 public/awan.js      Google Drive & Sheets langsung — folder dan spreadsheet
                     dibuat SENDIRI oleh aplikasi; cakupan cuma drive.file
 public/pelabel.js   satu-satunya bagian ber-AI: judul + elemen + tag + OCR.
@@ -118,6 +125,9 @@ public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
                     ditemukan. Yang terkunci tidak pernah dikirim ke AI
 public/sinkron.js   cadangan satu arah ke Drive; tidak pernah di jalur drop
 public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
+                    Teks bayangan melengkapi nama gudang sambil diketik;
+                    yang menerima cipnya (ekor di belakang kotak teks tidak
+                    bisa disentuh), atau Tab / panah kanan di ujung.
                     Kotak + tombol + ketiga lacinya satu blok "dok" yang bisa
                     menempel di ATAS atau di BAWAH (pilihan di Setelan);
                     lacinya SELALU membuka ke bawah di kedua posisi
@@ -139,7 +149,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (273 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (288 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

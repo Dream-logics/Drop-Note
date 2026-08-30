@@ -59,7 +59,15 @@
           <svg viewBox="0 0 24 24" class="ik"><path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.4"/></svg><span id="b-label-teks">Label</span>
           <svg viewBox="0 0 24 24" class="ik kecil"><path d="M6 9l6 6 6-6"/></svg>
         </button>
-        <textarea id="kotak" class="kotak" rows="1" placeholder="Tulis atau cari&#8230;" autocomplete="off" spellcheck="false"></textarea>
+        <!-- Teks bayangan digambar di lapisan DI BELAKANG kotaknya, bukan di
+             dalam textarea - textarea tidak bisa berisi dua warna. Lapisannya
+             memakai huruf, jarak, dan lebar yang sama persis, lalu kotaknya
+             dibuat bening di atasnya. Yang tersalin waktu kamu menyalin tetap
+             cuma yang kamu ketik. -->
+        <div class="kotak-bungkus">
+          <div class="kotak-bayang" id="kotak-bayang" aria-hidden="true"></div>
+          <textarea id="kotak" class="kotak" rows="1" placeholder="Tulis atau cari&#8230;" autocomplete="off" spellcheck="false"></textarea>
+        </div>
         <!-- Kembarannya tombol Gambar/Berkas di laci Drop, tapi arahnya
              terbalik: yang di laci MEMASUKKAN, yang ini MENGELUARKAN. -->
         <button class="tbl" id="b-filter" aria-haspopup="listbox" aria-expanded="false">
@@ -67,6 +75,10 @@
           <svg viewBox="0 0 24 24" class="ik kecil"><path d="M6 9l6 6 6-6"/></svg>
         </button>
       </div>
+      <!-- Kabar ke mana barangnya akan mendarat, plus turunan gudangnya.
+           Tidak perlu disentuh sama sekali - mengetuknya cuma jalan pintas
+           untuk saat kata berikutnya tidak langsung terpikir. -->
+      <div class="ruang-baris sembunyi" id="ruang-baris"></div>
       <button class="tbl" id="b-drop">
         <svg viewBox="0 0 24 24" class="ik"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg><span>Drop</span>
       </button>
@@ -241,7 +253,12 @@
   <input id="catat-judul" class="catat-judul" placeholder="Judul" autocomplete="off">
   <div class="kat-baris rapat">
     <span class="kat-pagar">#</span>
-    <input id="catat-kat" class="kat-input" placeholder="kategori" autocomplete="off" spellcheck="false">
+    <!-- datalist, bukan select: gudangnya ditawarkan, tapi kolomnya tetap
+         bisa diketik bebas. Barang yang mendarat di gudang yang salah
+         dipindah dari sini - satu kolom, tanpa layar tambahan. -->
+    <input id="catat-kat" class="kat-input" placeholder="kategori" autocomplete="off"
+           spellcheck="false" list="daftar-gudang">
+    <datalist id="daftar-gudang"></datalist>
   </div>
   <div id="catat-lampiran"></div>
   <textarea id="catat-isi" class="catat-isi" placeholder="Tulis di sini. Boleh sepuluh kata hari ini, sepuluh lagi besok."></textarea>

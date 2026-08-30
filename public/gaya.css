@@ -90,7 +90,7 @@ button,input,textarea{font:inherit;color:inherit}
 /* Di ATAS: kotak selebar layar, tiga tombol berjajar di bawahnya. */
 .kepala-tetap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
 .kotak-bar{display:contents}
-#kotak{grid-column:1 / -1}
+#kotak,.kotak-bungkus{grid-column:1 / -1}
 #b-label{grid-column:1}
 #b-filter{grid-column:2}
 #b-drop{grid-column:3}
@@ -615,13 +615,17 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 /* Ikonnya masuk KE DALAM kotaknya, tombol jatuhkan berdiri sendiri di kanan -
    paling dekat jempol, dan bentuk bulatnya yang membedakannya dari dua ikon
    yang cuma membuka laci. */
-.dok-bawah .kepala-tetap{display:flex;align-items:flex-end;gap:8px}
+/* Boleh melipat, karena baris cip gudang menumpang di sini dan lebarnya
+   penuh: tanpa melipat, dia berdesakan sebaris dengan kotaknya dan kotaknya
+   yang mengalah - tinggal sesobek di pinggir layar. */
+.dok-bawah .kepala-tetap{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px}
 .dok-bawah .kotak-bar{
   display:flex;align-items:flex-end;flex:1;min-width:0;
   background:var(--p);border:1px solid var(--l);border-radius:24px;padding:2px 3px;
 }
-.dok-bawah #kotak{
-  flex:1;min-width:0;border:none;background:none;border-radius:0;
+.dok-bawah .kotak-bungkus{flex:1;min-width:0}
+.dok-bawah #kotak,.dok-bawah .kotak-bayang{
+  border:none;background:none;border-radius:0;
   min-height:42px;padding:11px 4px;
 }
 .dok-bawah #b-label,.dok-bawah #b-filter{
@@ -637,3 +641,47 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 }
 .dok-bawah #b-drop span{display:none}
 .dok-bawah #b-drop .ik{width:22px;height:22px;stroke-width:2.2}
+
+
+/* --- teks bayangan: kelengkapan nama gudang sambil diketik ---
+   Digambar di lapisan di belakang kotaknya, karena satu textarea tidak bisa
+   berisi dua warna. Keduanya WAJIB memakai huruf, jarak, dan lebar yang sama
+   persis - beda satu piksel saja dan bayangannya terbaca sebagai kerusakan,
+   bukan bantuan. */
+.kotak-bungkus{position:relative;width:100%}
+.kotak-bayang{
+  position:absolute;inset:0;pointer-events:none;z-index:0;
+  white-space:pre-wrap;overflow-wrap:break-word;overflow:hidden;color:transparent;
+  /* Metrik di bawah ini WAJIB menyalin .kotak baris demi baris. Beda
+     font-size atau padding sedikit saja, ekornya mendarat di baris yang
+     salah - dan yang terbaca bukan bantuan, tapi layar rusak. */
+  border:1px solid transparent;border-radius:14px;
+  padding:13px 15px;font-size:16px;line-height:1.5;
+}
+.kotak-bungkus > .kotak{position:relative;z-index:1;background:transparent}
+.dok-bawah .kotak-bungkus > .kotak{background:transparent}
+/* Ekornya cuma KABAR - dia tidak bisa diketuk, dan memang tidak boleh:
+   kotak teksnya duduk di atas lapisan ini dan menelan setiap sentuhan, jadi
+   ekor yang kelihatan bisa diketuk tapi tidak menyahut justru terasa rusak.
+   Menerimanya lewat cip di bawah kotak, atau Tab / panah kanan. */
+.bayang-ekor{color:var(--m);opacity:.55;border-bottom:1px dotted var(--m)}
+
+/* --- cip gudang: kabar, bukan gerbang --- */
+.ruang-baris{
+  display:flex;gap:5px;flex-wrap:wrap;align-items:center;
+  grid-column:1 / -1;padding:2px 2px 0;
+}
+.ruang-cip{
+  display:inline-flex;align-items:center;min-height:30px;padding:0 10px;
+  border:1px solid var(--l);background:none;color:var(--m);
+  border-radius:15px;font-size:12px;font-weight:600;cursor:pointer;
+}
+.ruang-cip.nyala{
+  border-color:transparent;color:var(--a);cursor:default;
+  background:color-mix(in srgb, var(--a) 14%, transparent);
+}
+/* Tawaran kelengkapan: satu-satunya cip yang MENGUBAH isi kotak dengan nama
+   yang belum selesai kamu ketik, jadi dia dibedakan dari cip kabar. */
+.ruang-cip{white-space:nowrap}
+.ruang-cip.usul{border-color:var(--a);color:var(--a)}
+.dok-bawah .ruang-baris{order:-1;width:100%;padding-bottom:6px}
