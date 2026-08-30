@@ -687,9 +687,21 @@
     wadah.innerHTML = ada ? cip.join('') : '';
   }
 
+  /* EMPAT IKON WAKTU DIAM, TIGA WAKTU MENGETIK - persis WhatsApp, dan bukan
+     karena meniru: yang pergi selalu yang paling tidak mungkin dipakai saat
+     itu. Orang yang sudah mengetik catatan tidak sedang mau bertanya ke AI,
+     jadi ikon AI yang mengalah, dan kotaknya dapat tempat justru waktu isinya
+     paling panjang. Di mode AI dia tidak pernah pergi - dia satu-satunya jalan
+     pulang. */
+  function setelIkonKotak() {
+    var ada = !!$('#kotak').value.trim();
+    $('#l-utama').classList.toggle('mengetik', ada && !modeAI);
+  }
+
   function setelTinggiKotak() {
     var k = $('#kotak');
     if (!k) return;
+    setelIkonKotak();
     k.style.height = 'auto';
     k.style.height = Math.min(k.scrollHeight, TINGGI_KOTAK_MAKS) + 'px';
     var b = $('#kotak-bayang');
@@ -863,6 +875,7 @@
     $('#b-ai').setAttribute('aria-pressed', modeAI ? 'true' : 'false');
     $('#petak-ai').classList.toggle('sembunyi', !modeAI);
     tulisPlaceholder();
+    setelIkonKotak();
     if (modeAI) {
       /* Yang sedang setengah jalan ditutup dulu. Kotak isian daftar yang masih
          menganga di bawah obrolan bukan cuma berantakan - dia bikin ragu tombol
@@ -1172,9 +1185,6 @@
      sering terjadi bukan "aku mau melepas yang ini", tapi "aku mau mulai dari
      nol lagi". Dia ditaruh paling KIRI, sengaja jauh dari jempol: yang
      menghapus seluruh keadaan layar tidak pantas mudah tersenggol. */
-  /* RESET TIDAK LAGI DI SINI - dia naik ke kepala, di kiri Setelan. Dia bukan
-     saringan: dia menghapus keadaan, bukan menyempitkannya, dan slot yang
-     ditinggalkannya itu yang membuat sisanya plus ikon AI muat sebaris. */
   var JENIS_SARING = [
     ['*semua', 'Semua', '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
     ['teks', 'Teks', '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/>'],
@@ -1185,7 +1195,13 @@
        pertanyaannya bentuknya sama: "perlihatkan yang ini saja". Tanpa dia,
        yang kamu pin cuma kelihatan kalau kebetulan ada pencarian yang
        memancingnya, dan pin yang harus dipancing bukan pin. */
-    ['*pin', 'Pin', '<path d="M9 3h6l-1 6 4 4v2H6v-2l4-4z"/><path d="M12 15v6"/>']
+    ['*pin', 'Pin', '<path d="M9 3h6l-1 6 4 4v2H6v-2l4-4z"/><path d="M12 15v6"/>'],
+    /* Reset PALING KANAN, di ujung yang paling dekat jempol. Dia bukan
+       saringan - dia menghapus keadaan, bukan menyempitkannya - tapi dia
+       dipakai sepanjang hari, dan itu yang menentukan tempatnya. Sempat naik
+       ke kepala layar dan itu keliru: kepala ada di ujung terjauh dari jempol
+       yang bertumpu di sudut kanan bawah. */
+    ['*reset', 'Reset', '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>']
   ];
 
   /* LINK DIBACA DARI ISINYA, BUKAN DARI BENTUK DROP-NYA.
@@ -1234,6 +1250,14 @@
     var hidup = semuaEntri.filter(catatanSaja);
     var adaHasil = hasilDepanAktif();
     var cip = JENIS_SARING.map(function (j) {
+      /* Reset bukan saringan: dia tidak punya angka dan tidak pernah menyala.
+         Garis putus-putus yang membedakannya - bentuk yang di aplikasi ini
+         selalu berarti "ini jalan pintas, bukan keadaan". */
+      if (j[0] === '*reset') {
+        return '<button class="saring-cip reset" data-jenis="*reset" title="' + H(j[1]) +
+               '" aria-label="' + H(j[1]) + '">' +
+               '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
+      }
       /* ANGKANYA ANGKA HASIL PENCARIAN, bukan angka seluruh timbunan. Yang
          menolong waktu kamu mengetik bukan "aku punya berapa gambar", tapi
          "kata ini menemukan berapa gambar" - dan itu yang menjawab kenapa
@@ -1254,7 +1278,10 @@
              (n ? '' : ' sepi') +
              '" data-jenis="' + j[0] + '" title="' + H(j[1]) + '" aria-label="' + H(j[1]) + '">' +
              '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg>' +
-             (n ? '<span class="saring-angka">' + (n > 99 ? '99+' : n) + '</span>' : '') +
+             /* Angkanya dipatok di sisi KANAN cip, jadi angka ratusan tumbuh
+                ke KIRI - menumpuk lebih dalam di atas ikonnya, bukan melebar
+                keluar dan mendorong barisnya. Lebar layar tetap aman. */
+             (n ? '<span class="saring-angka">' + (n > 999 ? '999+' : n) + '</span>' : '') +
              '</button>';
     }).filter(Boolean);
 
@@ -1705,6 +1732,12 @@
 
   function jumlahPilih() { return Object.keys(pilihNote).length; }
 
+  /* Ada kartu yang bisa ditunjuk atau tidak - bukan "ada isinya atau tidak".
+     Di halaman depan Storage isinya penuh, tapi semuanya folder. */
+  function adaKartuNote() {
+    return !!$('#note-isi') && !!$('#note-isi').querySelector('.kartu');
+  }
+
   function mulaiPilih(nyala) {
     pilihNyala = !!nyala;
     if (!pilihNyala) pilihNote = {};
@@ -1718,12 +1751,25 @@
     });
   }
 
+  /* Dipakai tiap kali daftar Storage digambar ulang: tandanya menempel lagi
+     ke kartu yang sama, DAN tombol Pilih menyesuaikan diri dengan apa yang
+     sekarang ada di layar - folder atau kartu. */
+  function segarPilih() {
+    tandaiPilih();
+    gambarBilahPilih();
+  }
+
   function gambarBilahPilih() {
     var n = jumlahPilih();
     var hidup = pilihNyala || !!n;
     $('#pilih-bilah').classList.toggle('sembunyi', !hidup);
     $('#l-note').classList.toggle('mode-pilih', hidup);
     $('#b-pilih-mulai').classList.toggle('nyala', hidup);
+    /* Di halaman depan Storage yang tampil cuma FOLDER, tidak ada satu kartu
+       pun yang bisa ditunjuk - jadi tombolnya ikut hilang di sana. Tombol yang
+       ada tapi tidak menghasilkan apa-apa lebih buruk daripada tombol yang
+       tidak ada: yang pertama terbaca sebagai rusak. */
+    $('#b-pilih-mulai').classList.toggle('sembunyi', !adaKartuNote());
     /* Waktu belum ada yang ditunjuk, bilahnya menyebutkan apa yang harus
        dilakukan - bukan "0 dipilih", yang cuma mengabarkan keadaan tanpa
        memberi tahu jalan keluarnya. */
@@ -1854,7 +1900,7 @@
           }).join('')
         : '<div class="kosong">Tidak ada yang cocok.<br>Coba satu kata saja — pencarian ini memaafkan.</div>';
       pasangGambarKartu($('#note-isi'));
-      tandaiPilih();
+      segarPilih();
       return;
     }
 
@@ -1875,7 +1921,7 @@
         ? daftar.map(function (e) { return kartuHtml(e, { jamPenuh: true }); }).join('')
         : (anak.length ? '' : '<div class="kosong">Folder ini sudah kosong.</div>'));
       pasangGambarKartu($('#note-isi'));
-      tandaiPilih();
+      segarPilih();
       return;
     }
 
@@ -1889,6 +1935,7 @@
     $('#note-isi').innerHTML = akar.length
       ? akar.map(folderHtml).join('')
       : '<div class="kosong">Belum ada catatan.<br>Jatuhkan sesuatu dulu lewat Drop.</div>';
+    segarPilih();
   }
 
   function folderHtml(f) {
@@ -3582,7 +3629,6 @@
       tambahTugas();
     });
 
-    $('#b-reset').addEventListener('click', resetLayar);
     $('#b-setelan').addEventListener('click', function () {
       gambarSetelan();
       keLayar('l-setelan');

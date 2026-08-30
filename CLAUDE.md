@@ -159,10 +159,15 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     KEDUANYA SATU BARIS, tidak pernah melipat - yang melipat
                     mendorong dok naik dan layarnya bergoyang di bawah jempol.
                     Saringan itu ikon telanjang, angkanya menumpang DI ATAS
-                    ikon; yang nol tidak digambar. Reset ada di KEPALA, di kiri
-                    Setelan - dia menghapus keadaan, bukan menyaring. Angka
-                    "N tersimpan" sudah dibuang dan jangan dikembalikan.
-                    Bilah kendali: klip - Todo - Drop
+                    ikon (dipatok di kanan, jadi ratusan tumbuh ke KIRI); yang
+                    nol tidak digambar. Reset cip PALING KANAN, sebelah Pin -
+                    jangan naikkan lagi ke kepala, itu ujung terjauh dari
+                    jempol. Angka "N tersimpan" sudah dibuang dan jangan
+                    dikembalikan.
+                    Isi kotak, ala WhatsApp: AI - [teks] - klip - Todo, lalu
+                    Drop di luar. EMPAT ikon waktu diam, TIGA waktu mengetik:
+                    ikon AI pergi di mode Drop begitu ada yang diketik, klip
+                    dan Todo pergi di mode AI.
                     MODE AI: satu ikon tepat DI ATAS tombol Drop, dan ikon itu
                     yang mengubah arti tombol di bawahnya - selama menyala,
                     kotaknya berhenti mencari dan Drop berhenti menyimpan.
@@ -190,7 +195,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (475 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (481 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
