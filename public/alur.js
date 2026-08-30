@@ -1201,7 +1201,7 @@
                dan menambah parameter di sana berarti map() yang memanggilnya
                diam-diam mengoper nomor urut sebagai alamat. */
             return '<div class="note-alamat-kecil">' + H(petaCari[e.id] || TANPA_RAK) + ' /</div>' +
-                   kartuHtml(e);
+                   kartuHtml(e, { jamPenuh: true });
           }).join('')
         : '<div class="kosong">Tidak ada yang cocok.<br>Coba satu kata saja — pencarian ini memaafkan.</div>';
       pasangGambarKartu($('#note-isi'));
@@ -1220,7 +1220,7 @@
         '<span class="note-pisah">/</span><span class="note-jejak-kini">' + H(noteFolder) + '</span>' +
         '<span class="note-hitung">' + daftar.length + '</span>';
       $('#note-isi').innerHTML = (anak.map(folderHtml).join('') || '') + (daftar.length
-        ? daftar.map(kartuHtml).join('')
+        ? daftar.map(function (e) { return kartuHtml(e, { jamPenuh: true }); }).join('')
         : (anak.length ? '' : '<div class="kosong">Folder ini sudah kosong.</div>'));
       pasangGambarKartu($('#note-isi'));
       return;
@@ -1291,14 +1291,21 @@
 
      Sisanya - elemen lain, tag, catatan utuh, tombol - menunggu disentuh.
      Tidak dibuang, cuma tidak berteriak. */
-  function kartuHtml(e) {
+  /* Argumen keduanya OBJEK, bukan bendera - karena kartu ini dipakai lewat
+     .map(kartuHtml) di tiga tempat, dan map() mengoper nomor urut sebagai
+     argumen kedua. Angka tidak punya properti, jadi nomor urut yang nyasar ke
+     sini otomatis terbaca sebagai "tidak ada pilihan". */
+  function kartuHtml(e, opsi) {
     var sering = (e.dipakai || 0) >= SERING;
+    var jamPenuh = !!(opsi && opsi.jamPenuh);
     var b = [];
 
     b.push('<div class="kartu-atas">' +
       '<div class="kartu-judul">' + (sering ? '<span class="titik" title="sering dipakai"></span>' : '') +
       H(e.judul || '(tanpa judul)') + '</div>' +
-      '<span class="kartu-waktu">' + H(TOtak.waktuRingkas(e.diubah)) + '</span></div>');
+      '<span class="kartu-waktu">' +
+      H(jamPenuh ? TOtak.waktuLengkap(e.diubah) : TOtak.waktuRingkas(e.diubah)) +
+      '</span></div>');
 
     /* Satu baris saja, dan CUMA kalau tidak ada elemen. Kalau elemennya ada,
        dia sudah jadi ringkasan yang lebih baik daripada potongan mentahnya -
@@ -1560,6 +1567,43 @@
     } else {
       mundur();
     }
+  }
+
+  /* ===================== PRATINJAU GAMBAR =====================
+     Menyentuh sebuah gambar hampir selalu berarti "aku mau LIHAT ini", bukan
+     "aku mau menyuntingnya" - dan petak kecil memang terlalu kecil untuk
+     menjawabnya. Jadi gambarnya yang membesar, dan sisa kartunya tetap
+     membuka layar tulis seperti biasa. */
+  var lihatUrl = '';
+
+  function lihatGambar(e) {
+    var lapis = $('#lihat');
+    var img = $('#lihat-isi');
+    if (!lapis || !img) return;
+    tutupLihat();
+    /* Thumbnail-nya dipasang DULU: dia sudah ada di memori, jadi layarnya
+       terisi seketika. Yang penuh menggantikannya begitu siap - kalau
+       menunggu, yang terlihat cuma kotak hitam kosong selama sekejap, dan
+       sekejap itu terbaca sebagai macet. */
+    img.src = e.thumb || '';
+    lapis.classList.remove('sembunyi');
+
+    var pasang = function (blob) {
+      if (!blob) return;
+      lihatUrl = URL.createObjectURL(blob);
+      img.src = lihatUrl;
+    };
+    if (e.berkasId) {
+      TSimpan.ambilBerkas(e.berkasId).then(function (r) { pasang(r && r.blob); });
+    } else if (e.driveId) {
+      TAwan.unduhBerkas(setelanSaat, e.driveId).then(pasang, function () { /* thumbnail-nya sudah cukup */ });
+    }
+  }
+
+  function tutupLihat() {
+    var lapis = $('#lihat');
+    if (lapis) lapis.classList.add('sembunyi');
+    if (lihatUrl) { URL.revokeObjectURL(lihatUrl); lihatUrl = ''; }
   }
 
   function bukaKartu(id) {
@@ -2749,6 +2793,10 @@
       ev.target.value = '';
     });
 
+    $('#lihat').addEventListener('click', tutupLihat);
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') tutupLihat();
+    });
     $('#hasil-depan').addEventListener('click', klikHasil);
     pasangGeser($('#hasil-depan'));
     pasangSisanya();
@@ -2759,6 +2807,20 @@
      tidak sampai ke tempat lain, dan itu jenis bug yang paling lama tidak
      ketahuan. */
   function klikHasil(ev) {
+    /* Gambarnya dibaca LEBIH DULU daripada kartunya: menyentuh gambar berarti
+       "perbesar ini", bukan "buka layar tulisnya". Sisa kartunya tetap
+       membuka layar tulis seperti biasa. */
+    var gbr = ev.target.closest('img.kartu-gambar, .petak-satu img');
+    if (gbr) {
+      /* Petak memakai data-buka, kartu memakai data-id - dua penanda karena
+         yang satu tombol dan yang lain artikel. Keduanya dicari di sini
+         supaya gambarnya membesar dari mana pun dia disentuh. */
+      var wadah = gbr.closest('[data-buka], [data-id]');
+      var idG = wadah ? (wadah.getAttribute('data-buka') || wadah.getAttribute('data-id')) : '';
+      var eG = null;
+      semuaEntri.forEach(function (x) { if (x.id === idG) eG = x; });
+      if (eG) { ev.stopPropagation(); lihatGambar(eG); return; }
+    }
     var petak = ev.target.closest('[data-buka]');
     if (petak) { bukaKartu(petak.getAttribute('data-buka')); return; }
     /* Membuka lipatan tag: bukan mencari, bukan membuka kartunya. */

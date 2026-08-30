@@ -2132,6 +2132,125 @@ console.log('\nfolder Note: dipilih dari temannya, dan bertingkat');
   await hal.waitForTimeout(200);
 }
 
+console.log('\nTo Do dua bagian, timestamp di Note, dan gambar yang membesar');
+{
+  /* BAWAANNYA "SEMUA", bukan "Hari ini". Tugas tanpa tenggat itu sah - itu
+     justru bentuk yang paling sering - dan kalau layar ini dibuka langsung di
+     "Hari ini", semua yang tanpa tanggal tidak kelihatan sama sekali. Daftar
+     yang menyembunyikan sebagian besar isinya waktu dibuka akan berhenti
+     dipercaya, lalu berhenti dibuka. */
+  const tugasJs = fs.readFileSync(path.join(AKAR, 'tugas.js'), 'utf8');
+  cek('bawaan layar To Do "semua", bukan "hari ini"',
+      /var saringSaat = 'semua';/.test(tugasJs));
+
+  await hal.evaluate(async () => {
+    const t = (judul, ulang) => {
+      const e = TTugas.tugasBaru(judul);
+      if (ulang) e.ulang = ulang;
+      return TSimpan.taruh(e);
+    };
+    await t('Kirim proposal Amara');
+    await t('Bayar wifi', 'bulan');
+    await t('Jemput sekolah', 'hari');
+    return TAlur.muatUlangUji();
+  });
+  await hal.evaluate(() => { TAlur.keLayarUji('l-tugas'); TTugas.saring('semua'); TTugas.rak(''); TTugas.gambar(); });
+  await hal.waitForTimeout(350);
+
+  /* DUA BAGIAN, dan pembatasnya BERULANG atau tidak. Yang berulang tidak
+     pernah selesai, cuma jatuh tempo lagi - kalau dia berbaur dengan yang
+     sekali jalan, daftarnya terlihat tidak pernah berkurang. */
+  cek('daftarnya dibagi dua, dan yang berulang punya judulnya sendiri',
+      (await hal.locator('#tugas-daftar .tugas-bagian').count()) === 1,
+      await hal.locator('#tugas-daftar').innerText());
+  const urut = await hal.locator('#tugas-daftar').innerText();
+  /* Dibandingkan tanpa peduli huruf besar-kecil: judul bagiannya dibesarkan
+     oleh gaya, bukan oleh kodenya. */
+  const urutKecil = urut.toLowerCase();
+  cek('yang sekali jalan di atas, yang berulang di bawahnya',
+      urutKecil.indexOf('kirim proposal') < urutKecil.indexOf('berulang') &&
+      urutKecil.indexOf('berulang') < urutKecil.indexOf('bayar wifi'), JSON.stringify(urut));
+
+  /* Judul bagian cuma muncul kalau KEDUANYA ada - judul di atas daftar yang
+     seluruhnya satu jenis tidak memisahkan apa pun. */
+  await hal.evaluate(async () => {
+    const a = await TSimpan.semua();
+    for (const e of a) {
+      if (e.jenis === 'tugas' && !e.ulang && !e.selesai) { e.pensiun = true; await TSimpan.taruh(e); }
+    }
+    return TAlur.muatUlangUji();
+  });
+  await hal.evaluate(() => TTugas.gambar());
+  await hal.waitForTimeout(300);
+  cek('judul bagian hilang kalau yang tersisa cuma satu jenis',
+      (await hal.locator('#tugas-daftar .tugas-bagian').count()) === 0,
+      await hal.locator('#tugas-daftar').innerText());
+
+  /* TIMESTAMP DI NOTE. Di hasil pencarian yang menolong cuma "hari ini" lawan
+     "sudah lama"; di Note kamu sedang membuka arsip, dan di situ tiga catatan
+     dari hari yang sama memang perlu dibedakan. */
+  const jam = await hal.evaluate(() => TOtak.waktuLengkap(Date.now()));
+  cek('jamnya ikut ditulis di waktu lengkap', /\d\d\.\d\d$/.test(jam), jam);
+  cek('dan tetap dibaca "Hari ini", bukan tanggal penuh', /^Hari ini · /.test(jam), jam);
+  await hal.evaluate(() => { TAlur.keLayarUji('l-note'); });
+  await hal.fill('#note-cari', 'telepon');
+  await hal.dispatchEvent('#note-cari', 'input');
+  await hal.waitForTimeout(400);
+  const waktuNote = await hal.locator('#note-isi .kartu-waktu').first().textContent();
+  cek('kartu di layar Note membawa jamnya', /\d\d\.\d\d/.test(waktuNote || ''), String(waktuNote));
+  /* Di layar depan tetap ringkas - di sana jam tidak menjawab apa pun. */
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); });
+  await hal.fill('#kotak', 'telepon');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(400);
+  const waktuDepan = await hal.locator('#hasil-depan .kartu-waktu').first().textContent();
+  cek('di layar depan waktunya tetap ringkas, tanpa jam',
+      !/\d\d\.\d\d/.test(waktuDepan || ''), String(waktuDepan));
+
+  /* GAMBAR YANG DISENTUH MEMBESAR. Menyentuh gambar hampir selalu berarti
+     "aku mau LIHAT ini", bukan "aku mau menyuntingnya". */
+  await hal.fill('#kotak', '');
+  await hal.evaluate(() => { TAlur.tutupHasilDepanUji(); });
+  await hal.evaluate(() => TSimpan.taruh({
+    id: 'gbr-lihat', jenis: 'gambar', judul: 'Moodboard uji besar',
+    isi: '', kategori: 'interior', tag: ['Interior'], label: [], elemen: [], daftar: [],
+    thumb: 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==',
+    dibuat: Date.now(), diubah: Date.now(), dipakai: 0, diLabeliAI: true, diBacaAI: true
+  }));
+  await hal.evaluate(() => TAlur.muatUlangUji());
+  await hal.waitForTimeout(300);
+  await hal.fill('#kotak', 'Moodboard uji besar');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(400);
+  cek('gambarnya tergambar di kartunya',
+      (await hal.locator('#hasil-depan img.kartu-gambar').count()) >= 1);
+  await hal.click('#hasil-depan img.kartu-gambar');
+  await hal.waitForTimeout(350);
+  cek('menyentuh gambarnya membuka pratinjau, bukan layar tulis',
+      !(await hal.locator('#lihat').evaluate((n) => n.classList.contains('sembunyi'))) &&
+      await hal.locator('#l-utama').isVisible());
+  /* Menutupnya cukup dengan menyentuh di mana saja - satu tombol silang di
+     layar yang cuma berisi satu gambar adalah sasaran yang harus dicari untuk
+     sesuatu yang sudah jelas. */
+  await hal.click('#lihat');
+  await hal.waitForTimeout(300);
+  cek('menyentuh di mana saja menutupnya',
+      await hal.locator('#lihat').evaluate((n) => n.classList.contains('sembunyi')));
+
+  /* Sisa kartunya tetap berlaku seperti biasa: menyentuh judulnya membuka
+     rinciannya DI TEMPAT, bukan memindahkan layar - pindah layar itu mahal
+     saat sedang memindai, karena posisi gulirnya hilang. */
+  await hal.click('#hasil-depan .kartu-judul');
+  await hal.waitForTimeout(350);
+  cek('menyentuh judulnya membuka rinciannya di tempat, bukan pratinjau',
+      (await hal.locator('#hasil-depan .kartu.terbuka').count()) === 1 &&
+      await hal.locator('#lihat').evaluate((n) => n.classList.contains('sembunyi')));
+  cek('dan layarnya tidak ke mana-mana', await hal.locator('#l-utama').isVisible());
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(200);
+}
+
 console.log('\nnama cuma kulit');
 {
   const berkasKode = ['bawaan.js', 'simpan.js', 'otak.js', 'awan.js', 'pelabel.js', 'sinkron.js', 'alur.js', 'sw.js'];
