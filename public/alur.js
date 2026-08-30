@@ -523,6 +523,23 @@
       return;
     }
 
+    /* CIP TODO. Pembedanya ACTION, bukan tenggat - dan yang tahu ada action
+       atau tidak cuma kamu, jadi tidak ada satu pun yang ditebak di sini.
+
+       Sekali ketuk langsung masuk daftar, tanpa lewat tombol Drop: menuntut
+       ketukan kedua sesudah kamu menyatakan maksudmu adalah menagih jawaban
+       yang sudah kamu berikan.
+
+       TIDAK ADA CIP REMINDER di sebelahnya, dan itu disengaja. Yang cuma perlu
+       DIINGAT tanpa action - nomor rekening, kunci API, "Eko masih punya hutang
+       tiga juta" - itu persis isi gudang ini, dan tombol Drop di sebelah sana
+       sudah jadi tombol Reminder-nya. Cip kedua yang kerjanya sama persis
+       dengan tombol di sampingnya cuma mengajari orang berhenti percaya
+       tombolnya. */
+    cip.push('<button class="ruang-cip tugas" data-tugas>' +
+             '<svg viewBox="0 0 24 24" class="ik kecil">' +
+             '<path d="M4 12l5 5L20 6"/></svg>Todo</button>');
+
     if (ruangSaat) {
       cip.push('<span class="ruang-cip nyala">' + H(ruangSaat.nama) + '</span>');
       /* Turunan gudang yang sedang menyala - inilah "ketik amara, muncul
@@ -561,6 +578,27 @@
     draf = null;
     $$('.lamp').forEach(function (b) { b.classList.remove('nyala'); });
     $('#tebakan').classList.add('sembunyi');
+  }
+
+  /* JALUR MASUK KEDUA: yang punya ACTION.
+
+     Gudangnya ikut terbawa - kamu sudah menuliskannya di kotak yang sama, dan
+     menanyakannya lagi di layar sebelah adalah menagih jawaban yang sudah kamu
+     berikan. Sama seperti drop: tidak ada jaringan di sini, dan tugas tidak
+     pernah dikirim ke AI. */
+  function keTugas() {
+    var teks = $('#kotak').value.trim();
+    if (!teks) return;
+    var ruang = TOtak.bacaRuang(teks, daftarLabel());
+    TTugas.tambahDariDrop(teks, ruang ? ruang.nama : '').then(function (e) {
+      if (!e) return;
+      kosongkanKotak();
+      tutupHasilDepan();
+      /* Tenggatnya disebut kalau memang terbaca, supaya tebakan yang tidak
+         terlihat tidak pernah jadi kejutan besok pagi. */
+      pesan(e.tenggat ? 'Masuk To Do - ' + TTugas.tulisTenggat(e.tenggat)
+                      : 'Masuk To Do' + (e.kategori ? ' - ' + e.kategori : ''));
+    });
   }
 
   /* JALUR MASUK. Tidak ada satu pun panggilan jaringan di sini, dan tidak
@@ -2448,6 +2486,7 @@
     $('#b-terima').addEventListener('click', function (ev) { ev.preventDefault(); });
 
     $('#ruang-baris').addEventListener('click', function (ev) {
+      if (ev.target.closest('[data-tugas]')) { keTugas(); return; }
       var b = ev.target.closest('[data-ruang]');
       if (!b) return;
       var kotak = $('#kotak');

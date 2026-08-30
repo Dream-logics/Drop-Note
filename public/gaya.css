@@ -680,6 +680,11 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   background:none;display:flex;align-items:center;justify-content:flex-start;
   cursor:pointer;
 }
+/* Cip Todo. Diberi warna aksen karena dia satu-satunya cip di baris ini yang
+   MENYIMPAN sesuatu - sisanya cuma kabar atau jalan pintas mengetik. */
+.ruang-cip.tugas{border-color:var(--a);color:var(--a);gap:4px}
+.ruang-cip.tugas .ik.kecil{width:13px;height:13px;stroke-width:2.4}
+.ruang-cip.tugas:active{background:color-mix(in srgb, var(--a) 14%, transparent)}
 /* Baris gudang tersering: jalan pintas waktu kotaknya masih kosong. */
 .ruang-baris .ruang-cip.sering{border-style:dashed}
 .laci-judul{

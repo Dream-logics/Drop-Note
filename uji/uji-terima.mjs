@@ -83,6 +83,9 @@ function tiruProxyAI(req, res) {
 }
 
 let lulus = 0, gagal = 0;
+/* Tengah malam bisa lewat di tengah uji; hari mulainya dihitung ulang, bukan
+   disimpan sekali di awal. */
+let TTUGAS_HARI_INI = () => 0;
 function cek(nama, syarat, catatan) {
   if (syarat) { lulus++; console.log('  ok   ' + nama); }
   else { gagal++; console.log('  GAGAL ' + nama + (catatan ? '  -> ' + catatan : '')); }
@@ -1849,6 +1852,93 @@ console.log('\ngudang di mana saja, elemen tidak beranak, gudang tersering');
   /* Dan dia menghilang begitu kamu mengetik - digantikan tebakan. */
   cek('tawarannya hilang begitu mulai mengetik',
       (await hal.locator('#ruang-baris .sering').count()) === 0);
+  await hal.fill('#kotak', '');
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+  await hal.waitForTimeout(200);
+}
+
+console.log('\nTodo dari layar Drop: pembedanya ACTION, bukan tenggat');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(200);
+
+  TTUGAS_HARI_INI = () => hariIniTugas;
+  const hariIniTugas = await hal.evaluate(() => TTugas.hariMulai(Date.now()));
+
+  const keTugas = async (t) => {
+    await hal.fill('#kotak', t);
+    await hal.dispatchEvent('#kotak', 'input');
+    await hal.waitForTimeout(200);
+    await hal.click('#ruang-baris [data-tugas]');
+    await hal.waitForTimeout(400);
+  };
+
+  /* TUGAS TANPA TENGGAT ITU SAH. Memaksanya punya tanggal cuma melahirkan
+     tanggal kamuflase - besok penuh barang yang sebenarnya tidak harus besok,
+     dan seminggu kemudian daftarnya berhenti dipercaya. */
+  await keTugas('Uji cortex apps ke staff bagikan link');
+  const tanpaTanggal = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.jenis === 'tugas' && /Uji cortex/.test(e.judul || ''))[0]);
+  cek('sekali ketuk cip, langsung jadi tugas tanpa lewat tombol Drop',
+      !!tanpaTanggal, JSON.stringify(tanpaTanggal && tanpaTanggal.judul));
+  cek('tugas tanpa tenggat itu sah, tidak dipaksa punya tanggal',
+      tanpaTanggal && !tanpaTanggal.tenggat);
+  cek('kotaknya ikut dikosongkan, seperti sesudah Drop',
+      (await hal.inputValue('#kotak')) === '');
+
+  /* Gudangnya ikut terbawa - sudah ditulis di kotak yang sama, jadi
+     menanyakannya lagi di layar sebelah adalah menagih jawaban yang sudah
+     diberikan. Tanggal yang KEBETULAN ditulis tetap dibaca. */
+  await keTugas('Amara Sales kirim proposal besok');
+  const berGudang = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.jenis === 'tugas' && /kirim proposal/.test(e.judul || ''))[0]);
+  cek('gudangnya ikut terbawa dari kotak yang sama',
+      berGudang && berGudang.kategori === 'Amara Sales',
+      JSON.stringify(berGudang && berGudang.kategori));
+  cek('tanggal yang terlanjur ditulis tetap dibaca',
+      berGudang && berGudang.tenggat === TTUGAS_HARI_INI() + 86400000,
+      String(berGudang && berGudang.tenggat));
+
+  /* "Hari ini" dan "penting" itu jawaban yang diberikan dengan BERDIRI di layar
+     To Do. Dari layar Drop dia tidak pernah menjawabnya, jadi tidak boleh
+     dijawabkan. */
+  cek('keadaan layar To Do tidak diwariskan ke sini',
+      berGudang && !berGudang.hariIni && !berGudang.penting);
+
+  /* REMINDER ITU DROP BIASA. Yang cuma perlu diingat tanpa action - nomor
+     rekening, kunci API, "Eko masih punya hutang" - itu isi gudang ini, dan
+     tombol Drop sudah jadi tombol Reminder-nya. Tidak ada cip kedua yang
+     kerjanya sama persis dengan tombol di sampingnya. */
+  cek('tidak ada cip Reminder - tombol Drop itulah Reminder-nya',
+      (await hal.locator('#ruang-baris [data-reminder]').count()) === 0);
+
+  await hal.fill('#kotak', 'Eko masih punya hutang tiga juta');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(200);
+  await hal.click('#b-drop');
+  await hal.waitForTimeout(400);
+
+  /* Pemisahannya tetap: yang punya action tidak mengotori pencarian catatan,
+     yang cuma perlu diingat justru harus ada di sana. */
+  await hal.fill('#kotak', 'cortex');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(350);
+  cek('tugas tidak ikut mengotori pencarian catatan',
+      (await hal.locator('#hasil-depan .kartu').count()) === 0);
+  await hal.fill('#kotak', 'hutang');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(350);
+  cek('yang cuma perlu diingat tetap ketemu di gudang',
+      (await hal.locator('#hasil-depan .kartu').count()) >= 1);
+
+  /* Keduanya berakhir di layar yang sama - To Do itu jalur akses lengkapnya. */
+  const diDaftar = await hal.evaluate(() => {
+    TTugas.saring('semua'); TTugas.rak('');
+    return TTugas.tersaring().filter((e) => /Uji cortex|kirim proposal/.test(e.judul || '')).length;
+  });
+  cek('dua-duanya mendarat di layar To Do', diDaftar === 2, String(diDaftar));
+
   await hal.fill('#kotak', '');
   await hal.evaluate(() => TAlur.tutupHasilDepanUji());
   await hal.waitForTimeout(200);
