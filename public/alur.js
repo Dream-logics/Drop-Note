@@ -4489,11 +4489,22 @@
      sepanjang hari: memilih banyak itu pekerjaan sebulan sekali, dan kotak
      centang di tiap kartu adalah ongkos yang dibayar tiap hari untuk itu.
      Dipakai di Note DAN di Storage - satu penangan, bukan dua salinan. */
+  /* Sejauh mana jari boleh bergeser dan masih dihitung "menahan". Jari yang
+     kelihatannya diam TIDAK PERNAH benar-benar diam - satu-dua piksel getaran
+     selama setengah detik itu normal, dan layar sentuh melaporkannya semua.
+     Membatalkan pada piksel pertama berarti tekan lama nyaris tidak pernah
+     jadi di HP, padahal sempurna di tetikus yang memang diam. */
+  var TEKAN_SLOP = 12;
+
   function pasangTekanLama(akar) {
     if (!akar) return;
-    var jam = null, mulaiKerja = null;
+    var jam = null, mulaiKerja = null, x0 = 0, y0 = 0, telanKlik = false;
     var batal = function () { clearTimeout(jam); jam = null; };
     akar.addEventListener('pointerdown', function (ev) {
+      /* Dibuang di sini, bukan sesudah klik ditelan: kalau tekan lama menyala
+         lalu jarinya digeser pergi tanpa melahirkan klik, penanda yang
+         tertinggal akan menelan ketukan berikutnya yang tidak bersalah. */
+      telanKlik = false;
       /* FOLDER IKUT, bukan cuma kartu. Menahan itu SATU kebiasaan, bukan dua:
          yang menahan folder mengharapkan hal yang sama persis dengan yang
          menahan kartu. Foldernya dibaca DULU - baris folder itu sendiri sebuah
@@ -4508,17 +4519,38 @@
       var id = k && k.getAttribute('data-id');
       mulaiKerja = f ? function () { alihPilihFolder(nama); }
                      : function () { alihPilih(id); };
+      x0 = ev.clientX; y0 = ev.clientY;
       batal();
       jam = setTimeout(function () {
         jam = null;
         if (!pilihNyala && !jumlahPilih() && !jumlahFolderPilih()) {
           mulaiKerja();
+          /* KLIK YANG MENYUSUL HARUS DITELAN. Mengangkat jari melahirkan satu
+             klik di tempat yang sama, dan di sana mode pilih sudah menyala -
+             jadi kliknya membaca ketukan itu sebagai "batalkan pilihan ini"
+             dan mencabut kembali apa yang baru saja ditandai. Yang terlihat:
+             bilah pilih muncul, isinya nol, dan Buang tidak membuang apa pun. */
+          telanKlik = true;
           if (navigator.vibrate) navigator.vibrate(12);
         }
       }, 450);
     });
-    ['pointerup', 'pointermove', 'pointercancel', 'pointerleave']
+    akar.addEventListener('pointermove', function (ev) {
+      if (!jam) return;
+      if (Math.abs(ev.clientX - x0) > TEKAN_SLOP ||
+          Math.abs(ev.clientY - y0) > TEKAN_SLOP) batal();
+    });
+    ['pointerup', 'pointercancel', 'pointerleave']
       .forEach(function (n) { akar.addEventListener(n, batal); });
+    /* Ditangkap di fase TURUN, di akar yang sama dengan penangan kliknya -
+       jadi dia sudah selesai sebelum kliknya sampai ke bawah, dan penangan
+       yang di bawah tidak perlu tahu apa-apa soal tekan lama. */
+    akar.addEventListener('click', function (ev) {
+      if (!telanKlik) return;
+      telanKlik = false;
+      ev.stopPropagation();
+      ev.preventDefault();
+    }, true);
   }
 
   function klikHasil(ev) {
