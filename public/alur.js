@@ -266,6 +266,9 @@
       $('#' + x).classList.toggle('aktif', x === id);
     });
     layarSaat = id;
+    /* Penjaga terakhir: layar yang tidak punya bilah pilih tidak boleh
+       menampilkannya, dari jalan mana pun dia sampai ke sana. */
+    if (id !== 'l-utama' && id !== 'l-tulis' && id !== 'l-note') batalPilih();
     if (id === 'l-utama') perbaruiJumlah();
     /* Digambar ulang tiap kali layarnya tampil, bukan cuma waktu pintunya
        diketuk: jalan pulang yang paling sering dari layar tulis adalah tombol
@@ -385,23 +388,38 @@
     return (j >= 0 && j < TAB.length) ? TAB[j][0] : '';
   }
 
+  /* Yang PUNYA arti lain untuk geser mendatar, dan cuma itu: kartu (geser ke
+     kiri = arsip), kotak teks, dok dan lacinya, bilah cip yang memang
+     menggulir mendatar sendiri, dan lapisan yang menutup layar.
+
+     Baris tugas TIDAK termasuk lagi. Dia dulu dikecualikan tanpa alasan yang
+     benar-benar ada - tidak ada gerakan mendatar yang berarti apa pun di atas
+     baris tugas - dan akibatnya layar To Do jadi layar yang paling sulit
+     ditinggalkan dengan geseran: hampir seluruh isinya baris tugas. */
+  var GESER_LEWAT = '.kartu, input, textarea, .dok, .laci, ' +
+                    '.saring-baris, .ruang-baris, .lampiran, .cip-gulir, ' +
+                    '#petak-ai, .pilih-bilah, #tanya, #lihat, .tanya-pilih';
+
   function pasangGeserPintu() {
     var x0 = 0, y0 = 0, hidup = false;
-    document.addEventListener('pointerdown', function (ev) {
+
+    var mulai = function (x, y, sasaran) {
       hidup = false;
-      /* Cuma dari layar berpintu, dan cuma dari tempat yang tidak punya arti
-         lain: kartu (geser = arsip), kotak teks, laci, dan bilah cip yang
-         memang menggulir mendatar sendiri. */
+      /* SELAMA MEMILIH, PINTUNYA TIDAK BISA DIGESER. Bukan karena pilihannya
+         berharga - tapi karena geser itu gerakan yang gampang terjadi tanpa
+         diniatkan, dan tersesat ke layar lain di tengah pekerjaan membuat
+         pekerjaannya bercabang. Pintunya masih bisa diketuk; yang diketuk
+         memang diniatkan. */
+      if (pilihNyala || jumlahPilih() || jumlahFolderPilih()) return;
       if (!pintuSebelah(1) && !pintuSebelah(-1)) return;
-      if (ev.target.closest('.kartu, .tugas, input, textarea, .dok, .laci, ' +
-                            '.saring-baris, .ruang-baris, .lampiran, .cip-gulir, ' +
-                            '#petak-ai, .pilih-bilah, #tanya, #lihat')) return;
-      x0 = ev.clientX; y0 = ev.clientY; hidup = true;
-    }, true);
-    document.addEventListener('pointerup', function (ev) {
+      if (sasaran && sasaran.closest && sasaran.closest(GESER_LEWAT)) return;
+      x0 = x; y0 = y; hidup = true;
+    };
+
+    var selesai = function (x, y) {
       if (!hidup) return;
       hidup = false;
-      var dx = ev.clientX - x0, dy = ev.clientY - y0;
+      var dx = x - x0, dy = y - y0;
       if (Math.abs(dx) < GESER_PINTU) return;
       if (Math.abs(dx) < Math.abs(dy) * GESER_MIRING) return;
       /* Geser ke KIRI membawa pintu di kanan mendekat - arah yang sama dengan
@@ -409,6 +427,33 @@
          bertab. */
       var tujuan = pintuSebelah(dx < 0 ? 1 : -1);
       if (tujuan) keTab(tujuan);
+    };
+
+    /* SENTUHAN DULU, BARU PENUNJUK. Di Android, begitu browser memutuskan
+       gerakanmu itu gulir, dia MEMBATALKAN aliran pointer - 'pointerup' tidak
+       pernah datang, dan geserannya hilang tanpa jejak. 'touchend' selalu
+       datang. Itu sebabnya geser antar pintu terasa mati di HP padahal jalan
+       sempurna di tetikus. */
+    document.addEventListener('touchstart', function (ev) {
+      if (ev.touches.length !== 1) { hidup = false; return; }
+      mulai(ev.touches[0].clientX, ev.touches[0].clientY, ev.target);
+    }, { passive: true, capture: true });
+    document.addEventListener('touchend', function (ev) {
+      var s = ev.changedTouches && ev.changedTouches[0];
+      if (s) selesai(s.clientX, s.clientY);
+    }, { passive: true, capture: true });
+
+    /* Tetikus tidak punya touchend, jadi jalur penunjuk tetap ada - dan dia
+       yang dipakai uji terima. Sentuhan ikut memicu pointer di sebagian
+       browser; 'hidup' yang sudah dimatikan touchend menjaga supaya satu
+       geseran tidak dihitung dua kali. */
+    document.addEventListener('pointerdown', function (ev) {
+      if (ev.pointerType === 'touch') return;
+      mulai(ev.clientX, ev.clientY, ev.target);
+    }, true);
+    document.addEventListener('pointerup', function (ev) {
+      if (ev.pointerType === 'touch') return;
+      selesai(ev.clientX, ev.clientY);
     }, true);
   }
 
@@ -448,6 +493,12 @@
        terbuka tanpa diminta waktu kamu cuma mau kembali ke layar Drop.
        Lacinya sudah punya pintunya sendiri - klip kertas di bilah bawah. */
     if (id === layarSaat) return;
+    /* PINDAH PINTU MENYELESAIKAN PILIHANNYA DULU. Bilah pilih melayang di
+       tingkat halaman, jadi tanpa ini dia ikut ke layar berikutnya - membawa
+       enam folder yang tidak ada di sana, dan tombol Buang yang tidak lagi
+       tahu apa yang dibuangnya. Dibatalkan, bukan dikunci: pintu yang menolak
+       dibuka lebih menakutkan daripada pilihan yang hilang. */
+    batalPilih();
     tutupLaci();
     if (id === 'l-tugas') TTugas.buka();
     if (id === 'l-tulis') gambarTulis();
@@ -1779,18 +1830,32 @@
       '</button>';
   }
 
+  /* TOMBOL KEMBALI, bukan cuma jejaknya. Jejak folder itu KABAR - dia
+     memberitahu kamu sedang di mana - dan kabar ditulis kecil supaya tidak
+     berebut dengan isinya. Tapi kecil berarti tidak muat jempol, dan satu-
+     satunya jalan pulang yang muat jempol jadi tombol Kembali bawaan HP -
+     yang di sini justru menutup aplikasinya.
+
+     Jadi jalan pulangnya berdiri sendiri: satu panah 40px di kiri jejaknya,
+     cuma muncul kalau kamu memang sedang di dalam sesuatu. */
+  function panahKembali(tanda) {
+    return '<button class="folder-balik" ' + tanda + ' aria-label="Kembali">' +
+      '<svg viewBox="0 0 24 24" class="ik"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>' +
+      '</button>';
+  }
+
   function gambarJejakTulis() {
     var w = $('#tulis-alamat');
     if (!w) return;
     var kueri = $('#tulis-cari').value.trim();
     if (kueri) {
-      w.innerHTML = '<button class="note-jejak" data-tulis-akar>Semua folder</button>' +
-        '<span class="note-pisah">/</span><span class="note-jejak-kini">“' + H(kueri) + '”</span>';
+      w.innerHTML = panahKembali('data-tulis-akar') +
+        '<span class="note-jejak-kini">“' + H(kueri) + '”</span>';
       return;
     }
     w.innerHTML = tulisFolder
-      ? '<button class="note-jejak" data-tulis-akar>Semua folder</button>' +
-        '<span class="note-pisah">/</span><span class="note-jejak-kini">' + H(tulisFolder) + '</span>'
+      ? panahKembali('data-tulis-akar') +
+        '<span class="note-jejak-kini">' + H(tulisFolder) + '</span>'
       : '<span class="note-jejak-kini">Semua folder</span>';
   }
 
@@ -2152,7 +2217,9 @@
      perbaikan di satu tempat diam-diam tidak sampai ke tempat lain. Yang
      membedakan cuma wadah kartunya. */
   function wadahPilih() {
-    return layarSaat === 'l-tulis' ? $('#tulis-isi') : $('#note-isi');
+    if (layarSaat === 'l-tulis') return $('#tulis-isi');
+    if (layarSaat === 'l-utama') return $('#hasil-depan');
+    return $('#note-isi');
   }
 
   function tandaiPilih() {
@@ -2177,11 +2244,29 @@
 
   function gambarBilahPilih() {
     var n = jumlahPilih();
-    var hidup = pilihNyala || !!n;
+    var hidup = pilihNyala || !!n || !!jumlahFolderPilih();
     $('#pilih-bilah').classList.toggle('sembunyi', !hidup);
     $('#l-note').classList.toggle('mode-pilih', hidup && layarSaat === 'l-note');
     $('#l-tulis').classList.toggle('mode-pilih', hidup && layarSaat === 'l-tulis');
-    var tombol = layarSaat === 'l-tulis' ? $('#b-tulis-pilih') : $('#b-pilih-mulai');
+    /* Layar Drop ikut, dan di sana pintunya CUMA tekan-lama: tombol Pilih yang
+       menganga di dok akan menagih tempat dari kotak yang dipakai puluhan kali
+       sehari, untuk pekerjaan sebulan sekali. */
+    $('#l-utama').classList.toggle('mode-pilih', hidup && layarSaat === 'l-utama');
+    /* DI LAYAR DROP, BILAHNYA NAIK KE ATAS DOK. Bilahnya melayang di tingkat
+       halaman - bukan di dalam layarnya - jadi aturan gaya yang bersarang di
+       bawah #l-utama tidak pernah mengenainya. Tingginya diukur dari doknya
+       sendiri, bukan ditebak: dok itu tumbuh dan menyusut mengikuti isi
+       kotaknya, dan angka tetap apa pun akan meleset di salah satu keadaan. */
+    var bilah = $('#pilih-bilah');
+    if (hidup && layarSaat === 'l-utama') {
+      var dok = $('#dok');
+      var tinggiDok = dok ? Math.round(dok.getBoundingClientRect().height) : 110;
+      bilah.style.bottom = 'calc(env(safe-area-inset-bottom) + ' + (tinggiDok + 12) + 'px)';
+    } else {
+      bilah.style.bottom = '';
+    }
+    var tombol = layarSaat === 'l-tulis' ? $('#b-tulis-pilih')
+               : layarSaat === 'l-note' ? $('#b-pilih-mulai') : null;
     [$('#b-pilih-mulai'), $('#b-tulis-pilih')].forEach(function (b) {
       if (b) b.classList.toggle('nyala', hidup && b === tombol);
     });
@@ -2421,8 +2506,8 @@
        dan kalau dia tahu, dia tidak perlu mencari. */
     if (kueri) {
       var hasil = TOtak.cari(semuaEntri, kueri, '', '');
-      $('#note-alamat').innerHTML = '<button class="note-jejak" data-note-akar>Semua folder</button>' +
-        '<span class="note-pisah">/</span><span class="note-jejak-kini">“' + H(kueri) + '”</span>' +
+      $('#note-alamat').innerHTML = panahKembali('data-note-akar') +
+        '<span class="note-jejak-kini">“' + H(kueri) + '”</span>' +
         '<span class="note-hitung">' + hasil.length + '</span>';
       /* Petanya dihitung SEKALI untuk seluruh daftar, bukan sekali per kartu:
          menghitungnya di dalam map() berarti seluruh timbunan disapu ulang
@@ -2454,8 +2539,11 @@
          langsung melihat Sales dan Apps adalah cara orang membaca lemari -
          rak dulu, baru barang lepas yang belum masuk rak. */
       var anak = semuaF.filter(function (x) { return x.induk === noteFolder; });
-      $('#note-alamat').innerHTML = '<button class="note-jejak" data-note-akar>Semua folder</button>' +
-        '<span class="note-pisah">/</span><span class="note-jejak-kini">' + H(noteFolder) + '</span>' +
+      /* Induknya disebut kalau ada - "Amara / Sales" memberitahu kamu sedang di
+         tingkat berapa, dan panahnya membawamu pulang ke akar sekali tekan. */
+      $('#note-alamat').innerHTML = panahKembali('data-note-akar') +
+        (f && f.induk ? '<span class="note-jejak-induk">' + H(f.induk) + ' /</span>' : '') +
+        '<span class="note-jejak-kini">' + H(noteFolder) + '</span>' +
         '<span class="note-hitung">' + daftar.length + '</span>';
       $('#note-isi').innerHTML = (anak.map(folderHtml).join('') || '') + (daftar.length
         ? daftar.map(function (e) { return kartuHtml(e, { jamPenuh: true }); }).join('')
@@ -4376,7 +4464,17 @@
     document.addEventListener('keydown', function (ev) {
       if (ev.key === 'Escape') tutupLihat();
     });
-    $('#hasil-depan').addEventListener('click', klikHasil);
+    $('#hasil-depan').addEventListener('click', function (ev) {
+      if (pilihNyala || jumlahPilih()) {
+        var k = ev.target.closest('.kartu');
+        if (k) { alihPilih(k.getAttribute('data-id')); return; }
+      }
+      klikHasil(ev);
+    });
+    /* Hasil pencarian ikut bisa dipilih berbanyak, dan pintunya CUMA
+       tekan-lama: tombol Pilih yang menganga di dok akan menagih tempat dari
+       kotak yang dipakai puluhan kali sehari, untuk pekerjaan sebulan sekali. */
+    pasangTekanLama($('#hasil-depan'));
     pasangGeser($('#hasil-depan'));
     pasangGeserPintu();
     pasangTinggiTampak();
@@ -4393,18 +4491,28 @@
      Dipakai di Note DAN di Storage - satu penangan, bukan dua salinan. */
   function pasangTekanLama(akar) {
     if (!akar) return;
-    var jam = null, mulaiId = '';
+    var jam = null, mulaiKerja = null;
     var batal = function () { clearTimeout(jam); jam = null; };
     akar.addEventListener('pointerdown', function (ev) {
-      if (ev.target.closest('button, a')) return;
-      var k = ev.target.closest('.kartu');
-      if (!k) return;
-      mulaiId = k.getAttribute('data-id');
+      /* FOLDER IKUT, bukan cuma kartu. Menahan itu SATU kebiasaan, bukan dua:
+         yang menahan folder mengharapkan hal yang sama persis dengan yang
+         menahan kartu. Foldernya dibaca DULU - baris folder itu sendiri sebuah
+         tombol, jadi penjaga "jangan di atas tombol" di bawah akan menolaknya
+         mentah-mentah kalau urutannya dibalik. */
+      var f = ev.target.closest('[data-tulis-folder], [data-note-folder]');
+      var k = f ? null : ev.target.closest('.kartu');
+      if (!f && !k) return;
+      if (!f && ev.target.closest('button, a')) return;
+      var nama = f && (f.getAttribute('data-tulis-folder') ||
+                       f.getAttribute('data-note-folder'));
+      var id = k && k.getAttribute('data-id');
+      mulaiKerja = f ? function () { alihPilihFolder(nama); }
+                     : function () { alihPilih(id); };
       batal();
       jam = setTimeout(function () {
         jam = null;
-        if (!pilihNyala && !jumlahPilih()) {
-          alihPilih(mulaiId);
+        if (!pilihNyala && !jumlahPilih() && !jumlahFolderPilih()) {
+          mulaiKerja();
           if (navigator.vibrate) navigator.vibrate(12);
         }
       }, 450);

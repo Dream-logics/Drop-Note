@@ -102,6 +102,12 @@ public/index.html   kerangka semua layar (mulai, utama/Drop, tulis/Note,
                     tombol bulat di layar Note - tapi tetap tidak pernah dari
                     layar Drop: di sana dia pilihan palsu yang menagih jawaban
                     sebelum kamu tahu tulisanmu panjang atau pendek
+                    Pindah pintu bisa lewat GESER kiri-kanan di badan layar:
+                    kepala itu ujung terjauh dari jempol, jadi jangan pernah
+                    jadikan ketukan kepala satu-satunya jalan. Gesernya dengar
+                    'touchstart/touchend' dulu, pointer cuma untuk tetikus -
+                    kalau keduanya jalan bersamaan satu geseran jadi dua
+                    lompatan
 public/bawaan.js    SATU-SATUNYA tempat nama aplikasi & model AI ditulis
 public/bahasa.js    LAPISAN bahasa, bukan pengganti. Teks tetap ditulis
                     Indonesia di seluruh kode; berkas ini menukarnya jadi
@@ -188,6 +194,18 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     Tulisan tetap ikut terjaring pencarian utama: yang
                     ditambahkan layar Note pintu yang lebih sempit, bukan
                     dinding kedua.
+                    MEMILIH BANYAK dimulai dari TEKAN LAMA - kartu maupun
+                    folder, di ketiga layar yang punya bilah pilih. Itu
+                    kebiasaan dari WhatsApp, bukan penemuan baru, jadi tombol
+                    "Pilih" tetap ada tapi bukan lagi satu-satunya jalan.
+                    Yang terpilih HARUS kelihatan beda (.dipilih) - kalau tidak,
+                    orang lupa tadi menandai yang mana dan batal semuanya.
+                    Pilihan TERKUNCI di layarnya: pindah pintu membatalkannya,
+                    dan selama memilih geser antar-pintu mati. Membawa pilihan
+                    setengah jadi ke layar lain bikin aksinya bercabang, dan
+                    yang kena hapus bukan yang dilihat.
+                    Di dalam folder ada PANAH KEMBALI 40px di samping remah
+                    jejaknya: remahnya benar tapi terlalu kecil untuk jempol.
                     Di layar Note, MENYENTUH KARTU = LANJUT MENULIS (bukan
                     membuka rincian di tempat seperti di hasil dan Storage).
                     Layar 'l-note' itu STORAGE - gudang berfolder, isinya
@@ -244,7 +262,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (557 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (567 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
