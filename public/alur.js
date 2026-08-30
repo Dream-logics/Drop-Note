@@ -123,11 +123,7 @@
   var entriCatat = null;
   var labelDepan = null;   /* label yang sedang ditampilkan di layar depan */
   var saringJenis = '';    /* '' = semua jenis; 'gambar', 'berkas', 'daftar', ... */
-  /* Saringan JENIS ELEMEN - "tunjukkan semua nomor telepon". Beda dari
-     saringJenis: yang itu jenis KARTUnya, yang ini jenis potongan DI DALAM
-     kartunya. Keduanya tinggal di laci yang sama dan saling meniadakan, supaya
-     tetap satu keputusan, bukan dua. */
-  var saringElemen = '';
+
   var gayaGambar = 'kecil';    /* besar | sedang | kecil | daftar */
   var laciBuka = '';       /* laci mana yang sedang terbuka: label | drop | filter */
   /* Doknya SELALU di bawah. Dulu ini pilihan di Setelan, dan pilihannya
@@ -769,8 +765,7 @@
      dan hasilnya sekaligus, dan yang menutupnya harus kamu sendiri - satu
      ketukan tambahan untuk membereskan sesuatu yang kamu tidak minta. */
   var LACI = {
-    drop: ['#panel-drop', '#b-lampir'],
-    filter: ['#panel-filter', '#b-filter']
+    drop: ['#panel-drop', '#b-lampir']
   };
 
   function tutupLaci() {
@@ -788,7 +783,6 @@
     $(LACI[nama][0]).classList.remove('sembunyi');
     if (LACI[nama][1]) $(LACI[nama][1]).setAttribute('aria-expanded', 'true');
     laciBuka = nama;
-    if (nama === 'filter') gambarDaftarFilter();
   }
 
   function pilihLabelDepan(nama) {
@@ -809,42 +803,6 @@
     ['tautan', 'Link', '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>']
   ];
 
-  /* Nama elemen yang BENAR-BENAR ADA di timbunan, urut dari yang terbanyak.
-     Tidak diambil dari daftar tetap: rak jenis elemen itu tumbuh sendiri dari
-     apa yang kamu simpan, dan rak yang isinya nol cuma barang yang harus
-     dilewati. */
-  function jenisElemenAda(hidup) {
-    var hitung = {};
-    hidup.forEach(function (e) {
-      var sudah = {};
-      (e.elemen || []).forEach(function (x) {
-        var n = String(x.nama || '').trim();
-        if (!n || sudah[n.toLowerCase()]) return;
-        sudah[n.toLowerCase()] = true;
-        hitung[n] = (hitung[n] || 0) + 1;
-      });
-    });
-    return Object.keys(hitung).map(function (n) { return { nama: n, jumlah: hitung[n] }; })
-      .filter(function (x) { return x.jumlah >= 2 || x.nama === saringElemen; })
-      .sort(function (a, b) { return b.jumlah - a.jumlah || a.nama.localeCompare(b.nama); })
-      .slice(0, 12);
-  }
-
-  function punyaElemen(e, nama) {
-    return (e.elemen || []).some(function (x) {
-      return String(x.nama || '').toLowerCase() === String(nama).toLowerCase();
-    });
-  }
-
-  /* SARINGAN JADI CIP DI ATAS KOTAK, bukan isi laci.
-
-     Di dalam laci dia butuh dua ketukan untuk sesuatu yang dipakai tiap hari,
-     dan ketukan pertamanya cuma untuk melihat pilihan yang seharusnya sudah
-     kelihatan. Di sini pilihannya terbaca sekali lihat, dan yang sedang aktif
-     ikut terbaca tanpa membuka apa pun.
-
-     Cip Todo dipatok di ujung KANAN baris ini - tepat di atas tombol Drop,
-     tempat jempol kanan sudah bertumpu. */
   function gambarCipSaring() {
     var wadah = $('#saring-baris');
     if (!wadah) return;
@@ -855,23 +813,16 @@
          cip yang pasti menghasilkan nol cuma barang yang harus dilewati. */
       if (j[0] && !n) return '';
       return '<button class="saring-cip' +
-             (!saringElemen && saringJenis === j[0] ? ' nyala' : '') +
+             (saringJenis === j[0] ? ' nyala' : '') +
              '" data-jenis="' + j[0] + '" title="' + H(j[1]) + '" aria-label="' + H(j[1]) + '">' +
              '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
     }).filter(Boolean);
 
-    /* Jenis elemen ikut naik ke sini - "tunjukkan semua nomor WhatsApp" tidak
-       bisa dijawab kata kunci, dan raknya sudah ada. Bertulisan, bukan berikon:
-       namanya lahir dari isimu sendiri, jadi tidak ada ikon yang bisa mewakili. */
-    jenisElemenAda(hidup).slice(0, 6).forEach(function (x) {
-      cip.push('<button class="saring-cip teks' + (saringElemen === x.nama ? ' nyala' : '') +
-               '" data-elemen="' + H(x.nama) + '">' + H(x.nama) + '</button>');
-    });
-
-    if ($('#kotak').value.trim()) {
-      cip.push('<button class="saring-cip tugas" data-tugas>' +
-               '<svg viewBox="0 0 24 24" class="ik"><path d="M4 12l5 5L20 6"/></svg>Todo</button>');
-    }
+    /* JENIS ELEMEN TIDAK LAGI JADI CIP. Namanya panjang dan jumlahnya banyak -
+       "No WhatsApp", "No Telepon", "No Rekening", "nama berkas" - jadi barisnya
+       melipat jadi tiga baris dan menutupi setengah layar. Lebih buruk lagi,
+       namanya mirip nama gudang di baris atasnya, jadi terbaca seperti gudang
+       yang muncul dua kali. Mencarinya tetap bisa: ketik namanya. */
     wadah.innerHTML = cip.join('');
   }
 
@@ -916,14 +867,6 @@
     /* Mengetuk yang sedang menyala mematikannya - tanpa itu, satu-satunya
        jalan keluar adalah menebak cip mana yang berarti "batal". */
     saringJenis = (saringJenis === j && j) ? '' : j;
-    saringElemen = '';
-    gambarHasilDepan();
-    gambarCipSaring();
-  }
-
-  function pilihElemen(nama) {
-    saringElemen = (saringElemen === nama) ? '' : nama;
-    saringJenis = '';
     gambarHasilDepan();
     gambarCipSaring();
   }
@@ -931,7 +874,6 @@
   function tutupHasilDepan() {
     labelDepan = null;
     saringJenis = '';
-    saringElemen = '';
     $('#petak-hasil-depan').classList.add('sembunyi');
     $('#hasil-depan').innerHTML = '';
     /* Cipnya ikut digambar ulang - saringan yang sudah dilepas tapi cipnya
@@ -956,7 +898,7 @@
      langsung menyusut. Kotak kosong tanpa label berarti tidak ada apa-apa di
      bawah, dan layar depannya kembali kosong. */
   function hasilDepanAktif() {
-    return !!labelDepan || !!saringJenis || !!saringElemen || !!$('#kotak').value.trim();
+    return !!labelDepan || !!saringJenis || !!$('#kotak').value.trim();
   }
 
   function gambarHasilDepan() {
@@ -971,19 +913,12 @@
     var kueri = $('#kotak').value.trim();
     bersihkanUrl();
     var hasil = TOtak.cari(semuaEntri, kueri, saringJenis, istilah || '');
-    /* Disaring SESUDAH pencarian, bukan di dalamnya: pencarian bekerja atas
-       kata, sementara ini bekerja atas potongan yang sudah ditarik - dua hal
-       berbeda yang kebetulan bertemu di layar yang sama. */
-    if (saringElemen) {
-      hasil = hasil.filter(function (e) { return punyaElemen(e, saringElemen); });
-    }
     $('#petak-hasil-depan').classList.remove('sembunyi');
 
     var ket = [];
     ket.push(hasil.length ? hasil.length + ' hasil' : 'Kosong');
     if (labelDepan && labelDepan !== '*') ket.push(labelDepan);
     if (saringJenis) JENIS_SARING.forEach(function (x) { if (x[0] === saringJenis) ket.push(x[1]); });
-    if (saringElemen) ket.push(saringElemen);
     /* Kata yang panjang dipotong di kepala: keterangan yang membungkus jadi
        dua baris mendorong hasil pertama ke bawah - dan hasil pertama itu yang
        dicari. Yang lengkap tetap terbaca di kotaknya sendiri, tepat di atas. */
@@ -995,9 +930,7 @@
     if (!hasil.length) {
       wadah.innerHTML = '<div class="kosong">' + (kueri
         ? 'Tidak ada yang cocok.<br>Coba satu kata saja — pencarian ini memaafkan.'
-        : saringElemen
-          ? 'Belum ada yang memuat ' + H(saringElemen) + '.'
-          : saringJenis
+        : saringJenis
           ? 'Belum ada yang berjenis ini.'
           : 'Belum ada yang masuk label ini.<br>Label diisi AI sesudah catatannya jatuh.') +
         '</div>';
@@ -1020,7 +953,7 @@
       return;
     }
 
-    wadah.innerHTML = hasil.slice(0, 200).map(kartuHtml).join('');
+    wadah.innerHTML = urutPin(hasil).slice(0, 200).map(kartuHtml).join('');
     pasangGambarKartu(wadah);
   }
 
@@ -1195,7 +1128,7 @@
          mematikan di sepuluh ribu. */
       var petaCari = petaAlamatNote(semuaEntri.filter(catatanSaja));
       $('#note-isi').innerHTML = hasil.length
-        ? hasil.slice(0, 200).map(function (e) {
+        ? urutPin(hasil).slice(0, 200).map(function (e) {
             /* Alamatnya ditulis di atas judulnya, bukan dikirim sebagai
                argumen kedua ke kartuHtml: kartu itu dipakai di tiga tempat,
                dan menambah parameter di sana berarti map() yang memanggilnya
@@ -1211,7 +1144,9 @@
     if (noteFolder) {
       var semuaF = folderNote();
       var f = semuaF.filter(function (x) { return x.nama === noteFolder; })[0];
-      var daftar = f ? f.isi.slice().sort(function (a, b) { return (b.diubah || 0) - (a.diubah || 0); }) : [];
+      var daftar = f ? urutPin(f.isi.slice().sort(function (a, b) {
+        return (b.diubah || 0) - (a.diubah || 0);
+      })) : [];
       /* Anak folder digambar DI ATAS isinya sendiri: masuk "Amara" lalu
          langsung melihat Sales dan Apps adalah cara orang membaca lemari -
          rak dulu, baru barang lepas yang belum masuk rak. */
@@ -1300,9 +1235,17 @@
     var jamPenuh = !!(opsi && opsi.jamPenuh);
     var b = [];
 
+    /* PIN SELALU TERLIHAT, tidak disembunyikan di dalam rincian. Yang dipin
+       itu justru yang paling sering dipanggil, dan menyembunyikan tombolnya di
+       balik satu ketukan berarti kamu harus membuka kartunya dulu untuk
+       melepasnya - dua ketukan untuk membatalkan satu. */
     b.push('<div class="kartu-atas">' +
       '<div class="kartu-judul">' + (sering ? '<span class="titik" title="sering dipakai"></span>' : '') +
       H(e.judul || '(tanpa judul)') + '</div>' +
+      '<button class="kartu-pin' + (e.pin ? ' nyala' : '') + '" data-pin' +
+      ' aria-label="' + (e.pin ? 'Lepas pin' : 'Pin ke atas') + '">' +
+      '<svg viewBox="0 0 24 24" class="ik"><path d="M9 3h6l-1 6 4 4v2H6v-2l4-4z"/>' +
+      '<path d="M12 15v6"/></svg></button>' +
       '<span class="kartu-waktu">' +
       H(jamPenuh ? TOtak.waktuLengkap(e.diubah) : TOtak.waktuRingkas(e.diubah)) +
       '</span></div>');
@@ -1377,7 +1320,7 @@
 
     b.push('<div class="kartu-rinci sembunyi">' + r.join('') + '</div>');
 
-    return '<article class="kartu' + (sering ? ' sering' : '') +
+    return '<article class="kartu' + (sering ? ' sering' : '') + (e.pin ? ' terpin' : '') +
            '" data-id="' + H(e.id) + '">' + b.join('') + '</article>';
   }
 
@@ -1391,12 +1334,15 @@
      sebaris. */
   var NAMA_JENIS = {
     tautan: 'tautan', surel: 'surel', telepon: 'telepon', kode: 'kode',
-    nomor: 'nomor', alamat: 'alamat', berkas: 'berkas', nama: 'nama',
+    nomor: 'No', alamat: 'alamat', berkas: 'berkas', nama: 'nama',
     jadwal: 'jadwal', harga: 'harga', prompt: 'prompt', lainnya: 'catatan'
   };
 
   function elemenBaris(x, i) {
-    var nama = x.nama || NAMA_JENIS[x.jenis] || 'elemen';
+    /* Disingkat saat DITAMPILKAN juga, bukan cuma saat disimpan: yang
+       terlanjur tersimpan sebagai "Nomor WhatsApp" ikut rapi tanpa satu pun
+       barisnya disentuh. */
+    var nama = TOtak.pendekkanNama(x.nama || NAMA_JENIS[x.jenis] || 'elemen');
     var nilai = String(x.nilai || '');
     /* Tautan harus bisa langsung dibuka - itu satu-satunya alasan dia
        disimpan. Yang lain cukup bisa disalin. */
@@ -1604,6 +1550,31 @@
     var lapis = $('#lihat');
     if (lapis) lapis.classList.add('sembunyi');
     if (lihatUrl) { URL.revokeObjectURL(lihatUrl); lihatUrl = ''; }
+  }
+
+  /* PIN: yang dipin selalu di paling atas.
+
+     Ini BUKAN pengganti peringkat. Peringkat menjawab "apa yang biasanya
+     kupakai" dan bekerja tanpa kamu memutuskan apa pun; pin menjawab "yang ini
+     sedang kubutuhkan terus, sekarang" - dan itu memang cuma kamu yang tahu.
+     Satu ketukan memasang, satu ketukan yang sama melepas: kalau melepasnya
+     lebih sulit daripada memasang, sebulan lagi separuh timbunanmu terpin. */
+  function alihPin(e) {
+    e.pin = !e.pin;
+    e.diubah = e.diubah || Date.now();
+    TSimpan.taruh(e);
+    segarkanCache(e);
+    segarkanTampilan();
+    pesan(e.pin ? 'Dipin ke atas' : 'Pin dilepas');
+  }
+
+  /* Yang dipin naik ke atas, urutan aslinya di antara mereka dipertahankan.
+     Dipakai di layar depan DAN di layar Note - kalau cuma di satu tempat, pin
+     yang sama terbaca beda tergantung dari mana kamu melihatnya. */
+  function urutPin(daftar) {
+    var pin = [], sisa = [];
+    (daftar || []).forEach(function (e) { (e.pin ? pin : sisa).push(e); });
+    return pin.concat(sisa);
   }
 
   function bukaKartu(id) {
@@ -2628,11 +2599,8 @@
     $('#b-terima').addEventListener('click', function (ev) { ev.preventDefault(); });
 
     $('#saring-baris').addEventListener('click', function (ev) {
-      if (ev.target.closest('[data-tugas]')) { keTugas(); return; }
       var j = ev.target.closest('[data-jenis]');
       if (j) { pilihJenis(j.getAttribute('data-jenis')); return; }
-      var el = ev.target.closest('[data-elemen]');
-      if (el) pilihElemen(el.getAttribute('data-elemen'));
     });
 
     $('#ruang-baris').addEventListener('click', function (ev) {
@@ -2669,7 +2637,7 @@
 
     $('#b-drop').addEventListener('click', drop);
     $('#b-lampir').addEventListener('click', function () { alihLaci('drop'); });
-    $('#b-filter').addEventListener('click', function () { alihLaci('filter'); });
+    $('#b-tugas').addEventListener('click', keTugas);
     /* RUANGNYA TERBATAS: laci yang menggantung terbuka menutupi kotak dan
        hasilnya sekaligus. Jadi dia menutup sendiri begitu kamu menyentuh hal
        lain - mengetuk kotak, menggulir hasil, apa pun di luar lacinya. Kalau
@@ -2679,7 +2647,7 @@
     document.addEventListener('pointerdown', function (ev) {
       if (!laciBuka) return;
       if (ev.target.closest('#panel-drop, #panel-filter')) return;
-      if (ev.target.closest('#b-lampir, #b-filter, [data-tab-ke="l-utama"]')) return;
+      if (ev.target.closest('#b-lampir, #b-tugas, [data-tab-ke="l-utama"]')) return;
       tutupLaci();
     }, true);
     $('#b-tutup-hasil').addEventListener('click', tutupHasilDepan);
@@ -2861,6 +2829,7 @@
       return;
     }
 
+    if (ev.target.closest('[data-pin]')) { if (e) alihPin(e); return; }
     if (ev.target.closest('[data-salin]')) { if (e) salin(isiSalin(e)); return; }
     if (ev.target.closest('[data-sunting]')) { bukaKartu(id); return; }
     if (ev.target.closest('[data-pensiun]')) { if (e) pensiunkanKartu(e); return; }

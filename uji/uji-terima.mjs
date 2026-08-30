@@ -1105,19 +1105,14 @@ console.log('\nlaci: satu saja yang terbuka, dan menutup sendiri');
   cek('layarnya tidak ke mana-mana', await hal.locator('#l-utama').isVisible());
 
   /* Ruangnya terbatas: dua laci terbuka sekaligus menutupi kotak DAN hasilnya. */
-  await hal.click('#b-filter');
-  await hal.waitForTimeout(250);
-  cek('membuka laci lain menutup yang sebelumnya', !(await buka('#panel-drop')));
-  cek('laci jenis yang terbuka sekarang', await buka('#panel-filter'));
-
   /* Menyentuh hal lain menutupnya sendiri - kalau harus ditutup tangan, itu
      satu ketukan untuk membereskan sesuatu yang tidak diminta. */
   await hal.click('#kotak');
   await hal.waitForTimeout(250);
-  cek('mengetuk kotak menutup lacinya sendiri', !(await buka('#panel-filter')));
+  cek('mengetuk kotak menutup lacinya sendiri', !(await buka('#panel-drop')));
 
-  /* Klip kertas punya lacinya sendiri sekarang - dulu satu-satunya jalan ke
-     sana menekan pintu Drop yang sedang terbuka, dan itu tidak pernah ketemu
+  /* Klip kertas punya lacinya sendiri - dulu satu-satunya jalan ke sana
+     menekan pintu Drop yang sedang terbuka, dan itu tidak pernah ketemu
      sendiri. */
   await hal.click('#b-lampir');
   await hal.waitForTimeout(250);
@@ -1135,9 +1130,13 @@ console.log('\nsaringan jenis: cip di atas kotak, bukan isi laci');
   await hal.waitForTimeout(250);
 
   const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
-  cek('tombol jenis berdiri di antara klip dan Drop',
-      html.indexOf('id="b-lampir"') < html.indexOf('id="b-filter"') &&
-      html.indexOf('id="b-filter"') < html.indexOf('id="b-drop"'));
+  /* URUTAN DI BILAH KENDALI: klip - Todo - Drop. Ketiganya tindakan, dan
+     ketiganya duduk di jangkauan jempol kanan; corong saringan pindah jadi cip
+     di atas kotak, jadi tempatnya bebas untuk yang benar-benar dipakai. */
+  cek('urutan bilahnya klip - Todo - Drop',
+      html.indexOf('id="b-lampir"') < html.indexOf('id="b-tugas"') &&
+      html.indexOf('id="b-tugas"') < html.indexOf('id="b-drop"'));
+  cek('corong saringan sudah tidak ada di bilah', !/id="b-filter"/.test(html));
 
   /* SARINGANNYA NAIK JADI CIP DI ATAS KOTAK. Di dalam laci dia butuh dua
      ketukan untuk sesuatu yang dipakai tiap hari, dan ketukan pertamanya cuma
@@ -1188,14 +1187,6 @@ console.log('\nsaringan jenis: cip di atas kotak, bukan isi laci');
   cek('menutup hasilnya melepas saringan jenisnya juga',
       (await hal.locator('#saring-baris [data-jenis="tautan"].nyala').count()) === 0);
 
-  /* Laci jenis SENGAJA KOSONG sekarang - tempatnya ditinggalkan untuk isian
-     berikutnya, dan dikosongkan tiap kali dibuka supaya tidak ada sisa yang
-     menyesatkan. */
-  await hal.click('#b-filter');
-  await hal.waitForTimeout(250);
-  cek('laci jenisnya kosong, menunggu isian berikutnya',
-      (await hal.locator('#filter-daftar').innerHTML()).trim() === '');
-  await hal.evaluate(() => TAlur.tutupLaciUji());
 }
 
 console.log('\ndok selalu di bawah, dan togglenya dihapus');
@@ -1886,17 +1877,25 @@ console.log('\ngudang di mana saja, elemen tidak beranak, gudang tersering');
      Bunda" tidak akan pernah berkumpul dengan "No WhatsApp" yang lain -
      sebulan kemudian ada sepuluh nama untuk satu benda. */
   const baku = await hal.evaluate(() => {
-    const lama = ['No WhatsApp', 'Nomor Rekening'];
+    const lama = ['No WhatsApp', 'No Rekening'];
     return {
       pemilik: TOtak.bakukanNamaElemen('No WhatsApp Bunda', lama),
       besarKecil: TOtak.bakukanNamaElemen('no whatsapp', lama),
-      bank: TOtak.bakukanNamaElemen('Nomor Rekening BCA', lama),
+      bank: TOtak.bakukanNamaElemen('No Rekening BCA', lama),
       baru: TOtak.bakukanNamaElemen('Alamat Gudang', lama)
     };
   });
   cek('nama pemilik dilepas dari nama elemen', baku.pemilik === 'No WhatsApp', JSON.stringify(baku));
   cek('penulisan yang sudah ada yang dipakai', baku.besarKecil === 'No WhatsApp');
-  cek('nama bank pun dilepas', baku.bank === 'Nomor Rekening');
+  cek('nama bank pun dilepas', baku.bank === 'No Rekening');
+  /* "Nomor" selalu disingkat "No": namanya ditulis di kolom sempit, dan enam
+     huruf untuk keterangan yang sudah jelas dari angkanya itu pemborosan.
+     Disingkat waktu disimpan DAN waktu ditampilkan - yang kedua supaya yang
+     terlanjur tersimpan panjang ikut rapi tanpa satu pun barisnya disentuh. */
+  cek('"Nomor" disingkat jadi "No"',
+      (await hal.evaluate(() => TOtak.pendekkanNama('Nomor WhatsApp'))) === 'No WhatsApp' &&
+      (await hal.evaluate(() => TOtak.pendekkanNama('nomer HP'))) === 'No HP' &&
+      (await hal.evaluate(() => TOtak.pendekkanNama('nama berkas'))) === 'nama berkas');
   cek('yang memang baru tetap boleh lahir', baku.baru === 'Alamat Gudang');
   /* Diminta ke AI JUGA - kodenya menegakkan, arahannya mencegah. */
   cek('aturannya ikut dikirim ke AI',
@@ -1916,19 +1915,18 @@ console.log('\ngudang di mana saja, elemen tidak beranak, gudang tersering');
   });
   await hal.waitForTimeout(300);
   await hal.waitForTimeout(350);
-  cek('jenis elemen yang benar-benar ada ikut jadi cip',
-      (await hal.locator('#saring-baris [data-elemen="No WhatsApp"]').count()) === 1,
+  /* JENIS ELEMEN TIDAK LAGI JADI CIP. Namanya panjang dan jumlahnya banyak,
+     jadi barisnya melipat jadi tiga baris dan menutupi setengah layar - dan
+     namanya mirip nama gudang di baris atasnya, jadi terbaca seperti gudang
+     yang muncul dua kali. */
+  cek('jenis elemen tidak lagi memenuhi baris cip',
+      (await hal.locator('#saring-baris [data-elemen]').count()) === 0,
       await hal.locator('#saring-baris').innerText());
-  await hal.click('#saring-baris [data-elemen="No WhatsApp"]');
-  await hal.waitForTimeout(350);
-  cek('memilihnya menyaring, bukan mencari kata',
-      (await hal.locator('#hasil-depan .kartu').count()) === 2 &&
-      (await hal.locator('#hasil-depan-ket').textContent()).indexOf('No WhatsApp') >= 0);
-  /* Mengetuk yang menyala mematikannya - tanpa itu tidak ada jalan keluar. */
-  await hal.click('#saring-baris [data-elemen="No WhatsApp"]');
-  await hal.waitForTimeout(300);
-  cek('mengetuknya lagi melepas saringannya',
-      (await hal.locator('#saring-baris [data-elemen="No WhatsApp"].nyala').count()) === 0);
+  /* Dan kodenya ikut dibuang, bukan cuma cipnya disembunyikan: saringan yang
+     tidak punya pintu lagi adalah kode mati yang kelihatan hidup. Kalau nanti
+     dibutuhkan, tempatnya sudah disiapkan - laci jenis yang kosong. */
+  cek('kodenya ikut dibuang, bukan cuma cipnya',
+      !/saringElemen/.test(fs.readFileSync(path.join(AKAR, 'alur.js'), 'utf8')));
   await hal.evaluate(() => TAlur.tutupHasilDepanUji());
 
   /* Kotak kosong: gudang yang paling sering dipakai sebulan terakhir. Ini
@@ -1975,7 +1973,7 @@ console.log('\nTodo dari layar Drop: pembedanya ACTION, bukan tenggat');
     await hal.fill('#kotak', t);
     await hal.dispatchEvent('#kotak', 'input');
     await hal.waitForTimeout(200);
-    await hal.click('#saring-baris [data-tugas]');
+    await hal.click('#b-tugas');
     await hal.waitForTimeout(400);
   };
 
@@ -2015,8 +2013,8 @@ console.log('\nTodo dari layar Drop: pembedanya ACTION, bukan tenggat');
      rekening, kunci API, "Eko masih punya hutang" - itu isi gudang ini, dan
      tombol Drop sudah jadi tombol Reminder-nya. Tidak ada cip kedua yang
      kerjanya sama persis dengan tombol di sampingnya. */
-  cek('tidak ada cip Reminder - tombol Drop itulah Reminder-nya',
-      (await hal.locator('#saring-baris [data-reminder]').count()) === 0);
+  cek('tidak ada tombol Reminder - tombol Drop itulah Reminder-nya',
+      (await hal.locator('#b-reminder').count()) === 0);
 
   await hal.fill('#kotak', 'Eko masih punya hutang tiga juta');
   await hal.dispatchEvent('#kotak', 'input');
@@ -2248,6 +2246,78 @@ console.log('\nTo Do dua bagian, timestamp di Note, dan gambar yang membesar');
   cek('dan layarnya tidak ke mana-mana', await hal.locator('#l-utama').isVisible());
   await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.fill('#kotak', '');
+  await hal.waitForTimeout(200);
+}
+
+console.log('\npin: yang penting selalu di paling atas');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.evaluate(async () => {
+    const b = (id, judul) => ({
+      id: id, jenis: 'teks', judul: judul, isi: judul, kategori: 'pinuji',
+      tag: ['PinUji'], label: [], elemen: [], daftar: [],
+      dibuat: Date.now(), diubah: Date.now(), dipakai: 0, diLabeliAI: true, diBacaAI: true
+    });
+    await TSimpan.taruh(b('pin-1', 'pinuji satu paling lama'));
+    await TSimpan.taruh(b('pin-2', 'pinuji dua'));
+    await TSimpan.taruh(b('pin-3', 'pinuji tiga paling baru'));
+    return TAlur.muatUlangUji();
+  });
+  await hal.fill('#kotak', 'pinuji');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(400);
+
+  /* Pin SELALU TERLIHAT, tidak disembunyikan di dalam rincian: yang dipin itu
+     justru yang paling sering dipanggil, dan menyembunyikan tombolnya berarti
+     dua ketukan untuk membatalkan satu. */
+  cek('tiap kartu hasil membawa pinnya sendiri',
+      (await hal.locator('#hasil-depan .kartu [data-pin]').count()) === 3);
+  cek('dan pinnya terlihat tanpa membuka rincian kartunya',
+      (await hal.locator('#hasil-depan .kartu-atas [data-pin]').count()) === 3);
+
+  const judulUrut = () => hal.locator('#hasil-depan .kartu-judul').allInnerTexts();
+  const sebelum = await judulUrut();
+  cek('sebelum dipin, urutannya urutan biasa',
+      /paling baru/.test(sebelum[0]), JSON.stringify(sebelum));
+
+  /* Yang dipin naik ke paling atas - dan itu berlaku di layar depan MAUPUN di
+     layar Note; pin yang sama tidak boleh terbaca beda tergantung dari mana
+     kamu melihatnya. */
+  const idx = sebelum.findIndex((t) => /paling lama/.test(t));
+  await hal.locator('#hasil-depan .kartu [data-pin]').nth(idx).click();
+  await hal.waitForTimeout(400);
+  const sesudah = await judulUrut();
+  cek('yang dipin naik ke paling atas',
+      /paling lama/.test(sesudah[0]), JSON.stringify(sesudah));
+  cek('kartunya ikut bertanda terpin',
+      (await hal.locator('#hasil-depan .kartu.terpin').count()) === 1);
+  cek('pinnya menyala', (await hal.locator('#hasil-depan [data-pin].nyala').count()) === 1);
+
+  /* Satu ketukan memasang, satu ketukan yang sama melepas: kalau melepasnya
+     lebih sulit daripada memasang, sebulan lagi separuh timbunanmu terpin. */
+  await hal.locator('#hasil-depan .kartu [data-pin]').first().click();
+  await hal.waitForTimeout(400);
+  cek('ketukan yang sama melepasnya',
+      (await hal.locator('#hasil-depan [data-pin].nyala').count()) === 0 &&
+      /paling baru/.test((await judulUrut())[0]));
+
+  /* Kolom pin ikut naik ke cadangan, DI EKOR - baris lama membaca nilainya
+     menurut urutan, jadi menyisipkan kolom di tengah menggeser seluruh
+     cadangan yang sudah terlanjur ada. */
+  const kolom = await hal.evaluate(() => TAwan.KOLOM);
+  cek('pin ikut dicadangkan, dan kolomnya di ekor',
+      kolom[kolom.length - 1] === 'pin', JSON.stringify(kolom.slice(-3)));
+
+  await hal.evaluate(async () => {
+    for (const id of ['pin-1', 'pin-2', 'pin-3']) {
+      const e = await TSimpan.ambil(id);
+      if (e) { e.pensiun = true; await TSimpan.taruh(e); }
+    }
+    return TAlur.muatUlangUji();
+  });
+  await hal.fill('#kotak', '');
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
   await hal.waitForTimeout(200);
 }
 

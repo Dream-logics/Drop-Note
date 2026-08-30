@@ -58,13 +58,6 @@
       <!-- Ala WhatsApp: dua ikon menempel di dalam kotaknya, tombol jatuhkan
            berdiri sendiri di kanan - paling dekat jempol. -->
       <div class="kotak-bar">
-        <!-- Klip kertas, bukan ikon kategori. Menyaring label sudah punya
-             tempatnya sendiri - cip gudang di atas kotak dan layar Note - jadi
-             yang pantas duduk di sini yang belum punya pintu: cara memasukkan
-             sesuatu yang bukan teks. Persis letak klip di WhatsApp. -->
-        <button class="tbl" id="b-lampir" aria-haspopup="listbox" aria-expanded="false" aria-label="Lampiran">
-          <svg viewBox="0 0 24 24" class="ik"><path d="M21 11.5l-8.8 8.8a5 5 0 0 1-7.1-7.1l8.8-8.8a3.4 3.4 0 0 1 4.8 4.8l-8.8 8.8a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>
-        </button>
         <!-- Teks bayangan digambar di lapisan DI BELAKANG kotaknya, bukan di
              dalam textarea - textarea tidak bisa berisi dua warna. Lapisannya
              memakai huruf, jarak, dan lebar yang sama persis, lalu kotaknya
@@ -81,11 +74,19 @@
             <i><svg viewBox="0 0 24 24" class="ik"><path d="M9 6l6 6-6 6"/></svg></i>
           </button>
         </div>
-        <!-- Kembarannya tombol Gambar/Berkas di laci Drop, tapi arahnya
-             terbalik: yang di laci MEMASUKKAN, yang ini MENGELUARKAN. -->
-        <button class="tbl" id="b-filter" aria-haspopup="listbox" aria-expanded="false">
-          <svg viewBox="0 0 24 24" class="ik"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg><span id="b-filter-teks">Jenis</span>
-          <svg viewBox="0 0 24 24" class="ik kecil"><path d="M6 9l6 6 6-6"/></svg>
+        <!-- URUTAN DI UJUNG KANAN: klip - Todo - Drop. Ketiganya tindakan,
+             dan ketiganya duduk di jangkauan jempol kanan. Yang paling sering
+             ditekan paling kanan; corong saringan pindah jadi cip di atas
+             kotak, jadi tempatnya di sini bebas untuk yang benar-benar
+             dipakai. -->
+        <button class="tbl" id="b-lampir" aria-haspopup="listbox" aria-expanded="false" aria-label="Lampiran">
+          <svg viewBox="0 0 24 24" class="ik"><path d="M21 11.5l-8.8 8.8a5 5 0 0 1-7.1-7.1l8.8-8.8a3.4 3.4 0 0 1 4.8 4.8l-8.8 8.8a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>
+        </button>
+        <!-- Papan bercentang: bentuk yang dikenali sebagai "daftar tugas" di
+             mana-mana, dan bukan centang telanjang - centang saja berarti
+             "selesai", padahal yang dilakukan tombol ini justru MEMBUAT. -->
+        <button class="tbl" id="b-tugas" aria-label="Jadikan tugas">
+          <svg viewBox="0 0 24 24" class="ik"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg>
         </button>
       </div>
       <!-- Kabar ke mana barangnya akan mendarat, plus turunan gudangnya.

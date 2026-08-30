@@ -92,7 +92,7 @@ button,input,textarea{font:inherit;color:inherit}
 .kotak-bar{display:contents}
 #kotak,.kotak-bungkus{grid-column:1 / -1}
 #b-lampir{grid-column:1}
-#b-filter{grid-column:2}
+#b-tugas{grid-column:2}
 #b-drop{grid-column:3}
 
 /* --- lampiran (jenis dropping) --- */
@@ -665,13 +665,16 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   border:none;background:none;border-radius:0;
   min-height:42px;padding:11px 4px;
 }
-.dok-bawah #b-lampir,.dok-bawah #b-filter{
+.dok-bawah #b-lampir,.dok-bawah #b-tugas{
   flex:0 0 auto;width:40px;height:40px;min-height:0;padding:0;border:none;
   border-radius:50%;color:var(--m);
 }
-.dok-bawah #b-lampir span,.dok-bawah #b-filter span,
-.dok-bawah #b-lampir .ik.kecil,.dok-bawah #b-filter .ik.kecil{display:none}
-.dok-bawah #b-lampir.nyala,.dok-bawah #b-filter.nyala{color:var(--a)}
+.dok-bawah #b-lampir span,.dok-bawah #b-tugas span,
+.dok-bawah #b-lampir .ik.kecil,.dok-bawah #b-tugas .ik.kecil{display:none}
+.dok-bawah #b-lampir.nyala,.dok-bawah #b-tugas.nyala{color:var(--a)}
+/* Todo beraksen sejak diam: dia satu-satunya ikon di bilah ini yang MENYIMPAN
+   sesuatu, dan yang menyimpan pantas kelihatan berbeda dari yang cuma membuka. */
+.dok-bawah #b-tugas{color:var(--a)}
 .dok-bawah #b-drop{
   flex:0 0 auto;width:52px;height:52px;min-height:0;padding:0;border-radius:50%;
   background:var(--ap);border-color:var(--ap);color:var(--at);
@@ -733,14 +736,7 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   border-color:transparent;color:var(--a);font-weight:700;
   background:color-mix(in srgb, var(--a) 14%, transparent);
 }
-/* Cip Todo dipatok di ujung KANAN - tepat di atas tombol Drop, tempat jempol
-   kanan sudah bertumpu. Dia satu-satunya cip di baris ini yang MENYIMPAN
-   sesuatu; sisanya cuma menyaring, jadi warnanya dibedakan. */
-.saring-cip.tugas{
-  margin-left:auto;border-color:var(--a);color:var(--a);padding:0 12px;
-}
-.saring-cip.tugas .ik{width:14px;height:14px;stroke-width:2.4}
-.saring-cip.tugas:active{background:color-mix(in srgb, var(--a) 14%, transparent)}
+
 /* Baris gudang tersering: jalan pintas waktu kotaknya masih kosong. */
 .ruang-baris .ruang-cip.sering{border-style:dashed}
 .laci-judul{
@@ -787,6 +783,19 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
   color:var(--m);padding:16px 2px 6px;border-top:1px solid var(--l);margin-top:8px;
 }
+
+/* Pin di kepala kartu. Redup waktu mati supaya tidak berteriak di daftar
+   berisi lima puluh kartu; beraksen dan terisi waktu menyala, karena yang
+   dipin memang harus kelihatan berbeda sekilas. */
+.kartu-pin{
+  width:32px;height:32px;flex:0 0 auto;border:none;background:none;
+  color:var(--m);opacity:.35;border-radius:8px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;
+}
+.kartu-pin .ik{width:15px;height:15px}
+.kartu-pin.nyala{opacity:1;color:var(--a)}
+.kartu-pin.nyala .ik{fill:color-mix(in srgb, var(--a) 22%, transparent)}
+.kartu.terpin{border-left:2px solid var(--a)}
 
 /* --- pratinjau gambar ---
    Alas gelap, bukan putih: yang dilihat gambarnya, dan latar terang mencuri
