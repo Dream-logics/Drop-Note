@@ -2770,10 +2770,24 @@ console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan')
      sesudah tiap folder dibuka satu-satu. */
   cek('tombol Pilih ditawarkan di halaman folder juga',
       await hal.locator('#b-pilih-mulai').isVisible());
-  await hal.click('#b-pilih-mulai');
-  await hal.waitForTimeout(200);
   const folderStorage = await hal.locator('#note-isi [data-note-folder]').first()
     .getAttribute('data-note-folder');
+
+  /* MENAHAN FOLDER MEMULAI MEMILIH, tanpa menyentuh tombol Pilih sama sekali -
+     kebiasaan yang sama persis dengan menahan satu chat di WhatsApp. Menahan
+     itu satu kebiasaan, bukan dua: yang menahan folder mengharapkan hal yang
+     sama dengan yang menahan kartu. */
+  await hal.locator('#note-isi [data-note-folder="' + folderStorage + '"]')
+    .dispatchEvent('pointerdown');
+  await hal.waitForTimeout(700);
+  cek('menahan folder memulai memilih, tanpa tombol Pilih dulu',
+      (await hal.locator('#note-isi [data-note-folder].dipilih').count()) === 1,
+      await hal.locator('#pilih-jumlah').innerText());
+  await hal.click('#b-pilih-batal');
+  await hal.waitForTimeout(250);
+
+  await hal.click('#b-pilih-mulai');
+  await hal.waitForTimeout(200);
   await hal.click('#note-isi [data-note-folder="' + folderStorage + '"]');
   await hal.waitForTimeout(250);
   cek('mengetuk folder Storage memilihnya, bukan membukanya',
@@ -3396,6 +3410,56 @@ console.log('\ngeser antar pintu, papan ketik, pin, dan arsip yang bisa dikosong
   cek('tidak ada lagi lencana angka di pintu To Do',
       (await hal.locator('[data-tab] .tab-lencana').count()) === 0);
 
+  /* NAMA PINTU 14px - ukuran label navigasi utama yang dipakai Material 3, dan
+     kira-kira sama dengan tab bar iOS. 12,5px membuatnya setara dengan
+     keterangan kecil di sekitarnya, padahal dia yang paling sering dituju
+     mata. Yang dijaga: empat pintu tetap SATU BARIS dan namanya tidak pernah
+     terpotong. */
+  const pintuUkur = await hal.evaluate(() => {
+    const t = [...document.querySelectorAll('#l-utama [data-tab] .tab')];
+    return {
+      ukuran: parseFloat(getComputedStyle(t[0]).fontSize),
+      baris: new Set(t.map((e) => Math.round(e.getBoundingClientRect().top))).size,
+      muat: t.every((e) => e.scrollWidth <= e.clientWidth + 1)
+    };
+  });
+  cek('nama pintu cukup besar untuk dituju mata duluan', pintuUkur.ukuran >= 14,
+      String(pintuUkur.ukuran));
+  cek('dan empat pintu tetap sebaris tanpa satu nama pun terpotong',
+      pintuUkur.baris === 1 && pintuUkur.muat === true, JSON.stringify(pintuUkur));
+
+  /* TEKAN LAMA DI LAYAR DROP. Kebiasaan yang sama dengan WhatsApp: tahan satu,
+     lalu ketuk teman-temannya. Di sini pintunya CUMA tekan-lama - tombol Pilih
+     yang menganga di dok akan menagih tempat dari kotak yang dipakai puluhan
+     kali sehari, untuk pekerjaan sebulan sekali. */
+  await hal.fill('#kotak', 'badgeuji');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(400);
+  const kartuDrop = hal.locator('#hasil-depan .kartu').first();
+  await kartuDrop.dispatchEvent('pointerdown');
+  await hal.waitForTimeout(700);
+  cek('menahan kartu di layar Drop memulai memilih',
+      await hal.locator('#pilih-bilah').isVisible());
+  cek('dan bilahnya tidak menutupi kotak drop',
+      await hal.evaluate(() => {
+        const b = document.querySelector('#pilih-bilah').getBoundingClientRect();
+        const d = document.querySelector('#dok').getBoundingClientRect();
+        return b.bottom <= d.top + 2;
+      }) === true);
+  /* PINDAH PINTU MENYELESAIKAN PILIHANNYA DULU. Bilah pilih melayang di
+     tingkat halaman, jadi tanpa ini dia ikut ke layar berikutnya - membawa
+     enam folder yang tidak ada di sana, dan tombol Buang yang tidak lagi tahu
+     apa yang dibuangnya. */
+  await hal.click('#l-utama [data-tab-ke="l-tugas"]');
+  await hal.waitForTimeout(400);
+  cek('pindah pintu membatalkan pilihannya, bukan membawanya ikut',
+      await hal.locator('#pilih-bilah').isHidden());
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(250);
+
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+  await hal.waitForTimeout(200);
+
   /* GESER ANTAR PINTU. Empat pintu berjajar, dan memindahkannya cuma butuh
      satu ketukan - tapi ketukan itu di kepala layar, ujung terjauh dari jempol
      yang bertumpu di sudut kanan bawah. */
@@ -3413,6 +3477,64 @@ console.log('\ngeser antar pintu, papan ketik, pin, dan arsip yang bisa dikosong
   };
   cek('geser ke kiri membuka pintu di kanannya',
       (await geser('l-utama', 1)) === 'l-tulis');
+
+  /* Dan selama memilih, pintunya tidak bisa DIGESER - geser itu gerakan yang
+     gampang terjadi tanpa diniatkan, dan tersesat ke layar lain di tengah
+     pekerjaan membuat pekerjaannya bercabang. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(200);
+  await hal.fill('#kotak', 'badgeuji');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(400);
+  await hal.locator('#hasil-depan .kartu').first().dispatchEvent('pointerdown');
+  await hal.waitForTimeout(700);
+  const sesudahGeserPilih = await geser('l-utama', 1);
+  cek('selama memilih, geser tidak memindahkan pintu',
+      sesudahGeserPilih === 'l-utama', sesudahGeserPilih);
+  await hal.click('#b-pilih-batal');
+  await hal.waitForTimeout(200);
+  await hal.fill('#kotak', '');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+  await hal.waitForTimeout(200);
+
+  /* DI HP YANG DIPAKAI, GESERANNYA LEWAT SENTUHAN - dan di Android, begitu
+     browser memutuskan gerakanmu itu gulir, dia MEMBATALKAN aliran pointer:
+     'pointerup' tidak pernah datang. Jadi jalur sentuhnya diuji sendiri,
+     bukan dititipkan ke jalur tetikus. */
+  const geserSentuh = async (dari, ke) => {
+    await hal.evaluate((d) => TAlur.keLayarUji(d), dari);
+    await hal.waitForTimeout(250);
+    return hal.evaluate((arah) => {
+      var y = Math.round(innerHeight * 0.45);
+      var x1 = arah > 0 ? innerWidth - 40 : 40;
+      var x2 = arah > 0 ? 40 : innerWidth - 40;
+      var sasaran = document.elementFromPoint(x1, y) || document.body;
+      var buat = function (nama, x) {
+        var s = { clientX: x, clientY: y, identifier: 1, target: sasaran };
+        return new TouchEvent(nama, {
+          bubbles: true, cancelable: true,
+          touches: nama === 'touchend' ? [] : [new Touch(s)],
+          changedTouches: [new Touch(s)]
+        });
+      };
+      sasaran.dispatchEvent(buat('touchstart', x1));
+      sasaran.dispatchEvent(buat('touchend', x2));
+      return new Promise(function (r) {
+        setTimeout(function () { r(document.querySelector('.layar.aktif').id); }, 250);
+      });
+    }, ke);
+  };
+  cek('geser SENTUH juga membuka pintu di kanannya',
+      (await geserSentuh('l-utama', 1)) === 'l-tulis');
+  cek('dan sentuhan dari layar Note sampai ke To Do',
+      (await geserSentuh('l-tulis', 1)) === 'l-tugas');
+  /* Baris tugas tidak lagi dikecualikan: tidak ada gerakan mendatar yang
+     berarti apa pun di atasnya, dan layar To Do hampir seluruhnya baris
+     tugas - jadi mengecualikannya membuat layar itu yang paling sulit
+     ditinggalkan dengan geseran. */
+  cek('dan dari To Do balik lagi ke Note',
+      (await geserSentuh('l-tugas', -1)) === 'l-tulis');
   cek('geser ke kanan mengembalikannya',
       (await geser('l-tulis', -1)) === 'l-utama');
   /* Di ujung tidak ada apa-apa, dan tidak terjadi apa-apa - bukan melompat

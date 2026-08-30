@@ -507,18 +507,31 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 }
 /* SATU BARIS, SELALU. "To Do" yang melipat jadi dua baris membuat baris pintu
    setinggi dua baris sementara tiga pintu lain tetap satu - dan yang terbaca
-   bukan "namanya panjang", melainkan layar yang salah gambar. Empat pintu di
-   412px memang sempit, jadi hurufnya sedikit lebih kecil dan jarak ke ikonnya
-   dirapatkan. Nama pintu tidak dipotong: pintu bernama "Stor…" tidak
-   memberitahu apa pun. */
+   bukan "namanya panjang", melainkan layar yang salah gambar. Nama pintu tidak
+   pernah dipotong: pintu bernama "Stor…" tidak memberitahu apa pun.
+
+   UKURANNYA 14px, bukan 12,5. Itu ukuran label navigasi utama yang dipakai
+   Material 3 (14sp) dan kira-kira sama dengan tab bar iOS; 12,5px membuat nama
+   pintu setara dengan keterangan kecil di sekitarnya, padahal dia yang paling
+   sering dituju mata. Yang membayar tambahan lebarnya jarak ke ikon dan padding
+   yang dirapatkan, jadi empat pintu tetap muat sebaris di 360px sekalipun. */
 .tab{
-  flex:1;min-width:0;min-height:44px;
+  flex:1;min-width:0;min-height:46px;
   display:flex;align-items:center;justify-content:center;gap:5px;
-  border:none;background:none;color:var(--m);font-size:12.5px;font-weight:600;
-  cursor:pointer;padding:0 2px;position:relative;white-space:nowrap;
+  border:none;background:none;color:var(--m);font-size:14px;font-weight:600;
+  letter-spacing:-.01em;
+  cursor:pointer;padding:0 1px;position:relative;white-space:nowrap;
   border-bottom:2px solid transparent;margin-bottom:-1px;
 }
-.tab .ik{width:15px;height:15px}
+.tab .ik{width:16px;height:16px}
+/* Layar yang benar-benar sempit (320px, HP lama) mundur satu tingkat. Nama
+   pintu yang terpotong lebih buruk daripada nama pintu yang sedikit kecil. */
+@media (max-width: 344px){
+  .tab{font-size:12.5px;gap:0}
+  /* Ikonnya yang mengalah, bukan namanya: ikon tanpa nama masih bisa ditebak
+     salah, nama yang terpotong tidak memberitahu apa pun. */
+  .tab .ik{display:none}
+}
 .tab.nyala{color:var(--a);border-bottom-color:var(--a);font-weight:700}
 
 
@@ -1239,3 +1252,30 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 }
 .tanya-cip:active{border-color:var(--a);color:var(--a);
                   background:color-mix(in srgb, var(--a) 10%, transparent)}
+
+
+
+/* Folder yang sedang dipilih ditandai SAMA dengan kartu yang dipilih - satu
+   bahasa untuk satu arti, walau bentuk barisnya berbeda. Tanpa ini, memilih
+   enam folder tidak meninggalkan satu pun jejak di layar: kamu menekan Buang
+   tanpa tahu yang mana yang akan hilang. */
+.note-folder.dipilih,.folder-baris.dipilih{
+  background:color-mix(in srgb, var(--a) 13%, transparent);
+  border-radius:8px;
+}
+.note-folder.dipilih .note-folder-nama,
+.folder-baris.dipilih .folder-nama{color:var(--a);font-weight:700}
+.note-folder.dipilih .ik,.folder-baris.dipilih .ik{color:var(--a)}
+
+/* Jalan pulang yang muat jempol. Jejak folder itu kabar, dan kabar ditulis
+   kecil supaya tidak berebut dengan isinya - tapi kecil berarti tidak bisa
+   ditekan. Panahnya berdiri sendiri, 40px, dan cuma ada kalau kamu memang
+   sedang di dalam sesuatu. */
+.folder-balik{
+  flex:0 0 auto;width:40px;height:40px;margin-left:-8px;
+  border:none;background:none;color:var(--a);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;border-radius:20px;
+}
+.folder-balik:active{background:color-mix(in srgb, var(--a) 12%, transparent)}
+.folder-balik .ik{width:20px;height:20px;stroke-width:2.2}
+.note-jejak-induk{font-size:12px;color:var(--m);margin-right:4px}
