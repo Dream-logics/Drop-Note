@@ -32,7 +32,18 @@
   <header class="atas">
     <div class="merek" id="merek">Cortex Space</div>
     <div class="atas-kanan">
-      <span class="jumlah" id="jumlah">0 tersimpan</span>
+      <!-- Reset naik ke kepala, di kiri Setelan. Dua sebabnya. Di baris
+           saringan dia memakan satu slot yang dibutuhkan supaya enam saringan
+           plus ikon AI muat sebaris - dan dia memang bukan saringan: dia
+           MENGHAPUS keadaan, bukan menyempitkannya, jadi berdiri di antara
+           saringan justru salah tempat sejak awal.
+
+           Angka "N tersimpan" turun dari sini. Dia tidak pernah mengubah satu
+           keputusan pun - tahu ada 38 atau 380 tidak membuat apa pun jadi lebih
+           mudah dikerjakan - dan tempatnya justru yang dibutuhkan. -->
+      <button class="ikon-btn" id="b-reset" aria-label="Bersihkan layar">
+        <svg viewBox="0 0 24 24" class="ik"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+      </button>
       <button class="ikon-btn" id="b-setelan" aria-label="Setelan">
         <svg viewBox="0 0 24 24" class="ik"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
@@ -98,25 +109,29 @@
            ketukan pertamanya cuma untuk melihat pilihan yang seharusnya sudah
            kelihatan. Cip Todo ikut di sini, dipatok di ujung KANAN - tepat di
            atas tombol Drop, tempat jempol kanan sudah bertumpu. -->
-      <div class="saring-baris" id="saring-baris"></div>
-      <!-- Ikon AI duduk TEPAT DI ATAS tombol Drop, bukan menyelip di bilah
-           kotak bersama klip dan Todo. Alasannya satu: dia mengubah arti
-           tombol di bawahnya - selama dia menyala, Drop berhenti menyimpan dan
-           mulai bertanya. Dua tombol yang saling menentukan pantas bertumpuk,
-           supaya sebab dan akibatnya kelihatan di satu tempat. -->
-      <div class="drop-tumpuk">
+      <!-- SATU BARIS, TIDAK BOLEH MELIPAT. Saringan yang melipat jadi dua
+           baris mendorong doknya naik, dan tinggi dok yang berubah-ubah
+           sambil kamu mengetik adalah layar yang bergoyang di bawah jempol.
+           Jadi saringannya ikon telanjang dengan angka menumpang DI ATAS
+           ikonnya, bukan di sebelahnya - dan ikon AI menumpang di ujung kanan
+           baris yang sama, tetap tepat di atas tombol Drop. -->
+      <div class="saring-baris" id="saring-baris">
+        <div class="saring-cip-baris" id="saring-cip"></div>
+        <!-- Ikon AI mengubah arti tombol Drop di bawahnya: selama dia menyala,
+             Drop berhenti menyimpan dan mulai bertanya. Karena itu dia duduk
+             tepat di atasnya - sebab dan akibat di satu tempat. -->
         <button class="tbl" id="b-ai" aria-pressed="false" aria-label="Mode AI">
           <svg viewBox="0 0 24 24" class="ik"><path d="M11 3l1.6 4.4L17 9l-4.4 1.6L11 15l-1.6-4.4L5 9l4.4-1.6z"/><path d="M17.5 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg>
         </button>
-        <button class="tbl" id="b-drop">
-          <svg viewBox="0 0 24 24" class="ik turun"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg>
-          <!-- Panah kirim cuma terlihat di mode AI. Ikon yang tidak berubah
-               padahal tombolnya berubah arti adalah cara tercepat membuat
-               orang menekan sesuatu yang tidak dia maksud. -->
-          <svg viewBox="0 0 24 24" class="ik kirim"><path d="M4 12l16-8-6 16-2.6-6.6z"/></svg>
-          <span>Drop</span>
-        </button>
       </div>
+      <button class="tbl" id="b-drop">
+        <svg viewBox="0 0 24 24" class="ik turun"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg>
+        <!-- Panah kirim cuma terlihat di mode AI. Ikon yang tidak berubah
+             padahal tombolnya berubah arti adalah cara tercepat membuat orang
+             menekan sesuatu yang tidak dia maksud. -->
+        <svg viewBox="0 0 24 24" class="ik kirim"><path d="M4 12l16-8-6 16-2.6-6.6z"/></svg>
+        <span>Drop</span>
+      </button>
     </div>
 
     <!-- LACI DROP: semua cara MEMASUKKAN sesuatu. Bawaannya teks - kotak di
@@ -289,7 +304,14 @@
        penuh di bawahnya. -->
   <div class="note-kepala">
     <div class="note-alamat" id="note-alamat"></div>
-    <input id="note-cari" class="cari-input" placeholder="Cari di semua folder&#8230;" autocomplete="off">
+    <!-- Menahan kartu tetap jalan, tapi TIDAK BOLEH jadi satu-satunya jalan:
+         gerakan yang tidak kelihatan sama dengan tidak ada bagi orang yang
+         belum pernah diberi tahu. Jadi ada tombolnya, dan tombol itu kecil dan
+         redup - dia pintu ke pekerjaan sebulan sekali. -->
+    <div class="note-cari-baris">
+      <input id="note-cari" class="cari-input" placeholder="Cari di semua folder&#8230;" autocomplete="off">
+      <button class="pilih-mulai" id="b-pilih-mulai">Pilih</button>
+    </div>
     <!-- BILAH PILIH. Cuma muncul kalau ada yang dipilih - sebuah bilah yang
          menganga kosong sepanjang hari untuk pekerjaan yang dilakukan sebulan
          sekali adalah tempat yang dirampas dari isinya sendiri. -->
