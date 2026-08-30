@@ -182,7 +182,11 @@ button,input,textarea{font:inherit;color:inherit}
   background:var(--p);max-height:46vh;overflow-y:auto;
 }
 .laci .lampiran{margin:0}
-.label-baris-nama{flex:1}
+/* Yang dipendekkan cuma tampilannya, dan cuma dengan titik-titik: nama
+   gudang disimpan utuh. Memotong data demi lebar kolom adalah cara paling
+   sunyi untuk merusak daftar orang. */
+.label-baris-nama{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#b-label-teks{overflow:hidden;text-overflow:ellipsis;min-width:0}
 
 /* Petak gambar: yang mengenali sebuah gambar adalah rupanya, bukan judulnya -
    judul gambar hampir selalu nama berkas yang tidak berarti apa-apa. */

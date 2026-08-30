@@ -39,10 +39,12 @@
        Isinya nama proyek, divisi, dan perusahaan - bukan jenis catatan - karena
        itulah yang benar-benar dipakai orangnya untuk memilah.
 
-       Namanya disingkat supaya sebaris muat banyak; yang tidak muat di satu
-       baris tidak akan pernah dipakai. Kata sesudah '=' ikut dihitung sebagai
-       label yang sama: singkatannya cuma ada di kepala pemakainya, sementara
-       AI melabeli dengan kata utuh. Sama seperti tagAwal, ini cuma NILAI AWAL. */
+       Panjang namanya tidak dibatasi - "Amara Operasional" boleh ditulis utuh,
+       dan yang memendekkannya cuma tampilan. Kata sesudah '=' ikut dihitung
+       sebagai label yang sama, dan itu ada untuk SATU keadaan: kata yang
+       dipakai AI berbeda dari kata di kepala pemakainya ("PS" vs
+       "ProjectSpace"). Bukan kamus sinonim.
+       Sama seperti tagAwal, ini cuma NILAI AWAL. */
     labelAwal: [
       'MAP',
       'Amara = amaraliving',
