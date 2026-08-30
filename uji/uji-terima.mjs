@@ -3201,6 +3201,96 @@ console.log('\nNote: ruang menulis, dengan pencariannya sendiri');
   await hal.evaluate(() => TAlur.tutupHasilDepanUji());
 }
 
+console.log('\nTo Do: yang belum dibaca, dan urutan yang bisa ditebak');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  /* Bersihkan dulu supaya urutannya bisa diperiksa apa adanya. */
+  await hal.evaluate(() => TSimpan.semua().then((a) => Promise.all(
+    a.filter((e) => e.jenis === 'tugas').map((e) => { e.pensiun = true; return TSimpan.taruh(e); })
+  )).then(() => TAlur.muatUlangUji()));
+
+  /* YANG MASUK LEWAT DROP BELUM DIBACA. Dia dijatuhkan dalam tiga detik,
+     sering sambil mengerjakan hal lain, dan tidak pernah dilihat lagi sampai
+     kamu sengaja ke layar To Do - tanpa penanda dia mendarat di tengah
+     puluhan baris yang rupanya sama persis. */
+  const drop = async (teks) => {
+    await hal.fill('#kotak', teks);
+    await hal.click('#b-tugas');
+    await hal.waitForTimeout(350);
+  };
+  await drop('bacauji kirim proposal Ngoffee');
+  await drop('bacauji telepon vendor kaca');
+  await drop('bacauji cek stok gula aren');
+
+  /* Lewat pintunya, bukan keLayarUji: yang menggambar ulang daftar tugas itu
+     TTugas.buka(), dan keLayarUji sengaja tidak memanggilnya. */
+  await hal.click('#l-utama [data-tab-ke="l-tugas"]');
+  await hal.waitForTimeout(400);
+  const belum = await hal.locator('#tugas-daftar .tugas.belum').count();
+  cek('yang masuk dari Drop bertanda belum dibaca', belum === 3, String(belum));
+
+  /* URUTANNYA BISA DITEBAK: yang terbaru di paling atas. Pertanyaan yang
+     paling sering ditanyakan di layar ini adalah "yang barusan kudrop mana",
+     dan urutan berprioritas menjawabnya dengan melempar tugas baru ke tengah
+     daftar - ke tempat yang tidak bisa ditebak. */
+  const urut = await hal.locator('#tugas-daftar .tugas .tugas-judul').allInnerTexts();
+  cek('bawaannya yang terbaru di paling atas',
+      /stok gula aren/.test(urut[0]) && /kirim proposal/.test(urut[2]),
+      JSON.stringify(urut));
+
+  /* MEMBUKANYA BERARTI MEMBACANYA - tidak perlu tombol "tandai sudah dibaca". */
+  await hal.click('#tugas-daftar .tugas:first-child .tugas-judul');
+  await hal.waitForTimeout(400);
+  cek('membuka satu tugas menghapus tanda belum dibacanya',
+      (await hal.locator('#tugas-daftar .tugas.belum').count()) === 2);
+  /* Dan itu benar-benar tersimpan, bukan cuma hilang dari layar. */
+  const tersimpan = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => e.jenis === 'tugas' && /stok gula aren/.test(e.judul))[0]));
+  cek('dan tandanya tidak kembali sesudah dimuat ulang', tersimpan.dibaca === true);
+
+  /* Tugas yang KAMU KETIK SENDIRI di layar To Do lahir sudah dibaca: tanda
+     yang menyala untuk hal yang jelas-jelas kamu tahu berhenti berarti apa-apa. */
+  await hal.fill('#tugas-baru', 'bacauji tugas yang kuketik sendiri');
+  await hal.click('#b-tugas-tambah');
+  await hal.waitForTimeout(400);
+  const sendiri = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => e.jenis === 'tugas' && /kuketik sendiri/.test(e.judul))[0]));
+  cek('yang kamu ketik sendiri tidak pernah bertanda belum dibaca',
+      sendiri.dibaca === true);
+
+  /* Tugas lama tidak punya kolom ini sama sekali, dan mereka TIDAK boleh
+     tiba-tiba menyala semua di pembukaan berikutnya. */
+  const lama = await hal.evaluate(() => TTugas.belumDibaca({ judul: 'tugas lama' }));
+  cek('tugas lama tanpa kolom itu tetap dianggap sudah dibaca', lama === false);
+
+  /* "HARI INI" ITU TENGGAT, BUKAN TANGGAL DIBUAT. Namanya punya dua bacaan
+     yang sama masuk akal, jadi yang benar disebutkan sekali di layar kosongnya
+     - jauh lebih murah daripada membiarkan orangnya menebak tiap pagi. */
+  await hal.click('#tugas-saring [data-tsaring="hariini"]');
+  await hal.waitForTimeout(300);
+  const hariIni = await hal.locator('#tugas-daftar .tugas .tugas-judul').allInnerTexts();
+  cek('yang dibuat hari ini TIDAK otomatis masuk "Hari ini"',
+      hariIni.length === 0, JSON.stringify(hariIni));
+  cek('dan layar kosongnya menyebut apa yang dikumpulkannya',
+      /jatuh tempo/.test(await hal.locator('#tugas-daftar').innerText()),
+      await hal.locator('#tugas-daftar').innerText());
+
+  /* Yang bertenggat hari ini memang masuk - itu arti namanya. */
+  await hal.evaluate(() => TSimpan.semua().then((a) => {
+    const e = a.filter((x) => x.jenis === 'tugas' && /vendor kaca/.test(x.judul))[0];
+    e.tenggat = TTugas.hariMulai(Date.now());
+    return TSimpan.taruh(e);
+  }).then(() => TAlur.muatUlangUji()).then(() => TTugas.gambar()));
+  await hal.waitForTimeout(300);
+  cek('yang tenggatnya hari ini yang masuk',
+      /vendor kaca/.test(await hal.locator('#tugas-daftar').innerText()));
+
+  await hal.click('#tugas-saring [data-tsaring="semua"]');
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.fill('#kotak', '');
+}
+
 console.log('\nnama cuma kulit');
 {
   const berkasKode = ['bawaan.js', 'simpan.js', 'otak.js', 'awan.js', 'pelabel.js', 'sinkron.js', 'alur.js', 'sw.js'];

@@ -124,7 +124,12 @@ public/pelabel.js   satu-satunya bagian ber-AI: judul + elemen + tag + OCR,
                     dan karakternya asisten pribadi (ARAHAN_OBROL): seimbang
                     dengan pertanyaannya, SATU rekomendasi bukan daftar pilihan
 public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
-                    ulang, langkah, catatan. Dua jalur masuk: layar To Do, dan
+                    ulang, langkah, catatan, penanda BELUM DIBACA.
+                    "Hari ini" = TENGGATNYA hari ini atau sudah lewat, plus
+                    yang kamu tandai sendiri - BUKAN yang dibuat hari ini.
+                    Urutan "Semua" = terbaru di atas, titik; yang berprioritas
+                    (tertunggak - penting - tenggat terdekat) cuma di saringan
+                    lain, karena yang mendesak sudah punya rumahnya sendiri. Dua jalur masuk: layar To Do, dan
                     cip Todo di layar Drop. Pembedanya ACTION, bukan tenggat -
                     tugas tanpa tanggal itu sah; yang cuma perlu DIINGAT tanpa
                     action itu drop biasa. Daftar ganda lewat keyword yang
@@ -202,7 +207,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (486 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (495 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
