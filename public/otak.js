@@ -564,8 +564,17 @@
      diminta akan bocor persis di hari tersibuk. Yang menang nama LAMA yang
      jadi awalannya - dan yang terpanjang, supaya "No WhatsApp" mengalahkan
      "No" untuk "No WhatsApp Bunda". */
+  /* "Nomor" DISINGKAT JADI "No". Nama elemen ditulis di atas nilainya, di
+     kolom sempit, dan "Nomor" memakan enam huruf untuk keterangan yang sudah
+     jelas dari angkanya sendiri. Disingkat waktu DISIMPAN dan waktu
+     DITAMPILKAN sekaligus - yang kedua supaya yang terlanjur tersimpan
+     panjang ikut rapi tanpa satu pun barisnya disentuh. */
+  function pendekkanNama(nama) {
+    return String(nama || '').replace(/^nomor\b/i, 'No').replace(/^nomer\b/i, 'No');
+  }
+
   function bakukanNamaElemen(nama, daftarLama) {
-    var n = String(nama || '').trim();
+    var n = pendekkanNama(String(nama || '').trim());
     if (!n) return '';
     var k = normal(n);
     var terbaik = '';
@@ -879,7 +888,7 @@
     benahiKategori: benahiKategori,
     labelOtomatis: labelOtomatis, cari: cari,
     elemenOtomatis: elemenOtomatis, gabungElemen: gabungElemen,
-    bakukanNamaElemen: bakukanNamaElemen,
+    bakukanNamaElemen: bakukanNamaElemen, pendekkanNama: pendekkanNama,
     samarkanPenanda: samarkanPenanda,
     buangSerpihan: buangSerpihan,
     uraiLabel: uraiLabel, tulisLabel: tulisLabel, cocokLabel: cocokLabel,

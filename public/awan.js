@@ -240,7 +240,8 @@
                'daftar', 'berkasId', 'driveId', 'namaBerkas', 'tipeBerkas', 'ukuran',
                'dibuat', 'diubah', 'dipakai', 'diLabeliAI', 'pensiun', 'dihapus', 'riwayat',
                'tag', 'elemen', 'rahasia', 'elemenTerkunci',
-               'selesai', 'selesaiPada', 'penting', 'hariIni', 'tenggat', 'ulang'];
+               'selesai', 'selesaiPada', 'penting', 'hariIni', 'tenggat', 'ulang',
+               'pin'];
 
   /* Lewat 26 kolom, Sheets memakai dua huruf (AA, AB, ...). Menghitungnya
      dengan satu fromCharCode menghasilkan '[' dan seluruh cadangan gagal

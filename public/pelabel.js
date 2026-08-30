@@ -214,7 +214,9 @@
       '   dan di tag. Menempelkan nama orang, proyek, atau bank ke nama jenis membuat elemen',
       '   itu tidak akan pernah berkumpul dengan saudaranya: sebulan kemudian ada sepuluh nama',
       '   untuk satu benda, dan tidak satu pun bisa dipakai menyaring.',
-      '   Begitu juga "Nomor Rekening BCA" -> "Nomor Rekening", "Client ID Google" -> "Client ID".',
+      '   Begitu juga "Nomor Rekening BCA" -> "No Rekening", "Client ID Google" -> "Client ID".',
+      '   Dan "Nomor" SELALU disingkat "No": namanya ditulis di kolom sempit, dan enam huruf',
+      '   untuk keterangan yang sudah jelas dari angkanya sendiri itu pemborosan.',
       namaEl ? '   Nama yang SUDAH DIPAKAI - kalau maknanya sama, salin PERSIS: ' + namaEl
              : '   Belum ada nama elemen sama sekali; susun sendiri dari nol.',
       '',
