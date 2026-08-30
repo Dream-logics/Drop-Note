@@ -2863,6 +2863,71 @@ console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan')
   await hal.click('#b-pilih-batal');
   await hal.waitForTimeout(200);
 
+  /* MENGHAPUS RAK HARUS BENAR-BENAR MENGHAPUSNYA.
+
+     Rak Storage tidak punya daftar sendiri - dia LAHIR dari isinya, dan alamat
+     satu catatan bukan cuma kolom kategori: begitu kategorinya kosong,
+     alamatnya jatuh ke tag buatan AI. Tag itu hampir selalu kata yang sama
+     dengan nama raknya, jadi mengosongkan kategori saja membuat raknya lahir
+     kembali seketika dengan isi yang sama persis - pesan "1 folder dihapus"
+     lewat, dan foldernya tetap utuh.
+
+     Umpannya HARUS bertag. Catatan tanpa tag jatuh ke "Belum berlabel" dengan
+     sendirinya, dan itulah yang dulu menyembunyikan bug ini dari uji. */
+  await hal.evaluate(async () => {
+    const n = (id, j, kat, tag) => TSimpan.taruh({ id, jenis: 'teks', judul: j, isi: j,
+      kategori: kat, folder: '', tag, label: [], elemen: [], daftar: [],
+      dibuat: Date.now(), diubah: Date.now(), dipakai: 0, diLabeliAI: true, diBacaAI: true });
+    await n('rk1', 'Invoice Rakuji', 'Rakuji', ['rakuji', 'invoice']);
+    await n('rk2', 'Brief Rakuji', 'Rakuji', ['rakuji']);
+    await TAlur.muatUlangUji();
+  });
+  /* Dikembalikan ke AKAR dulu: uji sebelumnya boleh saja meninggalkan layar
+     ini di dalam satu folder atau dengan kotak carinya terisi, dan daftar rak
+     cuma ada di akar. */
+  await hal.fill('#note-cari', '');
+  await hal.dispatchEvent('#note-cari', 'input');
+  await hal.evaluate(() => {
+    const b = document.querySelector('[data-note-akar]');
+    if (b) b.click();
+  });
+  await hal.evaluate(() => TAlur.keLayarUji('l-note'));
+  await hal.waitForTimeout(400);
+  cek('raknya memang lahir dari isinya',
+      (await hal.locator('#note-isi [data-note-folder="Rakuji"]').count()) === 1,
+      JSON.stringify(await hal.locator('#note-isi [data-note-folder]').allInnerTexts()));
+  await hal.locator('#note-isi [data-note-folder="Rakuji"]').dispatchEvent('pointerdown');
+  await hal.waitForTimeout(700);
+  await hal.click('#b-pilih-buang');
+  await hal.waitForTimeout(300);
+  /* Kalimatnya menyebut akibat yang sebenarnya. "Cuma keluar dari foldernya"
+     menyembunyikan rak-rak baru yang muncul sesudah mesinnya menyortir ulang. */
+  cek('pertanyaannya menyebut penyortiran ulang, bukan sekadar "keluar"',
+      (await hal.innerText('#tanya-ket')).indexOf('disortir ulang') >= 0,
+      await hal.innerText('#tanya-ket'));
+  await hal.click('#b-tanya-ya');
+  await hal.waitForTimeout(800);
+  const sesudahHapusRak = await hal.locator('#note-isi [data-note-folder]').allInnerTexts();
+  cek('sesudah dihapus, raknya TIDAK lahir kembali dari tag isinya',
+      !sesudahHapusRak.some((x) => /rakuji/i.test(x)), JSON.stringify(sesudahHapusRak));
+  /* Yang dicabut cuma tag yang menamai ruangan itu. Tag lain tetap tinggal -
+     catatannya mendarat di ruangan berikutnya, bukan hilang dan bukan pula
+     telanjang dari kata kuncinya. */
+  const rk = await hal.evaluate(() => {
+    const a = TAlur.semuaEntri().filter((e) => e.id === 'rk1')[0];
+    return a ? { ada: !a.pensiun, kat: a.kategori, tag: a.tag } : null;
+  });
+  cek('catatannya sendiri utuh - tidak diarsipkan, tidak dihapus',
+      !!rk && rk.ada === true, JSON.stringify(rk));
+  cek('cuma tag yang menamai rak itu yang dicabut, tag lain tinggal',
+      !!rk && rk.tag.indexOf('rakuji') < 0 && rk.tag.indexOf('invoice') >= 0,
+      JSON.stringify(rk));
+  await hal.evaluate(() => Promise.all(TAlur.semuaEntri()
+    .filter((e) => e.id === 'rk1' || e.id === 'rk2')
+    .map((e) => { e.pensiun = true; return TSimpan.taruh(e); })));
+  await hal.evaluate(() => TAlur.muatUlangUji());
+  await hal.waitForTimeout(300);
+
   await hal.fill('#note-cari', 'badgeuji');
   await hal.dispatchEvent('#note-cari', 'input');
   await hal.waitForTimeout(300);
