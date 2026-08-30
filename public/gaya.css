@@ -500,22 +500,33 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   display:flex;gap:2px;margin-bottom:14px;
   border-bottom:1px solid var(--l);
 }
+/* SATU BARIS, SELALU. "To Do" yang melipat jadi dua baris membuat baris pintu
+   setinggi dua baris sementara tiga pintu lain tetap satu - dan yang terbaca
+   bukan "namanya panjang", melainkan layar yang salah gambar. Empat pintu di
+   412px memang sempit, jadi hurufnya sedikit lebih kecil dan jarak ke ikonnya
+   dirapatkan. Nama pintu tidak dipotong: pintu bernama "Stor…" tidak
+   memberitahu apa pun. */
 .tab{
-  flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;
-  border:none;background:none;color:var(--m);font-size:13px;font-weight:600;
-  cursor:pointer;padding:0 4px;position:relative;
+  flex:1;min-width:0;min-height:44px;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  border:none;background:none;color:var(--m);font-size:12.5px;font-weight:600;
+  cursor:pointer;padding:0 2px;position:relative;white-space:nowrap;
   border-bottom:2px solid transparent;margin-bottom:-1px;
 }
-.tab .ik{width:16px;height:16px}
+.tab .ik{width:15px;height:15px}
 .tab.nyala{color:var(--a);border-bottom-color:var(--a);font-weight:700}
 .tab-lencana{
-  min-width:18px;height:18px;padding:0 5px;border-radius:9px;
+  min-width:16px;height:16px;padding:0 4px;border-radius:8px;
   background:var(--ap);color:var(--at);font-size:10.5px;font-weight:700;
   display:flex;align-items:center;justify-content:center;
 }
 
 /* --- layar Note: folder yang dipanggil dengan mencari --- */
+/* width:100% tanpa syarat DULU MENENDANG tombol Pilih keluar layar - dia ada
+   di DOM, punya ukuran, dan sama sekali tidak terlihat. Di dalam barisnya,
+   kotak Cari mengambil sisa tempat; di luar barisnya dia tetap selebar layar. */
 #note-cari{width:100%;flex:none}
+.note-cari-baris #note-cari{width:auto;flex:1;min-width:0}
 /* Jejak folder sebaris penuh, kotak Cari sebaris penuh di bawahnya. Dulu
    keduanya berdesakan di grid tiga kolom milik layar Drop, dan yang mengalah
    kotak Cari-nya: sepertiga lebar layar, tulisannya terpenggal di tengah. */
@@ -778,6 +789,11 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 }
 .saring-cip.sepi{opacity:.4}
 .saring-cip.nyala .saring-angka{color:var(--a)}
+/* Reset dibedakan: dia satu-satunya cip di baris ini yang MENGHAPUS keadaan,
+   bukan menyaringnya. Garis putus-putus - bentuk yang di aplikasi ini selalu
+   berarti "jalan pintas, bukan keadaan". */
+.saring-cip.reset{border-style:dashed}
+.saring-cip.reset:active{color:var(--bahaya);border-color:var(--bahaya)}
 .saring-cip.nyala{
   border-color:transparent;color:var(--a);font-weight:700;
   background:color-mix(in srgb, var(--a) 14%, transparent);
@@ -937,15 +953,19 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
    akan membuat dua lingkaran bertumpuk yang sama-sama berteriak "tekan aku",
    dan yang di bawah itulah yang dipakai puluhan kali sehari.
    ============================================================================ */
-/* flex:0 0 auto WAJIB: .tbl bawaannya flex:1, dan di baris yang isinya
-   saringan itu berarti dia melebar memakan tempat saringannya. */
+/* Di dalam kotaknya, di ujung kiri - tempat WhatsApp dan Telegram menaruh
+   emoji. Tanpa garis dan tanpa alas seperti dua ikon di ujung kanan: ketiganya
+   penghuni kotak yang sama, dan satu yang bergaris akan terbaca sebagai tombol
+   asing yang kebetulan nyasar ke dalam. */
 .dok-bawah #b-ai{
-  flex:0 0 auto;width:38px;height:34px;min-height:0;padding:0;border-radius:17px;
-  background:var(--p);border:1px solid var(--l);color:var(--m);
-  margin-left:2px;
+  flex:0 0 auto;width:38px;height:40px;min-height:0;padding:0;border:none;
+  border-radius:50%;background:none;color:var(--m);
 }
-.dok-bawah #b-ai .ik{width:18px;height:18px}
-.dok-bawah #b-ai.nyala{background:var(--ap);border-color:var(--ap);color:var(--at)}
+.dok-bawah #b-ai .ik{width:20px;height:20px}
+.dok-bawah #b-ai.nyala{color:var(--a)}
+/* Waktu mengetik di mode Drop, ikon AI mengalah - kotaknya yang dapat
+   tempatnya, justru saat isinya paling panjang. */
+.mengetik #b-ai{display:none}
 #b-drop .ik.kirim{display:none}
 .mode-ai #b-drop .ik.turun{display:none}
 .mode-ai #b-drop .ik.kirim{display:block}
@@ -955,10 +975,11 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
    yang tetap terpampang padahal tidak lagi menyaring apa pun adalah layar yang
    berbohong. Klip dan Todo ikut, karena keduanya menyimpan, dan di sini belum
    ada yang bisa disimpan sampai jawabannya datang. */
-/* Yang disembunyikan CIPNYA, bukan barisnya - ikon AI tinggal di baris itu,
-   dan menyembunyikan barisnya berarti menyembunyikan satu-satunya jalan
-   pulang dari mode AI. */
-.mode-ai #petak-hasil-depan,.mode-ai #saring-cip,.mode-ai .ruang-baris,
+/* Ikon AI sudah pindah ke dalam kotak, jadi seluruh baris saringan boleh
+   turun panggung - jalan pulangnya ikut kotaknya, bukan ikut barisnya.
+   Klip dan Todo ikut pergi: belum ada yang bisa dilampirkan ke pertanyaan,
+   dan tugas tidak pernah lahir dari layar ini. */
+.mode-ai #petak-hasil-depan,.mode-ai .saring-baris,.mode-ai .ruang-baris,
 .mode-ai #b-lampir,.mode-ai #b-tugas{display:none}
 /* Yang terbaru MENEMPEL di kotaknya, bukan menggantung di puncak layar dengan
    sejengkal kosong di bawahnya. Ini bentuk yang sudah dikenali dari tiap

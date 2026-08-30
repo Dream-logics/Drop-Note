@@ -32,18 +32,14 @@
   <header class="atas">
     <div class="merek" id="merek">Cortex Space</div>
     <div class="atas-kanan">
-      <!-- Reset naik ke kepala, di kiri Setelan. Dua sebabnya. Di baris
-           saringan dia memakan satu slot yang dibutuhkan supaya enam saringan
-           plus ikon AI muat sebaris - dan dia memang bukan saringan: dia
-           MENGHAPUS keadaan, bukan menyempitkannya, jadi berdiri di antara
-           saringan justru salah tempat sejak awal.
+      <!-- Reset TURUN LAGI ke baris saringan, di ujung kanan. Sempat naik ke
+           sini untuk mengosongkan satu slot, dan itu keliru: kepala layar ada
+           di ujung terjauh dari jempol yang bertumpu di sudut kanan bawah, dan
+           tombol yang dipakai sepanjang hari tidak boleh minta tangan pindah
+           posisi. Yang boleh tinggal di kepala cuma yang jarang disentuh.
 
-           Angka "N tersimpan" turun dari sini. Dia tidak pernah mengubah satu
-           keputusan pun - tahu ada 38 atau 380 tidak membuat apa pun jadi lebih
-           mudah dikerjakan - dan tempatnya justru yang dibutuhkan. -->
-      <button class="ikon-btn" id="b-reset" aria-label="Bersihkan layar">
-        <svg viewBox="0 0 24 24" class="ik"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-      </button>
+           Angka "N tersimpan" tetap tidak kembali: dia tidak pernah mengubah
+           satu keputusan pun. -->
       <button class="ikon-btn" id="b-setelan" aria-label="Setelan">
         <svg viewBox="0 0 24 24" class="ik"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
@@ -69,6 +65,18 @@
       <!-- Ala WhatsApp: dua ikon menempel di dalam kotaknya, tombol jatuhkan
            berdiri sendiri di kanan - paling dekat jempol. -->
       <div class="kotak-bar">
+        <!-- IKON AI DI UJUNG KIRI KOTAK, tempat WhatsApp dan Telegram menaruh
+             emoji. Bukan hiasan: dia mengubah arti seluruh kotak di sebelahnya
+             - selama menyala, kotak ini berhenti mencari dan mulai bertanya -
+             jadi dia berdiri di kepala kotaknya, seperti tanda kutip pembuka.
+
+             Dia MENGHILANG begitu kamu mengetik di mode Drop, persis seperti
+             kamera WhatsApp: empat ikon waktu diam, tiga waktu mengetik, dan
+             yang pergi selalu yang paling tidak mungkin dipakai saat itu -
+             orang yang sudah mengetik catatan tidak sedang mau bertanya. -->
+        <button class="tbl" id="b-ai" aria-pressed="false" aria-label="Mode AI">
+          <svg viewBox="0 0 24 24" class="ik"><path d="M11 3l1.6 4.4L17 9l-4.4 1.6L11 15l-1.6-4.4L5 9l4.4-1.6z"/><path d="M17.5 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg>
+        </button>
         <!-- Teks bayangan digambar di lapisan DI BELAKANG kotaknya, bukan di
              dalam textarea - textarea tidak bisa berisi dua warna. Lapisannya
              memakai huruf, jarak, dan lebar yang sama persis, lalu kotaknya
@@ -117,12 +125,6 @@
            baris yang sama, tetap tepat di atas tombol Drop. -->
       <div class="saring-baris" id="saring-baris">
         <div class="saring-cip-baris" id="saring-cip"></div>
-        <!-- Ikon AI mengubah arti tombol Drop di bawahnya: selama dia menyala,
-             Drop berhenti menyimpan dan mulai bertanya. Karena itu dia duduk
-             tepat di atasnya - sebab dan akibat di satu tempat. -->
-        <button class="tbl" id="b-ai" aria-pressed="false" aria-label="Mode AI">
-          <svg viewBox="0 0 24 24" class="ik"><path d="M11 3l1.6 4.4L17 9l-4.4 1.6L11 15l-1.6-4.4L5 9l4.4-1.6z"/><path d="M17.5 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg>
-        </button>
       </div>
       <button class="tbl" id="b-drop">
         <svg viewBox="0 0 24 24" class="ik turun"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg>
