@@ -156,7 +156,11 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     rak Drop muncul sebagai folder kosong yang tidak pernah
                     dibuat siapa pun. Yang kosong tetap tampil: kamu membuat
                     folder justru supaya ada tempat menulis. Folder bisa dipilih
-                    dan dihapus; isinya TIDAK ikut terhapus, cuma keluar folder. Membuka folder lalu "tulis baru" mengisi
+                    dan dihapus; isinya TIDAK ikut terhapus, cuma keluar folder.
+                    DI AKAR YANG TAMPIL FOLDER SAJA - isinya baru terlihat
+                    sesudah foldernya dibuka; yang belum berfolder punya
+                    barisnya sendiri. Folder tujuan pindah DIPILIH, tidak
+                    diketik. Membuka folder lalu "tulis baru" mengisi
                     judulnya dengan nama folder itu, dan ekor judul yang PERNAH
                     KAMU PAKAI di folder itu ditawarkan sebagai cip
                     ('ekorJudul' di setelan) - tawaran, bukan tebakan.
@@ -225,7 +229,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (533 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (536 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
