@@ -751,6 +751,12 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   border-radius:17px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;
 }
 .saring-cip .ik{width:16px;height:16px}
+/* Angkanya kecil dan redup: dia keterangan, bukan isi. Yang dibaca duluan
+   tetap ikonnya - angka yang sama tebalnya dengan ikon bikin baris ini
+   terbaca seperti deretan angka, bukan deretan pilihan. */
+.saring-angka{font-size:11px;font-weight:700;opacity:.75;min-width:8px}
+.saring-cip.sepi{opacity:.4}
+.saring-cip.nyala.sepi{opacity:.7}
 /* Reset dibedakan: dia satu-satunya cip di baris ini yang MENGHAPUS keadaan,
    bukan menyaringnya. Garis putus-putus - bentuk yang sama dengan cip gudang
    tersering, dan sama-sama berarti "ini jalan pintas, bukan saringan". */
@@ -803,6 +809,18 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 
 /* Judul bagian di dalam daftar tugas. Redup dan kecil: dia pembatas, bukan
    isi - kalau setara dengan tugasnya, dia ikut minta dibaca. */
+/* Penyingkap "Lainnya": redup dan setipis mungkin - dia pintu ke hal yang
+   jarang dipakai, dan pintu yang jarang dipakai tidak pantas seramai isinya. */
+.tugas-lain{
+  display:flex;align-items:center;gap:5px;width:100%;min-height:38px;
+  border:none;background:none;color:var(--m);padding:0 2px;cursor:pointer;
+  font-size:12px;font-weight:600;
+}
+.tugas-lain .ik{width:15px;height:15px;transition:transform .15s}
+.tugas-lain.buka .ik{transform:rotate(180deg)}
+.tugas-lain-isi{padding-top:2px}
+.link-ket{font-size:12px;color:var(--m);padding:7px 2px 0}
+.kotak.tinggi{min-height:96px}
 .tugas-bagian{
   font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
   color:var(--m);padding:16px 2px 6px;border-top:1px solid var(--l);margin-top:8px;

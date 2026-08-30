@@ -306,7 +306,15 @@
   }
 
   function judulOtomatis(entri) {
-    if (entri.jenis === 'tautan') return judulTautan(entri.isi);
+    if (entri.jenis === 'tautan') {
+      /* Sekumpulan link bukan satu link. Menamainya dari yang pertama saja
+         membuat sembilan sisanya tidak punya nama sama sekali, dan judul yang
+         menyebut satu padahal isinya sepuluh terbaca sebagai kartu yang salah.
+         AI menamai ulang belakangan; ini bentuk yang jujur sampai dia sempat. */
+      var u = semuaUrl(entri.isi);
+      if (u.length > 1) return 'Link ' + u.length + ' alamat — ' + judulTautan(u[0]);
+      return judulTautan(u[0] || entri.isi);
+    }
     if (entri.jenis === 'gambar') return entri.namaBerkas || 'Gambar';
     if (entri.jenis === 'berkas') return entri.namaBerkas || 'Berkas';
     if (entri.jenis === 'suara') return 'Rekaman ' + waktuPendek(entri.dibuat);
@@ -438,6 +446,23 @@
      Yang di sini murni pola, tanpa AI, jadi tetap bekerja kalau AI mati
      selamanya. AI menambah yang tidak berpola: nama supplier, dosis obat,
      maksud sebuah angka. Pembagian yang sama seperti label. */
+
+  /* SEMUA URL di sebuah teks, bukan cuma yang pertama. Menempel tiga link
+     sekaligus lalu harus menyorot satu per satu dengan jempol untuk menyalin
+     adalah pekerjaan yang justru mau dihapus - dan itu dikerjakan tepat waktu
+     kamu paling buru-buru. */
+  var POLA_URL_SEMUA = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi;
+
+  function semuaUrl(teks) {
+    var keluar = [];
+    String(teks || '').replace(POLA_URL_SEMUA, function (u) {
+      var v = u.replace(/[.,;:)\]]+$/, '');
+      if (/^www\./i.test(v)) v = 'https://' + v;
+      if (keluar.indexOf(v) < 0) keluar.push(v);
+      return u;
+    });
+    return keluar;
+  }
 
   var POLA_ELEMEN = [
     { jenis: 'tautan',  pola: /\bhttps?:\/\/[^\s<>"']+/gi },
@@ -888,6 +913,7 @@
     benahiKategori: benahiKategori,
     labelOtomatis: labelOtomatis, cari: cari,
     elemenOtomatis: elemenOtomatis, gabungElemen: gabungElemen,
+    semuaUrl: semuaUrl,
     bakukanNamaElemen: bakukanNamaElemen, pendekkanNama: pendekkanNama,
     samarkanPenanda: samarkanPenanda,
     buangSerpihan: buangSerpihan,

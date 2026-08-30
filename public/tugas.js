@@ -33,8 +33,10 @@
 (function (global) {
   'use strict';
 
+  /* Urutannya bukan selera: Semua duluan karena itu yang dibuka, lalu
+     penyempitan dari yang paling sering ke yang paling jarang. */
   var SARING = [
-    ['hariini', 'Hari ini'], ['semua', 'Semua'],
+    ['semua', 'Semua'], ['hariini', 'Hari ini'],
     ['penting', 'Penting'], ['selesai', 'Selesai']
   ];
 
@@ -321,14 +323,12 @@
              '" data-tsaring="' + s[0] + '">' + H(s[1]) + '</button>';
     }).join('');
 
-    var rak = daftarYangAda();
-    $('#tugas-daftar-rak').innerHTML = rak.length
-      ? ['<button class="cip' + (daftarSaat ? '' : ' nyala') + '" data-trak="">Semua daftar</button>']
-          .concat(rak.map(function (r) {
-            return '<button class="cip' + (daftarSaat === r.nama ? ' nyala' : '') +
-                   '" data-trak="' + H(r.nama) + '">#' + H(r.nama) + ' ' + r.jumlah + '</button>';
-          })).join('')
-      : '';
+    /* BARIS RAK DIBUANG. Dia lahir dari keyword yang kebetulan dipakai, jadi
+       isinya satu-dua rak berisi satu tugas - baris kedua yang harus dilewati
+       tiap kali layar ini dibuka, untuk menyaring sesuatu yang seluruhnya
+       sudah kelihatan. Raknya sendiri tetap ada di tiap tugas, dan tetap bisa
+       dicari; yang dibuang cuma barisnya. */
+    $('#tugas-daftar-rak').innerHTML = '';
 
     var daftar = tersaring();
     var belum = semuaTugas().filter(function (e) { return !e.selesai; }).length;
@@ -449,50 +449,63 @@
              '" data-ulang="' + nilai + '">' + H(label) + '</button>';
     };
 
-    return '<div class="tugas-rinci">' +
-      '<div class="tugas-langkah" id="langkah-' + H(e.id) + '">' +
-        (e.daftar || []).map(function (x, i) {
-          return '<div class="langkah-baris">' +
-            '<button class="tugas-centang kecil' + (x.selesai ? ' kena' : '') + '" data-langkah="' + i + '">' +
-              (x.selesai ? '<svg viewBox="0 0 24 24" class="ik"><path d="M5 12.5l5 5L19 7"/></svg>' : '') +
-            '</button><span>' + H(x.teks) + '</span>' +
-            '<button class="langkah-buang" data-buang-langkah="' + i + '" aria-label="Buang langkah">' +
-              '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button></div>';
-        }).join('') +
-      '</div>' +
-      '<input class="tugas-input kecil" data-langkah-baru placeholder="+ langkah">' +
+    /* YANG TERBUKA DULUAN CUMA YANG DIPAKAI, dan yang dipakai cuma tenggat.
 
-      '<div class="tugas-label">Kapan</div>' +
+       Dulu membuka satu tugas menurunkan tujuh bagian sekaligus - langkah,
+       kapan, tanggal, ulang, hari ini, daftar, catatan - dan enam di antaranya
+       hampir tidak pernah disentuh. Layar penuh untuk satu keputusan yang
+       sebenarnya satu ketukan. Sisanya pindah ke balik "Lainnya", dan yang
+       tidak pernah dibuka tidak pernah memakan tempat.
+
+       ULANG DIBUANG DARI SINI seluruhnya: dia sudah punya tempatnya sendiri -
+       bagian Berulang di daftarnya, dan tombol tambahnya di sana. */
+    var adaLain = (e.daftar || []).length || e.kategori || (e.isi || '').trim() || ikutHariIni(e);
+
+    return '<div class="tugas-rinci">' +
       '<div class="cip-baris">' +
         cip(hari, 'Hari ini', e.tenggat === hari) +
         cip(hari + 86400000, 'Besok', e.tenggat === hari + 86400000) +
         cip(hari + 7 * 86400000, 'Pekan depan', e.tenggat === hari + 7 * 86400000) +
         cip(0, 'Tanpa tenggat', !e.tenggat) +
+        '<button class="cip" data-tanggal-buka>Tanggal…</button>' +
       '</div>' +
-      '<input class="tugas-input kecil" type="date" data-tanggal value="' +
+      '<input class="tugas-input kecil sembunyi" type="date" data-tanggal value="' +
         (e.tenggat ? new Date(e.tenggat).toISOString().slice(0, 10) : '') + '">' +
 
-      '<div class="tugas-label">Ulang</div>' +
-      '<div class="cip-baris">' +
-        ulangCip('', 'Tidak') + ulangCip('harian', 'Harian') +
-        ulangCip('mingguan', 'Mingguan') + ulangCip('bulanan', 'Bulanan') +
+      '<button class="tugas-lain" data-lain>' +
+        '<span>Lainnya</span>' +
+        '<svg viewBox="0 0 24 24" class="ik"><path d="M6 9l6 6 6-6"/></svg></button>' +
+
+      '<div class="tugas-lain-isi' + (adaLain ? '' : ' sembunyi') + '">' +
+        '<div class="tugas-label">Langkah</div>' +
+        '<div class="tugas-langkah" id="langkah-' + H(e.id) + '">' +
+          (e.daftar || []).map(function (x, i) {
+            return '<div class="langkah-baris">' +
+              '<button class="tugas-centang kecil' + (x.selesai ? ' kena' : '') + '" data-langkah="' + i + '">' +
+                (x.selesai ? '<svg viewBox="0 0 24 24" class="ik"><path d="M5 12.5l5 5L19 7"/></svg>' : '') +
+              '</button><span>' + H(x.teks) + '</span>' +
+              '<button class="langkah-buang" data-buang-langkah="' + i + '" aria-label="Buang langkah">' +
+                '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button></div>';
+          }).join('') +
+        '</div>' +
+        '<input class="tugas-input kecil" data-langkah-baru placeholder="+ langkah">' +
+
+        '<div class="cip-baris">' +
+          '<button class="cip' + (ikutHariIni(e) ? ' nyala' : '') + '" data-hariini>' +
+            (ikutHariIni(e) ? 'Ada di Hari ini' : 'Tambahkan ke Hari ini') + '</button>' +
+          ulangCip('', 'Tidak berulang') +
+        '</div>' +
+
+        '<div class="tugas-label">Daftar</div>' +
+        '<input class="tugas-input kecil" data-rak value="' + H(e.kategori || '') +
+          '" placeholder="kosongkan kalau tidak perlu">' +
+
+        '<div class="tugas-label">Catatan</div>' +
+        '<textarea class="tugas-input catatan" data-catatan placeholder="Catatan kecil…">' +
+          H(e.isi || '') + '</textarea>' +
+
+        '<button class="set-tbl bahaya" data-buang-tugas>Buang tugas ini</button>' +
       '</div>' +
-
-      '<div class="tugas-label">Hari ini</div>' +
-      '<div class="cip-baris">' +
-        '<button class="cip' + (ikutHariIni(e) ? ' nyala' : '') + '" data-hariini>' +
-          (ikutHariIni(e) ? 'Ada di Hari ini' : 'Tambahkan ke Hari ini') + '</button>' +
-      '</div>' +
-
-      '<div class="tugas-label">Daftar</div>' +
-      '<input class="tugas-input kecil" data-rak value="' + H(e.kategori || '') +
-        '" placeholder="kosongkan kalau tidak perlu">' +
-
-      '<div class="tugas-label">Catatan</div>' +
-      '<textarea class="tugas-input catatan" data-catatan placeholder="Catatan kecil…">' +
-        H(e.isi || '') + '</textarea>' +
-
-      '<button class="set-tbl bahaya" data-buang-tugas>Buang tugas ini</button>' +
     '</div>';
   }
 
@@ -524,6 +537,22 @@
     if (!baris) return;
     var e = cari(baris.getAttribute('data-id'));
     if (!e) return;
+
+    /* Dua penyingkap yang tidak menyentuh data: dibuka langsung di layar,
+       tanpa menyimpan apa pun. Menyimpan "lagi terbuka" ke entri berarti
+       cadangan ikut berubah cuma karena kamu melihat sesuatu. */
+    var lain = ev.target.closest('[data-lain]');
+    if (lain) {
+      var isi = baris.querySelector('.tugas-lain-isi');
+      if (isi) isi.classList.toggle('sembunyi');
+      lain.classList.toggle('buka');
+      return;
+    }
+    if (ev.target.closest('[data-tanggal-buka]')) {
+      var tgl = baris.querySelector('[data-tanggal]');
+      if (tgl) { tgl.classList.remove('sembunyi'); tgl.focus(); }
+      return;
+    }
 
     if (ev.target.closest('[data-centang]')) { selesaikan(e).then(gambar); return; }
     if (ev.target.closest('[data-penting]')) {
@@ -590,6 +619,22 @@
     if (!baris) return;
     var e = cari(baris.getAttribute('data-id'));
     if (!e) return;
+
+    /* Dua penyingkap yang tidak menyentuh data: dibuka langsung di layar,
+       tanpa menyimpan apa pun. Menyimpan "lagi terbuka" ke entri berarti
+       cadangan ikut berubah cuma karena kamu melihat sesuatu. */
+    var lain = ev.target.closest('[data-lain]');
+    if (lain) {
+      var isi = baris.querySelector('.tugas-lain-isi');
+      if (isi) isi.classList.toggle('sembunyi');
+      lain.classList.toggle('buka');
+      return;
+    }
+    if (ev.target.closest('[data-tanggal-buka]')) {
+      var tgl = baris.querySelector('[data-tanggal]');
+      if (tgl) { tgl.classList.remove('sembunyi'); tgl.focus(); }
+      return;
+    }
 
     if (ev.target.hasAttribute('data-catatan')) { e.isi = ev.target.value; simpan(e); return; }
     if (ev.target.hasAttribute('data-rak')) {

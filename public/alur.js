@@ -395,6 +395,29 @@
     }).filter(function (b) { return b.teks; });
   }
 
+  /* Kotak tempel link. Yang dipakai isinya, bukan kotak drop - jadi kamu bisa
+     menempel sepuluh baris tanpa tiap barisnya memicu pencarian. */
+  function ambilLink() {
+    var k = $('#link-tempel');
+    if (!k || $('#petak-link').classList.contains('sembunyi')) return [];
+    return TOtak.semuaUrl(k.value);
+  }
+
+  function setelLinkNyala(nyala) {
+    $('#petak-link').classList.toggle('sembunyi', !nyala);
+    $$('.lamp').forEach(function (b) {
+      if (b.getAttribute('data-lamp') === 'link') b.classList.toggle('nyala', nyala);
+    });
+    if (nyala) { $('#link-tempel').focus(); perbaruiLinkKet(); }
+  }
+
+  function perbaruiLinkKet() {
+    var n = ambilLink().length;
+    $('#link-ket').textContent = n
+      ? n + (n > 1 ? ' link terbaca — tiap satunya bisa disalin sendiri' : ' link terbaca')
+      : 'Belum ada alamat yang terbaca.';
+  }
+
   function setelDaftarNyala(nyala) {
     $('#petak-daftar').classList.toggle('sembunyi', !nyala);
     $$('.lamp').forEach(function (b) {
@@ -455,7 +478,10 @@
        yang belum tentu kamu pilih. */
     ruangSaat = TOtak.bacaRuang(teks, daftarLabel());
     gambarCipRuang();
-    gambarCipSaring();
+    /* Cip saringan TIDAK digambar di sini. Angkanya lahir dari pencarian yang
+       berjalan sesudah ini, jadi menggambarnya lebih dulu berarti angkanya
+       selalu tertinggal satu ketukan huruf. Yang menggambarnya
+       gambarHasilDepan, di ujung, sesudah angkanya ada. */
   }
 
   /* Menaruh panah penerima tepat di ujung ekornya, diukur - bukan ditebak dari
@@ -620,9 +646,13 @@
   /* JALUR MASUK. Tidak ada satu pun panggilan jaringan di sini, dan tidak
      boleh pernah ada. Pelabelan AI menyusul belakangan lewat antrean. */
   function drop() {
+    var link = ambilLink();
     var teks = $('#kotak').value.trim();
+    /* Yang ditempel di kotak link ikut jadi isi - tanpa itu, kartunya lahir
+       tanpa satu pun kata yang bisa dicari. */
+    if (link.length) teks = (teks ? teks + '\n' : '') + $('#link-tempel').value.trim();
     var daftar = ambilDaftar();
-    var jenis = bacaDraf();
+    var jenis = link.length ? 'tautan' : bacaDraf();
 
     if (!teks && !daftar.length && !draf) { pesan('Kotaknya masih kosong'); return; }
 
@@ -632,7 +662,12 @@
        kategorinya kosong dan AI yang menyortirnya belakangan. */
     var ruang = TOtak.bacaRuang(teks, daftarLabel());
     if (ruang) e.kategori = ruang.nama;
-    e.isi = jenis === 'tautan' ? TOtak.ambilUrl(teks) : teks;
+    /* Isinya cuma dipangkas jadi URL telanjang kalau memang CUMA SATU. Dua
+       alamat yang ditempel berdampingan dulu terbaca sebagai satu "tautan",
+       dan yang kedua hilang tanpa jejak - kehilangan diam-diam, jenis paling
+       buruk. */
+    var urls = TOtak.semuaUrl(teks);
+    e.isi = (jenis === 'tautan' && urls.length === 1) ? TOtak.ambilUrl(teks) : teks;
     e.daftar = daftar;
     if (draf) {
       e.berkasId = draf.berkasId;
@@ -823,8 +858,41 @@
     ['teks', 'Teks', '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/>'],
     ['gambar', 'Gambar', '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>'],
     ['berkas', 'Berkas', '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>'],
-    ['tautan', 'Link', '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>']
+    ['tautan', 'Link', '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>'],
+    /* Pin bukan jenis, tapi dia duduk di baris yang sama - karena
+       pertanyaannya bentuknya sama: "perlihatkan yang ini saja". Tanpa dia,
+       yang kamu pin cuma kelihatan kalau kebetulan ada pencarian yang
+       memancingnya, dan pin yang harus dipancing bukan pin. */
+    ['*pin', 'Pin', '<path d="M9 3h6l-1 6 4 4v2H6v-2l4-4z"/><path d="M12 15v6"/>']
   ];
+
+  /* LINK DIBACA DARI ISINYA, BUKAN DARI BENTUK DROP-NYA.
+
+     Dulu sebuah kartu berjenis 'tautan' cuma kalau yang kamu jatuhkan URL
+     telanjang - dua kata atau kurang. Begitu kamu menulis "link dev photo
+     studio https://..." dia jadi 'teks', dan cip Link tidak menemukannya.
+     Jadi cip Link menjawab "mana yang dulu kudrop telanjang", bukan "mana
+     link-ku" - dan yang kedua itulah yang kamu tanyakan.
+
+     Sekarang: punya elemen tautan, ATAU jenisnya memang tautan. Elemennya
+     sudah ditarik waktu kartunya masuk, jadi tidak ada yang perlu dihitung
+     ulang. Akibatnya satu kartu bisa masuk dua cip - catatan berisi link itu
+     Teks DAN Link. Itu benar: cip di sini pertanyaan, bukan kotak. */
+  function punyaTautan(e) {
+    if (e.jenis === 'tautan') return true;
+    return (e.elemen || []).some(function (x) { return x.jenis === 'tautan'; });
+  }
+
+  /* Teks = yang bukan gambar dan bukan berkas. Bukan 'jenis === teks': kartu
+     berisi link tetap catatan tulisan, dan menyembunyikannya dari bawaan
+     berarti mencari "photo studio" menjawab kosong padahal barangnya ada. */
+  function cocokJenis(e, j) {
+    if (!j) return true;
+    if (j === '*pin') return !!e.pin;
+    if (j === 'teks') return e.jenis !== 'gambar' && e.jenis !== 'berkas';
+    if (j === 'tautan') return punyaTautan(e);
+    return e.jenis === j;
+  }
 
   /* Yang benar-benar dipakai menyaring. '' berarti belum memilih, dan yang
      belum memilih dilayani TEKS - bukan semuanya. */
@@ -834,10 +902,15 @@
     return saringJenis;
   }
 
+  /* Angka di tiap cip, dari pencarian yang sedang berjalan. Dihitung sekali
+     di gambarHasilDepan; di sini cuma dibaca. */
+  var hitungSaring = {};
+
   function gambarCipSaring() {
     var wadah = $('#saring-baris');
     if (!wadah) return;
     var hidup = semuaEntri.filter(catatanSaja);
+    var adaHasil = hasilDepanAktif();
     var cip = JENIS_SARING.map(function (j) {
       /* Reset bukan saringan: dia selalu ada dan tidak pernah menyala. */
       if (j[0] === '*reset') {
@@ -845,18 +918,22 @@
                '" aria-label="' + H(j[1]) + '">' +
                '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
       }
-      var n = (j[0] && j[0] !== '*semua')
-        ? hidup.filter(function (e) { return e.jenis === j[0]; }).length
-        : hidup.length;
-      /* Jenis yang belum pernah ada isinya tidak ditampilkan sama sekali:
-         cip yang pasti menghasilkan nol cuma barang yang harus dilewati.
-         "Semua" dan "Teks" selalu ada - keduanya jalan pulang. */
-      if (j[0] && j[0] !== '*semua' && j[0] !== 'teks' && !n) return '';
+      /* ANGKANYA ANGKA HASIL PENCARIAN, bukan angka seluruh timbunan. Yang
+         menolong waktu kamu mengetik bukan "aku punya berapa gambar", tapi
+         "kata ini menemukan berapa gambar" - dan itu yang menjawab kenapa
+         layarnya kosong sebelum kamu sempat bertanya. */
+      var n = adaHasil ? (hitungSaring[j[0]] || 0)
+        : (j[0] === '*semua' ? hidup.length
+           : hidup.filter(function (e) { return cocokJenis(e, j[0]); }).length);
+      /* Yang isinya nol tetap tampil, cuma diredupkan: cip yang muncul-hilang
+         sambil kamu mengetik lebih mengganggu daripada angka nol. */
       return '<button class="saring-cip' +
              (j[0] === '*semua' ? (saringJenis === '*semua' ? ' nyala' : '')
                                 : (jenisEfektif() === j[0] ? ' nyala' : '')) +
+             (n ? '' : ' sepi') +
              '" data-jenis="' + j[0] + '" title="' + H(j[1]) + '" aria-label="' + H(j[1]) + '">' +
-             '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
+             '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg>' +
+             '<span class="saring-angka">' + n + '</span></button>';
     }).filter(Boolean);
 
     /* JENIS ELEMEN TIDAK LAGI JADI CIP. Namanya panjang dan jumlahnya banyak -
@@ -998,7 +1075,20 @@
 
     var kueri = $('#kotak').value.trim();
     bersihkanUrl();
-    var hasil = TOtak.cari(semuaEntri, kueri, jenisEfektif(), istilah || '');
+    /* Dicari SEKALI tanpa saringan jenis, lalu disaring di sini - dari satu
+       lintasan itu juga lahir angka di tiap cip. Menyaring di dalam cari()
+       berarti lima pencarian untuk satu ketukan huruf. */
+    var semuaHasil = TOtak.cari(semuaEntri, kueri, '', istilah || '');
+    hitungSaring = {};
+    JENIS_SARING.forEach(function (x) {
+      if (x[0] === '*reset') return;
+      hitungSaring[x[0]] = x[0] === '*semua' ? semuaHasil.length
+        : semuaHasil.filter(function (e) { return cocokJenis(e, x[0]); }).length;
+    });
+    var jenisKini = jenisEfektif();
+    var hasil = jenisKini
+      ? semuaHasil.filter(function (e) { return cocokJenis(e, jenisKini); })
+      : semuaHasil;
     $('#petak-hasil-depan').classList.remove('sembunyi');
 
     var ket = [];
@@ -1011,6 +1101,7 @@
     if (kueri) ket.push('“' + (kueri.length > 28 ? kueri.slice(0, 27) + '…' : kueri) + '”');
     $('#hasil-depan-ket').textContent = ket.join(' · ');
     gambarBarisTampilan();
+    gambarCipSaring();
 
     var wadah = $('#hasil-depan');
     if (!hasil.length) {
@@ -1020,8 +1111,7 @@
          rusak adalah bug yang sama yang dulu sudah dibetulkan sekali; di sini
          dia dicegah dengan menyebut angkanya, bukan dengan membuang
          saringannya. */
-      var lain = jenisEfektif()
-        ? TOtak.cari(semuaEntri, kueri, '', istilah || '').length : 0;
+      var lain = jenisEfektif() ? semuaHasil.length : 0;
       wadah.innerHTML = '<div class="kosong">' + (kueri
         ? (lain
             ? 'Tidak ada teks yang cocok.<br><b>' + lain + '</b> ketemu di jenis lain — ketuk <b>Semua</b> di atas.'
@@ -2753,6 +2843,8 @@
       gambarHasilDepan();
     });
 
+    $('#link-tempel').addEventListener('input', perbaruiLinkKet);
+
     $('#kotak').addEventListener('input', function () {
       setelTinggiKotak();
       gambarBayang();
@@ -2784,7 +2876,11 @@
     document.addEventListener('pointerdown', function (ev) {
       if (!laciBuka) return;
       if (ev.target.closest('#panel-drop, #panel-filter')) return;
-      if (ev.target.closest('#b-lampir, #b-tugas, [data-tab-ke="l-utama"]')) return;
+      /* Tombol Drop ikut dikecualikan. Tanpa itu, menekan Drop saat lacinya
+         terbuka menutup lacinya duluan - doknya bergeser turun, dan ketukan
+         yang sudah dimulai mendarat di tempat kosong. Yang menutup lacinya
+         nanti kosongkanKotak, sesudah barangnya benar-benar tersimpan. */
+      if (ev.target.closest('#b-lampir, #b-tugas, #b-drop, [data-tab-ke="l-utama"]')) return;
       tutupLaci();
     }, true);
     $('#b-tutup-hasil').addEventListener('click', tutupHasilDepan);
@@ -2880,6 +2976,7 @@
       else if (apa === 'kamera') $('#pilih-kamera').click();
       else if (apa === 'berkas') $('#pilih-berkas').click();
       else if (apa === 'daftar') setelDaftarNyala($('#petak-daftar').classList.contains('sembunyi'));
+      else if (apa === 'link') setelLinkNyala($('#petak-link').classList.contains('sembunyi'));
     });
 
     $('#pilih-gambar').addEventListener('change', function (ev) {
