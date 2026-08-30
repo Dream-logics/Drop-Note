@@ -668,12 +668,48 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
    formulir ini" - kotak besar yang menganga di atas layar itu formulir, kotak
    kecil di bawah itu percakapan.
    ============================================================================ */
+/* ============================================================================
+   TINGGINYA DIPATOK, DAN HASILNYA YANG MENGGULIR - BUKAN HALAMANNYA
+   ============================================================================
+   Papan ketik HP tidak mengubah tinggi halaman, dia cuma menutupinya. Jadi
+   selama layar ini setinggi layar penuh, doknya duduk di dasar halaman DI
+   BALIK papan ketik - dan browser menggulir seluruh halaman supaya kotak yang
+   kamu ketik terlihat. Yang tergulir keluar pandangan justru hasil pencarian
+   di atasnya: kamu mengetik, dan yang terlihat cuma kekosongan.
+
+   Menaikkan tingginya saja tidak cukup - halamannya masih bisa digulir, dan
+   browser tetap menggulirnya. Yang menyelesaikannya: tinggi DIPATOK persis
+   setinggi yang terlihat, dan layarnya sendiri tidak boleh menggulir sama
+   sekali. Dokumen yang tidak lebih tinggi dari layarnya tidak punya apa pun
+   untuk digulir, jadi tidak ada yang bisa menggeser doknya ke mana-mana.
+
+   Konsekuensinya hasil pencarian yang menggulir di dalam dirinya sendiri, dan
+   itu memang bentuk yang benar: kendali diam di tempat, isi yang bergerak.
+   ============================================================================ */
 .layar.dok-bawah{padding-bottom:calc(env(safe-area-inset-bottom) + 8px)}
-.layar.dok-bawah > *{order:2}
+.layar.dok-bawah.aktif{height:var(--tampak, 100dvh);min-height:0;overflow:hidden}
+/* Dan halamannya sendiri ikut dipatok selama layar itu yang terbuka. Tanpa
+   ini dokumen tetap setinggi layar penuh walau isinya cuma setinggi yang
+   terlihat - masih ada 400 piksel kosong untuk digulir, dan browser akan
+   memakainya begitu dia merasa perlu memperlihatkan kotak yang difokus. */
+body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
+.layar.dok-bawah > *{order:2;flex:0 0 auto}
 .layar.dok-bawah > header{order:0}
 .layar.dok-bawah > .tab-baris{order:1}
-.layar.dok-bawah > #petak-hasil-depan{order:3}
-.layar.dok-bawah > .tumbuh{order:4}
+.layar.dok-bawah > #petak-hasil-depan{
+  order:3;flex:1 1 auto;min-height:0;overflow-y:auto;
+}
+/* Yang panjang di jalur masuk ikut menggulir sendiri, bukan terpotong: layar
+   yang tidak menggulir memotong apa pun yang tidak muat, dan baris daftar yang
+   terpotong adalah baris yang tidak bisa diketik lagi. */
+.layar.dok-bawah > #petak-daftar,
+.layar.dok-bawah > #petak-link{min-height:0;overflow-y:auto}
+/* Ganjal pendorong dok hanya diperlukan waktu tidak ada yang tumbuh. Begitu
+   hasil atau obrolan terbuka, merekalah yang mengisi - dan kalau keduanya
+   sama-sama tumbuh, separuh ruang kosongnya mendarat di bawah isi. */
+#petak-hasil-depan:not(.sembunyi) ~ .tumbuh,
+#petak-ai:not(.sembunyi) ~ .tumbuh{display:none}
+.layar.dok-bawah > .tumbuh{order:4;flex:1 1 auto}
 .layar.dok-bawah > .kaki{display:none}
 /* Di posisi bawah, hasilnya jadi hal pertama sesudah baris pintu - garis dan
    jarak yang dulu memisahkannya dari kotak jadi coretan yang menggantung. */
@@ -1002,7 +1038,10 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
    sejengkal kosong di bawahnya. Ini bentuk yang sudah dikenali dari tiap
    aplikasi pesan, dan bukan sekadar rupa: jawaban terakhir duduk tepat di atas
    jempol yang barusan mengetiknya. */
-.layar.dok-bawah > #petak-ai{order:3;flex:1;display:flex;flex-direction:column}
+.layar.dok-bawah > #petak-ai{
+  order:3;flex:1 1 auto;min-height:0;overflow-y:auto;
+  display:flex;flex-direction:column;
+}
 #ai-isi{margin-top:auto}
 /* Ganjal yang biasa mendorong dok ke bawah tidak diperlukan lagi di sini -
    obrolannya sendiri yang mengisi, dan kalau keduanya sama-sama tumbuh,

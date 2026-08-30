@@ -395,28 +395,19 @@
       return;
     }
 
-    /* DUA BAGIAN, dan pembatasnya BERULANG atau tidak.
+    /* SATU DAFTAR, TIDAK DIBAGI DUA LAGI.
 
-       Yang berulang itu jenis lain: dia tidak pernah selesai, cuma jatuh tempo
-       lagi. Bayar wifi tiap bulan tidak akan pernah hilang dari daftar, jadi
-       kalau dia berbaur dengan yang sekali jalan, daftarnya terlihat tidak
-       pernah berkurang - dan daftar yang tidak pernah berkurang berhenti
-       terasa seperti kemajuan.
+       Dulu yang berulang dipisah ke bagian sendiri di BAWAH, supaya daftarnya
+       tidak terlihat "tidak pernah berkurang". Alasannya masih benar - tapi
+       pemisahan itu lahir SEBELUM Berulang punya saringannya sendiri di baris
+       atas. Sekarang dia punya, dan dua tempat untuk satu hal yang sama itu
+       satu tempat terlalu banyak: yang di bawah selalu tertimbun tugas sekali
+       jalan, jadi bagian yang gunanya memperlihatkan justru yang paling jarang
+       terlihat.
 
-       Yang berulang di BAWAH karena dia tidak menuntut apa-apa hari ini; yang
-       sekali jalan di atas karena itu yang benar-benar bisa dicoret. */
-    var sekali = daftar.filter(function (e) { return !e.ulang; });
-    var ulang = daftar.filter(function (e) { return !!e.ulang; });
-
-    var isi = sekali.map(function (e) { return barisHtml(e, H); }).join('');
-    if (ulang.length) {
-      /* Judul bagian cuma muncul kalau KEDUANYA ada. Judul di atas daftar yang
-         seluruhnya satu jenis tidak memisahkan apa pun, dia cuma baris yang
-         harus dilewati - dan di layar Berulang, semuanya memang satu jenis. */
-      if (sekali.length && saringSaat !== 'ulang') isi += '<div class="tugas-bagian">Berulang</div>';
-      isi += ulang.map(function (e) { return barisHtml(e, H); }).join('');
-    }
-    $('#tugas-daftar').innerHTML = isi;
+       Yang tinggal: satu daftar, urut seperti yang sudah diputuskan di
+       tersaring(). Yang berulang tetap ditandai di bulatannya sendiri. */
+    $('#tugas-daftar').innerHTML = daftar.map(function (e) { return barisHtml(e, H); }).join('');
   }
 
   /* IRAMA DIPILIH DI LAYARNYA SENDIRI, bukan di dalam rincian tiap tugas.
