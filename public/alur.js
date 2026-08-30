@@ -1061,29 +1061,139 @@
   var TANPA_RAK = 'Belum berlabel';
   var noteFolder = null;   /* folder yang sedang dibuka; null = daftar folder */
 
+  /* Diambil apa adanya, bukan lewat normal(): normal() menurunkan semua huruf,
+     dan folder bernama "projectspace" di sebelah "AmaraLiving" (yang datang
+     dari tag) terbaca seperti dua sistem yang berbeda. */
+  function ruangNote(e) {
+    var kat = String(e.kategori || '').trim();
+    if (!kat) return '';
+    /* Nama gudang yang KAMU daftarkan dipakai UTUH: "Amara Sales" itu satu
+       ruangan, dan memotongnya jadi "Amara" membuang divisi yang justru kamu
+       susun sendiri. Kata pertama cuma dipakai kalau isinya bukan nama gudang
+       - kategori lama boleh berisi beberapa keyword berpisah spasi, dan
+       memakainya utuh melahirkan folder sepanjang kalimat. */
+    var cocok = TOtak.bacaRuang(kat, daftarLabel());
+    if (cocok) return cocok.nama;
+    return kat.split(/\s+/).filter(Boolean)[0] || '';
+  }
+
+  /* FOLDER DIPILIH DARI TEMANNYA, BUKAN DARI URUTAN TAG.
+
+     Dulu yang dipakai tag PERTAMA, dan urutan tag itu acak - jadi lahir folder
+     "No", "catatan", "daftar", masing-masing berisi satu-dua keping, sementara
+     "Telepon" yang punya lima teman tercecer. Sebelas folder berisi satu keping
+     itu bukan sistem arsip, itu serpihan.
+
+     Sekarang tiap keping mendarat di calon yang punya PALING BANYAK teman.
+     Folder yang cuma punya satu anggota lenyap sendiri karena anggotanya pindah
+     ke folder yang lebih ramai - tanpa daftar kata terlarang yang harus
+     dirawat, dan makin rapi sendiri makin banyak yang kamu simpan.
+
+     Gudang yang KAMU tulis selalu menang. Itu keputusanmu, bukan tebakan. */
+  /* "WhatsApp" dan "Telepon" itu satu benda, dan dua rak untuk satu benda
+     membuat dua-duanya setengah isi. Daftar istilah yang sudah dipakai
+     menyusun judul tahu keduanya sama - jadi dia yang menyatukannya di sini,
+     bukan daftar kedua yang harus dirawat sendiri. */
+  function bakuFolder(nama) {
+    return TOtak.bakuIstilah(nama) || nama;
+  }
+
+  function normalFolder(n) { return TOtak.normal(n); }
+
+  function petaAlamatNote(hidup) {
+    var hitung = {};
+    hidup.forEach(function (e) {
+      var calon = {};
+      var r = ruangNote(e);
+      if (r) calon[r] = true;
+      (e.tag || []).filter(Boolean).forEach(function (t) { calon[bakuFolder(t)] = true; });
+      Object.keys(calon).forEach(function (k) { hitung[k] = (hitung[k] || 0) + 1; });
+    });
+
+    /* Calon yang menempel di hampir semua keping bukan ruangan - dia cuma kata
+       yang dipakai AI di mana-mana. Folder yang isinya seluruh timbunan tidak
+       memisahkan apa pun. Batasnya baru berlaku sesudah timbunannya cukup
+       besar; di delapan keping pertama, "banyak" belum berarti apa-apa. */
+    var luas = hidup.length >= 8 ? hidup.length * 0.5 : Infinity;
+
+    var peta = {};
+    hidup.forEach(function (e) {
+      var r = ruangNote(e);
+      if (r) { peta[e.id] = r; return; }
+      var terbaik = '';
+      (e.tag || []).filter(Boolean).forEach(function (t) {
+        var b = bakuFolder(t);
+        if (hitung[b] > luas) return;
+        if (!terbaik || hitung[b] > hitung[terbaik]) terbaik = b;
+      });
+      peta[e.id] = terbaik || TANPA_RAK;
+    });
+    return peta;
+  }
+
+  /* Alamat satu keping sendirian - dipakai kartu di layar hasil. Dihitung atas
+     seluruh timbunan supaya jawabannya sama persis dengan yang di layar Note;
+     dua jawaban berbeda untuk keping yang sama lebih buruk daripada tidak
+     menjawab sama sekali. */
   function alamatNote(e) {
-    /* Diambil apa adanya, bukan lewat normal(): normal() menurunkan semua
-       huruf, dan folder bernama "projectspace" di sebelah "AmaraLiving" (yang
-       datang dari tag) terbaca seperti dua sistem yang berbeda. */
-    var kat = String(e.kategori || '').trim().split(/\s+/).filter(Boolean)[0];
-    if (kat) return kat;
-    var tag = (e.tag || []).filter(Boolean)[0];
-    return tag || TANPA_RAK;
+    var hidup = semuaEntri.filter(catatanSaja);
+    if (hidup.indexOf(e) < 0) hidup = hidup.concat([e]);
+    return petaAlamatNote(hidup)[e.id] || TANPA_RAK;
   }
 
   function folderNote() {
+    var hidup = semuaEntri.filter(catatanSaja);
+    var peta = petaAlamatNote(hidup);
     var isi = {};
-    semuaEntri.filter(catatanSaja).forEach(function (e) {
-      var a = alamatNote(e);
+    hidup.forEach(function (e) {
+      var a = peta[e.id] || TANPA_RAK;
       (isi[a] = isi[a] || []).push(e);
     });
-    return Object.keys(isi).map(function (nama) {
-      return { nama: nama, isi: isi[nama] };
+    /* Induknya dibaca dari namanya sendiri, sama seperti gudang: folder yang
+       namanya diawali nama folder lain otomatis jadi anaknya. "Amara Sales"
+       masuk ke dalam "Amara" tanpa satu pun tanda khusus yang harus diingat.
+
+       Induk yang belum punya foldernya sendiri tetap dibuatkan - kalau tidak,
+       "Amara Sales" jadi yatim dan naik ke akar, dan susunan yang kamu buat
+       lenyap justru di layar yang tugasnya memperlihatkannya. */
+    /* Induk yang belum punya foldernya sendiri tetap DIBUATKAN, kosong. Kalau
+       tidak, "Amara Sales" jadi yatim dan naik sejajar dengan "Amara" - dan
+       susunan yang kamu buat sendiri lenyap justru di layar yang tugasnya
+       memperlihatkan susunan. Induknya dicari di daftar gudangmu, bukan cuma
+       di antara folder yang kebetulan sudah terisi. */
+    var pohon = TOtak.pohonLabel(daftarLabel());
+    Object.keys(isi).forEach(function (n) {
+      pohon.forEach(function (l) {
+        if (l.nama === n && l.induk && !isi[l.induk]) isi[l.induk] = [];
+      });
+    });
+
+    var nama = Object.keys(isi);
+    var induk = {};
+    nama.forEach(function (n) {
+      var pilih = '';
+      nama.forEach(function (c) {
+        if (c === n) return;
+        if (normalFolder(n).indexOf(normalFolder(c) + ' ') !== 0) return;
+        /* Yang terpanjang menang: "Amara Apps Satu" milik "Amara Apps". */
+        if (!pilih || c.length > pilih.length) pilih = c;
+      });
+      induk[n] = pilih;
+    });
+    var anak = {};
+    nama.forEach(function (n) { if (induk[n]) anak[induk[n]] = (anak[induk[n]] || 0) + 1; });
+
+    return nama.map(function (n) {
+      return { nama: n, isi: isi[n], induk: induk[n] || '', anak: anak[n] || 0 };
     }).sort(function (a, b) {
       /* Yang belum berlabel selalu paling bawah: dia bukan folder, dia
          tumpukan yang belum sempat dinilai AI. */
       if ((a.nama === TANPA_RAK) !== (b.nama === TANPA_RAK)) return a.nama === TANPA_RAK ? 1 : -1;
-      if (b.isi.length !== a.isi.length) return b.isi.length - a.isi.length;
+      /* Induk diurut menurut SELURUH isinya, anak-anaknya sekalian - induk
+         yang isinya sendiri kosong tapi memuat tiga rak bukan folder sepi. */
+      var na = a.isi.length + (a.anak ? 1000 : 0);
+      var nb = b.isi.length + (b.anak ? 1000 : 0);
+      if (nb !== na) return nb - na;
       return a.nama.localeCompare(b.nama);
     });
   }
@@ -1101,13 +1211,18 @@
       $('#note-alamat').innerHTML = '<button class="note-jejak" data-note-akar>Semua folder</button>' +
         '<span class="note-pisah">/</span><span class="note-jejak-kini">“' + H(kueri) + '”</span>' +
         '<span class="note-hitung">' + hasil.length + '</span>';
+      /* Petanya dihitung SEKALI untuk seluruh daftar, bukan sekali per kartu:
+         menghitungnya di dalam map() berarti seluruh timbunan disapu ulang
+         untuk tiap baris yang digambar - tidak terasa di dua puluh catatan,
+         mematikan di sepuluh ribu. */
+      var petaCari = petaAlamatNote(semuaEntri.filter(catatanSaja));
       $('#note-isi').innerHTML = hasil.length
         ? hasil.slice(0, 200).map(function (e) {
             /* Alamatnya ditulis di atas judulnya, bukan dikirim sebagai
                argumen kedua ke kartuHtml: kartu itu dipakai di tiga tempat,
                dan menambah parameter di sana berarti map() yang memanggilnya
                diam-diam mengoper nomor urut sebagai alamat. */
-            return '<div class="note-alamat-kecil">' + H(alamatNote(e)) + ' /</div>' +
+            return '<div class="note-alamat-kecil">' + H(petaCari[e.id] || TANPA_RAK) + ' /</div>' +
                    kartuHtml(e);
           }).join('')
         : '<div class="kosong">Tidak ada yang cocok.<br>Coba satu kata saja — pencarian ini memaafkan.</div>';
@@ -1116,30 +1231,49 @@
     }
 
     if (noteFolder) {
-      var f = folderNote().filter(function (x) { return x.nama === noteFolder; })[0];
+      var semuaF = folderNote();
+      var f = semuaF.filter(function (x) { return x.nama === noteFolder; })[0];
       var daftar = f ? f.isi.slice().sort(function (a, b) { return (b.diubah || 0) - (a.diubah || 0); }) : [];
+      /* Anak folder digambar DI ATAS isinya sendiri: masuk "Amara" lalu
+         langsung melihat Sales dan Apps adalah cara orang membaca lemari -
+         rak dulu, baru barang lepas yang belum masuk rak. */
+      var anak = semuaF.filter(function (x) { return x.induk === noteFolder; });
       $('#note-alamat').innerHTML = '<button class="note-jejak" data-note-akar>Semua folder</button>' +
         '<span class="note-pisah">/</span><span class="note-jejak-kini">' + H(noteFolder) + '</span>' +
         '<span class="note-hitung">' + daftar.length + '</span>';
-      $('#note-isi').innerHTML = daftar.length
+      $('#note-isi').innerHTML = (anak.map(folderHtml).join('') || '') + (daftar.length
         ? daftar.map(kartuHtml).join('')
-        : '<div class="kosong">Folder ini sudah kosong.</div>';
+        : (anak.length ? '' : '<div class="kosong">Folder ini sudah kosong.</div>'));
       pasangGambarKartu($('#note-isi'));
       return;
     }
 
     var folder = folderNote();
+    /* Di akar cuma INDUK yang tampil. "Amara Sales" ada di dalam "Amara",
+       bukan berdiri sejajar dengannya - kalau sejajar, hierarki yang kamu susun
+       sendiri lenyap justru di layar yang tugasnya memperlihatkan susunan. */
+    var akar = folder.filter(function (f) { return !f.induk; });
     $('#note-alamat').innerHTML = '<span class="note-jejak-kini">Semua folder</span>' +
-      '<span class="note-hitung">' + folder.length + '</span>';
-    $('#note-isi').innerHTML = folder.length
-      ? folder.map(function (f) {
-          return '<button class="note-folder' + (f.nama === TANPA_RAK ? ' sepi' : '') +
-                 '" data-note-folder="' + H(f.nama) + '">' +
-                 '<svg viewBox="0 0 24 24" class="ik"><path d="M4 5a2 2 0 0 1 2-2h4l2 3h6a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>' +
-                 '<span class="note-folder-nama">' + H(f.nama) + '</span>' +
-                 '<span class="note-hitung">' + f.isi.length + '</span></button>';
-        }).join('')
+      '<span class="note-hitung">' + akar.length + '</span>';
+    $('#note-isi').innerHTML = akar.length
+      ? akar.map(folderHtml).join('')
       : '<div class="kosong">Belum ada catatan.<br>Jatuhkan sesuatu dulu lewat Drop.</div>';
+  }
+
+  function folderHtml(f) {
+    /* Jumlah anaknya disebut, bukan disembunyikan: folder berisi "2" yang
+       ternyata memuat tiga rak lagi di dalamnya adalah kejutan, dan kejutan di
+       layar arsip terbaca sebagai catatan yang hilang. */
+    /* Induk yang isinya sendiri kosong cuma menyebut raknya - "0 · 2 rak"
+       membaca seperti folder kosong, padahal isinya justru dua rak penuh. */
+    var ket = f.anak
+      ? (f.isi.length ? f.isi.length + ' · ' : '') + f.anak + ' rak'
+      : String(f.isi.length);
+    return '<button class="note-folder' + (f.nama === TANPA_RAK ? ' sepi' : '') +
+           '" data-note-folder="' + H(f.nama) + '">' +
+           '<svg viewBox="0 0 24 24" class="ik"><path d="M4 5a2 2 0 0 1 2-2h4l2 3h6a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>' +
+           '<span class="note-folder-nama">' + H(f.nama) + '</span>' +
+           '<span class="note-hitung">' + ket + '</span></button>';
   }
 
   /* Satu pintu untuk menggambar ulang apa pun yang sedang tampil. Hasil

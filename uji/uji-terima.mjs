@@ -1944,6 +1944,87 @@ console.log('\nTodo dari layar Drop: pembedanya ACTION, bukan tenggat');
   await hal.waitForTimeout(200);
 }
 
+console.log('\nfolder Note: dipilih dari temannya, dan bertingkat');
+{
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.waitForTimeout(200);
+  await hal.fill('#set-label', 'Amara\nAmara Sales\nAmara Apps\nNgoffee');
+  await hal.dispatchEvent('#set-label', 'change');
+  await hal.waitForTimeout(250);
+
+  /* Timbunan tiruan dengan tag ACAK - persis bentuk yang bikin folder "No",
+     "catatan", dan "daftar" lahir masing-masing berisi satu keping. */
+  await hal.evaluate(async () => {
+    const buat = (judul, tag, kat) => ({
+      id: 'nf_' + Math.random().toString(36).slice(2), jenis: 'teks',
+      judul: judul, isi: judul, kategori: kat || '', tag: tag, label: [], elemen: [],
+      daftar: [], dibuat: Date.now(), diubah: Date.now(), dipakai: 0,
+      diLabeliAI: true, pensiun: false, dihapus: false, riwayat: []
+    });
+    const d = [
+      buat('Telepon Selvi', ['No', 'Telepon', 'kontak']),
+      buat('Telepon Bunda', ['No', 'Telepon']),
+      buat('Telepon Badar', ['Telepon', 'catatan']),
+      /* "WhatsApp" dan "Telepon" itu satu benda - dua rak untuk satu benda
+         membuat dua-duanya setengah isi. */
+      buat('WhatsApp Ryan', ['whatsapp', 'daftar']),
+      buat('Rekening BCA', ['Rekening', 'No']),
+      buat('Rekening Mandiri', ['Rekening', 'berkas']),
+      buat('Rekening BNI', ['Rekening']),
+      buat('Amara target', ['Amara'], 'Amara Sales'),
+      buat('Amara rapat', ['Amara'], 'Amara Sales')
+    ];
+    for (const e of d) await TSimpan.taruh(e);
+    return TAlur.muatUlangUji();
+  });
+  await hal.evaluate(() => TAlur.keLayarUji('l-note'));
+  await hal.waitForTimeout(400);
+
+  const namaFolder = await hal.locator('#note-isi [data-note-folder]')
+    .evaluateAll((n) => n.map((x) => x.getAttribute('data-note-folder')));
+
+  /* Folder dipilih dari TEMANNYA, bukan dari urutan tag. Sebelas folder
+     berisi satu keping itu bukan sistem arsip, itu serpihan. */
+  cek('tag serpihan tidak melahirkan folder sendiri',
+      ['No', 'catatan', 'daftar', 'berkas', 'kontak'].every((x) => namaFolder.indexOf(x) < 0),
+      JSON.stringify(namaFolder));
+  cek('yang punya paling banyak teman yang jadi folder',
+      namaFolder.indexOf('Telepon') >= 0 && namaFolder.indexOf('Rekening') >= 0);
+  cek('satu benda tidak dipecah jadi dua rak',
+      namaFolder.indexOf('whatsapp') < 0 && namaFolder.indexOf('WhatsApp') < 0);
+
+  /* Kategori dua kata dipakai UTUH, dan hierarkinya kelihatan: "Amara Sales"
+     ada DI DALAM "Amara", bukan berdiri sejajar dengannya. */
+  cek('yang tampil di akar cuma induknya',
+      namaFolder.indexOf('Amara') >= 0 && namaFolder.indexOf('Amara Sales') < 0,
+      JSON.stringify(namaFolder));
+
+  await hal.click('#note-isi [data-note-folder="Amara"]');
+  await hal.waitForTimeout(350);
+  cek('membukanya memperlihatkan anaknya, bukan folder kosong',
+      (await hal.locator('#note-isi [data-note-folder="Amara Sales"]').count()) === 1,
+      await hal.locator('#note-isi').innerText());
+
+  await hal.click('#note-isi [data-note-folder="Amara Sales"]');
+  await hal.waitForTimeout(350);
+  const isiAmara = await hal.locator('#note-isi').innerText();
+  cek('kategori dua kata dipakai utuh, tidak dipotong jadi satu kata',
+      /Amara target/.test(isiAmara) && /Amara rapat/.test(isiAmara), isiAmara);
+
+  /* Kepalanya punya tata letaknya sendiri. Dulu dia memakai grid tiga kolom
+     milik layar Drop, dan kotak Cari-nya terjepit di sepertiga lebar layar. */
+  const lebar = await hal.evaluate(() => {
+    const k = document.querySelector('#note-cari').getBoundingClientRect();
+    const w = document.querySelector('.note-kepala').getBoundingClientRect();
+    return Math.round((k.width / w.width) * 100);
+  });
+  cek('kotak Cari-nya selebar kepalanya, tidak terjepit sepertiga', lebar >= 95,
+      lebar + '%');
+
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.waitForTimeout(200);
+}
+
 console.log('\nnama cuma kulit');
 {
   const berkasKode = ['bawaan.js', 'simpan.js', 'otak.js', 'awan.js', 'pelabel.js', 'sinkron.js', 'alur.js', 'sw.js'];

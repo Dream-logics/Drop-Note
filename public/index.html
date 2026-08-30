@@ -230,7 +230,12 @@
   </header>
   <div class="tab-baris" data-tab></div>
 
-  <div class="kepala-tetap">
+  <!-- Kepalanya sendiri, BUKAN .kepala-tetap milik layar Drop: yang di sana
+       grid tiga kolom untuk tiga tombol, dan di sini isinya cuma dua - jadi
+       kotak Cari-nya terjepit di sepertiga lebar layar dan tulisannya
+       terpenggal. Di sini jejak folder sebaris penuh, kotak Cari sebaris
+       penuh di bawahnya. -->
+  <div class="note-kepala">
     <div class="note-alamat" id="note-alamat"></div>
     <input id="note-cari" class="cari-input" placeholder="Cari di semua folder&#8230;" autocomplete="off">
   </div>
