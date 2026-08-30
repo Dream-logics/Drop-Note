@@ -219,7 +219,7 @@
     tanya(judul, ket, null);
     var w = $('#tanya-pilih');
     w.innerHTML = daftar.map(function (x) {
-      return '<button class="tanya-cip" data-pilih="' + H(x) + '">' + H(x) + '</button>';
+      return '<button class="tanya-cip" data-pilih="' + H(x) + '" data-asli>' + H(x) + '</button>';
     }).join('');
     w.classList.remove('sembunyi');
     /* Tidak ada tombol "Lanjut": ketukan pada pilihannya ITU jawabannya, dan
@@ -779,7 +779,7 @@
        isi, dan dia menghilang begitu kamu mulai mengetik. */
     if (!teks.trim()) {
       ruangSering().forEach(function (nama) {
-        cip.push('<button class="ruang-cip sering" data-ruang="' + H(nama) + '">' +
+        cip.push('<button class="ruang-cip sering" data-ruang="' + H(nama) + '" data-asli>' +
                  H(nama) + '</button>');
       });
       var adaSering = !!cip.length;
@@ -789,13 +789,13 @@
     }
 
     if (ruangSaat) {
-      cip.push('<span class="ruang-cip nyala">' + H(ruangSaat.nama) + '</span>');
+      cip.push('<span class="ruang-cip nyala" data-asli>' + H(ruangSaat.nama) + '</span>');
       /* Turunan gudang yang sedang menyala - inilah "ketik amara, muncul
          cip anaknya". Mengetuknya menuliskannya ke kotak, bukan membuka
          layar: drop harus tetap satu gerakan. */
       pohon.filter(function (l) { return l.induk === ruangSaat.nama; })
            .slice(0, 5).forEach(function (l) {
-        cip.push('<button class="ruang-cip" data-ruang="' + H(l.nama) + '">' + H(l.ekor) + '</button>');
+        cip.push('<button class="ruang-cip" data-ruang="' + H(l.nama) + '" data-asli>' + H(l.ekor) + '</button>');
       });
     }
 
@@ -1041,7 +1041,7 @@
         (m.berkasId ? '' : '<button data-ai-salin="' + i + '">Salin</button>') + '</div>'
       : '';
     return '<div class="ai-pesan ' + (m.dari === 'aku' ? 'aku' : 'ai') + '">' +
-           '<div class="ai-gelembung">' + isi + kaki + '</div></div>';
+           '<div class="ai-gelembung"><span data-asli>' + isi + '</span>' + kaki + '</div></div>';
   }
 
   function gambarObrolan() {
@@ -1466,6 +1466,13 @@
 
      Empat pilihan, bukan dua puluh. Dua puluh warna itu keputusan; empat itu
      pilihan. Yang kelima "sendiri", untuk saat tidak ada satu pun yang cocok. */
+  /* Nama bahasanya ditulis DALAM bahasanya sendiri - "Indonesia", bukan
+     "Indonesian". Yang mencari bahasanya sendiri di daftar mencari kata yang
+     dia kenali, bukan terjemahannya. */
+  var BAHASA = [['en', 'English'], ['id', 'Indonesia']];
+
+  function bahasaSaat() { return setelanSaat.bahasa || 'en'; }
+
   var TEMA = [
     ['teal',  'Teal',   '#0F766E'],
     ['nila',  'Nila',   '#4338CA'],
@@ -1760,7 +1767,7 @@
     var n = f.isi.length;
     return '<button class="folder-baris" data-tulis-folder="' + H(f.nama) + '">' +
       '<svg viewBox="0 0 24 24" class="ik"><path d="M4 6a2 2 0 0 1 2-2h3.5l2 2.5H18a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>' +
-      '<span class="folder-nama">' + H(f.nama) + '</span>' +
+      '<span class="folder-nama" data-asli>' + H(f.nama) + '</span>' +
       (f.anak ? '<span class="folder-anak">' + f.anak + ' rak</span>' : '') +
       /* Angka nol tidak digambar untuk folder yang isinya ada di rak-rak
          anaknya - "1 rak · 0" membaca seperti folder kosong, padahal isinya
@@ -1872,7 +1879,7 @@
     if (!daftar.length || sisa) { w.classList.add('sembunyi'); w.innerHTML = ''; return; }
     w.classList.remove('sembunyi');
     w.innerHTML = daftar.map(function (x) {
-      return '<button class="ekor-cip" data-ekor="' + H(x) + '">' + H(x) + '</button>';
+      return '<button class="ekor-cip" data-ekor="' + H(x) + '" data-asli>' + H(x) + '</button>';
     }).join('');
   }
 
@@ -2349,7 +2356,7 @@
                argumen kedua ke kartuHtml: kartu itu dipakai di tiga tempat,
                dan menambah parameter di sana berarti map() yang memanggilnya
                diam-diam mengoper nomor urut sebagai alamat. */
-            return '<div class="note-alamat-kecil">' + H(petaCari[e.id] || TANPA_RAK) + ' /</div>' +
+            return '<div class="note-alamat-kecil" data-asli>' + H(petaCari[e.id] || TANPA_RAK) + ' /</div>' +
                    kartuHtml(e, { jamPenuh: true });
           }).join('')
         : '<div class="kosong">Tidak ada yang cocok.<br>Coba satu kata saja — pencarian ini memaafkan.</div>';
@@ -2404,7 +2411,7 @@
     return '<button class="note-folder' + (f.nama === TANPA_RAK ? ' sepi' : '') +
            '" data-note-folder="' + H(f.nama) + '">' +
            '<svg viewBox="0 0 24 24" class="ik"><path d="M4 5a2 2 0 0 1 2-2h4l2 3h6a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>' +
-           '<span class="note-folder-nama">' + H(f.nama) + '</span>' +
+           '<span class="note-folder-nama" data-asli>' + H(f.nama) + '</span>' +
            '<span class="note-hitung">' + ket + '</span></button>';
   }
 
@@ -2463,7 +2470,7 @@
        balik satu ketukan berarti kamu harus membuka kartunya dulu untuk
        melepasnya - dua ketukan untuk membatalkan satu. */
     b.push('<div class="kartu-atas">' +
-      '<div class="kartu-judul">' + (sering ? '<span class="titik" title="sering dipakai"></span>' : '') +
+      '<div class="kartu-judul" data-asli>' + (sering ? '<span class="titik" title="sering dipakai"></span>' : '') +
       H(e.judul || '(tanpa judul)') + '</div>' +
       '<button class="kartu-pin' + (e.pin ? ' nyala' : '') + '" data-pin' +
       ' aria-label="' + (e.pin ? 'Lepas pin' : 'Pin ke atas') + '">' +
@@ -2492,7 +2499,7 @@
         (TKunci.terbuka() ? 'Terkunci — buka lewat tombol ubah'
                           : 'Terkunci — sandinya belum dibuka') + '</div>');
     } else if (cup && !elemen.length) {
-      b.push('<div class="kartu-cuplik">' + H(cup) + '</div>');
+      b.push('<div class="kartu-cuplik" data-asli>' + H(cup) + '</div>');
     }
 
     /* Thumbnail-nya sudah ada di dalam entri, jadi tidak ada satu pun
@@ -2592,7 +2599,7 @@
 
     var isi = tag.map(function (t, i) {
       return '<button class="tag' + (i >= TAG_TAMPIL ? ' terlipat' : '') +
-             '" data-tag="' + H(t) + '">#' + H(t) + '</button>';
+             '" data-tag="' + H(t) + '" data-asli>#' + H(t) + '</button>';
     }).join('');
 
     if (sisa > 0) {
@@ -2905,8 +2912,8 @@
        judulnya untuk pencarian Drop. Menyembunyikan salah satunya membuat
        orangnya mengira yang satu menggantikan yang lain. */
     var b = [];
-    if (folder) b.push('<span class="catat-ruang-cip folder">' + H(folder) + '</span>');
-    if (rak) b.push('<span class="catat-ruang-cip">#' + H(rak) + '</span>');
+    if (folder) b.push('<span class="catat-ruang-cip folder" data-asli>' + H(folder) + '</span>');
+    if (rak) b.push('<span class="catat-ruang-cip" data-asli>#' + H(rak) + '</span>');
     w.innerHTML = b.length ? b.join('')
       : '<span class="catat-ruang-sepi">Belum berlabel — AI menyortirnya nanti</span>';
   }
@@ -3372,6 +3379,18 @@
         : '',
 
       '<div class="set-bagian">Tampilan</div>',
+      /* BAHASA DI ATAS WARNA. Yang tidak mengerti kalimatnya tidak akan pernah
+         sampai ke pilihan warna - jadi yang membuka jalan berdiri lebih dulu. */
+      '<div class="set-kotak">',
+      '<div class="set-judul">Bahasa</div>',
+      '<div class="tema-baris" id="bahasa-baris">' +
+        BAHASA.map(function (b) {
+          return '<button class="tema-cip' + (bahasaSaat() === b[0] ? ' nyala' : '') +
+                 '" data-bahasa="' + b[0] + '">' + H(b[1]) + '</button>';
+        }).join('') +
+      '</div>',
+      '<div class="set-ket">Bahasa layar. Nama pintu — Drop, Note, To Do, Storage — sengaja tidak ikut diterjemahkan: itu nama tempat, dan nama tempat yang berganti bahasa membuat jarimu harus belajar ulang.</div>',
+      '</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">Warna aksen</div>',
       '<div class="set-ket">Yang berganti cuma aksennya — dasarnya tetap putih redup. Aplikasi yang dibuka puluhan kali sehari selama bertahun-tahun boleh sesekali ganti baju.</div>',
@@ -3497,7 +3516,7 @@
       '<button class="arsip-bersih" id="b-arsip-bersih">Hapus semua</button></div>' +
       arsip.slice(0, 50).map(function (e) {
         return '<div class="arsip-baris">' +
-          '<div class="arsip-judul">' + H(e.judul || '(tanpa judul)') + '</div>' +
+          '<div class="arsip-judul" data-asli>' + H(e.judul || '(tanpa judul)') + '</div>' +
           '<button class="arsip-balik" data-balik="' + H(e.id) + '">Kembalikan</button></div>';
       }).join('') +
       (arsip.length > 50 ? '<div class="set-ket">…dan ' + (arsip.length - 50) + ' lagi</div>' : '');
@@ -4185,6 +4204,20 @@
       tambahTugas();
     });
 
+    /* Berganti bahasa MEMUAT ULANG halaman. Sumbernya memang Indonesia, jadi
+       menggambar semuanya dari nol lebih jujur daripada menyimpan kamus
+       terbalik yang harus dijaga tetap sepadan - dan kamus terbalik yang
+       meleset sedikit meninggalkan satu kalimat Inggris di layar Indonesia,
+       persis jenis kerusakan yang paling lama tidak ketahuan. */
+    document.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-bahasa]');
+      if (!b) return;
+      var kode = b.getAttribute('data-bahasa');
+      if (kode === bahasaSaat()) return;
+      setelanSaat.bahasa = kode;
+      TSimpan.setel('bahasa', kode).then(function () { global.location.reload(); });
+    });
+
     $('#b-setelan').addEventListener('click', function () {
       gambarSetelan();
       keLayar('l-setelan');
@@ -4501,6 +4534,12 @@
          kebiasaan orang menetap di satu ukuran, dan memilihnya lagi tiap kali
          adalah keputusan berulang tanpa guna. */
       if (setelanSaat.gayaGambar) gayaGambar = setelanSaat.gayaGambar;
+      /* BAHASA DIPASANG SEBELUM APA PUN DIGAMBAR. Kalau sesudah, layarnya
+         berkedip dari Indonesia ke Inggris tiap kali aplikasinya dibuka - dan
+         kedipan itu terbaca sebagai aplikasi yang salah pasang. */
+      TBahasa.pilih(setelanSaat.bahasa || 'en');
+      TBahasa.amati();
+      TBahasa.pasang();
       /* Obrolan dimuat SEBELUM apa pun digambar: riwayat yang muncul sedetik
          sesudah layarnya terbuka terbaca sebagai obrolan yang sempat hilang. */
       muatObrolan(setelanSaat);
