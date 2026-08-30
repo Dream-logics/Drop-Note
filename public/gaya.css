@@ -91,25 +91,36 @@ button,input,textarea{font:inherit;color:inherit}
 .kepala-tetap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
 .kotak-bar{display:contents}
 #kotak,.kotak-bungkus{grid-column:1 / -1}
-#b-label{grid-column:1}
+#b-lampir{grid-column:1}
 #b-filter{grid-column:2}
 #b-drop{grid-column:3}
 
 /* --- lampiran (jenis dropping) --- */
 .lampiran{display:flex;gap:7px;margin-bottom:6px}
-/* Di dalam laci label dia tamu, bukan tuan rumah: garis bawah memisahkannya
-   dari daftar label supaya dua daftar tidak terbaca jadi satu. */
-.panel-label .lampiran{
-  margin:0;padding:2px 2px 8px;border-bottom:1px solid var(--l);margin-bottom:6px;
+/* BILAH BAWAH ALA TELEGRAM: ikon di atas namanya, tanpa kotak, satu baris
+   yang bisa digeser kalau caranya bertambah. Kotak bergaris di sekeliling tiap
+   ikon membuat empat cara memasukkan terbaca seperti empat keputusan berat;
+   tanpa kotak, dia jadi apa adanya - deretan pintu. */
+.lampiran{
+  display:flex;gap:4px;margin:0;padding:2px 0 2px;
+  overflow-x:auto;scrollbar-width:none;
 }
+.lampiran::-webkit-scrollbar{display:none}
 .lamp{
-  flex:1;min-height:46px;border:1px solid var(--l);background:none;border-radius:11px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  color:var(--m);cursor:pointer;padding:6px 2px;
+  flex:1 0 68px;min-height:64px;border:none;background:none;border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  color:var(--m);cursor:pointer;padding:8px 2px;
 }
-.lamp span{font-size:11px;font-weight:600}
-.lamp .ik{width:17px;height:17px}
-.lamp:active,.lamp.nyala{border-color:var(--a);color:var(--a)}
+.lamp span{font-size:11.5px;font-weight:600}
+/* Ikonnya duduk di bulatan beralas: itu yang membuat baris ini terbaca sebagai
+   deretan pintu, bukan deretan huruf. */
+.lamp .ik{width:21px;height:21px}
+.lamp i{
+  width:44px;height:44px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;background:var(--g);
+}
+.lamp:active i,.lamp.nyala i{background:color-mix(in srgb, var(--a) 14%, transparent)}
+.lamp:active,.lamp.nyala{color:var(--a)}
 
 /* --- tebakan otomatis --- */
 .tebakan{
@@ -186,7 +197,6 @@ button,input,textarea{font:inherit;color:inherit}
    gudang disimpan utuh. Memotong data demi lebar kolom adalah cara paling
    sunyi untuk merusak daftar orang. */
 .label-baris-nama{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#b-label-teks{overflow:hidden;text-overflow:ellipsis;min-width:0}
 
 /* Petak gambar: yang mengenali sebuah gambar adalah rupanya, bukan judulnya -
    judul gambar hampir selalu nama berkas yang tidak berarti apa-apa. */
@@ -655,13 +665,13 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   border:none;background:none;border-radius:0;
   min-height:42px;padding:11px 4px;
 }
-.dok-bawah #b-label,.dok-bawah #b-filter{
+.dok-bawah #b-lampir,.dok-bawah #b-filter{
   flex:0 0 auto;width:40px;height:40px;min-height:0;padding:0;border:none;
   border-radius:50%;color:var(--m);
 }
-.dok-bawah #b-label span,.dok-bawah #b-filter span,
-.dok-bawah #b-label .ik.kecil,.dok-bawah #b-filter .ik.kecil{display:none}
-.dok-bawah #b-label.nyala,.dok-bawah #b-filter.nyala{color:var(--a)}
+.dok-bawah #b-lampir span,.dok-bawah #b-filter span,
+.dok-bawah #b-lampir .ik.kecil,.dok-bawah #b-filter .ik.kecil{display:none}
+.dok-bawah #b-lampir.nyala,.dok-bawah #b-filter.nyala{color:var(--a)}
 .dok-bawah #b-drop{
   flex:0 0 auto;width:52px;height:52px;min-height:0;padding:0;border-radius:50%;
   background:var(--ap);border-color:var(--ap);color:var(--at);
@@ -703,11 +713,34 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   background:none;display:flex;align-items:center;justify-content:flex-start;
   cursor:pointer;
 }
-/* Cip Todo. Diberi warna aksen karena dia satu-satunya cip di baris ini yang
-   MENYIMPAN sesuatu - sisanya cuma kabar atau jalan pintas mengetik. */
-.ruang-cip.tugas{border-color:var(--a);color:var(--a);gap:4px}
-.ruang-cip.tugas .ik.kecil{width:13px;height:13px;stroke-width:2.4}
-.ruang-cip.tugas:active{background:color-mix(in srgb, var(--a) 14%, transparent)}
+/* --- baris saringan: cip di atas kotak, bukan isi laci ---
+   Berikon, bukan bertulisan: satu baris harus memuat semua jenis sekaligus,
+   dan nama jenis yang ditulis penuh memakan tempat yang seharusnya milik
+   pilihannya sendiri. Jenis elemen tetap bertulisan - namanya lahir dari isi
+   timbunanmu, jadi tidak ada ikon yang bisa mewakilinya. */
+.saring-baris{
+  display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+  grid-column:1 / -1;padding:2px 2px 0;
+}
+.saring-cip{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:34px;min-width:38px;padding:0 9px;
+  border:1px solid var(--l);background:none;color:var(--m);
+  border-radius:17px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;
+}
+.saring-cip .ik{width:16px;height:16px}
+.saring-cip.nyala{
+  border-color:transparent;color:var(--a);font-weight:700;
+  background:color-mix(in srgb, var(--a) 14%, transparent);
+}
+/* Cip Todo dipatok di ujung KANAN - tepat di atas tombol Drop, tempat jempol
+   kanan sudah bertumpu. Dia satu-satunya cip di baris ini yang MENYIMPAN
+   sesuatu; sisanya cuma menyaring, jadi warnanya dibedakan. */
+.saring-cip.tugas{
+  margin-left:auto;border-color:var(--a);color:var(--a);padding:0 12px;
+}
+.saring-cip.tugas .ik{width:14px;height:14px;stroke-width:2.4}
+.saring-cip.tugas:active{background:color-mix(in srgb, var(--a) 14%, transparent)}
 /* Baris gudang tersering: jalan pintas waktu kotaknya masih kosong. */
 .ruang-baris .ruang-cip.sering{border-style:dashed}
 .laci-judul{
@@ -741,4 +774,8 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 /* Tawaran kelengkapan: satu-satunya cip yang MENGUBAH isi kotak dengan nama
    yang belum selesai kamu ketik, jadi dia dibedakan dari cip kabar. */
 .ruang-cip{white-space:nowrap}
-.dok-bawah .ruang-baris{order:-1;width:100%;padding-bottom:6px}
+/* Urutannya dari atas: cip gudang, lalu cip saringan, baru kotaknya. Gudang
+   di paling atas karena dia kabar tentang yang sedang kamu ketik; saringan di
+   bawahnya karena dia tentang yang sedang kamu cari. */
+.dok-bawah .ruang-baris{order:-2;width:100%;padding-bottom:4px}
+.dok-bawah .saring-baris{order:-1;width:100%;padding-bottom:6px}
