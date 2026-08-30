@@ -190,11 +190,24 @@
     tanyaJalan = jalan;
     $('#tanya-judul').textContent = judul;
     $('#tanya-ket').textContent = ket || '';
+    $('#tanya-isi').classList.add('sembunyi');
     $('#tanya').classList.remove('sembunyi');
+  }
+
+  /* Bentuk kedua dari dialog yang sama: yang ini menunggu satu kata diketik.
+     Satu dialog untuk dua keperluan - dialog kedua yang rupanya sama persis
+     akan berbeda sendiri begitu salah satunya disunting. */
+  function tanyaKetik(judul, ket, awal, jalan) {
+    tanya(judul, ket, function () { jalan($('#tanya-isi').value.trim()); });
+    var isian = $('#tanya-isi');
+    isian.value = awal || '';
+    isian.classList.remove('sembunyi');
+    setTimeout(function () { isian.focus(); isian.select(); }, 30);
   }
 
   function tutupTanya() {
     $('#tanya').classList.add('sembunyi');
+    $('#tanya-isi').classList.add('sembunyi');
     tanyaJalan = null;
   }
 
@@ -1592,11 +1605,70 @@
      Penandanya satu kolom, 'tulisan'. BUKAN jenis tersendiri: kalau jenisnya
      berbeda, dia luput dari saringan, dari kartu, dan dari elemen - dan
      tulisan yang berisi nomor rekening berhenti bisa disalin sendiri. */
-  function daftarTulisan() {
-    var kueri = ($('#tulis-cari') ? $('#tulis-cari').value : '').trim();
-    var punya = semuaEntri.filter(function (e) {
+  /* Folder yang sedang dibuka di layar Note; null = daftar folder di akar. */
+  var tulisFolder = null;
+
+  function semuaTulisan() {
+    return semuaEntri.filter(function (e) {
       return e.tulisan && !e.pensiun && !e.dihapus;
     });
+  }
+
+  /* FOLDERNYA BUKAN WADAH TERSENDIRI. Dia nama gudang yang sama persis dengan
+     yang dipakai kotak Drop dan layar Storage - jadi membuat folder di sini
+     berarti menambah satu rak yang langsung dikenali di seluruh aplikasi, dan
+     tulisan yang judulnya menyebut rak itu mendarat di sana tanpa dipindahkan
+     siapa pun.
+
+     Yang KOSONG tetap ditampilkan, dan itu disengaja: kamu membuat folder
+     justru supaya ada tempat menulis. Folder yang lenyap sedetik setelah
+     dibuat, karena belum ada isinya, adalah tombol yang mengingkari dirinya
+     sendiri. */
+  function folderTulis() {
+    var punya = semuaTulisan();
+    var isi = {};
+    daftarLabel().forEach(function (l) { isi[l.nama] = []; });
+    punya.forEach(function (e) {
+      var nama = e.kategori || '';
+      if (!nama || !(nama in isi)) nama = TANPA_RAK;
+      (isi[nama] = isi[nama] || []).push(e);
+    });
+    if (!(isi[TANPA_RAK] || []).length) delete isi[TANPA_RAK];
+
+    var nama = Object.keys(isi);
+    var induk = {};
+    nama.forEach(function (n) {
+      var pilih = '';
+      nama.forEach(function (c) {
+        if (c === n || c === TANPA_RAK) return;
+        if (normalFolder(n).indexOf(normalFolder(c) + ' ') !== 0) return;
+        if (!pilih || c.length > pilih.length) pilih = c;
+      });
+      induk[n] = pilih;
+    });
+    var anak = {};
+    nama.forEach(function (n) { if (induk[n]) anak[induk[n]] = (anak[induk[n]] || 0) + 1; });
+
+    return nama.map(function (n) {
+      return { nama: n, isi: isi[n], induk: induk[n] || '', anak: anak[n] || 0 };
+    }).sort(function (a, b) {
+      if ((a.nama === TANPA_RAK) !== (b.nama === TANPA_RAK)) return a.nama === TANPA_RAK ? 1 : -1;
+      var na = a.isi.length + (a.anak ? 1000 : 0);
+      var nb = b.isi.length + (b.anak ? 1000 : 0);
+      if (nb !== na) return nb - na;
+      return a.nama.localeCompare(b.nama);
+    });
+  }
+
+  function daftarTulisan() {
+    var kueri = ($('#tulis-cari') ? $('#tulis-cari').value : '').trim();
+    var punya = semuaTulisan();
+    /* Mengetik selalu MENEMBUS folder - kalau pencarian cuma berlaku di folder
+       yang sedang dibuka, kamu harus tahu dulu barangnya di mana, dan kalau
+       sudah tahu kamu tidak perlu mencari. */
+    if (!kueri && tulisFolder) {
+      punya = punya.filter(function (e) { return (e.kategori || '') === tulisFolder; });
+    }
     var hasil = kueri ? TOtak.cari(punya, kueri, '', '') : punya.slice();
     /* Tanpa kueri: yang PALING BARU DISENTUH di atas. Itu jawaban untuk
        satu-satunya pertanyaan yang benar-benar sering muncul di layar ini -
@@ -1607,23 +1679,120 @@
     return urutPin(hasil);
   }
 
+  /* Baris folder yang RAPAT. Dulu tiap folder setinggi dua baris teks dengan
+     jarak longgar di antaranya, dan sepuluh folder sudah memakan seluruh layar
+     - padahal isinya cuma nama dan satu angka. Yang dibaca di sini namanya,
+     dan nama tidak butuh ruang sebanyak itu. */
+  function folderTulisHtml(f) {
+    var n = f.isi.length;
+    return '<button class="folder-baris" data-tulis-folder="' + H(f.nama) + '">' +
+      '<svg viewBox="0 0 24 24" class="ik"><path d="M4 6a2 2 0 0 1 2-2h3.5l2 2.5H18a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>' +
+      '<span class="folder-nama">' + H(f.nama) + '</span>' +
+      (f.anak ? '<span class="folder-anak">' + f.anak + ' rak</span>' : '') +
+      /* Angka nol tidak digambar untuk folder yang isinya ada di rak-rak
+         anaknya - "1 rak · 0" membaca seperti folder kosong, padahal isinya
+         justru satu tingkat di bawah. */
+      (n || !f.anak ? '<span class="folder-hitung">' + n + '</span>' : '') +
+      '</button>';
+  }
+
+  function gambarJejakTulis() {
+    var w = $('#tulis-alamat');
+    if (!w) return;
+    var kueri = $('#tulis-cari').value.trim();
+    if (kueri) {
+      w.innerHTML = '<button class="note-jejak" data-tulis-akar>Semua folder</button>' +
+        '<span class="note-pisah">/</span><span class="note-jejak-kini">“' + H(kueri) + '”</span>';
+      return;
+    }
+    w.innerHTML = tulisFolder
+      ? '<button class="note-jejak" data-tulis-akar>Semua folder</button>' +
+        '<span class="note-pisah">/</span><span class="note-jejak-kini">' + H(tulisFolder) + '</span>'
+      : '<span class="note-jejak-kini">Semua folder</span>';
+  }
+
   function gambarTulis() {
     var wadah = $('#tulis-isi');
     if (!wadah) return;
+    gambarJejakTulis();
     var daftar = daftarTulisan();
     var kueri = $('#tulis-cari').value.trim();
 
-    if (!daftar.length) {
+    /* Di akar: foldernya dulu, lalu SELURUH tulisan yang terbaru di bawahnya.
+       Bukan folder saja - pertanyaan yang paling sering di layar ini adalah
+       "yang tadi kutulis mana", dan menjawabnya lewat memilih folder dulu
+       berarti kamu harus mengingat di rak mana kamu menaruhnya. */
+    var folderHtml2 = '';
+    if (!kueri) {
+      var semuaF = folderTulis();
+      var tampil = tulisFolder
+        ? semuaF.filter(function (f) { return f.induk === tulisFolder; })
+        : semuaF.filter(function (f) { return !f.induk; });
+      folderHtml2 = tampil.map(folderTulisHtml).join('');
+    }
+
+    if (!daftar.length && !folderHtml2) {
       wadah.innerHTML = '<div class="kosong">' + (kueri
         ? 'Tidak ada tulisan yang cocok.'
-        : 'Belum ada tulisan.<br>Yang panjang - brief, instruksi, rancangan — ditulis di sini,<br>bukan di kotak Drop.') +
+        : 'Belum ada tulisan.<br>Yang panjang — brief, instruksi, rancangan — ditulis di sini,<br>bukan di kotak Drop.') +
         '</div>';
       return;
     }
-    wadah.innerHTML = daftar.slice(0, 200).map(function (e) {
+    wadah.innerHTML = folderHtml2 + daftar.slice(0, 200).map(function (e) {
       return kartuHtml(e, { jamPenuh: true });
     }).join('');
     pasangGambarKartu(wadah);
+    segarPilih();
+  }
+
+  /* ===================== EKOR JUDUL YANG DIINGAT =====================
+     Di dalam satu folder, kata yang menyusul nama foldernya itu-itu saja:
+     "prompt", "brief", "galat", "rapat". Mengetiknya ulang tiap kali adalah
+     pekerjaan yang persis sama tiap kali - dan itu jenis pekerjaan yang
+     aplikasi ini ada untuk menghapus.
+
+     Yang ditawarkan cuma yang KAMU sendiri pernah pakai di folder itu. Bukan
+     tebakan, bukan kamus: kalau daftarnya berisi kata yang tidak pernah kamu
+     ketik, dia berhenti dipercaya sesudah dua kali salah. */
+  var EKOR_MAKS = 6;
+  var ekorJudul = {};
+
+  function muatEkor(s) {
+    try {
+      var d = JSON.parse((s && s.ekorJudul) || '{}');
+      ekorJudul = (d && typeof d === 'object') ? d : {};
+    } catch (e) { ekorJudul = {}; }
+  }
+
+  function catatEkor(folder, ekor) {
+    var kata = String(ekor || '').trim();
+    if (!folder || !kata || kata.length > 40) return Promise.resolve();
+    var daftar = (ekorJudul[folder] || []).filter(function (x) {
+      return TOtak.normal(x) !== TOtak.normal(kata);
+    });
+    /* Yang terbaru di depan: kebiasaan berpindah, dan yang dipakai bulan lalu
+       tidak pantas mengalahkan yang dipakai kemarin. */
+    daftar.unshift(kata);
+    ekorJudul[folder] = daftar.slice(0, EKOR_MAKS);
+    return TSimpan.setel('ekorJudul', JSON.stringify(ekorJudul));
+  }
+
+  function gambarEkorCatat() {
+    var w = $('#catat-ekor');
+    if (!w) return;
+    var judul = $('#catat-judul').value;
+    var ruang = TOtak.bacaRuang(judul.trim(), daftarLabel());
+    var folder = ruang ? ruang.nama : '';
+    var daftar = (folder && ekorJudul[folder]) || [];
+    /* Cuma waktu judulnya masih SEBATAS nama foldernya. Sesudah kamu mengetik
+       kata berikutnya, tawaran ini sudah tidak menjawab apa pun - dan cip yang
+       tidak menjawab apa pun cuma menutupi tulisanmu. */
+    var sisa = folder ? judul.trim().slice(folder.length).trim() : judul.trim();
+    if (!daftar.length || sisa) { w.classList.add('sembunyi'); w.innerHTML = ''; return; }
+    w.classList.remove('sembunyi');
+    w.innerHTML = daftar.map(function (x) {
+      return '<button class="ekor-cip" data-ekor="' + H(x) + '">' + H(x) + '</button>';
+    }).join('');
   }
 
   /* Entrinya BELUM disimpan di sini. simpanCatat sudah menolak menyimpan
@@ -1634,7 +1803,42 @@
     var e = entriBaru('teks');
     e.tulisan = true;
     keCatat(e);
-    $('#catat-judul').focus();
+    /* JUDULNYA SUDAH TERISI NAMA FOLDERNYA. Kamu masuk ke folder itu justru
+       untuk menulis sesuatu miliknya - mengetik namanya lagi adalah menjawab
+       pertanyaan yang sudah kamu jawab dengan membuka foldernya. */
+    var isian = $('#catat-judul');
+    if (tulisFolder && tulisFolder !== TANPA_RAK) {
+      isian.value = tulisFolder + ' ';
+      e.kategori = tulisFolder;
+      gambarRuangCatat();
+      gambarEkorCatat();
+    }
+    isian.focus();
+    isian.setSelectionRange(isian.value.length, isian.value.length);
+  }
+
+  function folderBaru() {
+    tanyaKetik('Folder baru', 'Namanya boleh dua kata — "Cortex Apps" otomatis jadi rak di dalam "Cortex".',
+      '', function (nama) {
+        if (!nama) return;
+        var punya = daftarLabel().some(function (l) {
+          return TOtak.normal(l.nama) === TOtak.normal(nama);
+        });
+        if (punya) { pesan('Folder itu sudah ada'); tulisFolder = nama; gambarTulis(); return; }
+        /* Foldernya = satu rak baru di daftar gudang, tempat yang sama yang
+           dibaca kotak Drop dan layar Storage. Bukan daftar kedua. */
+        /* Ditulis lewat penulis resmi daftarnya, bukan dirangkai sendiri di
+           sini: bentuk barisnya (nama, lalu kata lain sesudah '=') cuma boleh
+           punya satu penentu, dan itu TOtak. */
+        var daftar = daftarLabel().concat([{ nama: nama, istilah: [TOtak.normal(nama)] }]);
+        var teks = TOtak.tulisLabel(daftar);
+        setelanSaat.label = teks;
+        simpanSetelan('label', teks);
+        if ($('#set-label')) $('#set-label').value = teks;
+        tulisFolder = nama;
+        gambarTulis();
+        pesan('Folder “' + nama + '” dibuat');
+      });
   }
 
   /* ===================== LAYAR STORAGE =====================
@@ -1810,7 +2014,8 @@
   /* Ada kartu yang bisa ditunjuk atau tidak - bukan "ada isinya atau tidak".
      Di halaman depan Storage isinya penuh, tapi semuanya folder. */
   function adaKartuNote() {
-    return !!$('#note-isi') && !!$('#note-isi').querySelector('.kartu');
+    var w = wadahPilih();
+    return !!w && !!w.querySelector('.kartu');
   }
 
   function mulaiPilih(nyala) {
@@ -1820,8 +2025,18 @@
     tandaiPilih();
   }
 
+  /* SATU MESIN PILIH UNTUK DUA LAYAR. Note dan Storage sama-sama memilih
+     banyak lalu membuang atau memindahkan; menyalinnya jadi dua berarti
+     perbaikan di satu tempat diam-diam tidak sampai ke tempat lain. Yang
+     membedakan cuma wadah kartunya. */
+  function wadahPilih() {
+    return layarSaat === 'l-tulis' ? $('#tulis-isi') : $('#note-isi');
+  }
+
   function tandaiPilih() {
-    $$('#note-isi .kartu').forEach(function (k) {
+    var w = wadahPilih();
+    if (!w) return;
+    $$('.kartu', w).forEach(function (k) {
       k.classList.toggle('dipilih', !!pilihNote[k.getAttribute('data-id')]);
     });
   }
@@ -1838,19 +2053,24 @@
     var n = jumlahPilih();
     var hidup = pilihNyala || !!n;
     $('#pilih-bilah').classList.toggle('sembunyi', !hidup);
-    $('#l-note').classList.toggle('mode-pilih', hidup);
-    $('#b-pilih-mulai').classList.toggle('nyala', hidup);
+    $('#l-note').classList.toggle('mode-pilih', hidup && layarSaat === 'l-note');
+    $('#l-tulis').classList.toggle('mode-pilih', hidup && layarSaat === 'l-tulis');
+    var tombol = layarSaat === 'l-tulis' ? $('#b-tulis-pilih') : $('#b-pilih-mulai');
+    [$('#b-pilih-mulai'), $('#b-tulis-pilih')].forEach(function (b) {
+      if (b) b.classList.toggle('nyala', hidup && b === tombol);
+    });
     /* Di halaman depan Storage yang tampil cuma FOLDER, tidak ada satu kartu
        pun yang bisa ditunjuk - jadi tombolnya ikut hilang di sana. Tombol yang
        ada tapi tidak menghasilkan apa-apa lebih buruk daripada tombol yang
        tidak ada: yang pertama terbaca sebagai rusak. */
-    $('#b-pilih-mulai').classList.toggle('sembunyi', !adaKartuNote());
+    if (tombol) tombol.classList.toggle('sembunyi', !adaKartuNote());
     /* Waktu belum ada yang ditunjuk, bilahnya menyebutkan apa yang harus
        dilakukan - bukan "0 dipilih", yang cuma mengabarkan keadaan tanpa
        memberi tahu jalan keluarnya. */
     $('#pilih-jumlah').textContent = n ? n + ' dipilih' : 'Ketuk yang mau dipilih';
     $('#b-pilih-gabung').classList.toggle('sembunyi', n < 2);
     $('#b-pilih-buang').classList.toggle('sembunyi', !n);
+    $('#b-pilih-pindah').classList.toggle('sembunyi', !n);
   }
 
   function alihPilih(id) {
@@ -1890,7 +2110,7 @@
           batalPilih();
           return muatSemua();
         }).then(function () {
-          gambarNote();
+          segarkanTampilan();
           pesan(n + ' catatan masuk arsip');
         });
       });
@@ -1902,6 +2122,51 @@
      ditawarkan, bukan ditanyakan kosong: mengetik judul untuk sesuatu yang
      baru saja kamu tunjuk sendiri adalah pertanyaan yang jawabannya sudah ada
      di layar. */
+  /* MEMINDAH ANTAR FOLDER. Foldernya dibaca dari judul, jadi memindah tanpa
+     menyentuh judul akan diam-diam dibatalkan lagi begitu tulisannya disunting -
+     dan pemindahan yang membatalkan diri sendiri lebih buruk daripada tidak
+     ada pemindahan sama sekali. Jadi kalau judulnya memang diawali nama folder
+     lamanya, awalan itu ikut diganti; kalau tidak, judulnya dibiarkan utuh dan
+     cuma raknya yang berpindah. */
+  function pindahPilih() {
+    var dipilih = entriPilih();
+    if (!dipilih.length) return;
+    var pilihan = daftarLabel().map(function (l) { return l.nama; });
+    if (!pilihan.length) { pesan('Belum ada folder — buat satu dulu'); return; }
+
+    tanyaKetik('Pindahkan ' + dipilih.length + ' catatan ke mana?',
+      'Nama folder: ' + pilihan.slice(0, 8).join(' · '),
+      tulisFolder && tulisFolder !== TANPA_RAK ? tulisFolder : '',
+      function (nama) {
+        if (!nama) return;
+        var tujuan = '';
+        daftarLabel().forEach(function (l) {
+          if (TOtak.normal(l.nama) === TOtak.normal(nama)) tujuan = l.nama;
+        });
+        if (!tujuan) { pesan('Folder “' + nama + '” belum ada'); return; }
+
+        var n = dipilih.length;
+        Promise.all(dipilih.map(function (e) {
+          var lama = e.kategori || '';
+          var judul = String(e.judul || '');
+          if (lama && TOtak.normal(judul).indexOf(TOtak.normal(lama)) === 0) {
+            judul = (tujuan + judul.slice(lama.length)).trim();
+          }
+          e.judul = judul;
+          e.kategori = tujuan;
+          e.diubah = Date.now();
+          segarkanCache(e);
+          return TSimpan.taruh(e);
+        })).then(function () {
+          batalPilih();
+          return muatSemua();
+        }).then(function () {
+          segarkanTampilan();
+          pesan(n + ' catatan pindah ke #' + tujuan);
+        });
+      });
+  }
+
   function gabungPilih() {
     var dipilih = entriPilih().slice().sort(function (a, b) {
       return (b.diubah || 0) - (a.diubah || 0);
@@ -1940,7 +2205,7 @@
           batalPilih();
           return muatSemua();
         }).then(function () {
-          gambarNote();
+          segarkanTampilan();
           pesan(dipilih.length + ' catatan digabung');
         });
       });
@@ -2529,6 +2794,7 @@
     entriCatat = e;
     $('#catat-judul').value = e.judul || '';
     gambarRuangCatat();
+    gambarEkorCatat();
     $('#riwayat').classList.add('sembunyi');
     gambarLampiranCatat(e);
     gambarGembok(e);
@@ -2655,6 +2921,13 @@
       $('#catat-judul').placeholder = e.judul || 'Judul';
     }
     e.label = TOtak.labelOtomatis(e);
+    /* Ekor judulnya diingat per folder - tapi cuma untuk tulisan, dan cuma
+       kalau judulnya memang diawali nama foldernya. Yang di-drop tidak ikut:
+       judulnya disusun mesin, bukan kebiasaanmu. */
+    if (e.tulisan && ruang && judul) {
+      var ekor = judul.slice(ruang.nama.length).trim();
+      if (ekor) catatEkor(ruang.nama, ekor);
+    }
 
     /* Isi yang berubah artinya penilaian lamanya sudah tidak menggambarkan
        catatan ini lagi. Judul, elemen, dan tag disusun ulang - dan judul yang
@@ -3657,9 +3930,50 @@
     });
 
     $('#b-tulis-baru').addEventListener('click', tulisBaru);
+    $('#b-folder-baru').addEventListener('click', folderBaru);
+    $('#b-tulis-pilih').addEventListener('click', function () {
+      mulaiPilih(!(pilihNyala || jumlahPilih()));
+    });
     $('#tulis-cari').addEventListener('input', gambarTulis);
-    $('#tulis-isi').addEventListener('click', klikHasil);
+    $('#tulis-alamat').addEventListener('click', function (ev) {
+      if (!ev.target.closest('[data-tulis-akar]')) return;
+      tulisFolder = null;
+      $('#tulis-cari').value = '';
+      batalPilih();
+      gambarTulis();
+    });
+    $('#tulis-isi').addEventListener('click', function (ev) {
+      var f = ev.target.closest('[data-tulis-folder]');
+      if (f) {
+        batalPilih();
+        tulisFolder = f.getAttribute('data-tulis-folder');
+        gambarTulis();
+        global.scrollTo(0, 0);
+        return;
+      }
+      if (pilihNyala || jumlahPilih()) {
+        var k = ev.target.closest('.kartu');
+        if (k) { alihPilih(k.getAttribute('data-id')); return; }
+      }
+      klikHasil(ev);
+    });
+    pasangTekanLama($('#tulis-isi'));
     pasangGeser($('#tulis-isi'));
+    /* Cip ekor judul: satu ketukan menambahkan kata yang memang itu-itu saja
+       di folder ini, lalu kursornya menunggu di ujung. */
+    $('#catat-ekor').addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-ekor]');
+      if (!b) return;
+      var isian = $('#catat-judul');
+      isian.value = isian.value.replace(/\s+$/, '') + ' ' + b.getAttribute('data-ekor');
+      if (entriCatat) entriCatat.judulManual = true;
+      gambarRuangCatat();
+      gambarEkorCatat();
+      isian.focus();
+      isian.setSelectionRange(isian.value.length, isian.value.length);
+      tanda('menyimpan…');
+      simpanCatat();
+    });
     $$('[data-ke-setelan]').forEach(function (b) {
       b.addEventListener('click', function () { gambarSetelan(); keLayar('l-setelan'); });
     });
@@ -3700,26 +4014,7 @@
     /* MENAHAN satu kartu memulai memilih. Bukan kotak centang yang menganga
        sepanjang hari: memilih banyak itu pekerjaan sebulan sekali, dan kotak
        centang di tiap kartu adalah ongkos yang dibayar tiap hari untuk itu. */
-    (function () {
-      var jam = null, mulaiId = '';
-      var batal = function () { clearTimeout(jam); jam = null; };
-      $('#note-isi').addEventListener('pointerdown', function (ev) {
-        if (ev.target.closest('button, a')) return;
-        var k = ev.target.closest('.kartu');
-        if (!k) return;
-        mulaiId = k.getAttribute('data-id');
-        batal();
-        jam = setTimeout(function () {
-          jam = null;
-          if (!pilihNyala && !jumlahPilih()) {
-            alihPilih(mulaiId);
-            if (navigator.vibrate) navigator.vibrate(12);
-          }
-        }, 450);
-      });
-      ['pointerup', 'pointermove', 'pointercancel', 'pointerleave']
-        .forEach(function (n) { $('#note-isi').addEventListener(n, batal); });
-    })();
+    pasangTekanLama($('#note-isi'));
     $('#note-alamat').addEventListener('click', function (ev) {
       if (!ev.target.closest('[data-note-akar]')) return;
       noteFolder = null;
@@ -3816,6 +4111,7 @@
     $('#b-pilih-batal').addEventListener('click', batalPilih);
     $('#b-pilih-buang').addEventListener('click', buangPilih);
     $('#b-pilih-gabung').addEventListener('click', gabungPilih);
+    $('#b-pilih-pindah').addEventListener('click', pindahPilih);
 
     $('#lihat').addEventListener('click', tutupLihat);
     document.addEventListener('keydown', function (ev) {
@@ -3832,6 +4128,32 @@
      layar Note. Menyalinnya jadi dua berarti perbaikan di satu tempat diam-diam
      tidak sampai ke tempat lain, dan itu jenis bug yang paling lama tidak
      ketahuan. */
+  /* MENAHAN satu kartu memulai memilih. Bukan kotak centang yang menganga
+     sepanjang hari: memilih banyak itu pekerjaan sebulan sekali, dan kotak
+     centang di tiap kartu adalah ongkos yang dibayar tiap hari untuk itu.
+     Dipakai di Note DAN di Storage - satu penangan, bukan dua salinan. */
+  function pasangTekanLama(akar) {
+    if (!akar) return;
+    var jam = null, mulaiId = '';
+    var batal = function () { clearTimeout(jam); jam = null; };
+    akar.addEventListener('pointerdown', function (ev) {
+      if (ev.target.closest('button, a')) return;
+      var k = ev.target.closest('.kartu');
+      if (!k) return;
+      mulaiId = k.getAttribute('data-id');
+      batal();
+      jam = setTimeout(function () {
+        jam = null;
+        if (!pilihNyala && !jumlahPilih()) {
+          alihPilih(mulaiId);
+          if (navigator.vibrate) navigator.vibrate(12);
+        }
+      }, 450);
+    });
+    ['pointerup', 'pointermove', 'pointercancel', 'pointerleave']
+      .forEach(function (n) { akar.addEventListener(n, batal); });
+  }
+
   function klikHasil(ev) {
     /* Gambarnya dibaca LEBIH DULU daripada kartunya: menyentuh gambar berarti
        "perbesar ini", bukan "buka layar tulisnya". Sisa kartunya tetap
@@ -3922,6 +4244,7 @@
       /* Kabarnya menyusul tiap huruf, bukan sesudah disimpan: yang menolong di
          sini justru melihat raknya berubah SEBELUM kamu berhenti mengetik. */
       gambarRuangCatat();
+      gambarEkorCatat();
       tanda('menyimpan…');
       simpanTertunda();
     });
@@ -4044,6 +4367,7 @@
       /* Obrolan dimuat SEBELUM apa pun digambar: riwayat yang muncul sedetik
          sesudah layarnya terbuka terbaca sebagai obrolan yang sempat hilang. */
       muatObrolan(setelanSaat);
+      muatEkor(setelanSaat);
       /* Temanya dipasang SEBELUM apa pun digambar - kalau sesudah, warnanya
          berkedip dari teal ke pilihanmu tiap kali aplikasinya dibuka. */
       temaSaat = setelanSaat.tema || 'teal';

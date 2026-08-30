@@ -143,9 +143,21 @@ public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
 public/sinkron.js   cadangan satu arah ke Drive; tidak pernah di jalur drop
 public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     LAYAR NOTE ('l-tulis') itu RUANG MENULIS, bukan hasil
-                    saringan Drop: daftar tulisan + pencariannya sendiri +
-                    satu tombol bulat "tulis baru", dan layar tulisnya punya
-                    tombol Simpan yang bisa ditekan. Penandanya kolom
+                    saringan Drop: FOLDER + daftar tulisan + pencariannya
+                    sendiri + satu tombol bulat "tulis baru", dan layar tulisnya
+                    punya tombol Simpan yang bisa ditekan.
+                    Foldernya BUKAN wadah tersendiri - dia nama gudang yang
+                    sama dengan yang dipakai Drop dan Storage, jadi "+ Folder"
+                    menambah satu rak yang dikenali seluruh aplikasi. Yang
+                    kosong tetap tampil: kamu membuat folder justru supaya ada
+                    tempat menulis. Membuka folder lalu "tulis baru" mengisi
+                    judulnya dengan nama folder itu, dan ekor judul yang PERNAH
+                    KAMU PAKAI di folder itu ditawarkan sebagai cip
+                    ('ekorJudul' di setelan) - tawaran, bukan tebakan.
+                    Bilah pilih SATU untuk dua layar (Note & Storage),
+                    melayang di bawah: buang, gabung, pindah folder. Pindah
+                    ikut mengganti awalan judulnya, kalau tidak raknya balik
+                    lagi begitu tulisannya disunting. Penandanya kolom
                     'tulisan', BUKAN jenis tersendiri - jenis yang beda bikin
                     dia luput dari saringan, kartu, dan pemisahan elemen.
                     Tulisan tetap ikut terjaring pencarian utama: yang
@@ -207,7 +219,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (508 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (523 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

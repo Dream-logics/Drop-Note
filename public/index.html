@@ -314,15 +314,6 @@
       <input id="note-cari" class="cari-input" placeholder="Cari di semua folder&#8230;" autocomplete="off">
       <button class="pilih-mulai" id="b-pilih-mulai">Pilih</button>
     </div>
-    <!-- BILAH PILIH. Cuma muncul kalau ada yang dipilih - sebuah bilah yang
-         menganga kosong sepanjang hari untuk pekerjaan yang dilakukan sebulan
-         sekali adalah tempat yang dirampas dari isinya sendiri. -->
-    <div class="pilih-bilah sembunyi" id="pilih-bilah">
-      <span id="pilih-jumlah">0 dipilih</span>
-      <button class="pilih-tbl" id="b-pilih-gabung">Gabung</button>
-      <button class="pilih-tbl bahaya" id="b-pilih-buang">Buang</button>
-      <button class="pilih-tbl" id="b-pilih-batal">Batal</button>
-    </div>
   </div>
 
   <div id="note-isi"></div>
@@ -351,7 +342,18 @@
   </header>
   <div class="tab-baris" data-tab></div>
 
-  <input id="tulis-cari" class="cari-input" placeholder="Cari di catatanmu&#8230;" autocomplete="off">
+  <!-- Jejak folder plus satu tombol membuat folder baru. Foldernya bukan
+       wadah tersendiri: dia nama gudang yang sama dengan yang dipakai Drop dan
+       Storage, jadi membuat folder di sini berarti menambah satu rak yang
+       langsung dikenali di seluruh aplikasi. -->
+  <div class="tulis-kepala">
+    <div class="note-alamat" id="tulis-alamat"></div>
+    <button class="folder-baru" id="b-folder-baru" aria-label="Folder baru">+ Folder</button>
+  </div>
+  <div class="note-cari-baris">
+    <input id="tulis-cari" class="cari-input" placeholder="Cari di catatanmu&#8230;" autocomplete="off">
+    <button class="pilih-mulai" id="b-tulis-pilih">Pilih</button>
+  </div>
   <div id="tulis-isi"></div>
   <div class="tumbuh"></div>
 
@@ -392,6 +394,12 @@
        tulisan ini akan mendarat. Tidak bisa diketuk, tidak minta apa-apa:
        kalau raknya salah, yang dibetulkan judulnya. -->
   <div class="catat-ruang" id="catat-ruang"></div>
+  <!-- EKOR JUDUL YANG DIINGAT. Di dalam satu folder, kata yang menyusul nama
+       foldernya itu-itu saja - "prompt", "brief", "galat", "rapat". Mengetiknya
+       ulang tiap kali adalah pekerjaan yang persis sama tiap kali, dan itu
+       jenis pekerjaan yang aplikasi ini ada untuk menghapus. Yang ditawarkan
+       cuma yang KAMU sendiri pernah pakai di folder ini - bukan tebakan. -->
+  <div class="catat-ekor sembunyi" id="catat-ekor"></div>
   <div id="catat-lampiran"></div>
   <textarea id="catat-isi" class="catat-isi" placeholder="Tulis di sini. Boleh sepuluh kata hari ini, sepuluh lagi besok."></textarea>
   <div class="riwayat sembunyi" id="riwayat"></div>
@@ -445,10 +453,28 @@
      kebiasaannya. Tapi membuang dua puluh catatan sekaligus itu satu-satunya
      tindakan yang tidak bisa diurungkan dengan satu ketukan, dan yang seperti
      itu pantas ditahan sekali. -->
+<!-- BILAH PILIH, SATU UNTUK DUA LAYAR. Note dan Storage sama-sama memilih
+     banyak lalu membuang atau memindahkan; bilah kedua yang rupanya sama persis
+     akan berbeda sendiri begitu salah satunya disunting. Melayang di bawah,
+     tempat jempol sudah bertumpu, dan cuma muncul waktu memilih benar-benar
+     sedang berlangsung. -->
+<div class="pilih-bilah sembunyi" id="pilih-bilah">
+  <span id="pilih-jumlah">0 dipilih</span>
+  <button class="pilih-tbl" id="b-pilih-pindah">Pindah</button>
+  <button class="pilih-tbl" id="b-pilih-gabung">Gabung</button>
+  <button class="pilih-tbl bahaya" id="b-pilih-buang">Buang</button>
+  <button class="pilih-tbl" id="b-pilih-batal">Batal</button>
+</div>
+
 <div class="tanya sembunyi" id="tanya">
   <div class="tanya-kotak">
     <div class="tanya-judul" id="tanya-judul"></div>
     <div class="tanya-ket" id="tanya-ket"></div>
+    <!-- Isian yang cuma muncul kalau memang ada yang harus diketik - membuat
+         nama folder baru, misalnya. Satu dialog untuk dua keperluan, karena
+         dialog kedua yang rupanya sama persis akan berbeda sendiri begitu
+         salah satunya disunting. -->
+    <input id="tanya-isi" class="cari-input sembunyi" autocomplete="off" spellcheck="false">
     <div class="tanya-aksi">
       <button class="set-tbl" id="b-tanya-batal">Batal</button>
       <button class="set-tbl emas" id="b-tanya-ya">Lanjut</button>
