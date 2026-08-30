@@ -46,8 +46,13 @@ button,input,textarea{font:inherit;color:inherit}
 .tumbuh{flex:1 1 auto;min-height:8px}
 
 /* --- layar --- */
+/* --tampak = tinggi yang BENAR-BENAR terlihat, diisi dari visualViewport tiap
+   kali papan ketik naik atau turun. Tanpa itu layarnya tetap setinggi layar
+   penuh, doknya duduk di dasar halaman DI BALIK papan ketik, dan hasil
+   pencarian di atasnya tergulir keluar pandangan tepat saat kamu mengetiknya.
+   100dvh dipakai sebagai cadangan di browser yang tidak punya visualViewport. */
 .layar{
-  display:none;flex-direction:column;min-height:100dvh;
+  display:none;flex-direction:column;min-height:var(--tampak, 100dvh);
   padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 18px);
   max-width:620px;margin:0 auto;
 }
@@ -515,11 +520,7 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 }
 .tab .ik{width:15px;height:15px}
 .tab.nyala{color:var(--a);border-bottom-color:var(--a);font-weight:700}
-.tab-lencana{
-  min-width:16px;height:16px;padding:0 4px;border-radius:8px;
-  background:var(--ap);color:var(--at);font-size:10.5px;font-weight:700;
-  display:flex;align-items:center;justify-content:center;
-}
+
 
 /* --- layar Note: folder yang dipanggil dengan mencari --- */
 /* width:100% tanpa syarat DULU MENENDANG tombol Pilih keluar layar - dia ada
@@ -885,7 +886,9 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 .kartu-pin .ik{width:15px;height:15px}
 .kartu-pin.nyala{opacity:1;color:var(--a)}
 .kartu-pin.nyala .ik{fill:color-mix(in srgb, var(--a) 22%, transparent)}
-.kartu.terpin{border-left:2px solid var(--a)}
+/* Garis tegak di tepi kiri kartu terpin DIBUANG. Yang dipin sudah ditandai
+   pinnya sendiri di kepala kartu, beraksen dan terisi; garis kedua untuk hal
+   yang sama cuma membuat daftarnya terlihat seperti ada dua jenis kartu. */
 
 /* --- pilihan tema warna --- */
 .tema-baris{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
@@ -1101,3 +1104,15 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   width:6px;height:6px;border-radius:50%;background:var(--a);
 }
 .tugas.belum.terbuka::before{display:none}
+
+
+/* Kepala arsip: angkanya di kiri, jalan keluarnya di kanan. Merah, karena ini
+   satu-satunya tempat di aplikasi ini yang benar-benar menghapus. */
+.arsip-kepala{display:flex;align-items:center;gap:10px;padding:2px 0 6px}
+.arsip-kepala .set-ket{flex:1;margin:0}
+.arsip-bersih{
+  flex:0 0 auto;min-height:36px;padding:0 12px;border-radius:18px;
+  border:1px solid var(--l);background:none;color:var(--bahaya);
+  font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;
+}
+.arsip-bersih:active{border-color:var(--bahaya)}

@@ -3291,6 +3291,138 @@ console.log('\nTo Do: yang belum dibaca, dan urutan yang bisa ditebak');
   await hal.fill('#kotak', '');
 }
 
+console.log('\ngeser antar pintu, papan ketik, pin, dan arsip yang bisa dikosongkan');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(200);
+
+  /* LENCANA ANGKA DI PINTU TO DO DIBUANG. Dia memberitahu ada 15 tugas belum
+     selesai - dan itu bukan kabar, itu tagihan yang menempel sepanjang hari.
+     Angka yang tidak pernah bisa jadi nol berhenti menggerakkan apa pun. */
+  cek('tidak ada lagi lencana angka di pintu To Do',
+      (await hal.locator('[data-tab] .tab-lencana').count()) === 0);
+
+  /* GESER ANTAR PINTU. Empat pintu berjajar, dan memindahkannya cuma butuh
+     satu ketukan - tapi ketukan itu di kepala layar, ujung terjauh dari jempol
+     yang bertumpu di sudut kanan bawah. */
+  const geser = async (dari, ke) => {
+    await hal.evaluate((d) => TAlur.keLayarUji(d), dari);
+    await hal.waitForTimeout(200);
+    const kotak = await hal.evaluate(() => ({ w: innerWidth, h: innerHeight }));
+    const y = Math.round(kotak.h * 0.45);
+    await hal.mouse.move(ke > 0 ? kotak.w - 40 : 40, y);
+    await hal.mouse.down();
+    await hal.mouse.move(ke > 0 ? 40 : kotak.w - 40, y, { steps: 8 });
+    await hal.mouse.up();
+    await hal.waitForTimeout(300);
+    return hal.evaluate(() => document.querySelector('.layar.aktif').id);
+  };
+  cek('geser ke kiri membuka pintu di kanannya',
+      (await geser('l-utama', 1)) === 'l-tulis');
+  cek('geser ke kanan mengembalikannya',
+      (await geser('l-tulis', -1)) === 'l-utama');
+  /* Di ujung tidak ada apa-apa, dan tidak terjadi apa-apa - bukan melompat
+     memutar ke pintu paling ujung yang lain. */
+  cek('di pintu pertama, geser ke kanan tidak melompat ke ujung',
+      (await geser('l-utama', -1)) === 'l-utama');
+
+  /* Gerakan yang SUDAH punya arti tidak boleh direbut: geser di atas kartu
+     berarti mengarsipkannya, bukan pindah pintu. */
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); });
+  await hal.fill('#kotak', 'badgeuji');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(400);
+  const kartuKotak = await hal.locator('#hasil-depan .kartu').first().boundingBox();
+  if (kartuKotak) {
+    await hal.mouse.move(kartuKotak.x + kartuKotak.width - 20, kartuKotak.y + kartuKotak.height / 2);
+    await hal.mouse.down();
+    await hal.mouse.move(kartuKotak.x + 20, kartuKotak.y + kartuKotak.height / 2, { steps: 8 });
+    await hal.mouse.up();
+    await hal.waitForTimeout(300);
+    cek('geser di atas kartu tidak merebut arti geser kartu itu sendiri',
+        (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-utama');
+  }
+  await hal.fill('#kotak', '');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+
+  /* TINGGI LAYAR MENGIKUTI YANG TERLIHAT. Papan ketik HP tidak mengubah tinggi
+     halaman - dia cuma menutupi bagiannya - jadi hasil pencarian yang duduk di
+     atas kotak tergulir keluar layar tepat saat kamu mengetiknya. */
+  const pakaiTampak = await hal.evaluate(() => {
+    const v = getComputedStyle(document.documentElement).getPropertyValue('--tampak').trim();
+    const aturan = getComputedStyle(document.querySelector('#l-utama')).minHeight;
+    return { v: v, tinggi: aturan };
+  });
+  cek('layar memakai tinggi yang benar-benar terlihat, bukan tinggi halaman',
+      /px$/.test(pakaiTampak.v) && parseInt(pakaiTampak.v, 10) > 0,
+      JSON.stringify(pakaiTampak));
+
+  /* MELEPAS PIN LANGSUNG TERLIHAT DI LAYAR NOTE. Dulu tidak: satu ketukan yang
+     tidak menghasilkan apa-apa terbaca sebagai tombol rusak. */
+  await hal.evaluate(() => TSimpan.semua().then((a) => {
+    const e = a.filter((x) => x.tulisan && !x.pensiun)[0];
+    if (e) { e.pin = true; return TSimpan.taruh(e); }
+  }).then(() => TAlur.muatUlangUji()));
+  await hal.evaluate(() => TAlur.keLayarUji('l-tulis'));
+  await hal.waitForTimeout(300);
+  cek('yang dipin ditandai di layar Note',
+      (await hal.locator('#tulis-isi .kartu.terpin').count()) === 1);
+  await hal.click('#tulis-isi .kartu.terpin [data-pin]');
+  await hal.waitForTimeout(400);
+  cek('melepasnya langsung terlihat, tanpa pindah layar dulu',
+      (await hal.locator('#tulis-isi .kartu.terpin').count()) === 0 &&
+      (await hal.locator('#tulis-isi .kartu-pin.nyala').count()) === 0);
+  /* Garis tegak di tepi kiri dibuang: yang dipin sudah ditandai pinnya sendiri,
+     dan tanda kedua untuk hal yang sama membuat daftarnya terlihat seperti
+     berisi dua jenis kartu. */
+  cek('tidak ada lagi garis tegak di tepi kartu terpin',
+      !/\.kartu\.terpin\{border-left/.test(
+        fs.readFileSync(path.join(AKAR, 'gaya.css'), 'utf8')));
+
+  /* TULISAN TIDAK PUNYA ELEMEN. Satu alamat yang kebetulan disebut di paragraf
+     ketiga dulu naik jadi label "LINK" di kepala kartunya - dan tetap di sana
+     walau kalimatnya sudah dihapus. */
+  await hal.click('#b-tulis-baru');
+  await hal.waitForSelector('#l-catat.aktif');
+  await hal.fill('#catat-judul', 'Panduan galat Cortex');
+  await hal.fill('#catat-isi', 'Buka https://console.cloud.google.com lalu salin kode ABCD-1234-XYZ.');
+  await hal.click('#b-simpan');
+  await hal.waitForTimeout(500);
+  const tanpaElemen = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.tulisan && /Panduan galat Cortex/.test(e.judul || ''))[0]);
+  cek('tulisan tidak dipecah jadi elemen kode dan link',
+      tanpaElemen && (tanpaElemen.elemen || []).length === 0,
+      JSON.stringify(tanpaElemen && tanpaElemen.elemen));
+  await hal.click('[data-kembali]');
+  await hal.waitForTimeout(300);
+
+  /* ARSIP BISA DIKOSONGKAN. Tanpa jalan ini arsip cuma gudang kedua yang ikut
+     membengkakkan tiap cadangan selamanya - tapi menghapusnya harus kamu,
+     sengaja, dari layar yang memang dibuat untuk itu. */
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.waitForTimeout(300);
+  const adaArsip = await hal.evaluate(() =>
+    TAlur.semuaEntri().filter((e) => e.pensiun && !e.dihapus && e.jenis !== 'tugas').length);
+  cek('ada tombol mengosongkan arsip', adaArsip > 0 &&
+      (await hal.locator('#b-arsip-bersih').count()) === 1, String(adaArsip));
+  await hal.click('#b-arsip-bersih');
+  await hal.waitForSelector('#tanya:not(.sembunyi)');
+  /* Dan dia bertanya dulu, sekali, dengan menyebut angkanya - yang menahan
+     orang menekan tombol seperti ini adalah tidak tahu seberapa banyak yang
+     akan lenyap. */
+  cek('bertanya dulu, dan menyebut berapa yang akan hilang',
+      new RegExp(String(adaArsip)).test(await hal.locator('#tanya').innerText()),
+      await hal.locator('#tanya').innerText());
+  await hal.click('#b-tanya-ya');
+  await hal.waitForFunction(() => TAlur.semuaEntri()
+    .filter((e) => e.pensiun && !e.dihapus && e.jenis !== 'tugas').length === 0,
+    null, { timeout: 5000 });
+  cek('sesudah dikosongkan, arsipnya benar-benar kosong', true);
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+}
+
 console.log('\nnama cuma kulit');
 {
   const berkasKode = ['bawaan.js', 'simpan.js', 'otak.js', 'awan.js', 'pelabel.js', 'sinkron.js', 'alur.js', 'sw.js'];

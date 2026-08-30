@@ -272,15 +272,10 @@
     semuaEntri.unshift(e);
   }
 
-  /* Angka di tombolnya cuma yang BELUM selesai. Menampilkan seluruh jumlah
-     berarti angkanya tidak pernah turun, dan angka yang tidak pernah turun
-     berhenti dibaca. */
-  function jumlahTugasTertunda() {
-    return semuaEntri.filter(function (e) {
-      return e.jenis === 'tugas' && !e.selesai && !e.pensiun && !e.dihapus;
-    }).length;
-  }
-
+  /* Dulu di sini ada penghitung tugas tertunda untuk lencana di pintu To Do.
+     Lencananya dibuang, jadi penghitungnya ikut - fungsi yang tidak dipakai
+     siapa pun akan dipanggil lagi suatu hari oleh orang yang mengira dia masih
+     berarti sesuatu. Yang tinggal cuma pemicu gambar ulang pintunya. */
   function perbaruiJumlahTugas() { gambarTab(); }
 
   /* TIGA PINTU, SATU BARIS, DI KEPALA - dan sama persis di ketiga layarnya.
@@ -311,17 +306,97 @@
     ['l-note', 'Storage', '<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4"/><path d="M12 11v10"/>']
   ];
 
+  /* LENCANA ANGKA DI PINTU TO DO DIBUANG, dan jangan dikembalikan. Dia
+     memberitahu ada 15 tugas belum selesai - dan itu bukan kabar, itu tagihan
+     yang menempel di layar sepanjang hari. Angka yang tidak pernah bisa jadi
+     nol berhenti menggerakkan apa pun dan mulai membebani; yang benar-benar
+     perlu dilihat sudah punya penandanya sendiri, dan cuma pada barisnya:
+     titik "belum dibaca" dan tanggal yang lewat. */
   function gambarTab() {
-    var tunda = jumlahTugasTertunda();
     var isi = TAB.map(function (t) {
-      var lencana = (t[0] === 'l-tugas' && tunda)
-        ? '<span class="tab-lencana">' + tunda + '</span>' : '';
       return '<button class="tab' + (layarSaat === t[0] ? ' nyala' : '') +
              '" data-tab-ke="' + t[0] + '">' +
              '<svg viewBox="0 0 24 24" class="ik">' + t[2] + '</svg>' +
-             H(t[1]) + lencana + '</button>';
+             H(t[1]) + '</button>';
     }).join('');
     $$('[data-tab]').forEach(function (n) { n.innerHTML = isi; });
+  }
+
+  /* ===================== GESER ANTAR PINTU =====================
+     Empat pintu berjajar, dan memindahkannya cuma butuh satu ketukan - tapi
+     ketukan itu di KEPALA layar, ujung terjauh dari jempol yang bertumpu di
+     sudut kanan bawah. Menggeser layarnya sendiri membuat perpindahan bisa
+     dilakukan dari mana pun jarimu kebetulan berada.
+
+     Yang dijaga: geser TIDAK boleh merebut gerakan yang sudah punya arti.
+     Menggulir daftar itu tegak, jadi yang mendatar saja yang dibaca; kartu
+     yang digeser ke kiri untuk diarsipkan punya penangannya sendiri, jadi
+     gerakan yang dimulai di atas kartu diabaikan di sini. */
+  var GESER_PINTU = 70;      /* sependek ini masih bisa dilakukan satu jempol */
+  var GESER_MIRING = 1.6;    /* mendatar harus jelas lebih panjang dari tegak */
+
+  function pintuSebelah(arah) {
+    var i = -1;
+    TAB.forEach(function (t, n) { if (t[0] === layarSaat) i = n; });
+    if (i < 0) return '';
+    var j = i + arah;
+    return (j >= 0 && j < TAB.length) ? TAB[j][0] : '';
+  }
+
+  function pasangGeserPintu() {
+    var x0 = 0, y0 = 0, hidup = false;
+    document.addEventListener('pointerdown', function (ev) {
+      hidup = false;
+      /* Cuma dari layar berpintu, dan cuma dari tempat yang tidak punya arti
+         lain: kartu (geser = arsip), kotak teks, laci, dan bilah cip yang
+         memang menggulir mendatar sendiri. */
+      if (!pintuSebelah(1) && !pintuSebelah(-1)) return;
+      if (ev.target.closest('.kartu, .tugas, input, textarea, .dok, .laci, ' +
+                            '.saring-baris, .ruang-baris, .lampiran, .cip-gulir, ' +
+                            '#petak-ai, .pilih-bilah, #tanya, #lihat')) return;
+      x0 = ev.clientX; y0 = ev.clientY; hidup = true;
+    }, true);
+    document.addEventListener('pointerup', function (ev) {
+      if (!hidup) return;
+      hidup = false;
+      var dx = ev.clientX - x0, dy = ev.clientY - y0;
+      if (Math.abs(dx) < GESER_PINTU) return;
+      if (Math.abs(dx) < Math.abs(dy) * GESER_MIRING) return;
+      /* Geser ke KIRI membawa pintu di kanan mendekat - arah yang sama dengan
+         membalik halaman, dan sama dengan yang dilakukan tiap aplikasi
+         bertab. */
+      var tujuan = pintuSebelah(dx < 0 ? 1 : -1);
+      if (tujuan) keTab(tujuan);
+    }, true);
+  }
+
+  /* ===================== TINGGI LAYAR SAAT PAPAN KETIK NAIK =====================
+     Papan ketik HP tidak mengubah tinggi halaman - dia cuma menutupi
+     bagiannya. Jadi layar setinggi 100dvh tetap 100dvh, doknya tetap di dasar
+     halaman DI BALIK papan ketik, dan browser menggulir halaman supaya kotak
+     yang kamu ketik terlihat. Akibatnya hasil pencarian yang duduk di atas
+     kotak tergulir keluar layar: kamu mengetik, dan yang terlihat cuma
+     kekosongan sampai papan ketiknya ditutup.
+
+     visualViewport tahu tinggi yang BENAR-BENAR terlihat. Dipakai sebagai
+     tinggi layar, doknya duduk tepat di atas papan ketik dan hasilnya mengisi
+     sisa ruang di atasnya - tanpa satu pun gulir yang perlu kamu lakukan. */
+  function pasangTinggiTampak() {
+    var vv = global.visualViewport;
+    if (!vv) return;
+    var pasang = function () {
+      document.documentElement.style.setProperty('--tampak', Math.round(vv.height) + 'px');
+      /* Halamannya dikembalikan ke puncak: sesudah tingginya menyusut, sisa
+         gulir dari papan ketik yang baru naik tidak ada gunanya lagi, dan
+         yang tertinggal justru hasil pertama yang setengah terpotong. */
+      if (layarSaat === 'l-utama') global.scrollTo(0, 0);
+    };
+    /* CUMA 'resize', BUKAN 'scroll'. Yang menandai papan ketik naik atau turun
+       itu perubahan TINGGI; 'scroll' juga menyala waktu kamu menggulir hasil
+       sendiri, dan menggulirkannya balik ke puncak di situ berarti daftarnya
+       menolak digulir. */
+    vv.addEventListener('resize', pasang);
+    pasang();
   }
 
   function keTab(id) {
@@ -1958,6 +2033,10 @@
      sekarang bisa berada di DUA tempat, dan tiap pemanggil yang memilih
      sendiri mana yang disegarkan pasti akan melupakan salah satunya. */
   function segarkanTampilan() {
+    /* Layar Note ikut, dan dulu TIDAK - itu sebabnya melepas pin di sana tidak
+       mengubah apa pun sampai layarnya ditinggal lalu didatangi lagi. Satu
+       ketukan yang tidak menghasilkan apa-apa terbaca sebagai tombol rusak. */
+    if (layarSaat === 'l-tulis') gambarTulis();
     if (layarSaat === 'l-note') gambarNote();
     if (hasilDepanAktif()) gambarHasilDepan();
     gambarCipSaring();
@@ -2582,7 +2661,13 @@
        diketik sendiri tetap tidak ikut ditimpa, karena judulManual yang
        menjaganya, bukan penanda ini. */
     if (isi !== isiSebelum) {
-      e.elemen = TOtak.gabungElemen([], TOtak.elemenOtomatis(e));
+      /* TULISAN TIDAK PUNYA ELEMEN. Di kartu drop, elemen itu gunanya besar:
+         satu nomor rekening yang bisa disalin sendiri tanpa menyorot apa pun.
+         Di tulisan panjang dia justru salah tangkap - satu alamat yang
+         kebetulan disebut di paragraf ketiga naik jadi label "LINK" di kepala
+         kartunya, dan tetap di sana walau kalimatnya sudah kamu hapus. Yang
+         disalin dari tulisan itu SELURUHNYA, dan tombolnya sudah ada. */
+      e.elemen = e.tulisan ? [] : TOtak.gabungElemen([], TOtak.elemenOtomatis(e));
       e.diLabeliAI = false;
       sundulLabel();
     }
@@ -3003,13 +3088,47 @@
       wadah.innerHTML = '<div class="set-ket">Belum ada yang diarsipkan.</div>';
       return;
     }
-    wadah.innerHTML = '<div class="set-ket">' + arsip.length + ' diarsipkan</div>' +
+    /* MENGOSONGKAN ARSIP itu satu-satunya tempat di aplikasi ini yang
+       benar-benar MENGHAPUS. Aturan nomor empat tetap utuh: yang diarsipkan
+       tidak pernah hilang sendiri, dan yang menghapusnya harus kamu, sengaja,
+       dari layar yang memang dibuat untuk itu. Tanpa jalan ini arsip cuma
+       gudang kedua yang ikut membengkakkan tiap cadangan selamanya.
+
+       Tombolnya menyebut ANGKANYA, bukan "Kosongkan" saja: yang menahan orang
+       menekan tombol seperti ini adalah tidak tahu seberapa banyak yang akan
+       lenyap. */
+    wadah.innerHTML = '<div class="arsip-kepala">' +
+      '<span class="set-ket">' + arsip.length + ' diarsipkan</span>' +
+      '<button class="arsip-bersih" id="b-arsip-bersih">Hapus semua</button></div>' +
       arsip.slice(0, 50).map(function (e) {
         return '<div class="arsip-baris">' +
           '<div class="arsip-judul">' + H(e.judul || '(tanpa judul)') + '</div>' +
           '<button class="arsip-balik" data-balik="' + H(e.id) + '">Kembalikan</button></div>';
       }).join('') +
       (arsip.length > 50 ? '<div class="set-ket">…dan ' + (arsip.length - 50) + ' lagi</div>' : '');
+  }
+
+  function bersihkanArsip() {
+    var arsip = semuaEntri.filter(function (e) {
+      return e.pensiun && !e.dihapus && e.jenis !== 'tugas';
+    });
+    if (!arsip.length) return;
+    tanya('Hapus ' + arsip.length + ' catatan dari arsip?',
+      'Ini yang terakhir — sesudah ini benar-benar hilang, tidak bisa dikembalikan.',
+      function () {
+        Promise.all(arsip.map(function (e) {
+          e.dihapus = true;
+          e.pensiun = true;
+          e.diubah = Date.now();
+          segarkanCache(e);
+          return TSimpan.taruh(e);
+        })).then(function () { return muatSemua(); })
+          .then(function () {
+            gambarArsip();
+            perbaruiJumlah();
+            pesan(arsip.length + ' catatan dihapus permanen');
+          });
+      });
   }
 
   function kembalikanArsip(id) {
@@ -3262,7 +3381,8 @@
     if (arsip) {
       arsip.addEventListener('click', function (ev) {
         var b = ev.target.closest('[data-balik]');
-        if (b) kembalikanArsip(b.getAttribute('data-balik'));
+        if (b) { kembalikanArsip(b.getAttribute('data-balik')); return; }
+        if (ev.target.closest('#b-arsip-bersih')) bersihkanArsip();
       });
     }
 
@@ -3703,6 +3823,8 @@
     });
     $('#hasil-depan').addEventListener('click', klikHasil);
     pasangGeser($('#hasil-depan'));
+    pasangGeserPintu();
+    pasangTinggiTampak();
     pasangSisanya();
   }
 
