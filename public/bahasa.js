@@ -116,6 +116,9 @@
     'Folder baru': 'New folder',
     'Tulis catatan baru': 'Write a new note',
     'Belum berfolder': 'No folder yet',
+    /* Bukan nama rak, melainkan kalimat aplikasi untuk "belum ditaruh di
+       mana-mana" - jadi dia satu-satunya baris folder yang ikut diterjemahkan. */
+    'Belum berlabel': 'No shelf yet',
     'Semua folder': 'All folders',
     'Belum ada tulisan.': 'Nothing written yet.',
     'Yang panjang — brief, instruksi, rancangan — ditulis di sini,':
@@ -408,8 +411,8 @@
      'The $1 notes inside are NOT deleted — they move up to “$2”.'],
     [/^(\d+) tulisan di dalamnya TIDAK ikut terhapus — mereka keluar ke “Belum berfolder”\.$/,
      'The $1 notes inside are NOT deleted — they move out to “No folder yet”.'],
-    [/^(\d+) catatan di dalamnya TIDAK ikut terhapus — mereka disortir ulang ke rak lain\.$/,
-     'The $1 notes inside are NOT deleted — they get re-sorted onto other shelves.'],
+    [/^(\d+) catatan di dalamnya TIDAK ikut terhapus — mereka keluar ke “Belum berlabel”\.$/,
+     'The $1 notes inside are NOT deleted — they move out to “No shelf yet”.'],
     [/^(\d+) pesan hilang dari layar ini\. Yang sudah kamu Drop tetap tersimpan\.$/,
      '$1 messages vanish from this screen. Anything you already dropped stays saved.'],
     [/^(\d+) link terbaca$/, '$1 link read'],
