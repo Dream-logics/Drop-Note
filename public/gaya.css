@@ -1219,3 +1219,13 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    sama, dan dua tombol bertumpuk di sudut yang sama adalah salah tekan yang
    menunggu terjadi. */
 .mode-pilih .tulis-baru{display:none}
+/* Folder yang sedang dipilih ditandai sama dengan kartu yang dipilih -
+   satu bahasa untuk satu arti, walau bentuk barisnya berbeda. */
+.folder-baris.dipilih{
+  background:color-mix(in srgb, var(--a) 12%, transparent);border-radius:8px;
+}
+/* Cip folder di layar tulis dibedakan dari cip rak: yang satu tempat yang kamu
+   pilih sendiri, yang lain tempat yang dibaca dari judulmu. */
+.catat-ruang-cip.folder{
+  background:none;border:1px dashed var(--l);color:var(--m);margin-right:6px;
+}
