@@ -57,7 +57,12 @@ function layani() {
 /* Tiruan proxy AI milik pembuat aplikasi. Yang diuji di sini bukan Gemini-nya,
    melainkan dua hal yang menentukan modelnya: token pemakai benar-benar ikut
    dikirim, dan penolakan "belum terdaftar" ditangani tanpa merusak apa pun. */
-const proxyAI = { panggilan: 0, tokenTerakhir: null, tolak: false, arahanTerakhir: '', badanTerakhir: '' };
+const proxyAI = { panggilan: 0, tokenTerakhir: null, tolak: false, arahanTerakhir: '',
+                  badanTerakhir: '', modeTerakhir: '' };
+/* PNG 1x1 transparan - cukup untuk membuktikan gambar buatan AI benar-benar
+   mendarat di toko berkas; isinya sendiri tidak ada yang diuji. */
+const PNG_KECIL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk' +
+                  'YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 function tiruProxyAI(req, res) {
   let badan = '';
   req.on('data', (p) => { badan += p; });
@@ -68,8 +73,23 @@ function tiruProxyAI(req, res) {
     proxyAI.tokenTerakhir = j.token || null;
     proxyAI.arahanTerakhir = j.arahan || '';
     proxyAI.badanTerakhir = badan;
+    proxyAI.modeTerakhir = j.mode || 'label';
     res.writeHead(200, { 'Content-Type': 'application/json' });
     if (proxyAI.tolak) return res.end(JSON.stringify({ galat: 'belum-terdaftar' }));
+    /* Tiga mode, tiga bentuk jawaban - persis seperti proxy sungguhannya di
+       docs/PROXY-AI.md. Obrolan menjawab kalimat biasa, BUKAN JSON: kalau
+       tiruan ini ikut membungkusnya jadi JSON, uji obrolan akan lulus di sini
+       dan gagal di dunia nyata. */
+    if (j.mode === 'obrol') {
+      return res.end(JSON.stringify({
+        candidates: [{ content: { parts: [{ text: 'Ambil yang bunga tetap. Selisihnya kecil, dan satu keputusan hilang.' }] } }]
+      }));
+    }
+    if (j.mode === 'gambar') {
+      return res.end(JSON.stringify({
+        candidates: [{ content: { parts: [{ inlineData: { mimeType: 'image/png', data: PNG_KECIL } }] } }]
+      }));
+    }
     res.end(JSON.stringify({
       candidates: [{ content: { parts: [{
         text: JSON.stringify({ hasil: [{
@@ -2564,8 +2584,9 @@ console.log('\nbadge angka, cip Pin, kotak link, dan To Do yang ringkas');
     return Array.from(document.querySelectorAll('#tugas-saring [data-tsaring]'))
       .map((n) => n.getAttribute('data-tsaring'));
   });
-  cek('urutannya semua - hari ini - penting - selesai',
-      JSON.stringify(urutSaring) === JSON.stringify(['semua', 'hariini', 'penting', 'selesai']),
+  cek('urutannya semua - hari ini - penting - berulang - selesai',
+      JSON.stringify(urutSaring) ===
+        JSON.stringify(['semua', 'hariini', 'penting', 'ulang', 'selesai']),
       JSON.stringify(urutSaring));
   cek('baris rak "#Semua daftar" dibuang',
       (await hal.locator('#tugas-daftar-rak [data-trak]').count()) === 0);
@@ -2595,6 +2616,271 @@ console.log('\nbadge angka, cip Pin, kotak link, dan To Do yang ringkas');
   await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.fill('#kotak', '');
   await hal.waitForTimeout(200);
+}
+
+console.log('\nmengisi dengan tenang, daftar yang utuh, berulang, dan pilih banyak');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+
+  /* MENGISI ITU PEKERJAAN SETENGAH MENIT, dan tiap huruf yang diketik di sana
+     tidak ada hubungannya dengan mencari. Dulu kotak drop tetap hidup di
+     bawahnya: hasil naik-turun, cip berkedip - lingkungan berisik untuk
+     pekerjaan yang justru butuh tenang. */
+  await hal.click('#b-lampir');
+  await hal.click('.lamp[data-lamp="daftar"]');
+  await hal.waitForTimeout(150);
+  cek('memilih Daftar membuka kotak isiannya', await hal.locator('#petak-daftar').isVisible());
+  cek('dan mendiamkan pencarian', await hal.locator('#l-utama.mode-isi').count() === 1);
+  await hal.fill('#kotak', 'badgeuji');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(250);
+  cek('mengetik tidak memanggil hasil selama kotak isian terbuka',
+      await hal.locator('#petak-hasil-depan').isHidden());
+
+  /* DAFTARNYA MASUK UTUH SEBAGAI LANGKAH. Dulu yang tertangkap cuma baris
+     pertama, dan sepuluh baris yang barusan diketik hilang begitu saja -
+     kehilangan diam-diam, tepat sesudah kerja yang paling banyak mengetiknya. */
+  await hal.fill('#kotak', 'belanja bahan Ngoffee');
+  const isian = hal.locator('#daftar-baris input[type=text]');
+  await isian.first().fill('kopi 2 kg');
+  await hal.click('#b-tambah-baris');
+  await hal.locator('#daftar-baris input[type=text]').last().fill('gula aren 1 kg');
+  await hal.click('#b-tugas');
+  await hal.waitForFunction(() => TAlur.semuaEntri().some(
+    (e) => e.jenis === 'tugas' && /belanja bahan/i.test(e.judul)), null, { timeout: 5000 });
+  const tugasBelanja = await hal.evaluate(() => TAlur.semuaEntri().filter(
+    (e) => e.jenis === 'tugas' && /belanja bahan/i.test(e.judul))[0]);
+  cek('seluruh daftarnya ikut jadi langkah, bukan cuma baris pertama',
+      (tugasBelanja.daftar || []).length === 2,
+      JSON.stringify((tugasBelanja.daftar || []).map((x) => x.teks)));
+  cek('gudangnya ikut terbawa dari kotak yang sama', tugasBelanja.kategori === 'Ngoffee',
+      tugasBelanja.kategori);
+  cek('kotak isiannya tertutup sesudah dikirim', await hal.locator('#petak-daftar').isHidden());
+  cek('dan pencarian hidup lagi', await hal.locator('#l-utama.mode-isi').count() === 0);
+
+  /* BERULANG PUNYA TEMPATNYA SENDIRI. Iramanya ditulis di bawah judulnya di
+     layar itu - bukan di balik "Lainnya" - karena begitu kamu berdiri di sana,
+     mengubah irama justru pekerjaan yang paling mungkin kamu datangi. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-tugas'));
+  await hal.click('#tugas-saring [data-tsaring="ulang"]');
+  await hal.waitForTimeout(200);
+  cek('layar Berulang menampilkan pilihan iramanya di tempat',
+      (await hal.locator('#tugas-daftar .cip-baris.irama').count()) > 0);
+  await hal.fill('#tugas-baru', 'bayar sewa ruko');
+  await hal.click('#b-tugas-tambah');
+  await hal.waitForFunction(() => TAlur.semuaEntri().some(
+    (e) => e.jenis === 'tugas' && /bayar sewa ruko/i.test(e.judul)), null, { timeout: 5000 });
+  const sewa = await hal.evaluate(() => TAlur.semuaEntri().filter(
+    (e) => /bayar sewa ruko/i.test(e.judul))[0]);
+  /* Ditambah sambil berdiri di layar Berulang berarti memang berulang -
+     menanyakan iramanya lagi sesudahnya adalah menagih jawaban yang sudah
+     diberikan. Bulanan duluan karena itu yang paling sering: sewa, tagihan. */
+  cek('yang ditambah dari sana langsung berulang, tanpa ditanya', sewa.ulang === 'bulanan',
+      String(sewa.ulang));
+  await hal.click('#tugas-saring [data-tsaring="semua"]');
+
+  /* PILIH BANYAK DI NOTE. "Telepon Yusvi" lima tahun lalu masih muncul tiap
+     hari, jadi membuang berbanyak itu mutlak perlu - tapi membuang di sini
+     tetap berarti TENGGELAM, bukan hilang: tidak ada yang benar-benar terhapus. */
+  await hal.evaluate(async () => {
+    const b = (id, judul) => ({
+      id: id, jenis: 'teks', judul: judul, isi: judul, kategori: 'Pilihuji',
+      tag: [], label: [], elemen: [], daftar: [],
+      dibuat: Date.now(), diubah: Date.now(), dipakai: 0, diLabeliAI: true, diBacaAI: true
+    });
+    await TSimpan.taruh(b('pl-1', 'pilihuji satu'));
+    await TSimpan.taruh(b('pl-2', 'pilihuji dua'));
+    await TSimpan.taruh(b('pl-3', 'pilihuji tiga'));
+    return TAlur.muatUlangUji();
+  });
+  await hal.evaluate(() => TAlur.keLayarUji('l-note'));
+  await hal.fill('#note-cari', 'pilihuji');
+  await hal.dispatchEvent('#note-cari', 'input');
+  await hal.waitForTimeout(250);
+
+  /* MENAHAN satu kartu memulai memilih. Bukan kotak centang yang menganga
+     sepanjang hari: memilih banyak itu pekerjaan sebulan sekali, dan kotak
+     centang di tiap kartu adalah ongkos yang dibayar tiap hari untuk itu. */
+  await hal.dispatchEvent('#note-isi .kartu[data-id="pl-1"]', 'pointerdown');
+  await hal.waitForTimeout(700);
+  cek('menahan satu kartu memulai memilih', await hal.locator('#pilih-bilah').isVisible());
+  await hal.click('#note-isi .kartu[data-id="pl-2"]');
+  await hal.waitForTimeout(150);
+  cek('sesudah itu menyentuh kartu berarti memilih, bukan membuka',
+      (await hal.locator('#pilih-jumlah').innerText()).indexOf('2') >= 0,
+      await hal.locator('#pilih-jumlah').innerText());
+
+  await hal.click('#b-pilih-gabung');
+  await hal.waitForSelector('#tanya:not(.sembunyi)');
+  cek('menggabung bertanya dulu, dan menyebut jadi apa',
+      /pilihuji/i.test(await hal.locator('#tanya').innerText()));
+  await hal.click('#b-tanya-ya');
+  await hal.waitForFunction(() => {
+    const a = TAlur.semuaEntri();
+    const hidup = a.filter((e) => /^pilihuji/.test(e.judul || '') && !e.pensiun);
+    return hidup.length === 2;
+  }, null, { timeout: 5000 });
+  const sesudahGabung = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => /^pilihuji/.test(e.judul || ''))
+    .map((e) => ({ id: e.id, pensiun: !!e.pensiun, isi: e.isi })));
+  const digabung = sesudahGabung.filter((e) => !e.pensiun);
+  cek('isi keduanya benar-benar menyatu di satu kartu',
+      digabung.some((e) => /pilihuji satu/.test(e.isi) && /pilihuji dua/.test(e.isi)),
+      JSON.stringify(digabung.map((e) => e.isi)));
+  /* Yang kalah TENGGELAM, tidak dihapus - aturan nomor empat berlaku juga di
+     sini, dan justru di sini yang paling gampang bocor. */
+  cek('yang kalah tenggelam, bukan terhapus',
+      sesudahGabung.filter((e) => e.pensiun).length === 1 && sesudahGabung.length === 3,
+      JSON.stringify(sesudahGabung.map((e) => e.id + ':' + e.pensiun)));
+
+  await hal.dispatchEvent('#note-isi .kartu[data-id="pl-3"]', 'pointerdown');
+  await hal.waitForTimeout(700);
+  await hal.click('#b-pilih-buang');
+  await hal.waitForSelector('#tanya:not(.sembunyi)');
+  await hal.click('#b-tanya-ya');
+  await hal.waitForFunction(() => TAlur.semuaEntri().some((e) => e.id === 'pl-3' && e.pensiun),
+                            null, { timeout: 5000 });
+  const masihAda = await hal.evaluate(() =>
+    TSimpan.ambil('pl-3').then((e) => !!e && !!e.pensiun));
+  cek('membuang berbanyak juga menenggelamkan, tidak menghapus', masihAda === true);
+  cek('bilah pilih menutup sendiri sesudah selesai', await hal.locator('#pilih-bilah').isHidden());
+  await hal.fill('#note-cari', '');
+  await hal.dispatchEvent('#note-cari', 'input');
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+}
+
+console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timbunan');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.evaluate(() => Promise.all([
+    TSimpan.setel('modeAI', 'hemat'),
+    TSimpan.setel('kunciGemini', ''),
+    TSimpan.setel('obrolan', '')
+  ]).then(() => {
+    /* Yang dipakai layar adalah setelan yang hidup di memori, jadi dia yang
+       disetel - menulis ke basis data saja tidak menyalakan apa pun. */
+    const s = TAlur.setelanUji();
+    s.modeAI = 'hemat';
+    s.kunciGemini = '';
+  }));
+
+  /* Ikonnya duduk TEPAT DI ATAS tombol Drop, di tumpukan yang sama - bukan
+     menyelip di bilah kotak bersama klip dan Todo. Yang mengubah arti tombol
+     harus berdiri di tempat yang sama dengan akibatnya. */
+  const diAtasDrop = await hal.evaluate(() => {
+    const t = document.querySelector('.drop-tumpuk');
+    if (!t) return 'tidak ada tumpukan';
+    const ai = t.querySelector('#b-ai'), drop = t.querySelector('#b-drop');
+    if (!ai || !drop) return 'tidak satu tumpukan';
+    return ai.getBoundingClientRect().bottom <= drop.getBoundingClientRect().top + 1 ? 'ok' : 'urutannya terbalik';
+  });
+  cek('ikon AI duduk tepat di atas tombol Drop', diAtasDrop === 'ok', diAtasDrop);
+
+  cek('sebelum dinyalakan, obrolannya tidak kelihatan sama sekali',
+      await hal.locator('#petak-ai').isHidden());
+
+  await hal.click('#b-ai');
+  await hal.waitForTimeout(120);
+  cek('mengetuk ikonnya menyalakan mode AI', await hal.locator('#petak-ai').isVisible());
+  /* Selama mode AI menyala, kotaknya bertanya - bukan mencari. Cip saringan
+     yang tetap terpampang padahal tidak lagi menyaring apa pun adalah layar
+     yang berbohong. */
+  cek('cip saringan turun panggung', await hal.locator('#saring-baris').isHidden());
+  cek('tombolnya berganti jadi panah kirim',
+      await hal.locator('#b-drop .ik.kirim').isVisible() &&
+      await hal.locator('#b-drop .ik.turun').isHidden());
+
+  /* Mengetik di mode AI tidak boleh memanggil satu pun hasil pencarian. */
+  await hal.fill('#kotak', 'badgeuji');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(250);
+  cek('mengetik tidak lagi memanggil daftar hasil',
+      await hal.locator('#petak-hasil-depan').isHidden());
+
+  const sebelumObrol = proxyAI.panggilan;
+  await hal.fill('#kotak', 'pilih KPR bunga tetap atau mengambang?');
+  await hal.click('#b-drop');
+  await hal.waitForFunction(() => TAlur.riwayatAIUji().length >= 2, null, { timeout: 8000 });
+
+  cek('pertanyaannya berangkat lewat layanan pembuat', proxyAI.panggilan > sebelumObrol);
+  cek('dikirim sebagai mode obrol, bukan pelabelan', proxyAI.modeTerakhir === 'obrol',
+      proxyAI.modeTerakhir);
+  cek('token Google pemakai tetap ikut', proxyAI.tokenTerakhir === 'token-palsu');
+  /* Karakternya asisten pribadi, dan yang paling menentukan di arahannya
+     adalah dua hal ini: jawabannya seimbang dengan pertanyaannya, dan yang
+     perlu diputuskan dijawab SATU rekomendasi - bukan daftar pilihan yang
+     memindahkan pekerjaan berpikir kembali ke orangnya. */
+  cek('arahannya menyuruh jawab seimbang dengan pertanyaannya',
+      /SEIMBANG DENGAN PERTANYAANNYA/.test(proxyAI.arahanTerakhir));
+  cek('dan memberi satu rekomendasi, bukan daftar pilihan',
+      /SATU rekomendasi/.test(proxyAI.arahanTerakhir));
+  cek('jawabannya kalimat biasa, bukan JSON',
+      /Ambil yang bunga tetap/.test(await hal.locator('#ai-isi .ai-pesan.ai .ai-gelembung').last().innerText()));
+  cek('kotaknya kosong lagi sesudah dikirim',
+      (await hal.inputValue('#kotak')) === '');
+
+  /* JANJI YANG PALING MUDAH BOCOR: obrolan itu percakapan, bukan timbunan.
+     Kalau dia diam-diam jadi entri, dia ikut dihitung, ikut dicari, dan ikut
+     dikirim ke AI sebagai bahan pelabelan - persis penyakit yang aplikasi ini
+     ada untuk mengobatinya. */
+  const bocorKeTimbunan = await hal.evaluate(() =>
+    TSimpan.semua().then((a) => a.filter((e) => /bunga tetap/i.test(e.judul + ' ' + e.isi)).length));
+  cek('obrolan tidak diam-diam jadi catatan', bocorKeTimbunan === 0, String(bocorKeTimbunan));
+
+  /* ... tapi yang memang layak jadi timbunan tetap bisa masuk, satu ketukan. */
+  const sebelumDrop = await hal.evaluate(() => TAlur.semuaEntri().length);
+  await hal.click('#ai-isi .ai-pesan.ai [data-ai-drop]');
+  await hal.waitForFunction((n) => TAlur.semuaEntri().length > n, sebelumDrop, { timeout: 5000 });
+  const kartuAI = await hal.evaluate(() => {
+    const a = TAlur.semuaEntri().slice().sort((x, y) => y.dibuat - x.dibuat)[0];
+    return { judul: a.judul, isi: a.isi, manual: a.judulManual, jenis: a.jenis };
+  });
+  cek('jawabannya bisa di-drop jadi catatan', /Ambil yang bunga tetap/.test(kartuAI.isi), kartuAI.isi);
+  /* Pertanyaannya ikut jadi judul: jawaban tanpa pertanyaannya adalah potongan
+     yang enam bulan lagi tidak bisa ditempatkan lagi. */
+  cek('pertanyaannya ikut jadi judulnya', /KPR bunga tetap/.test(kartuAI.judul), kartuAI.judul);
+  cek('judul itu tidak akan ditimpa AI', kartuAI.manual === true);
+
+  /* Mode gambar: model lain, jawaban lain, dan hasilnya mendarat di toko
+     berkas lewat jalan yang sama dengan gambar yang dilampirkan sendiri. */
+  await hal.click('#ai-mode [data-ai-mode="gambar"]');
+  await hal.fill('#kotak', 'logo kedai kopi, garis tipis');
+  await hal.click('#b-drop');
+  await hal.waitForFunction(() => TAlur.riwayatAIUji().some((m) => m.berkasId), null, { timeout: 8000 });
+  cek('minta gambar dikirim sebagai mode gambar', proxyAI.modeTerakhir === 'gambar',
+      proxyAI.modeTerakhir);
+  const adaBerkas = await hal.evaluate(() => {
+    const m = TAlur.riwayatAIUji().filter((x) => x.berkasId).pop();
+    return TSimpan.ambilBerkas(m.berkasId).then((r) => !!(r && r.blob && r.blob.size));
+  });
+  cek('gambarnya benar-benar mendarat di toko berkas', adaBerkas === true);
+
+  /* Riwayatnya tinggal di setelan - dari sana dia ikut berkas cadangan tanpa
+     satu baris kode tambahan, dan tetap di luar pencarian catatan. */
+  const disimpan = await hal.evaluate(() => TSimpan.setelan('obrolan'));
+  cek('riwayatnya tersimpan, tidak hilang waktu halamannya dimuat ulang',
+      /bunga tetap/.test(disimpan || ''));
+  const ikutCadangan = await hal.evaluate(() => TSimpan.ekspor().then((d) => !!d.setelan.obrolan));
+  cek('dan ikut ke berkas cadangan', ikutCadangan === true);
+
+  /* Mengetuk ikonnya SEKALI LAGI mengembalikan semuanya - tanpa itu, jalan
+     pulangnya harus ditebak. */
+  await hal.click('#b-ai');
+  await hal.waitForTimeout(120);
+  cek('ketukan kedua di ikon yang sama mengembalikan mode biasa',
+      await hal.locator('#petak-ai').isHidden() &&
+      await hal.locator('#b-drop .ik.turun').isVisible());
+
+  await hal.fill('#kotak', 'badgeuji');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(250);
+  cek('pencarian hidup lagi seperti semula',
+      await hal.locator('#petak-hasil-depan').isVisible());
+  await hal.fill('#kotak', '');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
 }
 
 console.log('\nnama cuma kulit');

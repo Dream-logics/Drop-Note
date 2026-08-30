@@ -110,11 +110,15 @@ public/otak.js      SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
                     nama gudang sambil diketik, baca gudang dari teks drop
 public/awan.js      Google Drive & Sheets langsung — folder dan spreadsheet
                     dibuat SENDIRI oleh aplikasi; cakupan cuma drive.file
-public/pelabel.js   satu-satunya bagian ber-AI: judul + elemen + tag + OCR.
+public/pelabel.js   satu-satunya bagian ber-AI: judul + elemen + tag + OCR,
+                    plus OBROLAN (teks & gambar) untuk mode AI.
                     Lewat proxy milik PEMBUAT; kunci tidak pernah ada di
                     perangkat pemakai. Daftar tag lama DAN daftar nama elemen
                     ikut dikirim supaya keduanya tidak beranak sendiri;
-                    nama elemen menyebut JENIS benda, tidak pernah pemiliknya
+                    nama elemen menyebut JENIS benda, tidak pernah pemiliknya.
+                    Obrolan menjawab teks biasa, BUKAN JSON seperti yang lain,
+                    dan karakternya asisten pribadi (ARAHAN_OBROL): seimbang
+                    dengan pertanyaannya, SATU rekomendasi bukan daftar pilihan
 public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
                     ulang, langkah, catatan. Dua jalur masuk: layar To Do, dan
                     cip Todo di layar Drop. Pembedanya ACTION, bukan tenggat -
@@ -138,6 +142,15 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     menempel di bawah; lacinya membuka ke bawah.
                     Di atas kotak: cip gudang, lalu cip saringan jenis.
                     Bilah kendali: klip - Todo - Drop
+                    MODE AI: satu ikon tepat DI ATAS tombol Drop, dan ikon itu
+                    yang mengubah arti tombol di bawahnya - selama menyala,
+                    kotaknya berhenti mencari dan Drop berhenti menyimpan.
+                    Ketukan kedua di ikon yang sama mengembalikan semuanya.
+                    Riwayat obrolan tinggal di SETELAN, bukan di toko entri:
+                    dari sana dia ikut cadangan, dan tetap di luar pencarian,
+                    di luar "N tersimpan", dan di luar bahan pelabelan AI.
+                    Yang layak jadi timbunan masuk lewat tombol Drop di tiap
+                    jawaban - satu ketukan, bukan otomatis
 public/sw.js        service worker — singgahan kerangka + penerima "Bagikan"
 public/manifest.webmanifest   supaya bisa dipasang di HP
 uji/uji-terima.mjs            uji terima (Playwright)
@@ -156,7 +169,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (408 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (447 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

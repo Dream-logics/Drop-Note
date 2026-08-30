@@ -177,6 +177,23 @@
     pesanJam = setTimeout(sembunyikanPesan, 30000);
   }
 
+  /* Dialog konfirmasi. SATU-SATUNYA di aplikasi ini, dan cuma untuk yang tidak
+     bisa diurungkan dengan satu ketukan. Jalur masuk tidak pernah memakainya:
+     bertanya di sana membunuh kebiasaannya. */
+  var tanyaJalan = null;
+
+  function tanya(judul, ket, jalan) {
+    tanyaJalan = jalan;
+    $('#tanya-judul').textContent = judul;
+    $('#tanya-ket').textContent = ket || '';
+    $('#tanya').classList.remove('sembunyi');
+  }
+
+  function tutupTanya() {
+    $('#tanya').classList.add('sembunyi');
+    tanyaJalan = null;
+  }
+
   function pesan(teks, aksi) {
     var kotak = $('#pesan');
     kotak.textContent = teks;
@@ -403,12 +420,14 @@
     return TOtak.semuaUrl(k.value);
   }
 
-  function setelLinkNyala(nyala) {
+  function setelLinkNyala(nyala, diam) {
+    if (nyala) setelDaftarNyala(false);
     $('#petak-link').classList.toggle('sembunyi', !nyala);
     $$('.lamp').forEach(function (b) {
       if (b.getAttribute('data-lamp') === 'link') b.classList.toggle('nyala', nyala);
     });
-    if (nyala) { $('#link-tempel').focus(); perbaruiLinkKet(); }
+    if (!diam) setelSunyi(sedangMengisi());
+    if (nyala) { tutupLaci(); $('#link-tempel').focus(); perbaruiLinkKet(); }
   }
 
   function perbaruiLinkKet() {
@@ -418,12 +437,46 @@
       : 'Belum ada alamat yang terbaca.';
   }
 
+  /* MODE MENGISI: pencarian DIAM.
+
+     Mengisi daftar itu satu pekerjaan yang berlangsung setengah menit, dan
+     tiap huruf yang kamu ketik di sana tidak ada hubungannya dengan mencari.
+     Tapi dulu kotak drop tetap hidup di bawahnya: hasil naik-turun, cip
+     berkedip, layar berdenyut - lingkungan yang berisik untuk pekerjaan yang
+     justru butuh tenang.
+
+     Jadi selama kotak isian terbuka, hasil ditutup dan cip gudang disembunyikan.
+     Bukan dinonaktifkan - cuma didiamkan; begitu kotaknya ditutup, semuanya
+     kembali seperti semula tanpa kamu memulihkan apa pun. */
+  function sedangMengisi() {
+    return !$('#petak-daftar').classList.contains('sembunyi') ||
+           !$('#petak-link').classList.contains('sembunyi');
+  }
+
+  function setelSunyi(sunyi) {
+    $('#l-utama').classList.toggle('mode-isi', sunyi);
+    if (sunyi) {
+      tutupHasilDepan();
+      $('#ruang-baris').classList.add('sembunyi');
+    } else {
+      gambarBayang();
+      gambarHasilDepan();
+    }
+  }
+
   function setelDaftarNyala(nyala) {
+    if (nyala) setelLinkNyala(false, true);
     $('#petak-daftar').classList.toggle('sembunyi', !nyala);
     $$('.lamp').forEach(function (b) {
       if (b.getAttribute('data-lamp') === 'daftar') b.classList.toggle('nyala', nyala);
     });
     if (nyala && !$$('#daftar-baris .baris-daftar').length) barisDaftarBaru('', false);
+    setelSunyi(sedangMengisi());
+    if (nyala) {
+      tutupLaci();
+      var isian = $$('#daftar-baris input[type=text]');
+      if (isian.length) isian[isian.length - 1].focus();
+    }
   }
 
   /* TINGGINYA MENGIKUTI ISINYA. Bawaannya satu baris - dan itu bentuk yang
@@ -458,6 +511,15 @@
     var kotak = $('#kotak');
     var bayang = $('#kotak-bayang');
     if (!kotak || !bayang) return;
+    /* Di mode AI kotaknya bukan alamat gudang, jadi tidak ada yang pantas
+       dilengkapi - ekor abu-abu di belakang pertanyaan cuma salah tebak yang
+       kelihatan. */
+    if (modeAI) {
+      bayang.innerHTML = '';
+      lengkapSaat = null;
+      if ($('#b-terima')) $('#b-terima').classList.add('sembunyi');
+      return;
+    }
     var teks = kotak.value;
 
     lengkapSaat = null;
@@ -558,6 +620,7 @@
   function gambarCipRuang() {
     var wadah = $('#ruang-baris');
     if (!wadah) return;
+    if (modeAI) { wadah.classList.add('sembunyi'); return; }
     var pohon = daftarRuang();
     var teks = $('#kotak').value;
     var cip = [];
@@ -630,16 +693,24 @@
      pernah dikirim ke AI. */
   function keTugas() {
     var teks = $('#kotak').value.trim();
+    /* DAFTAR IKUT UTUH, bukan cuma judulnya. Dulu yang tertangkap cuma baris
+       pertama, dan sepuluh baris yang barusan diketik hilang begitu saja -
+       kehilangan diam-diam, tepat sesudah kerja yang paling banyak
+       mengetiknya. Sekarang seluruhnya masuk sebagai LANGKAH di satu tugas. */
+    var langkah = ambilDaftar();
+    if (!teks && langkah.length) teks = langkah[0].teks;
     if (!teks) return;
     var ruang = TOtak.bacaRuang(teks, daftarLabel());
-    TTugas.tambahDariDrop(teks, ruang ? ruang.nama : '').then(function (e) {
+    TTugas.tambahDariDrop(teks, ruang ? ruang.nama : '', langkah).then(function (e) {
       if (!e) return;
       kosongkanKotak();
       tutupHasilDepan();
       /* Tenggatnya disebut kalau memang terbaca, supaya tebakan yang tidak
          terlihat tidak pernah jadi kejutan besok pagi. */
-      pesan(e.tenggat ? 'Masuk To Do - ' + TTugas.tulisTenggat(e.tenggat)
-                      : 'Masuk To Do' + (e.kategori ? ' - ' + e.kategori : ''));
+      var n = (e.daftar || []).length;
+      pesan(e.tenggat ? 'Masuk To Do · ' + TTugas.tulisTenggat(e.tenggat)
+                      : 'Masuk To Do' + (n ? ' · ' + n + ' langkah' : '') +
+                        (e.kategori ? ' · ' + e.kategori : ''));
     });
   }
 
@@ -695,6 +766,229 @@
       $('#kotak').focus();
       gambarBayang();
       gambarHasilDepan();
+      sundulLabel();
+    }).catch(function (err) {
+      pesan('Gagal menyimpan: ' + err.message);
+    });
+  }
+
+  /* ===================== MODE AI =====================
+     Satu-satunya tempat di aplikasi ini kamu MENUNGGU AI. Di mana pun yang
+     lain dia bekerja di belakang - memberi judul, memisah elemen - dan boleh
+     gagal diam-diam. Di sini dia yang diajak bicara, dan itu pekerjaan yang
+     berbeda sifatnya, jadi dia punya modenya sendiri.
+
+     Modenya dinyalakan dan dimatikan oleh SATU ikon yang sama. Selama menyala,
+     kotak yang itu-itu juga berhenti mencari dan mulai bertanya, dan tombol
+     Drop di bawah ikonnya berhenti menyimpan dan mulai mengirim. Tidak ada
+     layar baru: layar kedua yang isinya kotak-dan-tombol yang sama cuma
+     menyalin yang sudah ada, dan pintunya jadi langkah tambahan.
+
+     RIWAYATNYA TINGGAL DI SETELAN, bukan di toko entri, dan itu keputusan yang
+     paling banyak akibatnya di sini. Dari sana dia ikut berkas cadangan tanpa
+     satu baris kode tambahan, DAN dia tidak pernah muncul di pencarian
+     catatan, tidak ikut dihitung di "N tersimpan", dan tidak pernah dikirim
+     balik ke AI sebagai bahan pelabelan. Obrolan itu percakapan; percakapan
+     yang diam-diam jadi timbunan persis penyakit yang aplikasi ini obati.
+
+     Yang memang layak jadi timbunan tetap bisa masuk - lewat tombol Drop di
+     tiap jawaban, satu ketukan, ke rak yang sama dengan yang lain. */
+  var modeAI = false;
+  var modeGambar = false;      /* di dalam mode AI: menjawab, atau menggambar */
+  var riwayatAI = [];
+  var sedangTanyaAI = false;
+
+  /* Dipotong, bukan disimpan seluruhnya. Percakapan bulan lalu hampir tidak
+     pernah dibaca lagi, tapi dia ikut ke tiap berkas cadangan selamanya. */
+  var OBROL_MAKS = 40;
+
+  var AI_MODE = [['jawab', 'Jawab'], ['gambar', 'Gambar']];
+
+  /* Dipotong SEBELUM digambar, bukan sesudahnya. Tombol Drop di tiap jawaban
+     menunjuk pesan lewat nomor urutnya; kalau daftarnya menyusut sesudah
+     layarnya digambar, nomor itu menunjuk pesan yang salah - dan yang tersimpan
+     bukan yang kamu ketuk. */
+  function potongObrolan() {
+    if (riwayatAI.length > OBROL_MAKS) riwayatAI = riwayatAI.slice(-OBROL_MAKS);
+  }
+
+  function simpanObrolan() {
+    potongObrolan();
+    return TSimpan.setel('obrolan', JSON.stringify(riwayatAI));
+  }
+
+  function muatObrolan(s) {
+    try {
+      var d = JSON.parse((s && s.obrolan) || '[]');
+      riwayatAI = Array.isArray(d) ? d.slice(-OBROL_MAKS) : [];
+    } catch (e) { riwayatAI = []; }
+  }
+
+  function tulisPlaceholder() {
+    $('#kotak').placeholder = modeAI
+      ? (modeGambar ? 'Gambar apa?' : 'Tanya apa saja…')
+      : 'Tulis atau cari…';
+  }
+
+  function setelModeAI(nyala) {
+    modeAI = !!nyala;
+    $('#l-utama').classList.toggle('mode-ai', modeAI);
+    $('#b-ai').classList.toggle('nyala', modeAI);
+    $('#b-ai').setAttribute('aria-pressed', modeAI ? 'true' : 'false');
+    $('#petak-ai').classList.toggle('sembunyi', !modeAI);
+    tulisPlaceholder();
+    if (modeAI) {
+      /* Yang sedang setengah jalan ditutup dulu. Kotak isian daftar yang masih
+         menganga di bawah obrolan bukan cuma berantakan - dia bikin ragu tombol
+         Drop itu mengirim ke AI atau menyimpan daftarnya. */
+      tutupLaci();
+      setelDaftarNyala(false);
+      setelLinkNyala(false);
+      tutupHasilDepan();
+      gambarObrolan();
+      $('#kotak').focus();
+    } else {
+      gambarCipRuang();
+      gambarBayang();
+      gambarHasilDepan();
+    }
+  }
+
+  function gambarCipModeAI() {
+    $('#ai-mode').innerHTML = AI_MODE.map(function (m) {
+      var nyala = (m[0] === 'gambar') === modeGambar;
+      return '<button class="saring-cip' + (nyala ? ' nyala' : '') +
+             '" data-ai-mode="' + m[0] + '">' + H(m[1]) + '</button>';
+    }).join('');
+  }
+
+  function pesanAiHtml(m, i) {
+    var isi = m.berkasId
+      ? '<img data-berkas="' + H(m.berkasId) + '" src="' + H(m.thumb || '') + '" alt="Gambar dari AI">'
+      : H(m.teks || '');
+    /* Cuma jawaban yang punya kaki. Menawarkan "Drop" pada kalimat yang baru
+       saja kamu ketik sendiri adalah menawarkan menyimpan sesuatu yang sudah
+       ada di kepalamu. */
+    var kaki = m.dari === 'ai' && !m.galat
+      ? '<div class="ai-kaki"><button data-ai-drop="' + i + '">Drop</button>' +
+        (m.berkasId ? '' : '<button data-ai-salin="' + i + '">Salin</button>') + '</div>'
+      : '';
+    return '<div class="ai-pesan ' + (m.dari === 'aku' ? 'aku' : 'ai') + '">' +
+           '<div class="ai-gelembung">' + isi + kaki + '</div></div>';
+  }
+
+  function gambarObrolan() {
+    if (!modeAI) return;
+    potongObrolan();
+    gambarCipModeAI();
+    var wadah = $('#ai-isi');
+    if (!riwayatAI.length && !sedangTanyaAI) {
+      wadah.innerHTML = '<div class="kosong">Belum ada yang ditanyakan.<br>' +
+        (TPelabel.siap(setelanSaat)
+          ? 'Jawabannya bisa langsung di-drop jadi catatan.'
+          : 'AI belum menyala — nyalakan di Setelan.') + '</div>';
+      return;
+    }
+    wadah.innerHTML = riwayatAI.map(pesanAiHtml).join('') +
+      (sedangTanyaAI ? '<div class="ai-pesan"><div class="ai-gelembung ai-tunggu">•••</div></div>' : '');
+    pasangGambarKartu(wadah);
+    /* Yang terbaru di bawah, tepat di atas kotaknya - bentuk yang sudah
+       dikenali dari tiap aplikasi pesan, dan yang membuat jawaban terakhir
+       tidak perlu dicari. */
+    global.scrollTo(0, document.body.scrollHeight);
+  }
+
+  function blobDariB64(b64, tipe) {
+    var bin = atob(b64);
+    var buf = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    return new Blob([buf], { type: tipe || 'image/png' });
+  }
+
+  /* Gambarnya masuk ke toko berkas lewat jalan yang sama persis dengan gambar
+     yang kamu lampirkan sendiri - jadi kalau nanti di-drop, kartunya tidak
+     berbeda sedikit pun dari kartu gambar biasa. */
+  function simpanGambarAI(g) {
+    var blob = blobDariB64(g.data, g.tipe);
+    var bid = idBaru('b');
+    return TSimpan.taruhBerkas(bid, blob, 'gambar-ai.png', blob.type).then(function () {
+      return buatThumb(blob);
+    }).then(function (thumb) {
+      return {
+        dari: 'ai', teks: '', ts: Date.now(), berkasId: bid, thumb: thumb || '',
+        tipeBerkas: blob.type, ukuran: blob.size
+      };
+    });
+  }
+
+  function kirimAI() {
+    if (sedangTanyaAI) return;
+    var teks = $('#kotak').value.trim();
+    if (!teks) { pesan('Kotaknya masih kosong'); return; }
+    if (!TPelabel.siap(setelanSaat)) { pesan('AI belum menyala — nyalakan di Setelan'); return; }
+
+    riwayatAI.push({ dari: 'aku', teks: teks, ts: Date.now() });
+    $('#kotak').value = '';
+    setelTinggiKotak();
+    sedangTanyaAI = true;
+    simpanObrolan();
+    gambarObrolan();
+
+    var kerja = modeGambar
+      ? TPelabel.gambarAI(setelanSaat, teks).then(simpanGambarAI)
+      : TPelabel.obrolTeks(setelanSaat, riwayatAI).then(function (t) {
+          return { dari: 'ai', teks: String(t || '').trim() || '(jawabannya kosong)', ts: Date.now() };
+        });
+
+    return kerja.then(function (m) {
+      riwayatAI.push(m);
+    }, function (err) {
+      /* Gagalnya BERISIK di sini, dan cuma di sini. Pelabelan yang gagal boleh
+         diam karena kamu tidak sedang menunggunya; jawaban yang tidak pernah
+         datang tanpa sepatah kata pun terbaca sebagai aplikasi rusak. */
+      riwayatAI.push({ dari: 'ai', teks: 'Gagal: ' + err.message, ts: Date.now(), galat: true });
+    }).then(function () {
+      sedangTanyaAI = false;
+      var simpan = simpanObrolan();
+      gambarObrolan();
+      return simpan;
+    });
+  }
+
+  function dropObrolan(i) {
+    var m = riwayatAI[i];
+    if (!m || m.dari !== 'ai') return;
+    /* PERTANYAANNYA IKUT JADI JUDUL. Jawaban tanpa pertanyaannya adalah
+       potongan yang enam bulan lagi tidak bisa ditempatkan lagi - persis
+       lubang yang aplikasi ini ada untuk menambalnya. */
+    var tanyaAsal = '';
+    for (var k = i - 1; k >= 0; k--) {
+      if (riwayatAI[k].dari === 'aku') { tanyaAsal = riwayatAI[k].teks; break; }
+    }
+    var e = entriBaru(m.berkasId ? 'gambar' : 'teks');
+    if (m.berkasId) {
+      e.berkasId = m.berkasId;
+      e.thumb = m.thumb || '';
+      e.namaBerkas = 'gambar-ai.png';
+      e.tipeBerkas = m.tipeBerkas || 'image/png';
+      e.ukuran = m.ukuran || 0;
+      e.isi = tanyaAsal;
+    } else {
+      e.isi = m.teks;
+    }
+    var ruang = TOtak.bacaRuang(tanyaAsal, daftarLabel());
+    if (ruang) e.kategori = ruang.nama;
+    e.judul = tanyaAsal ? tanyaAsal.split('\n')[0].slice(0, 80) : TOtak.judulOtomatis(e);
+    /* Judulnya kata-katamu sendiri, jadi AI tidak boleh menimpanya - aturan
+       yang sama dengan judul yang diketik di layar tulis. */
+    e.judulManual = !!tanyaAsal;
+    e.label = TOtak.labelOtomatis(e);
+    e.elemen = TOtak.elemenOtomatis(e);
+
+    TSimpan.taruh(e).then(function () {
+      segarkanCache(e);
+      perbaruiJumlah();
+      pesan('Tersimpan' + (e.kategori ? ' · #' + e.kategori : ''));
       sundulLabel();
     }).catch(function (err) {
       pesan('Gagal menyimpan: ' + err.message);
@@ -1065,7 +1359,9 @@
   }
 
   function gambarHasilDepan() {
-    if (!hasilDepanAktif()) { tutupHasilDepan(); return; }
+    /* Di mode AI kotaknya bertanya, bukan mencari - satu huruf tidak boleh
+       memanggil daftar hasil yang tidak diminta siapa pun. */
+    if (modeAI || !hasilDepanAktif()) { tutupHasilDepan(); return; }
 
     var istilah = null;
     if (labelDepan && labelDepan !== '*') {
@@ -1297,6 +1593,125 @@
     });
   }
 
+  /* ===================== PILIH BANYAK DI LAYAR NOTE =====================
+     Catatan lima tahun lalu yang sudah tidak berarti apa-apa tetap muncul tiap
+     hari, dan tiap satunya harus dilewati mata. Peringkat menenggelamkan yang
+     basi, tapi menenggelamkan bukan membuang - dan gudang yang isinya sepuluh
+     ribu keping tetap gudang yang berat walau yang basi sudah diam.
+
+     Jadi membuang massal itu WAJIB ADA. Yang tidak boleh cuma satu: membuang
+     tanpa kamu sengaja. Karena itu memilih dimulai dengan MENAHAN satu kartu,
+     bukan dengan kotak centang yang menganga sepanjang hari - dan yang terbuang
+     tetap bisa dikembalikan dari arsip di Setelan. */
+  var pilihNote = {};
+
+  function jumlahPilih() { return Object.keys(pilihNote).length; }
+
+  function tandaiPilih() {
+    $$('#note-isi .kartu').forEach(function (k) {
+      k.classList.toggle('dipilih', !!pilihNote[k.getAttribute('data-id')]);
+    });
+  }
+
+  function gambarBilahPilih() {
+    var n = jumlahPilih();
+    $('#pilih-bilah').classList.toggle('sembunyi', !n);
+    $('#l-note').classList.toggle('mode-pilih', !!n);
+    $('#pilih-jumlah').textContent = n + ' dipilih';
+    $('#b-pilih-gabung').classList.toggle('sembunyi', n < 2);
+  }
+
+  function alihPilih(id) {
+    if (pilihNote[id]) delete pilihNote[id]; else pilihNote[id] = true;
+    gambarBilahPilih();
+    tandaiPilih();
+  }
+
+  function batalPilih() {
+    pilihNote = {};
+    gambarBilahPilih();
+    tandaiPilih();
+  }
+
+  function entriPilih() {
+    return semuaEntri.filter(function (e) { return pilihNote[e.id]; });
+  }
+
+  /* MEMBUANG MASSAL. Yang dibuang diarsipkan, bukan dilenyapkan - "tidak ada
+     yang benar-benar terhapus" tetap berlaku, dan itulah yang membuat tombol
+     ini boleh ada sama sekali. */
+  function buangPilih() {
+    var dipilih = entriPilih();
+    if (!dipilih.length) return;
+    var n = dipilih.length;
+    tanya('Buang ' + n + ' catatan?',
+      'Masuk arsip, bukan hilang — masih bisa dikembalikan dari Setelan.',
+      function () {
+        Promise.all(dipilih.map(function (e) {
+          e.pensiun = true;
+          e.diubah = Date.now();
+          segarkanCache(e);
+          return TSimpan.taruh(e);
+        })).then(function () {
+          batalPilih();
+          return muatSemua();
+        }).then(function () {
+          gambarNote();
+          pesan(n + ' catatan masuk arsip');
+        });
+      });
+  }
+
+  /* MENGGABUNG. Yang jadi wadah kartu yang PALING BARU disentuh - dia yang
+     paling mungkin masih kamu ingat, dan judulnya yang paling mungkin masih
+     benar. Sisanya jadi baris di dalamnya, lalu diarsipkan. Nama wadahnya
+     ditawarkan, bukan ditanyakan kosong: mengetik judul untuk sesuatu yang
+     baru saja kamu tunjuk sendiri adalah pertanyaan yang jawabannya sudah ada
+     di layar. */
+  function gabungPilih() {
+    var dipilih = entriPilih().slice().sort(function (a, b) {
+      return (b.diubah || 0) - (a.diubah || 0);
+    });
+    if (dipilih.length < 2) return;
+    var wadah = dipilih[0];
+    var sisa = dipilih.slice(1);
+
+    tanya('Gabung ' + dipilih.length + ' catatan?',
+      'Semuanya masuk ke “' + (wadah.judul || 'tanpa judul') + '” — yang paling baru kamu sentuh. ' +
+      'Yang lain masuk arsip, tidak hilang.',
+      function () {
+        var potong = [wadah.isi || ''];
+        sisa.forEach(function (e) {
+          potong.push('— ' + (e.judul || 'tanpa judul'));
+          if (e.isi) potong.push(e.isi);
+          wadah.elemen = TOtak.gabungElemen(wadah.elemen, e.elemen || []);
+          (e.tag || []).forEach(function (t) {
+            if ((wadah.tag || []).indexOf(t) < 0) wadah.tag = (wadah.tag || []).concat([t]);
+          });
+        });
+        wadah.isi = potong.filter(Boolean).join('\n\n');
+        wadah.diubah = Date.now();
+        /* Judulnya dilepas dari penanda manual supaya AI boleh menamai ulang
+           gabungannya - isinya sudah bukan isi yang dulu dinamai. */
+        wadah.judulManual = false;
+        wadah.diLabeliAI = false;
+        segarkanCache(wadah);
+
+        Promise.all([TSimpan.taruh(wadah)].concat(sisa.map(function (e) {
+          e.pensiun = true;
+          e.diubah = Date.now();
+          segarkanCache(e);
+          return TSimpan.taruh(e);
+        }))).then(function () {
+          batalPilih();
+          return muatSemua();
+        }).then(function () {
+          gambarNote();
+          pesan(dipilih.length + ' catatan digabung');
+        });
+      });
+  }
+
   function gambarNote() {
     var kueri = $('#note-cari').value.trim();
     var semua = semuaEntri.filter(catatanSaja);
@@ -1326,6 +1741,7 @@
           }).join('')
         : '<div class="kosong">Tidak ada yang cocok.<br>Coba satu kata saja — pencarian ini memaafkan.</div>';
       pasangGambarKartu($('#note-isi'));
+      tandaiPilih();
       return;
     }
 
@@ -1346,6 +1762,7 @@
         ? daftar.map(function (e) { return kartuHtml(e, { jamPenuh: true }); }).join('')
         : (anak.length ? '' : '<div class="kosong">Folder ini sudah kosong.</div>'));
       pasangGambarKartu($('#note-isi'));
+      tandaiPilih();
       return;
     }
 
@@ -2847,6 +3264,7 @@
 
     $('#kotak').addEventListener('input', function () {
       setelTinggiKotak();
+      if (modeAI || sedangMengisi()) return;
       gambarBayang();
       bacaTertunda();
       /* Tanpa jeda: pencarian jalan di atas salinan lokal, jadi menundanya
@@ -2864,7 +3282,46 @@
        yang justru pintu masuk utamanya. Jadi tidak ada penangan Enter di sini
        sama sekali, dan itu memang bentuk yang benar. */
 
-    $('#b-drop').addEventListener('click', drop);
+    /* SATU TOMBOL, DUA ARTI - dan yang menentukan artinya bukan mode
+       tersembunyi, melainkan ikon AI yang menyala tepat di atasnya plus panah
+       kirim yang menggantikan panah jatuh di tombolnya sendiri. */
+    $('#b-drop').addEventListener('click', function () {
+      if (modeAI) kirimAI(); else drop();
+    });
+    $('#b-ai').addEventListener('click', function () { setelModeAI(!modeAI); });
+    $('#ai-mode').addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-ai-mode]');
+      if (!b) return;
+      modeGambar = b.getAttribute('data-ai-mode') === 'gambar';
+      tulisPlaceholder();
+      gambarCipModeAI();
+      $('#kotak').focus();
+    });
+    /* Mengosongkan obrolan itu satu-satunya tindakan di layar ini yang tidak
+       bisa diurungkan, jadi dia bertanya dulu - dan pertanyaannya menyebutkan
+       bahwa yang sudah kamu Drop tidak ikut hilang, karena itu justru
+       ketakutan yang menahan orang menekannya. */
+    $('#b-ai-bersih').addEventListener('click', function () {
+      if (!riwayatAI.length) return;
+      tanya('Kosongkan obrolan?',
+            riwayatAI.length + ' pesan hilang dari layar ini. Yang sudah kamu Drop tetap tersimpan.',
+            function () {
+              riwayatAI = [];
+              simpanObrolan().then(gambarObrolan);
+            });
+    });
+    $('#ai-isi').addEventListener('click', function (ev) {
+      var d = ev.target.closest('[data-ai-drop]');
+      if (d) { dropObrolan(Number(d.getAttribute('data-ai-drop'))); return; }
+      var s = ev.target.closest('[data-ai-salin]');
+      if (s) {
+        var m = riwayatAI[Number(s.getAttribute('data-ai-salin'))];
+        if (m) salin(m.teks);
+        return;
+      }
+      var g = ev.target.closest('img[data-berkas]');
+      if (g) lihatGambar({ berkasId: g.getAttribute('data-berkas'), thumb: g.getAttribute('src') || '' });
+    });
     $('#b-lampir').addEventListener('click', function () { alihLaci('drop'); });
     $('#b-tugas').addEventListener('click', keTugas);
     /* RUANGNYA TERBATAS: laci yang menggantung terbuka menutupi kotak dan
@@ -2880,7 +3337,7 @@
          terbuka menutup lacinya duluan - doknya bergeser turun, dan ketukan
          yang sudah dimulai mendarat di tempat kosong. Yang menutup lacinya
          nanti kosongkanKotak, sesudah barangnya benar-benar tersimpan. */
-      if (ev.target.closest('#b-lampir, #b-tugas, #b-drop, [data-tab-ke="l-utama"]')) return;
+      if (ev.target.closest('#b-lampir, #b-tugas, #b-drop, #b-ai, [data-tab-ke="l-utama"]')) return;
       tutupLaci();
     }, true);
     $('#b-tutup-hasil').addEventListener('click', tutupHasilDepan);
@@ -2914,9 +3371,44 @@
     });
     $('#note-isi').addEventListener('click', function (ev) {
       var f = ev.target.closest('[data-note-folder]');
-      if (f) { noteFolder = f.getAttribute('data-note-folder'); gambarNote(); global.scrollTo(0, 0); return; }
+      if (f) {
+        batalPilih();
+        noteFolder = f.getAttribute('data-note-folder');
+        gambarNote(); global.scrollTo(0, 0); return;
+      }
+      /* Begitu ada yang dipilih, MENYENTUH KARTU BERARTI MEMILIH. Dua arti
+         untuk satu ketukan adalah cara tercepat membuat orang ragu, jadi
+         selama mode pilih hidup, membuka kartunya ditunda. */
+      if (jumlahPilih()) {
+        var k = ev.target.closest('.kartu');
+        if (k) { alihPilih(k.getAttribute('data-id')); return; }
+      }
       klikHasil(ev);
     });
+
+    /* MENAHAN satu kartu memulai memilih. Bukan kotak centang yang menganga
+       sepanjang hari: memilih banyak itu pekerjaan sebulan sekali, dan kotak
+       centang di tiap kartu adalah ongkos yang dibayar tiap hari untuk itu. */
+    (function () {
+      var jam = null, mulaiId = '';
+      var batal = function () { clearTimeout(jam); jam = null; };
+      $('#note-isi').addEventListener('pointerdown', function (ev) {
+        if (ev.target.closest('button, a')) return;
+        var k = ev.target.closest('.kartu');
+        if (!k) return;
+        mulaiId = k.getAttribute('data-id');
+        batal();
+        jam = setTimeout(function () {
+          jam = null;
+          if (!jumlahPilih()) {
+            alihPilih(mulaiId);
+            if (navigator.vibrate) navigator.vibrate(12);
+          }
+        }, 450);
+      });
+      ['pointerup', 'pointermove', 'pointercancel', 'pointerleave']
+        .forEach(function (n) { $('#note-isi').addEventListener(n, batal); });
+    })();
     $('#note-alamat').addEventListener('click', function (ev) {
       if (!ev.target.closest('[data-note-akar]')) return;
       noteFolder = null;
@@ -2994,6 +3486,22 @@
       if (f) pasangBerkas(f, 'berkas');
       ev.target.value = '';
     });
+
+    $('#b-tanya-batal').addEventListener('click', tutupTanya);
+    $('#b-tanya-ya').addEventListener('click', function () {
+      var j = tanyaJalan;
+      tutupTanya();
+      if (j) j();
+    });
+    /* Menyentuh alasnya = batal. Dialog yang cuma bisa ditutup lewat satu
+       tombol kecil terasa seperti jebakan. */
+    $('#tanya').addEventListener('click', function (ev) {
+      if (ev.target === $('#tanya')) tutupTanya();
+    });
+
+    $('#b-pilih-batal').addEventListener('click', batalPilih);
+    $('#b-pilih-buang').addEventListener('click', buangPilih);
+    $('#b-pilih-gabung').addEventListener('click', gabungPilih);
 
     $('#lihat').addEventListener('click', tutupLihat);
     document.addEventListener('keydown', function (ev) {
@@ -3202,6 +3710,9 @@
          kebiasaan orang menetap di satu ukuran, dan memilihnya lagi tiap kali
          adalah keputusan berulang tanpa guna. */
       if (setelanSaat.gayaGambar) gayaGambar = setelanSaat.gayaGambar;
+      /* Obrolan dimuat SEBELUM apa pun digambar: riwayat yang muncul sedetik
+         sesudah layarnya terbuka terbaca sebagai obrolan yang sempat hilang. */
+      muatObrolan(setelanSaat);
       /* Temanya dipasang SEBELUM apa pun digambar - kalau sesudah, warnanya
          berkedip dari teal ke pilihanmu tiap kali aplikasinya dibuka. */
       temaSaat = setelanSaat.tema || 'teal';
@@ -3264,6 +3775,13 @@
     tutupLaciUji: tutupLaci,
     muatUlangUji: muatSemua,
     jenisSaringUji: function () { return JENIS_SARING; },
+    /* Cuma untuk uji: setelan yang HIDUP di memori, bukan salinannya - menulis
+       ke basis data saja tidak mengubah apa yang sedang dipakai layar. */
+    setelanUji: function () { return setelanSaat; },
+    setelModeAIUji: setelModeAI,
+    kirimAIUji: kirimAI,
+    riwayatAIUji: function () { return riwayatAI; },
+    dropObrolanUji: dropObrolan,
     jenisEfektifUji: jenisEfektif,
     semuaEntri: function () { return semuaEntri; }
   };

@@ -99,9 +99,24 @@
            kelihatan. Cip Todo ikut di sini, dipatok di ujung KANAN - tepat di
            atas tombol Drop, tempat jempol kanan sudah bertumpu. -->
       <div class="saring-baris" id="saring-baris"></div>
-      <button class="tbl" id="b-drop">
-        <svg viewBox="0 0 24 24" class="ik"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg><span>Drop</span>
-      </button>
+      <!-- Ikon AI duduk TEPAT DI ATAS tombol Drop, bukan menyelip di bilah
+           kotak bersama klip dan Todo. Alasannya satu: dia mengubah arti
+           tombol di bawahnya - selama dia menyala, Drop berhenti menyimpan dan
+           mulai bertanya. Dua tombol yang saling menentukan pantas bertumpuk,
+           supaya sebab dan akibatnya kelihatan di satu tempat. -->
+      <div class="drop-tumpuk">
+        <button class="tbl" id="b-ai" aria-pressed="false" aria-label="Mode AI">
+          <svg viewBox="0 0 24 24" class="ik"><path d="M11 3l1.6 4.4L17 9l-4.4 1.6L11 15l-1.6-4.4L5 9l4.4-1.6z"/><path d="M17.5 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg>
+        </button>
+        <button class="tbl" id="b-drop">
+          <svg viewBox="0 0 24 24" class="ik turun"><path d="M12 4v13"/><path d="M6 12l6 6 6-6"/></svg>
+          <!-- Panah kirim cuma terlihat di mode AI. Ikon yang tidak berubah
+               padahal tombolnya berubah arti adalah cara tercepat membuat
+               orang menekan sesuatu yang tidak dia maksud. -->
+          <svg viewBox="0 0 24 24" class="ik kirim"><path d="M4 12l16-8-6 16-2.6-6.6z"/></svg>
+          <span>Drop</span>
+        </button>
+      </div>
     </div>
 
     <!-- LACI DROP: semua cara MEMASUKKAN sesuatu. Bawaannya teks - kotak di
@@ -181,6 +196,25 @@
     <div id="hasil-depan"></div>
   </div>
 
+  <!-- MODE AI. Ini satu-satunya tempat di seluruh aplikasi tempat kamu
+       MENUNGGU AI. Di semua tempat lain dia bekerja di belakang dan boleh
+       gagal diam-diam; di sini dia yang diajak bicara, jadi dia punya modenya
+       sendiri - dan modenya menutup hasil pencarian, bukan berdampingan
+       dengannya. Dua daftar yang berebut layar yang sama membuat keduanya
+       tidak terbaca.
+
+       Ini juga tidak melanggar "layar depan kosong": petak ini tertutup sampai
+       kamu sendiri yang menyalakan ikonnya. -->
+  <div class="sembunyi" id="petak-ai">
+    <div class="ai-kepala">
+      <div class="ai-mode" id="ai-mode"></div>
+      <button class="ikon-btn" id="b-ai-bersih" aria-label="Kosongkan obrolan">
+        <svg viewBox="0 0 24 24" class="ik"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+      </button>
+    </div>
+    <div id="ai-isi"></div>
+  </div>
+
 
   <!-- TIDAK ADA ISIAN KEYWORD DI SINI, DAN JANGAN DIKEMBALIKAN. Dulu ada:
        satu kotak "#" plus dua belas cip usulan. Dua alasan dia dibuang.
@@ -256,6 +290,15 @@
   <div class="note-kepala">
     <div class="note-alamat" id="note-alamat"></div>
     <input id="note-cari" class="cari-input" placeholder="Cari di semua folder&#8230;" autocomplete="off">
+    <!-- BILAH PILIH. Cuma muncul kalau ada yang dipilih - sebuah bilah yang
+         menganga kosong sepanjang hari untuk pekerjaan yang dilakukan sebulan
+         sekali adalah tempat yang dirampas dari isinya sendiri. -->
+    <div class="pilih-bilah sembunyi" id="pilih-bilah">
+      <span id="pilih-jumlah">0 dipilih</span>
+      <button class="pilih-tbl" id="b-pilih-gabung">Gabung</button>
+      <button class="pilih-tbl bahaya" id="b-pilih-buang">Buang</button>
+      <button class="pilih-tbl" id="b-pilih-batal">Batal</button>
+    </div>
   </div>
 
   <div id="note-isi"></div>
@@ -313,6 +356,22 @@
      sasaran yang harus dicari untuk sesuatu yang sudah jelas. -->
 <div class="lihat sembunyi" id="lihat">
   <img id="lihat-isi" alt="">
+</div>
+
+<!-- SATU-SATUNYA DIALOG KONFIRMASI DI APLIKASI INI, dan itu disengaja.
+     Jalur masuk tidak pernah bertanya apa pun - bertanya di sana membunuh
+     kebiasaannya. Tapi membuang dua puluh catatan sekaligus itu satu-satunya
+     tindakan yang tidak bisa diurungkan dengan satu ketukan, dan yang seperti
+     itu pantas ditahan sekali. -->
+<div class="tanya sembunyi" id="tanya">
+  <div class="tanya-kotak">
+    <div class="tanya-judul" id="tanya-judul"></div>
+    <div class="tanya-ket" id="tanya-ket"></div>
+    <div class="tanya-aksi">
+      <button class="set-tbl" id="b-tanya-batal">Batal</button>
+      <button class="set-tbl emas" id="b-tanya-ya">Lanjut</button>
+    </div>
+  </div>
 </div>
 
 <div class="pesan" id="pesan"></div>
