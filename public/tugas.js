@@ -71,9 +71,20 @@
          yang sudah ada tidak bergeser. */
       selesai: false, selesaiPada: 0, penting: false, hariIni: 0,
       tenggat: 0, ulang: '',
+      /* Bawaannya SUDAH DIBACA. Yang belum dibaca cuma yang masuk lewat jalur
+         lain - dari layar Drop - dan jalur itu yang menyetelnya sendiri.
+         Kalau bawaannya "belum", tugas yang barusan kamu ketik sendiri lahir
+         bertanda tebal, dan tanda yang menyala untuk hal yang jelas-jelas kamu
+         tahu berhenti berarti apa-apa. */
+      dibaca: true,
       pensiun: false, dihapus: false, riwayat: []
     };
   }
+
+  /* Tugas lama tidak punya kolom ini sama sekali, dan mereka TIDAK boleh
+     tiba-tiba menyala semua di pembukaan berikutnya. Jadi yang dihitung belum
+     dibaca cuma yang tegas bernilai false. */
+  function belumDibaca(e) { return e.dibaca === false; }
 
   function hariMulai(ts) {
     var d = new Date(ts || Date.now());
@@ -133,17 +144,28 @@
       pakai = pakai.filter(function (e) { return !!e.ulang; });
     }
 
-    /* Urutan yang menentukan: tertunggak dulu, lalu yang penting, lalu yang
-       bertenggat paling dekat. Tanpa urutan ini daftarnya cuma tumpukan lain,
-       dan tumpukan yang tidak berurut itulah yang bikin orang berhenti
-       membukanya. */
+    /* DUA URUTAN, DAN PEMBAGINYA JELAS.
+
+       "Semua" itu riwayat masuk, jadi urutannya YANG TERBARU DI ATAS - titik.
+       Pertanyaan yang paling sering ditanyakan di layar ini adalah "yang
+       barusan kudrop mana", dan urutan berprioritas menjawabnya dengan
+       melempar tugas baru ke tengah daftar, ke tempat yang tidak bisa ditebak.
+       Urutan yang tidak bisa ditebak sama saja dengan tidak berurut.
+
+       Yang mendesak punya rumahnya sendiri: "Hari ini" sudah mengumpulkan yang
+       tertunggak dan yang jatuh tempo. Di sana - dan di Penting dan Berulang -
+       urutan berprioritas memang yang benar: tertunggak dulu, lalu yang
+       penting, lalu tenggat terdekat. */
+    if (saringSaat === 'semua' || !saringSaat) {
+      return pakai.sort(function (a, b) { return (b.dibuat || 0) - (a.dibuat || 0); });
+    }
     return pakai.sort(function (a, b) {
       var ta = tertunggak(a) ? 0 : 1, tb = tertunggak(b) ? 0 : 1;
       if (ta !== tb) return ta - tb;
       if (!!b.penting !== !!a.penting) return b.penting ? 1 : -1;
       var da = a.tenggat || Infinity, db = b.tenggat || Infinity;
       if (da !== db) return da - db;
-      return (a.dibuat || 0) - (b.dibuat || 0);
+      return (b.dibuat || 0) - (a.dibuat || 0);
     });
   }
 
@@ -278,6 +300,12 @@
     if (!String(teks || '').trim()) return Promise.resolve(null);
     var baca = bacaTenggat(teks);
     var e = tugasBaru(baca.teks || teks);
+    /* BELUM DIBACA. Yang masuk lewat layar Drop dijatuhkan dalam tiga detik,
+       sering sambil mengerjakan hal lain, dan tidak pernah dilihat lagi di
+       layar To Do sampai kamu sengaja ke sana. Tanpa penanda, dia mendarat di
+       tengah puluhan baris yang rupanya sama persis - dan yang barusan masuk
+       jadi yang paling sulit ditemukan. */
+    e.dibaca = false;
     /* Daftar yang barusan diketik masuk UTUH sebagai langkah. Kalau judulnya
        kebetulan sama dengan baris pertama - dan itu yang terjadi kalau kotak
        dropnya kosong - baris itu tidak ditulis dua kali. */
@@ -356,7 +384,13 @@
     if (!daftar.length) {
       $('#tugas-daftar').innerHTML = '<div class="kosong">' +
         (saringSaat === 'selesai' ? 'Belum ada yang diselesaikan.'
-          : saringSaat === 'hariini' ? 'Hari ini kosong.<br>Tambahkan satu saja di bawah.'
+          /* Apa yang dikumpulkan "Hari ini" disebutkan di sini, karena
+             namanya sendiri punya dua bacaan yang sama masuk akal - yang
+             tenggatnya hari ini, atau yang dibuat hari ini. Yang benar yang
+             pertama, dan menyebutkannya sekali di layar yang kosong jauh lebih
+             murah daripada membiarkan orangnya menebak tiap pagi. */
+          : saringSaat === 'hariini' ? 'Tidak ada yang jatuh tempo hari ini.<br>' +
+              'Yang muncul di sini: tenggatnya hari ini atau sudah lewat, plus yang kamu tandai sendiri untuk hari ini.'
           : 'Belum ada tugas.') + '</div>';
       return;
     }
@@ -472,6 +506,7 @@
     if (terbukaId === e.id) b.push(rinciHtml(e, H));
 
     return '<article class="tugas' + (e.selesai ? ' kelar' : '') +
+           (belumDibaca(e) ? ' belum' : '') +
            (terbukaId === e.id ? ' terbuka' : '') + '" data-id="' + H(e.id) + '">' +
            b.join('') + '</article>';
   }
@@ -649,6 +684,14 @@
 
     if (ev.target.closest('input') || ev.target.closest('textarea')) return;
     terbukaId = terbukaId === e.id ? '' : e.id;
+    /* MEMBUKANYA BERARTI MEMBACANYA. Tidak perlu tombol "tandai sudah dibaca":
+       tanda itu ada untuk menjawab "mana yang belum kulihat", dan begitu kamu
+       melihatnya pertanyaannya sudah terjawab. */
+    if (terbukaId === e.id && belumDibaca(e)) {
+      e.dibaca = true;
+      simpan(e).then(gambar);
+      return;
+    }
     gambar();
   }
 
@@ -719,6 +762,6 @@
     daftarYangAda: daftarYangAda,
     hariMulai: hariMulai, tulisTenggat: tulisTenggat, tugasBaru: tugasBaru,
     bacaTenggat: bacaTenggat,
-    selesaikan: selesaikan, tersaring: tersaring
+    selesaikan: selesaikan, tersaring: tersaring, belumDibaca: belumDibaca
   };
 })(window);

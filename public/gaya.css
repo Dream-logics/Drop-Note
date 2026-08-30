@@ -1084,3 +1084,20 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
    layar ini, dan tindakan kedua tidak pantas sebesar yang pertama. */
 .catat-dok{display:flex;align-items:center;gap:8px}
 .catat-dok .tbl.simpan{flex:1}
+
+
+/* BELUM DIBACA - bentuk yang sudah dikenali dari tiap aplikasi pesan: judulnya
+   tebal, plus satu titik beraksen di tepi kiri baris. Bukan alas berwarna:
+   sepuluh baris beralas sekaligus membuat daftarnya terbaca seperti peringatan,
+   padahal isinya cuma "kamu belum sempat melihat ini".
+
+   Titiknya di tepi KIRI, di luar bulatan centang - kalau di kanan dia bersaing
+   dengan bintang penting, dan dua tanda kecil berdampingan berhenti bisa
+   dibedakan sekilas. */
+.tugas.belum{position:relative}
+.tugas.belum .tugas-judul{font-weight:700;color:var(--i)}
+.tugas.belum::before{
+  content:'';position:absolute;left:-8px;top:50%;margin-top:-3px;
+  width:6px;height:6px;border-radius:50%;background:var(--a);
+}
+.tugas.belum.terbuka::before{display:none}
