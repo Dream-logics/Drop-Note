@@ -2230,19 +2230,21 @@ console.log('\nTo Do dua bagian, timestamp di Note, dan gambar yang membesar');
   await hal.evaluate(() => { TAlur.keLayarUji('l-tugas'); TTugas.saring('semua'); TTugas.rak(''); TTugas.gambar(); });
   await hal.waitForTimeout(350);
 
-  /* DUA BAGIAN, dan pembatasnya BERULANG atau tidak. Yang berulang tidak
-     pernah selesai, cuma jatuh tempo lagi - kalau dia berbaur dengan yang
-     sekali jalan, daftarnya terlihat tidak pernah berkurang. */
-  cek('daftarnya dibagi dua, dan yang berulang punya judulnya sendiri',
-      (await hal.locator('#tugas-daftar .tugas-bagian').count()) === 1,
+  /* SATU DAFTAR, TIDAK DIBAGI DUA LAGI. Pemisahan "Berulang" di bawah lahir
+     sebelum Berulang punya saringannya sendiri di baris atas. Sekarang dia
+     punya, dan dua tempat untuk satu hal yang sama itu satu tempat terlalu
+     banyak - yang di bawah selalu tertimbun tugas sekali jalan, jadi bagian
+     yang gunanya memperlihatkan justru yang paling jarang terlihat. */
+  cek('tidak ada lagi bagian "Berulang" yang tertimbun di bawah',
+      (await hal.locator('#tugas-daftar .tugas-bagian').count()) === 0,
       await hal.locator('#tugas-daftar').innerText());
   const urut = await hal.locator('#tugas-daftar').innerText();
-  /* Dibandingkan tanpa peduli huruf besar-kecil: judul bagiannya dibesarkan
-     oleh gaya, bukan oleh kodenya. */
   const urutKecil = urut.toLowerCase();
-  cek('yang sekali jalan di atas, yang berulang di bawahnya',
-      urutKecil.indexOf('kirim proposal') < urutKecil.indexOf('berulang') &&
-      urutKecil.indexOf('berulang') < urutKecil.indexOf('bayar wifi'), JSON.stringify(urut));
+  /* Yang berulang tetap ikut di daftar yang sama - dia tidak disembunyikan,
+     cuma tidak lagi dipisah ke ruang tersendiri. */
+  cek('yang berulang tetap ikut di daftar yang sama',
+      urutKecil.indexOf('bayar wifi') >= 0 && urutKecil.indexOf('jemput sekolah') >= 0,
+      JSON.stringify(urut));
 
   /* Judul bagian cuma muncul kalau KEDUANYA ada - judul di atas daftar yang
      seluruhnya satu jenis tidak memisahkan apa pun. */
@@ -3347,17 +3349,54 @@ console.log('\ngeser antar pintu, papan ketik, pin, dan arsip yang bisa dikosong
   await hal.dispatchEvent('#kotak', 'input');
   await hal.evaluate(() => TAlur.tutupHasilDepanUji());
 
-  /* TINGGI LAYAR MENGIKUTI YANG TERLIHAT. Papan ketik HP tidak mengubah tinggi
-     halaman - dia cuma menutupi bagiannya - jadi hasil pencarian yang duduk di
-     atas kotak tergulir keluar layar tepat saat kamu mengetiknya. */
-  const pakaiTampak = await hal.evaluate(() => {
-    const v = getComputedStyle(document.documentElement).getPropertyValue('--tampak').trim();
-    const aturan = getComputedStyle(document.querySelector('#l-utama')).minHeight;
-    return { v: v, tinggi: aturan };
+  /* PAPAN KETIK DISIMULASIKAN, bukan ditebak. Papan ketik HP tidak mengubah
+     tinggi halaman - dia cuma menutupi bagiannya - jadi selama layar Drop
+     setinggi layar penuh, doknya duduk di dasar halaman DI BALIK papan ketik
+     dan browser menggulir seluruh halaman supaya kotaknya terlihat. Yang
+     tergulir keluar pandangan justru hasil pencarian di atasnya.
+
+     Di sini --tampak dikecilkan jadi 480px - persis seperti papan ketik
+     Android yang menutupi 435px bawah - lalu yang diukur GEOMETRI SUNGGUHAN
+     di layar, bukan aturan CSS-nya. */
+  await hal.fill('#kotak', 'badgeuji');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(400);
+  const TAMPAK = 480;
+  await hal.evaluate((h) => {
+    document.documentElement.style.setProperty('--tampak', h + 'px');
+  }, TAMPAK);
+  await hal.waitForTimeout(250);
+  await hal.evaluate(() => document.querySelector('#kotak').focus());
+  /* Dipaksa menggulir: kalau halamannya masih bisa digeser, doknya akan
+     melompat ke tengah layar persis seperti yang dilaporkan. */
+  await hal.evaluate(() => window.scrollTo(0, 400));
+  await hal.waitForTimeout(250);
+  const papan = await hal.evaluate(() => {
+    const dok = document.querySelector('#dok').getBoundingClientRect();
+    const kartu = document.querySelector('#hasil-depan .kartu');
+    const k = kartu ? kartu.getBoundingClientRect() : null;
+    return {
+      dokBawah: Math.round(dok.bottom),
+      kartuAtas: k ? Math.round(k.top) : null,
+      kartuBawah: k ? Math.round(k.bottom) : null,
+      gulir: Math.round(window.scrollY)
+    };
   });
-  cek('layar memakai tinggi yang benar-benar terlihat, bukan tinggi halaman',
-      /px$/.test(pakaiTampak.v) && parseInt(pakaiTampak.v, 10) > 0,
-      JSON.stringify(pakaiTampak));
+  cek('dok duduk tepat di atas papan ketik, bukan di baliknya',
+      papan.dokBawah <= TAMPAK + 2, JSON.stringify(papan));
+  cek('hasil pertama terlihat tanpa menutup papan ketik dulu',
+      papan.kartuAtas !== null && papan.kartuAtas >= 0 && papan.kartuBawah <= TAMPAK,
+      JSON.stringify(papan));
+  /* Yang paling penting: halamannya TIDAK BISA digulir sama sekali di layar
+     ini. Dokumen yang tidak lebih tinggi dari layarnya tidak punya apa pun
+     untuk digeser, jadi doknya tidak akan pernah melompat ke tengah. */
+  cek('halamannya tidak bisa digulir, jadi doknya tidak pernah melompat',
+      papan.gulir === 0, String(papan.gulir));
+  await hal.evaluate(() => document.documentElement.style.removeProperty('--tampak'));
+  await hal.fill('#kotak', '');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+  await hal.waitForTimeout(200);
 
   /* MELEPAS PIN LANGSUNG TERLIHAT DI LAYAR NOTE. Dulu tidak: satu ketukan yang
      tidak menghasilkan apa-apa terbaca sebagai tombol rusak. */

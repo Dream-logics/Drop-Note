@@ -125,6 +125,8 @@ public/pelabel.js   satu-satunya bagian ber-AI: judul + elemen + tag + OCR,
                     dengan pertanyaannya, SATU rekomendasi bukan daftar pilihan
 public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
                     ulang, langkah, catatan, penanda BELUM DIBACA.
+                    SATU daftar, tidak dibagi bagian "Berulang" lagi - Berulang
+                    sudah punya saringannya sendiri di baris atas.
                     "Hari ini" = TENGGATNYA hari ini atau sudah lewat, plus
                     yang kamu tandai sendiri - BUKAN yang dibuat hari ini.
                     Urutan "Semua" = terbaru di atas, titik; yang berprioritas
@@ -219,7 +221,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (523 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (525 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
