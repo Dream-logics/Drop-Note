@@ -337,8 +337,19 @@ console.log('\ndrop -> cari (jaringan mati total)');
   cek('kotak dikosongkan setelah drop', (await hal.inputValue('#kotak')) === '');
 
   /* Kotak yang sama: yang barusan dijatuhkan dicari dari tempat yang sama,
-     tanpa pindah ke mana-mana. */
+     tanpa pindah ke mana-mana.
+
+     BAWAANNYA TEKS, dan yang barusan dijatuhkan sebuah tautan - jadi dia
+     TIDAK muncul sampai "Semua" diketuk. Yang wajib: layarnya menyebut
+     angkanya, bukan menjawab "tidak ada yang cocok". Saringan yang membuat
+     pencarian TERLIHAT rusak adalah bug yang sama yang dulu sudah dibetulkan
+     sekali. */
   await hal.fill('#kotak', 'uji');
+  await hal.waitForTimeout(300);
+  cek('kosongnya menyebut ada berapa di jenis lain',
+      /1.*jenis lain/s.test(await hal.locator('#hasil-depan .kosong').innerText()),
+      await hal.locator('#hasil-depan .kosong').innerText());
+  await hal.click('#saring-baris [data-jenis="*semua"]');
   await hal.waitForTimeout(300);
   cek('yang di-drop ketemu lagi tanpa jaringan', await hal.locator('#hasil-depan .kartu').count() === 1);
   cek('judulnya menyebut uji coba', /uji coba/.test(await hal.locator('.kartu-judul').first().innerText()));
@@ -1171,9 +1182,11 @@ console.log('\nsaringan jenis: cip di atas kotak, bukan isi laci');
      adalah menebak cip mana yang berarti "batal". */
   await hal.click('#saring-baris [data-jenis="tautan"]');
   await hal.waitForTimeout(300);
-  cek('mengetuknya lagi melepas saringannya',
+  /* Mengetuk yang menyala mengembalikannya ke BAWAAN (teks), bukan ke
+     "Semua" - jalan pulangnya tetap satu tempat. */
+  cek('mengetuknya lagi mengembalikannya ke bawaan',
       (await hal.locator('#saring-baris [data-jenis="tautan"].nyala').count()) === 0 &&
-      (await hal.locator('#saring-baris [data-jenis=""].nyala').count()) === 1);
+      (await hal.locator('#saring-baris [data-jenis="teks"].nyala').count()) === 1);
   await hal.click('#saring-baris [data-jenis="tautan"]');
   await hal.waitForTimeout(300);
 
@@ -2224,6 +2237,12 @@ console.log('\nTo Do dua bagian, timestamp di Note, dan gambar yang membesar');
   await hal.fill('#kotak', 'Moodboard uji besar');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(400);
+  /* Bawaannya teks, jadi gambar dicari dengan sengaja - lewat cip Gambar.
+     Dan di sana yang dipakai daftar, bukan petak, supaya kartunya utuh. */
+  await hal.click('#saring-baris [data-jenis="gambar"]');
+  await hal.waitForTimeout(300);
+  await hal.click('#tampil-baris [data-gaya="daftar"]');
+  await hal.waitForTimeout(350);
   cek('gambarnya tergambar di kartunya',
       (await hal.locator('#hasil-depan img.kartu-gambar').count()) >= 1);
   await hal.click('#hasil-depan img.kartu-gambar');
@@ -2342,9 +2361,34 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
   const semuaJenis = await hal.evaluate(() =>
     TAlur.jenisSaringUji().map((j) => j[0]));
   cek('saringannya lengkap: reset, semua, teks, gambar, berkas, link',
-      JSON.stringify(semuaJenis) === JSON.stringify(['*reset', '', 'teks', 'gambar', 'berkas', 'tautan']),
+      JSON.stringify(semuaJenis) === JSON.stringify(['*reset', '*semua', 'teks', 'gambar', 'berkas', 'tautan']),
       JSON.stringify(semuaJenis));
   cek('resetnya paling kiri, jauh dari jempol', semuaJenis[0] === '*reset');
+
+  /* BAWAANNYA TEKS, bukan semua. Hasil yang langsung berisi dinding gambar
+     memenuhi layar sebelum satu judul pun sempat terbaca; gambar dicari
+     dengan sengaja, lewat cipnya sendiri.
+
+     Tapi bawaannya TIDAK disimpan sebagai 'teks': layar depan terbuka kalau
+     ada saringan yang menyala, jadi menyimpan 'teks' membuat layar depan tidak
+     akan pernah kosong lagi - dan layar depan yang kosong itu seluruh gunanya
+     aplikasi ini. Jadi '' berarti "belum memilih", dan yang belum memilih
+     dilayani teks. */
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+  await hal.waitForTimeout(250);
+  cek('layar depan tetap kosong walau bawaannya teks',
+      await hal.locator('#petak-hasil-depan').evaluate((n) => n.classList.contains('sembunyi')));
+  cek('cip Teks yang menyala waktu belum memilih',
+      (await hal.locator('#saring-baris [data-jenis="teks"].nyala').count()) === 1 &&
+      (await hal.locator('#saring-baris [data-jenis="*semua"].nyala').count()) === 0);
+  cek('dan yang dipakai menyaring memang teks',
+      (await hal.evaluate(() => TAlur.jenisEfektifUji())) === 'teks');
+  await hal.click('#saring-baris [data-jenis="*semua"]');
+  await hal.waitForTimeout(300);
+  cek('"Semua" itu pilihan sendiri, bukan bawaan',
+      (await hal.evaluate(() => TAlur.jenisEfektifUji())) === '');
+  await hal.click('#saring-baris [data-jenis="*semua"]');
+  await hal.waitForTimeout(300);
   cek('dan dia selalu tampil, tidak peduli isinya',
       (await hal.locator('#saring-baris [data-jenis="*reset"]').count()) === 1);
   /* Reset bukan saringan: dia tidak pernah menyala. */

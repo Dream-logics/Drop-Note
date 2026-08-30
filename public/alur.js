@@ -124,7 +124,21 @@
   var labelDepan = null;   /* label yang sedang ditampilkan di layar depan */
   var temaSaat = 'teal';   /* warna aksen - dasarnya tetap putih di semua tema */
   var temaSendiri = '';
-  var saringJenis = '';    /* '' = semua jenis; 'gambar', 'berkas', 'daftar', ... */
+  /* TIGA KEADAAN, bukan dua - dan bedanya yang bikin ini benar:
+
+       ''        belum memilih apa pun -> yang tampil TEKS
+       '*semua'  memilih "Semua" -> semua jenis
+       'gambar'  dan seterusnya -> jenis itu saja
+
+     Kenapa tidak langsung menyimpan 'teks' sebagai bawaan: layar depan
+     terbuka kalau ada saringan yang menyala, jadi bawaan 'teks' membuat layar
+     depan tidak akan pernah kosong lagi - dan layar depan yang kosong itu
+     seluruh gunanya aplikasi ini.
+
+     Kenapa teks yang duluan: hasil yang langsung berisi dinding gambar
+     memenuhi layar sebelum satu judul pun sempat terbaca. Gambar dicari
+     dengan sengaja, lewat cip Gambar - dan di sana dia memang yang dicari. */
+  var saringJenis = '';
 
   var gayaGambar = 'kecil';    /* besar | sedang | kecil | daftar */
   var laciBuka = '';       /* laci mana yang sedang terbuka: label | drop | filter */
@@ -805,12 +819,20 @@
      menghapus seluruh keadaan layar tidak pantas mudah tersenggol. */
   var JENIS_SARING = [
     ['*reset', 'Reset', '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>'],
-    ['', 'Semua', '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
+    ['*semua', 'Semua', '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
     ['teks', 'Teks', '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/>'],
     ['gambar', 'Gambar', '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>'],
     ['berkas', 'Berkas', '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>'],
     ['tautan', 'Link', '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>']
   ];
+
+  /* Yang benar-benar dipakai menyaring. '' berarti belum memilih, dan yang
+     belum memilih dilayani TEKS - bukan semuanya. */
+  function jenisEfektif() {
+    if (saringJenis === '') return 'teks';
+    if (saringJenis === '*semua') return '';
+    return saringJenis;
+  }
 
   function gambarCipSaring() {
     var wadah = $('#saring-baris');
@@ -823,12 +845,16 @@
                '" aria-label="' + H(j[1]) + '">' +
                '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
       }
-      var n = j[0] ? hidup.filter(function (e) { return e.jenis === j[0]; }).length : hidup.length;
+      var n = (j[0] && j[0] !== '*semua')
+        ? hidup.filter(function (e) { return e.jenis === j[0]; }).length
+        : hidup.length;
       /* Jenis yang belum pernah ada isinya tidak ditampilkan sama sekali:
-         cip yang pasti menghasilkan nol cuma barang yang harus dilewati. */
-      if (j[0] && !n) return '';
+         cip yang pasti menghasilkan nol cuma barang yang harus dilewati.
+         "Semua" dan "Teks" selalu ada - keduanya jalan pulang. */
+      if (j[0] && j[0] !== '*semua' && j[0] !== 'teks' && !n) return '';
       return '<button class="saring-cip' +
-             (saringJenis === j[0] ? ' nyala' : '') +
+             (j[0] === '*semua' ? (saringJenis === '*semua' ? ' nyala' : '')
+                                : (jenisEfektif() === j[0] ? ' nyala' : '')) +
              '" data-jenis="' + j[0] + '" title="' + H(j[1]) + '" aria-label="' + H(j[1]) + '">' +
              '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
     }).filter(Boolean);
@@ -863,8 +889,8 @@
 
   function gambarBarisTampilan() {
     var baris = $('#tampil-baris');
-    baris.classList.toggle('sembunyi', saringJenis !== 'gambar');
-    if (saringJenis !== 'gambar') { baris.innerHTML = ''; return; }
+    baris.classList.toggle('sembunyi', jenisEfektif() !== 'gambar');
+    if (jenisEfektif() !== 'gambar') { baris.innerHTML = ''; return; }
     baris.innerHTML = GAYA_GAMBAR.map(function (g) {
       return '<button class="tampil-tbl' + (gayaGambar === g[0] ? ' nyala' : '') +
              '" data-gaya="' + g[0] + '" title="' + H(g[1]) + '" aria-label="' + H(g[1]) + '">' +
@@ -924,7 +950,9 @@
     if (j === '*reset') { resetLayar(); return; }
     /* Mengetuk yang sedang menyala mematikannya - tanpa itu, satu-satunya
        jalan keluar adalah menebak cip mana yang berarti "batal". */
-    saringJenis = (saringJenis === j && j) ? '' : j;
+    /* Mengetuk yang sedang menyala mengembalikannya ke bawaan, bukan ke
+       "semua" - jalan pulangnya tetap satu tempat. */
+    saringJenis = (saringJenis === j) ? '' : j;
     gambarHasilDepan();
     gambarCipSaring();
   }
@@ -970,13 +998,13 @@
 
     var kueri = $('#kotak').value.trim();
     bersihkanUrl();
-    var hasil = TOtak.cari(semuaEntri, kueri, saringJenis, istilah || '');
+    var hasil = TOtak.cari(semuaEntri, kueri, jenisEfektif(), istilah || '');
     $('#petak-hasil-depan').classList.remove('sembunyi');
 
     var ket = [];
     ket.push(hasil.length ? hasil.length + ' hasil' : 'Kosong');
     if (labelDepan && labelDepan !== '*') ket.push(labelDepan);
-    if (saringJenis) JENIS_SARING.forEach(function (x) { if (x[0] === saringJenis) ket.push(x[1]); });
+    JENIS_SARING.forEach(function (x) { if (x[0] === jenisEfektif() && x[0]) ket.push(x[1]); });
     /* Kata yang panjang dipotong di kepala: keterangan yang membungkus jadi
        dua baris mendorong hasil pertama ke bawah - dan hasil pertama itu yang
        dicari. Yang lengkap tetap terbaca di kotaknya sendiri, tepat di atas. */
@@ -986,11 +1014,23 @@
 
     var wadah = $('#hasil-depan');
     if (!hasil.length) {
+      /* KOSONG YANG JUJUR. Bawaannya cuma teks, jadi mencari sesuatu yang
+         ternyata sebuah gambar atau tautan akan menjawab "tidak ada yang
+         cocok" - dan itu bohong. Saringan yang membuat pencarian TERLIHAT
+         rusak adalah bug yang sama yang dulu sudah dibetulkan sekali; di sini
+         dia dicegah dengan menyebut angkanya, bukan dengan membuang
+         saringannya. */
+      var lain = jenisEfektif()
+        ? TOtak.cari(semuaEntri, kueri, '', istilah || '').length : 0;
       wadah.innerHTML = '<div class="kosong">' + (kueri
-        ? 'Tidak ada yang cocok.<br>Coba satu kata saja — pencarian ini memaafkan.'
-        : saringJenis
-          ? 'Belum ada yang berjenis ini.'
-          : 'Belum ada yang masuk label ini.<br>Label diisi AI sesudah catatannya jatuh.') +
+        ? (lain
+            ? 'Tidak ada teks yang cocok.<br><b>' + lain + '</b> ketemu di jenis lain — ketuk <b>Semua</b> di atas.'
+            : 'Tidak ada yang cocok.<br>Coba satu kata saja — pencarian ini memaafkan.')
+        : lain
+          ? 'Belum ada teks di sini.<br><b>' + lain + '</b> ada di jenis lain.'
+          : saringJenis
+            ? 'Belum ada yang berjenis ini.'
+            : 'Belum ada yang masuk label ini.<br>Label diisi AI sesudah catatannya jatuh.') +
         '</div>';
       return;
     }
@@ -999,7 +1039,7 @@
        nama berkas yang tidak berarti apa-apa; yang mengenalinya kembali adalah
        rupanya. Jenis lain tetap baris, karena di sana justru judulnya yang
        dikenali. */
-    if (saringJenis === 'gambar' && gayaGambar !== 'daftar') {
+    if (jenisEfektif() === 'gambar' && gayaGambar !== 'daftar') {
       wadah.innerHTML = '<div class="petak ' + gayaGambar + '">' + hasil.slice(0, 200).map(function (e) {
         var gambar = e.thumb
           ? '<img src="' + H(e.thumb) + '" alt="">'
@@ -3127,6 +3167,7 @@
     tutupLaciUji: tutupLaci,
     muatUlangUji: muatSemua,
     jenisSaringUji: function () { return JENIS_SARING; },
+    jenisEfektifUji: jenisEfektif,
     semuaEntri: function () { return semuaEntri; }
   };
 })(window);
