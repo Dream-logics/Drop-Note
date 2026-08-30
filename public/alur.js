@@ -1989,6 +1989,26 @@
       });
   }
 
+  /* MEMBUANG RUANGAN HARUS IKUT MENCABUT NAMANYA DARI ISINYA.
+
+     Rak Storage tidak punya daftar sendiri - dia LAHIR dari isinya. Dan alamat
+     satu catatan bukan cuma kolom kategori: begitu kategorinya kosong,
+     alamatnya jatuh ke tag buatan AI, dan tag itu hampir selalu kata yang sama
+     dengan nama raknya ("Amara" -> tag "amara"). Jadi mengosongkan kategori
+     saja membuat raknya lahir kembali seketika, dengan isi yang sama persis.
+     Yang terlihat: pesan "1 folder dihapus" lewat, foldernya tetap utuh, dan
+     yang terbaca adalah tombol yang rusak.
+
+     Yang dicabut CUMA tag yang menamai ruangan ini. Tag lain tetap tinggal,
+     jadi catatannya mendarat di ruangan berikutnya - bukan hilang, dan bukan
+     pula telanjang. */
+  function cabutTagRuang(e, nama) {
+    var n = normalFolder(nama);
+    e.tag = (e.tag || []).filter(function (t) {
+      return normalFolder(bakuFolder(t)) !== n;
+    });
+  }
+
   /* MEMBUANG FOLDER TIDAK MEMBUANG ISINYA. Foldernya cuma nama tempat; yang di
      dalamnya tetap tulisan yang kamu ketik sendiri, dan aturan nomor empat
      berlaku juga di sini. Yang tadinya di dalam naik ke "Belum berfolder", dan
@@ -1996,9 +2016,16 @@
   function buangFolderTerpilih(daftar) {
     var isi = [];
     daftar.forEach(function (n) { isi = isi.concat(isiFolder(n)); });
+    /* Dua kalimat yang berbeda karena dua akibat yang berbeda. Folder Note itu
+       tempat yang kamu buat sendiri, jadi isinya cuma keluar dan menunggu di
+       "Belum berfolder". Rak Storage lahir dari mesin: begitu raknya hilang,
+       mesinnya menyortir ulang isinya - dan menjanjikan "cuma keluar" berarti
+       menyembunyikan rak-rak baru yang akan muncul sesudahnya. */
     tanya('Hapus ' + daftar.length + ' folder?',
       isi.length
-        ? isi.length + ' catatan di dalamnya TIDAK ikut terhapus — mereka cuma keluar dari foldernya.'
+        ? (diLayarTulis()
+            ? isi.length + ' tulisan di dalamnya TIDAK ikut terhapus — mereka keluar ke “Belum berfolder”.'
+            : isi.length + ' catatan di dalamnya TIDAK ikut terhapus — mereka disortir ulang ke rak lain.')
         : 'Foldernya kosong, jadi tidak ada yang ikut hilang.',
       function () {
         /* Folder Note punya daftarnya sendiri, jadi namanya ikut dicoret dari
@@ -2008,8 +2035,14 @@
           folderDaftar = folderDaftar.filter(function (n) { return daftar.indexOf(n) < 0; });
           simpanFolder();
           if (daftar.indexOf(tulisFolder) >= 0) tulisFolder = null;
-        } else if (daftar.indexOf(noteFolder) >= 0) {
-          noteFolder = null;
+        } else {
+          if (daftar.indexOf(noteFolder) >= 0) noteFolder = null;
+          /* Cuma di Storage. Folder Note punya daftarnya sendiri, jadi
+             mencoretnya dari sana sudah cukup - dan tag catatannya tidak ada
+             urusannya dengan folder yang kamu buat tangan. */
+          isi.forEach(function (e) {
+            daftar.forEach(function (n) { cabutTagRuang(e, n); });
+          });
         }
         pindahkanEntri(isi, '', daftar.length + ' folder dihapus');
         if (!isi.length) { batalPilih(); segarkanTampilan(); pesan(daftar.length + ' folder dihapus'); }
