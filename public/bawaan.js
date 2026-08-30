@@ -25,6 +25,13 @@
        Yang memakainya adalah proxy, bukan aplikasi ini. */
     model: 'gemini-3.5-flash-lite',
 
+    /* Dua model lain, dan keduanya cuma dipakai di layar Obrol - satu-satunya
+       tempat AI diajak BICARA, bukan bekerja di belakangmu. Flash-Lite di atas
+       sengaja tidak dipakai di sana: memberi judul dan menjawab pertanyaan itu
+       dua pekerjaan yang beda beratnya, dan yang kedua yang kamu tunggui. */
+    modelObrol: 'gemini-3.5-flash',
+    modelGambar: 'gemini-3.5-flash-image',
+
     /* Tag yang pasti sering dipakai, ditanam sekali supaya AI punya rak yang
        benar sejak catatan pertama - bukan setelah sebulan meraba-raba.
        Ini cuma NILAI AWAL: begitu aplikasinya dipasang, daftarnya jadi milik

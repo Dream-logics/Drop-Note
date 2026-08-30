@@ -81,6 +81,11 @@ Menambah pelanggan nanti = menambah satu baris di Sheet. Bisa dari HP.
 
 const P = PropertiesService.getScriptProperties();
 const MODEL = 'gemini-3.5-flash-lite';
+/* Dua model tambahan, dan keduanya cuma dipakai layar Obrol. Melabeli itu
+   pekerjaan kecil yang jalan di belakang; menjawab pertanyaan itu pekerjaan
+   yang ditunggui orangnya, dan menggambar butuh model yang lain sama sekali. */
+const MODEL_OBROL = 'gemini-3.5-flash';
+const MODEL_GAMBAR = 'gemini-3.5-flash-image';
 const TAB = 'pengguna';
 
 function doPost(e) {
@@ -145,15 +150,25 @@ function keGemini(minta) {
   const kunci = P.getProperty('KUNCI_GEMINI');
   if (!kunci) return { galat: 'KUNCI_GEMINI belum diisi' };
 
+  /* Tiga pekerjaan, tiga bentuk permintaan - dan aplikasi yang memilih lewat
+     minta.mode. Mode yang tidak dikenal jatuh ke pelabelan: itu bentuk yang
+     paling lama ada, jadi aplikasi versi lama tetap terlayani apa adanya. */
+  const mode = minta.mode || 'label';
+  const model = mode === 'gambar' ? MODEL_GAMBAR : mode === 'obrol' ? MODEL_OBROL : MODEL;
+
+  const badan = { contents: [{ role: 'user', parts: minta.bagian }] };
+  if (minta.arahan) badan.systemInstruction = { parts: [{ text: minta.arahan }] };
+  if (mode === 'gambar') badan.generationConfig = { responseModalities: ['IMAGE'] };
+  else if (mode === 'obrol') badan.generationConfig = { temperature: 0.6 };
+  /* Cuma pelabelan yang minta JSON. Memaksa obrolan menjawab JSON membuat
+     tiap kalimat datang terbungkus tanda kutip dan kurung kurawal. */
+  else badan.generationConfig = { temperature: 0.2, responseMimeType: 'application/json' };
+
   const r = UrlFetchApp.fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent',
     { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       headers: { 'x-goog-api-key': kunci },
-      payload: JSON.stringify({
-        systemInstruction: { parts: [{ text: minta.arahan }] },
-        contents: [{ role: 'user', parts: minta.bagian }],
-        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
-      })
+      payload: JSON.stringify(badan)
     });
 
   const j = JSON.parse(r.getContentText());

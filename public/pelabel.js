@@ -38,6 +38,17 @@
     return ((setelan && setelan.model) || '').trim() || TBawaan.model;
   }
 
+  /* Obrolan dan gambar memakai modelnya sendiri, dan keduanya jatuh kembali ke
+     model pelabelan kalau bawaan.js tidak menyebutkannya - aplikasi yang mati
+     total karena satu baris setelan hilang adalah kerusakan yang tidak perlu. */
+  function modelObrol(setelan) {
+    return ((setelan && setelan.modelObrol) || '').trim() || TBawaan.modelObrol || TBawaan.model;
+  }
+
+  function modelGambar(setelan) {
+    return ((setelan && setelan.modelGambar) || '').trim() || TBawaan.modelGambar || TBawaan.model;
+  }
+
   /* DUA JALAN, DAN YANG PERTAMA YANG NORMAL.
 
      1. LEWAT PROXY (bawaan, untuk semua pemakai). Kunci Gemini tinggal di
@@ -582,6 +593,130 @@
     }, Promise.resolve(0));
   }
 
+  /* ===================== OBROLAN =====================
+     Satu-satunya bagian AI yang KAMU ajak bicara, bukan yang bekerja di
+     belakangmu. Karakternya asisten pribadi, bukan mesin serba tahu: yang
+     dipakai di sini orang yang menjalankan banyak peran sekaligus dan sedang
+     kehabisan tenaga, jadi jawaban enam paragraf untuk pertanyaan lima kata
+     bukan menolong - itu menambah beban di tempat yang sama.
+
+     Riwayatnya tinggal di perangkat, di toko yang sama dengan catatan, jadi
+     ikut cadangan dan tidak hilang waktu halamannya dimuat ulang. */
+  var ARAHAN_OBROL = [
+    'Kamu asisten pribadi seseorang yang menjalankan banyak peran sekaligus - beberapa usaha,',
+    'beberapa tim, dan hampir tidak pernah punya waktu utuh.',
+    '',
+    'Cara menjawab, dan ini yang paling menentukan:',
+    '- SEIMBANG DENGAN PERTANYAANNYA. Pertanyaan lima kata dijawab beberapa kalimat, bukan',
+    '  enam paragraf. Dia membacanya di HP, di sela pekerjaan lain.',
+    '- INTINYA DI DEPAN. Kesimpulan dulu, alasannya sesudahnya - dan cuma kalau alasannya',
+    '  memang mengubah keputusan.',
+    '- KALAU ADA YANG PERLU DIPUTUSKAN, beri SATU rekomendasi, bukan daftar pilihan.',
+    '  Daftar pilihan memindahkan pekerjaan berpikir kembali ke dia.',
+    '- Bahasa Indonesia, apa adanya, tanpa basa-basi pembuka dan tanpa menawarkan bantuan',
+    '  lanjutan di akhir.',
+    '- Kalau kamu tidak tahu, bilang tidak tahu. Menebak dengan yakin lebih mahal daripada',
+    '  mengaku tidak tahu.'
+  ].join('\n');
+
+  /* Jawaban obrolan itu teks biasa, jadi dia tidak lewat urai() seperti yang
+     lain - satu-satunya tempat di berkas ini yang tidak mengharapkan JSON. */
+  function obrolTeks(setelan, riwayat) {
+    var bagian = (riwayat || []).slice(-20).map(function (m) {
+      return { text: (m.dari === 'aku' ? 'Aku: ' : 'Kamu: ') + m.teks };
+    });
+    if (!bagian.length) return Promise.reject(new Error('Belum ada yang ditanyakan'));
+    var arahan = ARAHAN_OBROL + '\n\nJawab sebagai teks biasa, BUKAN JSON.';
+    var ambilTeks = function (j) {
+      var p = j && j.candidates && j.candidates[0] && j.candidates[0].content &&
+              j.candidates[0].content.parts && j.candidates[0].content.parts[0];
+      return (p && p.text) || '';
+    };
+    if (lewatProxy(setelan)) {
+      return TAwan.ambilToken(setelan, true).then(function (token) {
+        return fetch(TBawaan.alamatAI, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ token: token, arahan: arahan, bagian: bagian, mode: 'obrol' })
+        });
+      }).then(function (r) {
+        if (!r.ok) throw new Error('Layanan AI menjawab ' + r.status);
+        return r.text();
+      }).then(function (t) {
+        var j;
+        try { j = JSON.parse(t); } catch (e) { throw new Error('Jawaban tidak dikenali'); }
+        if (j && j.galat) throw new Error(j.galat);
+        return ambilTeks(j);
+      });
+    }
+    return fetch(AKAR + encodeURIComponent(modelObrol(setelan)) + ':generateContent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': setelan.kunciGemini },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: arahan }] },
+        contents: [{ role: 'user', parts: bagian }],
+        generationConfig: { temperature: 0.6 }
+      })
+    }).then(function (r) {
+      return r.json().then(function (j) {
+        if (!r.ok) throw new Error((j && j.error && j.error.message) || ('Gemini menjawab ' + r.status));
+        return ambilTeks(j);
+      });
+    });
+  }
+
+  /* Gambar buatan AI kembali sebagai base64 DI DALAM jawabannya, bukan sebagai
+     alamat yang harus diunduh belakangan. Itu kebetulan yang menguntungkan di
+     sini: begitu jawabannya sampai, gambarnya sudah ada di perangkat, dan dia
+     masuk ke toko berkas lewat jalan yang sama persis dengan gambar yang kamu
+     lampirkan sendiri - tidak ada jalur kedua yang harus dipelihara. */
+  function gambarAI(setelan, perintah) {
+    var teks = String(perintah || '').trim();
+    if (!teks) return Promise.reject(new Error('Belum ada yang diminta'));
+    var ambilGambar = function (j) {
+      var bagian = (j && j.candidates && j.candidates[0] && j.candidates[0].content &&
+                    j.candidates[0].content.parts) || [];
+      for (var i = 0; i < bagian.length; i++) {
+        /* Dua ejaan kunci yang sama: REST memakai inlineData, sebagian jalur
+           lain inline_data. Keduanya diterima supaya jawaban yang benar tidak
+           terbaca sebagai kegagalan. */
+        var d = bagian[i].inlineData || bagian[i].inline_data;
+        if (d && d.data) return { data: d.data, tipe: d.mimeType || d.mime_type || 'image/png' };
+      }
+      throw new Error('AI tidak mengembalikan gambar');
+    };
+    if (lewatProxy(setelan)) {
+      return TAwan.ambilToken(setelan, true).then(function (token) {
+        return fetch(TBawaan.alamatAI, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ token: token, bagian: [{ text: teks }], mode: 'gambar' })
+        });
+      }).then(function (r) {
+        if (!r.ok) throw new Error('Layanan AI menjawab ' + r.status);
+        return r.text();
+      }).then(function (t) {
+        var j;
+        try { j = JSON.parse(t); } catch (e) { throw new Error('Jawaban tidak dikenali'); }
+        if (j && j.galat) throw new Error(j.galat);
+        return ambilGambar(j);
+      });
+    }
+    return fetch(AKAR + encodeURIComponent(modelGambar(setelan)) + ':generateContent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': setelan.kunciGemini },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: teks }] }],
+        generationConfig: { responseModalities: ['IMAGE'] }
+      })
+    }).then(function (r) {
+      return r.json().then(function (j) {
+        if (!r.ok) throw new Error((j && j.error && j.error.message) || ('Gemini menjawab ' + r.status));
+        return ambilGambar(j);
+      });
+    });
+  }
+
   /* ===================== putaran ===================== */
 
   function putaran(setelan) {
@@ -618,6 +753,7 @@
 
   global.TPelabel = {
     putaran: putaran, coba: coba, siap: siap, model: model, lewatProxy: lewatProxy,
+    obrolTeks: obrolTeks, gambarAI: gambarAI, ARAHAN_OBROL: ARAHAN_OBROL,
     /* Cuma untuk uji: melihat arahan yang benar-benar dikirim, bukan menebak
        dari kodenya. */
     arahanUji: function (setelan) { return arahanLabel(daftarTag(setelan), daftarNamaElemen(setelan)); },

@@ -811,6 +811,10 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
    isi - kalau setara dengan tugasnya, dia ikut minta dibaca. */
 /* Penyingkap "Lainnya": redup dan setipis mungkin - dia pintu ke hal yang
    jarang dipakai, dan pintu yang jarang dipakai tidak pantas seramai isinya. */
+/* Irama di layar Berulang: sebaris kecil di bawah judulnya, redup sampai
+   yang aktif - dia keterangan yang bisa diketuk, bukan tombol yang menuntut. */
+.cip-baris.irama{margin:0 0 8px 35px;gap:5px}
+.cip-baris.irama .cip{padding:5px 9px;font-size:11.5px}
 .tugas-lain{
   display:flex;align-items:center;gap:5px;width:100%;min-height:38px;
   border:none;background:none;color:var(--m);padding:0 2px;cursor:pointer;
@@ -819,6 +823,10 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 .tugas-lain .ik{width:15px;height:15px;transition:transform .15s}
 .tugas-lain.buka .ik{transform:rotate(180deg)}
 .tugas-lain-isi{padding-top:2px}
+/* Mode mengisi: yang tidak ikut mengisi diredupkan, bukan dihilangkan -
+   menghilangkan berarti layar melompat tiap kali kotak isian dibuka. */
+.mode-isi .saring-baris{opacity:.3;pointer-events:none}
+.mode-isi #kotak{opacity:.55}
 .link-ket{font-size:12px;color:var(--m);padding:7px 2px 0}
 .kotak.tinggi{min-height:96px}
 .tugas-bagian{
@@ -861,3 +869,105 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   cursor:zoom-out;
 }
 .lihat img{cursor:zoom-out;max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+
+
+/* --- konfirmasi --- */
+.tanya{
+  position:fixed;inset:0;z-index:18;background:rgba(16,18,20,.42);
+  display:flex;align-items:center;justify-content:center;padding:22px;
+}
+.tanya-kotak{
+  background:var(--p);border-radius:16px;padding:20px 18px 14px;max-width:380px;width:100%;
+  box-shadow:0 8px 40px rgba(0,0,0,.16);
+}
+.tanya-judul{font-size:16.5px;font-weight:700;line-height:1.35}
+.tanya-ket{font-size:13.5px;color:var(--m);margin-top:8px;line-height:1.5}
+.tanya-aksi{display:flex;gap:8px;margin-top:18px}
+.tanya-aksi .set-tbl{flex:1;margin:0}
+
+/* --- pilih banyak di layar Note --- */
+.pilih-bilah{
+  display:flex;align-items:center;gap:7px;padding:8px 2px 0;
+  font-size:13px;font-weight:600;color:var(--a);
+}
+.pilih-bilah #pilih-jumlah{flex:1}
+.pilih-tbl{
+  min-height:38px;padding:0 13px;border:1px solid var(--a);background:none;color:var(--a);
+  border-radius:19px;font-size:12.5px;font-weight:700;cursor:pointer;
+}
+.pilih-tbl.bahaya{border-color:var(--bahaya);color:var(--bahaya)}
+.kartu.dipilih{
+  background:color-mix(in srgb, var(--a) 10%, transparent);
+  border-radius:10px;
+}
+/* Waktu ada yang dipilih, menyentuh kartu berarti MEMILIH - bukan membuka.
+   Dua arti untuk satu ketukan adalah cara tercepat membuat orang ragu. */
+.mode-pilih .kartu{cursor:pointer}
+
+
+/* ============================================================================
+   MODE AI - satu ikon di atas tombol Drop
+   ============================================================================
+   Ikonnya lebih kecil daripada tombol di bawahnya, dan itu disengaja: dia
+   MENGUBAH arti tombol utama, bukan bersaing dengannya. Ukuran yang sama besar
+   akan membuat dua lingkaran bertumpuk yang sama-sama berteriak "tekan aku",
+   dan yang di bawah itulah yang dipakai puluhan kali sehari.
+   ============================================================================ */
+.drop-tumpuk{
+  display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;
+  grid-column:3;
+}
+/* flex:0 0 auto WAJIB: .tbl bawaannya flex:1, dan di dalam tumpukan yang
+   tegak itu berarti tingginya ikut dibagi-bagi - lingkarannya jadi lonjong
+   tanpa satu pun ukuran di sini kelihatan salah. */
+.dok-bawah #b-ai{
+  flex:0 0 auto;width:36px;height:36px;min-height:0;padding:0;border-radius:50%;
+  background:var(--p);border:1px solid var(--l);color:var(--m);
+}
+.dok-bawah #b-ai .ik{width:19px;height:19px}
+.dok-bawah #b-ai.nyala{background:var(--ap);border-color:var(--ap);color:var(--at)}
+#b-drop .ik.kirim{display:none}
+.mode-ai #b-drop .ik.turun{display:none}
+.mode-ai #b-drop .ik.kirim{display:block}
+
+/* Selama mode AI menyala, kotaknya berhenti mencari - jadi semua yang melayani
+   pencarian ikut turun panggung. Ini bukan menyembunyikan fitur: cip saringan
+   yang tetap terpampang padahal tidak lagi menyaring apa pun adalah layar yang
+   berbohong. Klip dan Todo ikut, karena keduanya menyimpan, dan di sini belum
+   ada yang bisa disimpan sampai jawabannya datang. */
+.mode-ai #petak-hasil-depan,.mode-ai .saring-baris,.mode-ai .ruang-baris,
+.mode-ai #b-lampir,.mode-ai #b-tugas{display:none}
+/* Yang terbaru MENEMPEL di kotaknya, bukan menggantung di puncak layar dengan
+   sejengkal kosong di bawahnya. Ini bentuk yang sudah dikenali dari tiap
+   aplikasi pesan, dan bukan sekadar rupa: jawaban terakhir duduk tepat di atas
+   jempol yang barusan mengetiknya. */
+.layar.dok-bawah > #petak-ai{order:3;flex:1;display:flex;flex-direction:column}
+#ai-isi{margin-top:auto}
+/* Ganjal yang biasa mendorong dok ke bawah tidak diperlukan lagi di sini -
+   obrolannya sendiri yang mengisi, dan kalau keduanya sama-sama tumbuh,
+   separuh ruang kosongnya mendarat DI BAWAH pesan terakhir. */
+.mode-ai > .tumbuh{display:none}
+
+.ai-kepala{display:flex;align-items:center;gap:8px;padding:10px 0 2px}
+.ai-mode{display:flex;gap:6px;flex:1}
+
+/* Gelembung, bukan kartu. Bentuk percakapan sudah dikenali semua orang tanpa
+   dijelaskan, dan yang paling penting: dia menandai bahwa isinya BUKAN
+   timbunan - yang layak jadi timbunan harus kamu Drop sendiri. */
+.ai-pesan{display:flex;margin:10px 0}
+.ai-pesan.aku{justify-content:flex-end}
+.ai-gelembung{
+  max-width:86%;padding:10px 13px;border-radius:16px;
+  background:var(--p);border:1px solid var(--l);
+  white-space:pre-wrap;overflow-wrap:break-word;font-size:15px;line-height:1.5;
+}
+.ai-pesan.aku .ai-gelembung{background:var(--ap);border-color:var(--ap);color:var(--at)}
+.ai-gelembung img{display:block;border-radius:10px;max-width:100%;height:auto;cursor:zoom-in}
+.ai-kaki{display:flex;gap:14px;padding-top:9px}
+.ai-kaki button{
+  border:none;background:none;color:var(--a);padding:0;cursor:pointer;
+  font-size:13px;font-weight:600;min-height:0;
+}
+/* Yang sedang ditunggu kelihatan sebagai gelembung juga, di tempat jawabannya
+   nanti mendarat - supaya layarnya tidak melompat waktu jawabannya sampai. */
+.ai-tunggu{color:var(--m);letter-spacing:.2em}

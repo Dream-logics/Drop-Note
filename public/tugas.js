@@ -37,7 +37,7 @@
      penyempitan dari yang paling sering ke yang paling jarang. */
   var SARING = [
     ['semua', 'Semua'], ['hariini', 'Hari ini'],
-    ['penting', 'Penting'], ['selesai', 'Selesai']
+    ['penting', 'Penting'], ['ulang', 'Berulang'], ['selesai', 'Selesai']
   ];
 
   /* BAWAANNYA "SEMUA", bukan "Hari ini". Tugas tanpa tenggat itu sah - itu
@@ -129,6 +129,8 @@
       });
     } else if (saringSaat === 'penting') {
       pakai = pakai.filter(function (e) { return e.penting; });
+    } else if (saringSaat === 'ulang') {
+      pakai = pakai.filter(function (e) { return !!e.ulang; });
     }
 
     /* Urutan yang menentukan: tertunggak dulu, lalu yang penting, lalu yang
@@ -238,6 +240,14 @@
     var baca = bacaTenggat(teks);
     var e = tugasBaru(baca.teks || teks);
     if (baca.tenggat) e.tenggat = baca.tenggat;
+    /* Ditambah sambil berdiri di layar Berulang berarti memang berulang -
+       menanyakan iramanya lagi sesudahnya adalah menagih jawaban yang sudah
+       diberikan. Bulanan yang dipilih duluan karena itu yang paling sering:
+       tagihan, sewa, laporan. Tinggal diketuk kalau ternyata bukan. */
+    if (saringSaat === 'ulang') {
+      e.ulang = 'bulanan';
+      if (!e.tenggat) e.tenggat = hariMulai(Date.now());
+    }
     /* Ditambah dari layar "Hari ini" berarti memang untuk hari ini. Menanyakan
        ulang setelah orangnya sudah berdiri di layar itu adalah pertanyaan yang
        jawabannya sudah dia berikan. */
@@ -264,10 +274,19 @@
      di layar itu; dari layar Drop dia tidak pernah menjawabnya, jadi tidak
      boleh dijawabkan. Yang diwarisi cuma gudangnya - dan itu memang sudah dia
      tulis sendiri di kotaknya. */
-  function tambahDariDrop(teks, kategori) {
+  function tambahDariDrop(teks, kategori, langkah) {
     if (!String(teks || '').trim()) return Promise.resolve(null);
     var baca = bacaTenggat(teks);
     var e = tugasBaru(baca.teks || teks);
+    /* Daftar yang barusan diketik masuk UTUH sebagai langkah. Kalau judulnya
+       kebetulan sama dengan baris pertama - dan itu yang terjadi kalau kotak
+       dropnya kosong - baris itu tidak ditulis dua kali. */
+    if (langkah && langkah.length) {
+      var judulKecil = String(e.judul || '').trim().toLowerCase();
+      e.daftar = langkah.filter(function (x, i) {
+        return !(i === 0 && String(x.teks || '').trim().toLowerCase() === judulKecil);
+      });
+    }
     /* Tanggal yang KEBETULAN ditulis tetap dibaca - mengabaikan "besok" yang
        sudah terlanjur diketik bukan kesederhanaan, itu pura-pura tidak lihat. */
     if (baca.tenggat) e.tenggat = baca.tenggat;
@@ -359,11 +378,29 @@
     if (ulang.length) {
       /* Judul bagian cuma muncul kalau KEDUANYA ada. Judul di atas daftar yang
          seluruhnya satu jenis tidak memisahkan apa pun, dia cuma baris yang
-         harus dilewati. */
-      if (sekali.length) isi += '<div class="tugas-bagian">Berulang</div>';
+         harus dilewati - dan di layar Berulang, semuanya memang satu jenis. */
+      if (sekali.length && saringSaat !== 'ulang') isi += '<div class="tugas-bagian">Berulang</div>';
       isi += ulang.map(function (e) { return barisHtml(e, H); }).join('');
     }
     $('#tugas-daftar').innerHTML = isi;
+  }
+
+  /* IRAMA DIPILIH DI LAYARNYA SENDIRI, bukan di dalam rincian tiap tugas.
+     Di sana dia satu bagian dari tujuh yang hampir tidak pernah disentuh; di
+     sini dia satu-satunya pertanyaan yang tersisa, dan jawabannya satu ketukan.
+
+     Ditulis di bawah judulnya, bukan di balik "Lainnya": begitu kamu berdiri
+     di layar Berulang, mengubah iramanya justru pekerjaan yang paling mungkin
+     kamu datangi. */
+  function iramaHtml(e, H) {
+    var pilih = function (nilai, label) {
+      return '<button class="cip' + (e.ulang === nilai ? ' nyala' : '') +
+             '" data-ulang="' + nilai + '">' + H(label) + '</button>';
+    };
+    return '<div class="cip-baris irama">' +
+      pilih('harian', 'Harian') + pilih('mingguan', 'Mingguan') +
+      pilih('bulanan', 'Bulanan') + pilih('', 'Berhenti') +
+    '</div>';
   }
 
   function barisHtml(e, H) {
@@ -431,6 +468,7 @@
         '<svg viewBox="0 0 24 24" class="ik"><path d="M12 3l2.6 5.8 6.4.7-4.8 4.3 1.4 6.2L12 17l-5.6 3 1.4-6.2L3 9.5l6.4-.7z"/></svg>' +
       '</button></div>');
 
+    if (saringSaat === 'ulang') b.push(iramaHtml(e, H));
     if (terbukaId === e.id) b.push(rinciHtml(e, H));
 
     return '<article class="tugas' + (e.selesai ? ' kelar' : '') +
