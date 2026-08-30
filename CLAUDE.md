@@ -92,13 +92,16 @@ terpikir, dan itu membatalkan seluruh gunanya.
 ## Peta berkas
 
 ```
-public/index.html   kerangka semua layar (mulai, utama/Drop, tugas/To Do,
-                    note, catat, setelan). Tiga pintu di kepala:
-                    Drop - To Do - Storage, digambar dari alur.js ke
-                    <div data-tab>
+public/index.html   kerangka semua layar (mulai, utama/Drop, tulis/Note,
+                    tugas/To Do, note/Storage, catat, setelan).
+                    EMPAT pintu di kepala: Drop - Note - To Do - Storage,
+                    digambar dari alur.js ke <div data-tab>
                     TIDAK ADA layar hasil dan TIDAK ADA tombol Cari: kotak drop
                     itu sendiri pencariannya, hasilnya di bawahnya
-                    Catat BUKAN tombol - layar tulis didatangi dari hasil
+                    Layar tulis didatangi dari hasil pencarian DAN dari
+                    tombol bulat di layar Note - tapi tetap tidak pernah dari
+                    layar Drop: di sana dia pilihan palsu yang menagih jawaban
+                    sebelum kamu tahu tulisanmu panjang atau pendek
 public/bawaan.js    SATU-SATUNYA tempat nama aplikasi & model AI ditulis
 public/gaya.css     gaya; SATU tema putih, tidak mengikuti setelan HP
 public/simpan.js    IndexedDB — entri, berkas (blob), setelan, cadangan
@@ -134,6 +137,17 @@ public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
                     ditemukan. Yang terkunci tidak pernah dikirim ke AI
 public/sinkron.js   cadangan satu arah ke Drive; tidak pernah di jalur drop
 public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
+                    LAYAR NOTE ('l-tulis') itu RUANG MENULIS, bukan hasil
+                    saringan Drop: daftar tulisan + pencariannya sendiri +
+                    satu tombol bulat "tulis baru", dan layar tulisnya punya
+                    tombol Simpan yang bisa ditekan. Penandanya kolom
+                    'tulisan', BUKAN jenis tersendiri - jenis yang beda bikin
+                    dia luput dari saringan, kartu, dan pemisahan elemen.
+                    Tulisan tetap ikut terjaring pencarian utama: yang
+                    ditambahkan layar Note pintu yang lebih sempit, bukan
+                    dinding kedua.
+                    Layar 'l-note' itu STORAGE - gudang berfolder, isinya
+                    semua yang pernah jatuh.
                     Teks bayangan melengkapi nama gudang sambil diketik;
                     yang menerima PANAH di ujung ekornya - satu-satunya bagian
                     bayangan yang duduk DI ATAS kotak teks, letaknya diukur
@@ -176,7 +190,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (462 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (475 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

@@ -109,6 +109,10 @@
       dibuat: t, diubah: t, dipakai: 0,
       diLabeliAI: false, diBacaAI: false,
       rahasia: false, elemenTerkunci: '',
+      /* Penanda ruang menulis. Bukan jenis tersendiri: kalau jenisnya beda,
+         dia luput dari saringan, dari kartu, dan dari pemisahan elemen - dan
+         tulisan berisi nomor rekening berhenti bisa disalin sendiri. */
+      tulisan: false,
       selesai: false, selesaiPada: 0, penting: false, hariIni: 0,
       tenggat: 0, ulang: '',
       pensiun: false, dihapus: false, riwayat: []
@@ -216,11 +220,16 @@
 
   function tampilkanLayar(id) {
     if (layarSaat === 'l-catat' && id !== 'l-catat') simpanCatat();
-    ['l-mulai', 'l-utama', 'l-tugas', 'l-note', 'l-catat', 'l-setelan'].forEach(function (x) {
+    ['l-mulai', 'l-utama', 'l-tulis', 'l-tugas', 'l-note', 'l-catat', 'l-setelan'].forEach(function (x) {
       $('#' + x).classList.toggle('aktif', x === id);
     });
     layarSaat = id;
     if (id === 'l-utama') perbaruiJumlah();
+    /* Digambar ulang tiap kali layarnya tampil, bukan cuma waktu pintunya
+       diketuk: jalan pulang yang paling sering dari layar tulis adalah tombol
+       kembali, dan daftar yang tidak ikut segar di situ memperlihatkan judul
+       lama untuk tulisan yang baru saja kamu ubah. */
+    if (id === 'l-tulis') gambarTulis();
     if (id === 'l-note') gambarNote();
     gambarTab();
     global.scrollTo(0, 0);
@@ -288,6 +297,12 @@
        tombol yang sama. Yang di kepala itu TEMPAT (di sini kamu menulis), yang
        di bawah itu TINDAKAN (jatuhkan sekarang). */
     ['l-utama', 'Drop', '<path d="M4 20h16"/><path d="M14.5 4.5l5 5L8 21H3v-5z"/>'],
+    /* Lembar bergaris, BUKAN pena - penanya milik Drop di sebelahnya. Yang
+       dibedakan di sini bukan "menulis" lawan "tidak menulis" (dua-duanya
+       menulis), melainkan POTONGAN lawan LEMBARAN: Drop menampung tiga detik
+       yang berdiri sendiri, Note menampung sesuatu yang punya halaman dan
+       didatangi lagi besok. */
+    ['l-tulis', 'Note', '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/>'],
     ['l-tugas', 'To Do', '<rect x="3" y="4" width="7" height="7" rx="1.5"/><path d="M5 7.5l1.5 1.5L9 6"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="M4 15h5"/><path d="M4 19h5"/>'],
     /* "Storage", bukan "Note". Layar ini memang gudang: dia memperlihatkan
        SEMUA yang pernah jatuh, tersusun di raknya masing-masing. Menulis punya
@@ -318,6 +333,7 @@
     if (id === layarSaat) return;
     tutupLaci();
     if (id === 'l-tugas') TTugas.buka();
+    if (id === 'l-tulis') gambarTulis();
     keLayar(id);
   }
 
@@ -1453,7 +1469,73 @@
     pasangGambarKartu(wadah);
   }
 
-  /* ===================== LAYAR NOTE =====================
+  /* ===================== LAYAR NOTE: RUANG MENULIS =====================
+     Pintu keempat, dan dia lahir dari satu penemuan yang tidak terduga:
+     menulis panjang - brief, instruksi, rancangan - ternyata pekerjaan dua
+     puluh menit yang ditinggal lalu didatangi lagi besok, sama sekali bukan
+     pekerjaan tiga detik yang dilayani kotak Drop. Selama tidak ada tempatnya
+     di sini, pekerjaan itu lari ke Notepad dan ke chat WhatsApp ke diri
+     sendiri - dan dari sana tidak pernah kembali.
+
+     PENCARIANNYA BERDIRI SENDIRI, dan itu bagian yang paling menentukan.
+     Mencari satu tulisan di antara ribuan potongan drop berarti mengayak
+     sesuatu yang kamu tahu persis ada; di layar ini yang dicari cuma tulisan,
+     jadi ketikan tiga huruf sudah cukup.
+
+     Ini TIDAK melanggar "satu pencarian untuk mengambilnya kembali": tulisan
+     tetap ikut terjaring di kotak Drop seperti catatan lain. Yang ditambahkan
+     di sini bukan dinding kedua, melainkan pintu yang lebih sempit ke rak yang
+     sudah kamu tahu isinya.
+
+     Penandanya satu kolom, 'tulisan'. BUKAN jenis tersendiri: kalau jenisnya
+     berbeda, dia luput dari saringan, dari kartu, dan dari elemen - dan
+     tulisan yang berisi nomor rekening berhenti bisa disalin sendiri. */
+  function daftarTulisan() {
+    var kueri = ($('#tulis-cari') ? $('#tulis-cari').value : '').trim();
+    var punya = semuaEntri.filter(function (e) {
+      return e.tulisan && !e.pensiun && !e.dihapus;
+    });
+    var hasil = kueri ? TOtak.cari(punya, kueri, '', '') : punya.slice();
+    /* Tanpa kueri: yang PALING BARU DISENTUH di atas. Itu jawaban untuk
+       satu-satunya pertanyaan yang benar-benar sering muncul di layar ini -
+       "yang tadi kutulis mana" - dan menjawabnya tanpa mengetik apa pun. */
+    if (!kueri) {
+      hasil.sort(function (a, b) { return (b.diubah || 0) - (a.diubah || 0); });
+    }
+    return urutPin(hasil);
+  }
+
+  function gambarTulis() {
+    var wadah = $('#tulis-isi');
+    if (!wadah) return;
+    var daftar = daftarTulisan();
+    var kueri = $('#tulis-cari').value.trim();
+
+    if (!daftar.length) {
+      wadah.innerHTML = '<div class="kosong">' + (kueri
+        ? 'Tidak ada tulisan yang cocok.'
+        : 'Belum ada tulisan.<br>Yang panjang - brief, instruksi, rancangan — ditulis di sini,<br>bukan di kotak Drop.') +
+        '</div>';
+      return;
+    }
+    wadah.innerHTML = daftar.slice(0, 200).map(function (e) {
+      return kartuHtml(e, { jamPenuh: true });
+    }).join('');
+    pasangGambarKartu(wadah);
+  }
+
+  /* Entrinya BELUM disimpan di sini. simpanCatat sudah menolak menyimpan
+     catatan yang masih kosong, jadi membuka lalu keluar tanpa mengetik apa pun
+     tidak meninggalkan baris kosong di timbunan - dan itu penting, karena
+     tombol ini akan sering ditekan lalu diurungkan. */
+  function tulisBaru() {
+    var e = entriBaru('teks');
+    e.tulisan = true;
+    keCatat(e);
+    $('#catat-judul').focus();
+  }
+
+  /* ===================== LAYAR STORAGE =====================
      Pengganti Notepad, tapi dipanggil dengan MENCARI, bukan dibuka dari pohon
      folder. Foldernya tetap ada dan tetap kelihatan - itu yang membuat satu
      catatan punya ALAMAT, bukan mengambang di timbunan - tapi menyusuri
@@ -3392,6 +3474,25 @@
       n.addEventListener('click', function (ev) {
         var b = ev.target.closest('[data-tab-ke]');
         if (b) keTab(b.getAttribute('data-tab-ke'));
+      });
+    });
+
+    $('#b-tulis-baru').addEventListener('click', tulisBaru);
+    $('#tulis-cari').addEventListener('input', gambarTulis);
+    $('#tulis-isi').addEventListener('click', klikHasil);
+    pasangGeser($('#tulis-isi'));
+    $$('[data-ke-setelan]').forEach(function (b) {
+      b.addEventListener('click', function () { gambarSetelan(); keLayar('l-setelan'); });
+    });
+
+    /* SIMPAN YANG BISA DITEKAN. Layar tulis menyimpan sendiri tiap kali kamu
+       berhenti mengetik, jadi tombol ini tidak menambah satu pun kemampuan.
+       Yang ditambahkannya bukti - dan yang menahan orang menulis dua puluh
+       menit di sini bukan kehilangan yang pernah terjadi, melainkan tidak
+       adanya satu pun tanda bahwa tulisannya aman. */
+    $('#b-simpan').addEventListener('click', function () {
+      simpanCatat().then(function () {
+        pesan(entriCatat && (entriCatat.judul || entriCatat.isi) ? 'Tersimpan' : 'Belum ada yang ditulis');
       });
     });
 

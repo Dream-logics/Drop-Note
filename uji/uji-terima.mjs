@@ -1077,17 +1077,19 @@ console.log('\ntiga pintu di kepala, dan layar Note');
   /* Digambar dari satu tempat, bukan disalin tiga kali: baris yang disalin
      akan berbeda-beda begitu salah satunya disunting. */
   cek('baris tabnya wadah kosong di HTML, diisi dari alur.js',
-      (html.match(/class="tab-baris" data-tab></g) || []).length === 3);
+      (html.match(/class="tab-baris" data-tab></g) || []).length === 4);
 
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(250);
   const tab = await hal.locator('#l-utama [data-tab] .tab').allTextContents();
-  /* "Storage", bukan "Note": layar itu memang gudang - dia memperlihatkan
-     semua yang pernah jatuh, tersusun di raknya. Menulis punya tempatnya
-     sendiri, dan menamai keduanya sama membuat yang mau menulis mendarat di
-     gudang lalu mengira aplikasinya tidak bisa menulis. */
-  cek('tiga pintu: Drop, To Do, Storage', tab.length === 3 &&
-      /^Drop/.test(tab[0]) && /^To Do/.test(tab[1]) && /^Storage/.test(tab[2]), tab.join('|'));
+  /* EMPAT PINTU, dan urutannya menceritakan alur harinya: menjatuhkan,
+     menulis, mengerjakan, menyimpan. "Storage" bukan "Note" karena layar itu
+     memang gudang - dia memperlihatkan semua yang pernah jatuh, tersusun di
+     raknya; Note yang ruang menulisnya. Menamai keduanya sama membuat yang mau
+     menulis mendarat di gudang lalu mengira aplikasinya tidak bisa menulis. */
+  cek('empat pintu: Drop, Note, To Do, Storage', tab.length === 4 &&
+      /^Drop/.test(tab[0]) && /^Note/.test(tab[1]) &&
+      /^To Do/.test(tab[2]) && /^Storage/.test(tab[3]), tab.join('|'));
   cek('yang sedang dibuka ditandai',
       (await hal.locator('#l-utama [data-tab] .tab.nyala').textContent()).indexOf('Drop') === 0);
 
@@ -3008,6 +3010,94 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
   await hal.waitForTimeout(250);
   cek('pencarian hidup lagi seperti semula',
       await hal.locator('#petak-hasil-depan').isVisible());
+  await hal.fill('#kotak', '');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.evaluate(() => TAlur.tutupHasilDepanUji());
+}
+
+console.log('\nNote: ruang menulis, dengan pencariannya sendiri');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+
+  /* PINTU KEEMPAT. Urutannya menceritakan alur harinya: menjatuhkan,
+     menulis, mengerjakan, menyimpan. */
+  await hal.click('#l-utama [data-tab-ke="l-tulis"]');
+  await hal.waitForSelector('#l-tulis.aktif');
+  cek('pintu Note membuka layarnya sendiri', await hal.locator('#l-tulis').isVisible());
+  cek('ada kotak cari khusus di layar itu', await hal.locator('#tulis-cari').isVisible());
+  cek('dan tombol tulis baru yang kelihatan', await hal.locator('#b-tulis-baru').isVisible());
+
+  /* Bulat, beralas aksen, di sudut kanan bawah - tempat jempol kanan sudah
+     bertumpu, sama seperti tombol Drop. */
+  const diSudut = await hal.evaluate(() => {
+    const b = document.querySelector('#b-tulis-baru').getBoundingClientRect();
+    return b.right > innerWidth * 0.6 && b.bottom > innerHeight * 0.7;
+  });
+  cek('tombolnya di sudut kanan bawah, dalam jangkauan jempol', diSudut === true);
+
+  const kosongAwal = await hal.locator('#tulis-isi .kartu').count();
+  cek('daftarnya masih kosong sebelum ada yang ditulis', kosongAwal === 0, String(kosongAwal));
+
+  await hal.click('#b-tulis-baru');
+  await hal.waitForSelector('#l-catat.aktif');
+  cek('tombolnya membuka layar tulis', await hal.locator('#l-catat').isVisible());
+  /* Layar ini menyimpan sendiri, jadi tombol Simpan tidak menambah satu pun
+     kemampuan. Yang ditambahkannya BUKTI - dan yang menahan orang menulis dua
+     puluh menit di sini bukan kehilangan yang pernah terjadi, melainkan tidak
+     adanya satu pun tanda bahwa tulisannya aman. */
+  cek('ada tombol Simpan yang bisa ditekan', await hal.locator('#b-simpan').isVisible());
+
+  await hal.fill('#catat-judul', 'Instruksi editor font');
+  await hal.fill('#catat-isi', 'Menu Font: buatkan filter Elegant, Script, Modern, Display.');
+  await hal.click('#b-simpan');
+  await hal.waitForFunction(() => TAlur.semuaEntri().some(
+    (e) => e.tulisan && /Instruksi editor font/.test(e.judul || '')), null, { timeout: 5000 });
+  cek('menekan Simpan benar-benar menyimpannya', true);
+
+  await hal.evaluate(() => TAlur.keLayarUji('l-tulis'));
+  await hal.waitForTimeout(250);
+  const adaDiDaftar = await hal.locator('#tulis-isi .kartu').count();
+  cek('tulisannya muncul di daftar Note', adaDiDaftar === 1, String(adaDiDaftar));
+
+  /* Catatan yang dibuka lalu ditinggal tanpa satu huruf pun TIDAK boleh jadi
+     baris kosong di timbunan - tombol ini akan sering ditekan lalu diurungkan. */
+  const sebelumBatal = await hal.evaluate(() => TAlur.semuaEntri().length);
+  await hal.click('#b-tulis-baru');
+  await hal.waitForSelector('#l-catat.aktif');
+  await hal.click('[data-kembali]');
+  await hal.waitForTimeout(350);
+  const sesudahBatal = await hal.evaluate(() => TAlur.semuaEntri().length);
+  cek('membuka lalu keluar tanpa mengetik tidak meninggalkan baris kosong',
+      sesudahBatal === sebelumBatal, sebelumBatal + ' -> ' + sesudahBatal);
+
+  /* PENCARIANNYA BERDIRI SENDIRI. Mencari satu tulisan di antara ribuan
+     potongan drop berarti mengayak sesuatu yang kamu tahu persis ada. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-tulis'));
+  await hal.fill('#tulis-cari', 'badgeuji');
+  await hal.dispatchEvent('#tulis-cari', 'input');
+  await hal.waitForTimeout(250);
+  cek('yang di-drop tidak ikut muncul di layar Note',
+      (await hal.locator('#tulis-isi .kartu').count()) === 0);
+  await hal.fill('#tulis-cari', 'font');
+  await hal.dispatchEvent('#tulis-cari', 'input');
+  await hal.waitForTimeout(250);
+  cek('dan tulisannya ketemu dari layar itu juga',
+      (await hal.locator('#tulis-isi .kartu').count()) === 1);
+  await hal.fill('#tulis-cari', '');
+  await hal.dispatchEvent('#tulis-cari', 'input');
+
+  /* TAPI JANJI NOMOR SATU TETAP: satu pencarian untuk mengambilnya kembali.
+     Tulisan tetap ikut terjaring di kotak Drop seperti catatan lain - yang
+     ditambahkan layar Note bukan dinding kedua, melainkan pintu yang lebih
+     sempit ke rak yang sudah kamu tahu isinya. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.fill('#kotak', 'Instruksi editor');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(400);
+  cek('tulisan tetap ikut terjaring pencarian utama',
+      (await hal.locator('#hasil-depan .kartu')).count !== undefined &&
+      (await hal.locator('#hasil-depan .kartu').count()) >= 1);
   await hal.fill('#kotak', '');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.evaluate(() => TAlur.tutupHasilDepanUji());
