@@ -181,17 +181,24 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     dibuat siapa pun. Yang kosong tetap tampil: kamu membuat
                     folder justru supaya ada tempat menulis. Folder bisa dipilih
                     dan dihapus; isinya TIDAK ikut terhapus, cuma keluar folder.
-                    MENGHAPUS RAK STORAGE HARUS IKUT MENCABUT NAMANYA DARI
-                    ISINYA. Alamat satu catatan bukan cuma kolom kategori:
-                    begitu kategorinya kosong, alamatnya jatuh ke tag buatan AI
-                    - dan tag itu hampir selalu kata yang sama dengan nama
-                    raknya. Mengosongkan kategori saja membuat raknya lahir
-                    kembali seketika dengan isi yang sama persis: pesannya
-                    lewat, foldernya tetap utuh. Yang dicabut CUMA tag yang
-                    menamai ruangan itu; tag lain tinggal, jadi catatannya
-                    mendarat di ruangan berikutnya. Umpan uji untuk ini WAJIB
-                    bertag - catatan tanpa tag jatuh ke "Belum berlabel" dengan
-                    sendirinya, dan itu yang dulu menyembunyikan bugnya.
+                    MENGHAPUS RAK STORAGE MELEPAS ISINYA, bukan mengosongkan
+                    kategorinya saja dan bukan pula mencabut tagnya. Rak
+                    Storage lahir dari isinya, dan alamat satu catatan bukan
+                    cuma kolom kategori: begitu kategorinya kosong, alamatnya
+                    jatuh ke tag buatan AI - dan tag itu hampir selalu kata
+                    yang sama dengan nama raknya, jadi raknya lahir kembali
+                    seketika (pesannya lewat, foldernya tetap utuh). Tapi
+                    mencabut tagnya juga salah dua kali: tag itu kata kunci
+                    pencarian, dan tag yang TERSISA lantas jadi alamat - satu
+                    rak dihapus, dua rak baru lahir ("invoice", "brief") yang
+                    tidak pernah dibuat siapa pun. Penandanya sendiri yang
+                    dipakai: kolom 'rakLepas', dan selama dia menyala alamatnya
+                    "Belum berlabel" apa pun tagnya. Berakhir sendiri begitu
+                    kamu menaruhnya di rak lain (lihat taruhFolder). Ikut
+                    dicadangkan - kolomnya DI EKOR KOLOM, seperti semua kolom
+                    baru. Umpan uji untuk ini WAJIB bertag: catatan tanpa tag
+                    jatuh ke "Belum berlabel" dengan sendirinya, dan itu yang
+                    dulu menyembunyikan bugnya.
                     Folder Note tidak kena aturan ini: dia punya daftarnya
                     sendiri, dan tag catatan tidak ada urusannya dengan tempat
                     yang kamu buat tangan.
@@ -293,7 +300,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (594 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (599 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

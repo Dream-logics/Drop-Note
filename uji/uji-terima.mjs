@@ -2435,12 +2435,24 @@ console.log('\npin: yang penting selalu di paling atas');
       (await hal.locator('#hasil-depan [data-pin].nyala').count()) === 0 &&
       (await hal.locator('#hasil-depan .kartu.terpin').count()) === 0);
 
-  /* Kolom pin ikut naik ke cadangan, DI EKOR - baris lama membaca nilainya
-     menurut urutan, jadi menyisipkan kolom di tengah menggeser seluruh
-     cadangan yang sudah terlanjur ada. */
+  /* Kolom pin ikut naik ke cadangan. Yang dijaga di sini URUTAN KEPALANYA,
+     bukan siapa yang duduk paling belakang: baris lama membaca nilainya
+     menurut urutan, jadi kolom baru boleh ditambahkan di ekor kapan saja -
+     yang tidak boleh cuma menyisipkannya di tengah, karena itu menggeser
+     seluruh cadangan yang sudah terlanjur ada. Mematok "pin harus terakhir"
+     akan gagal tiap kali ada kolom baru yang sah. */
   const kolom = await hal.evaluate(() => TAwan.KOLOM);
-  cek('pin ikut dicadangkan, dan kolomnya di ekor',
-      kolom[kolom.length - 1] === 'pin', JSON.stringify(kolom.slice(-3)));
+  const KEPALA = ['id', 'jenis', 'judul', 'judulManual', 'isi', 'kategori', 'label',
+                  'daftar', 'berkasId', 'driveId', 'namaBerkas', 'tipeBerkas', 'ukuran',
+                  'dibuat', 'diubah', 'dipakai', 'diLabeliAI', 'pensiun', 'dihapus',
+                  'riwayat', 'tag', 'elemen', 'rahasia', 'elemenTerkunci',
+                  'selesai', 'selesaiPada', 'penting', 'hariIni', 'tenggat', 'ulang',
+                  'pin'];
+  cek('pin ikut dicadangkan',
+      kolom.indexOf('pin') >= 0, JSON.stringify(kolom.slice(-3)));
+  cek('dan kolom lama tidak pernah bergeser - yang baru selalu di ekor',
+      JSON.stringify(kolom.slice(0, KEPALA.length)) === JSON.stringify(KEPALA),
+      JSON.stringify(kolom));
 
   await hal.evaluate(async () => {
     for (const id of ['pin-1', 'pin-2', 'pin-3']) {
@@ -2900,28 +2912,53 @@ console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan')
   await hal.waitForTimeout(700);
   await hal.click('#b-pilih-buang');
   await hal.waitForTimeout(300);
-  /* Kalimatnya menyebut akibat yang sebenarnya. "Cuma keluar dari foldernya"
-     menyembunyikan rak-rak baru yang muncul sesudah mesinnya menyortir ulang. */
-  cek('pertanyaannya menyebut penyortiran ulang, bukan sekadar "keluar"',
-      (await hal.innerText('#tanya-ket')).indexOf('disortir ulang') >= 0,
+  /* Kalimatnya menyebut TEMPATNYA, dan tempat itu harus yang benar-benar
+     didatangi orangnya sesudah menekan Buang. */
+  cek('pertanyaannya menyebut ke mana isinya pergi',
+      (await hal.innerText('#tanya-ket')).indexOf('Belum berlabel') >= 0,
       await hal.innerText('#tanya-ket'));
   await hal.click('#b-tanya-ya');
   await hal.waitForTimeout(800);
   const sesudahHapusRak = await hal.locator('#note-isi [data-note-folder]').allInnerTexts();
   cek('sesudah dihapus, raknya TIDAK lahir kembali dari tag isinya',
       !sesudahHapusRak.some((x) => /rakuji/i.test(x)), JSON.stringify(sesudahHapusRak));
-  /* Yang dicabut cuma tag yang menamai ruangan itu. Tag lain tetap tinggal -
-     catatannya mendarat di ruangan berikutnya, bukan hilang dan bukan pula
-     telanjang dari kata kuncinya. */
+  /* DAN TIDAK MELAHIRKAN RAK BARU. Mencabut tag yang menamai raknya memang
+     membuat raknya hilang - tapi tag yang tersisa lantas jadi alamat, jadi
+     menghapus satu rak justru menambah dua ("invoice", "brief") yang tidak
+     pernah dibuat siapa pun. Isinya harus MENUNGGU, bukan disebar. */
+  cek('dan tidak melahirkan rak baru dari tag yang tersisa',
+      !sesudahHapusRak.some((x) => /invoice/i.test(x)), JSON.stringify(sesudahHapusRak));
+  cek('isinya menunggu di "Belum berlabel" - tempat yang memang didatangi',
+      (await hal.evaluate(() => TAlur.semuaEntri()
+        .filter((e) => e.id === 'rk1')
+        .map((e) => TAlur.alamatNoteUji(e))[0])) === 'Belum berlabel');
+  /* Tagnya TIDAK dicabut: tag itu kata kunci pencarian, dan catatan yang
+     raknya kamu bereskan tidak boleh ikut kehilangan cara ditemukannya. */
   const rk = await hal.evaluate(() => {
     const a = TAlur.semuaEntri().filter((e) => e.id === 'rk1')[0];
-    return a ? { ada: !a.pensiun, kat: a.kategori, tag: a.tag } : null;
+    return a ? { ada: !a.pensiun, kat: a.kategori, tag: a.tag, lepas: a.rakLepas } : null;
   });
   cek('catatannya sendiri utuh - tidak diarsipkan, tidak dihapus',
       !!rk && rk.ada === true, JSON.stringify(rk));
-  cek('cuma tag yang menamai rak itu yang dicabut, tag lain tinggal',
-      !!rk && rk.tag.indexOf('rakuji') < 0 && rk.tag.indexOf('invoice') >= 0,
+  cek('dan tagnya utuh - pencariannya tidak ikut hilang',
+      !!rk && rk.tag.indexOf('rakuji') >= 0 && rk.tag.indexOf('invoice') >= 0,
       JSON.stringify(rk));
+  cek('masih ketemu lewat pencarian dengan tag raknya yang lama',
+      (await hal.evaluate(() => TOtak.cari(TAlur.semuaEntri(), 'rakuji', '', '')
+        .filter((e) => e.id === 'rk1').length)) === 1);
+  /* Dan keadaan lepas itu BERAKHIR begitu kamu menaruhnya sendiri - kalau
+     tidak, catatannya dianggap tanpa rak selamanya walau sudah dipindahkan. */
+  await hal.evaluate(() => {
+    const a = TAlur.semuaEntri().filter((e) => e.id === 'rk1')[0];
+    a.kategori = 'Ultima';
+    a.rakLepas = false;
+    return TSimpan.taruh(a).then(() => TAlur.muatUlangUji());
+  });
+  await hal.waitForTimeout(300);
+  cek('menaruhnya di rak lain mengakhiri keadaan lepasnya',
+      (await hal.evaluate(() => TAlur.semuaEntri()
+        .filter((e) => e.id === 'rk1')
+        .map((e) => TAlur.alamatNoteUji(e))[0])) === 'Ultima');
   await hal.evaluate(() => Promise.all(TAlur.semuaEntri()
     .filter((e) => e.id === 'rk1' || e.id === 'rk2')
     .map((e) => { e.pensiun = true; return TSimpan.taruh(e); })));

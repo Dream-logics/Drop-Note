@@ -98,6 +98,10 @@
       dibuat: Number(r.dibuat) || 0, diubah: Number(r.diubah) || 0,
       dipakai: Number(r.dipakai) || 0,
       diLabeliAI: benar(r.diLabeliAI), pensiun: benar(r.pensiun),
+      /* Ikut dipulihkan, kalau tidak catatan yang raknya kamu hapus akan
+         kembali ke rak itu begitu cadangannya dipulihkan - dan raknya lahir
+         lagi bersamanya. */
+      rakLepas: benar(r.rakLepas),
       dihapus: false, riwayat: urai(r.riwayat, []), thumb: ''
     };
   }

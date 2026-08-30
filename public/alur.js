@@ -1989,26 +1989,6 @@
       });
   }
 
-  /* MEMBUANG RUANGAN HARUS IKUT MENCABUT NAMANYA DARI ISINYA.
-
-     Rak Storage tidak punya daftar sendiri - dia LAHIR dari isinya. Dan alamat
-     satu catatan bukan cuma kolom kategori: begitu kategorinya kosong,
-     alamatnya jatuh ke tag buatan AI, dan tag itu hampir selalu kata yang sama
-     dengan nama raknya ("Amara" -> tag "amara"). Jadi mengosongkan kategori
-     saja membuat raknya lahir kembali seketika, dengan isi yang sama persis.
-     Yang terlihat: pesan "1 folder dihapus" lewat, foldernya tetap utuh, dan
-     yang terbaca adalah tombol yang rusak.
-
-     Yang dicabut CUMA tag yang menamai ruangan ini. Tag lain tetap tinggal,
-     jadi catatannya mendarat di ruangan berikutnya - bukan hilang, dan bukan
-     pula telanjang. */
-  function cabutTagRuang(e, nama) {
-    var n = normalFolder(nama);
-    e.tag = (e.tag || []).filter(function (t) {
-      return normalFolder(bakuFolder(t)) !== n;
-    });
-  }
-
   /* MEMBUANG FOLDER TIDAK MEMBUANG ISINYA. Foldernya cuma nama tempat; yang di
      dalamnya tetap tulisan yang kamu ketik sendiri, dan aturan nomor empat
      berlaku juga di sini. Yang tadinya di dalam naik ke "Belum berfolder", dan
@@ -2016,16 +1996,13 @@
   function buangFolderTerpilih(daftar) {
     var isi = [];
     daftar.forEach(function (n) { isi = isi.concat(isiFolder(n)); });
-    /* Dua kalimat yang berbeda karena dua akibat yang berbeda. Folder Note itu
-       tempat yang kamu buat sendiri, jadi isinya cuma keluar dan menunggu di
-       "Belum berfolder". Rak Storage lahir dari mesin: begitu raknya hilang,
-       mesinnya menyortir ulang isinya - dan menjanjikan "cuma keluar" berarti
-       menyembunyikan rak-rak baru yang akan muncul sesudahnya. */
+    /* Dua kalimat karena dua tumpukan yang berbeda namanya, bukan dua akibat
+       yang berbeda: keduanya sama-sama keluar dan menunggu. */
     tanya('Hapus ' + daftar.length + ' folder?',
       isi.length
         ? (diLayarTulis()
             ? isi.length + ' tulisan di dalamnya TIDAK ikut terhapus — mereka keluar ke “Belum berfolder”.'
-            : isi.length + ' catatan di dalamnya TIDAK ikut terhapus — mereka disortir ulang ke rak lain.')
+            : isi.length + ' catatan di dalamnya TIDAK ikut terhapus — mereka keluar ke “Belum berlabel”.')
         : 'Foldernya kosong, jadi tidak ada yang ikut hilang.',
       function () {
         /* Folder Note punya daftarnya sendiri, jadi namanya ikut dicoret dari
@@ -2037,12 +2014,16 @@
           if (daftar.indexOf(tulisFolder) >= 0) tulisFolder = null;
         } else {
           if (daftar.indexOf(noteFolder) >= 0) noteFolder = null;
-          /* Cuma di Storage. Folder Note punya daftarnya sendiri, jadi
-             mencoretnya dari sana sudah cukup - dan tag catatannya tidak ada
-             urusannya dengan folder yang kamu buat tangan. */
-          isi.forEach(function (e) {
-            daftar.forEach(function (n) { cabutTagRuang(e, n); });
-          });
+          /* RAKNYA DILEPAS, BUKAN TAGNYA DICABUT. Mengosongkan kategori saja
+             tidak cukup - alamat satu catatan jatuh ke tag buatan AI begitu
+             kategorinya kosong, dan tag itu hampir selalu kata yang sama
+             dengan nama raknya, jadi raknya lahir kembali seketika. Tapi
+             mencabut tagnya juga salah: tag itu kata kunci pencarian, dan
+             yang tersisa malah melahirkan rak-rak baru yang tidak pernah kamu
+             buat ("invoice", "brief") - menghapus satu rak justru menambah
+             dua. Penandanya sendiri yang dipakai; tagnya utuh, dan catatannya
+             menunggu di "Belum berlabel" sampai kamu menaruhnya. */
+          isi.forEach(function (e) { e.rakLepas = true; });
         }
         pindahkanEntri(isi, '', daftar.length + ' folder dihapus');
         if (!isi.length) { batalPilih(); segarkanTampilan(); pesan(daftar.length + ' folder dihapus'); }
@@ -2103,9 +2084,17 @@
 
   function normalFolder(n) { return TOtak.normal(n); }
 
+  /* Catatan yang RAKNYA KAMU HAPUS menunggu di tumpukan tanpa label, dan
+     menunggu di situ sampai kamu sendiri menaruhnya. Ini keputusanmu, dan
+     keputusanmu selalu menang atas tebakan mesin - sama persis dengan gudang
+     yang kamu tulis sendiri. Tagnya tetap utuh, jadi pencariannya tidak ikut
+     hilang; yang berhenti berlaku cuma tag sebagai ALAMAT. */
+  function rakDilepas(e) { return e.rakLepas === true && !String(e.kategori || '').trim(); }
+
   function petaAlamatNote(hidup) {
     var hitung = {};
     hidup.forEach(function (e) {
+      if (rakDilepas(e)) return;
       var calon = {};
       var r = ruangNote(e);
       if (r) calon[r] = true;
@@ -2121,6 +2110,7 @@
 
     var peta = {};
     hidup.forEach(function (e) {
+      if (rakDilepas(e)) { peta[e.id] = TANPA_RAK; return; }
       var r = ruangNote(e);
       if (r) { peta[e.id] = r; return; }
       var terbaik = '';
@@ -2404,7 +2394,12 @@
 
   /* Satu-satunya tempat yang tahu kolom mana yang menyimpan foldernya. */
   function taruhFolder(e, nama) {
-    if (diLayarTulis()) e.folder = nama; else e.kategori = nama;
+    if (diLayarTulis()) { e.folder = nama; return; }
+    e.kategori = nama;
+    /* Menaruhnya di rak sungguhan MENGAKHIRI keadaan lepas - kalau tidak,
+       catatan yang pernah keluar dari rak yang dihapus akan tetap dianggap
+       tanpa rak selamanya, walau kamu sendiri sudah memindahkannya. */
+    if (nama) e.rakLepas = false;
   }
 
   function isiFolder(nama) {
@@ -2611,7 +2606,12 @@
     return '<button class="note-folder' + (f.nama === TANPA_RAK ? ' sepi' : '') +
            '" data-note-folder="' + H(f.nama) + '">' +
            '<svg viewBox="0 0 24 24" class="ik"><path d="M4 5a2 2 0 0 1 2-2h4l2 3h6a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>' +
-           '<span class="note-folder-nama" data-asli>' + H(f.nama) + '</span>' +
+           /* Nama rak itu tulisanmu sendiri, jadi dijaga data-asli - KECUALI
+              "Belum berlabel", yang bukan nama rak melainkan kalimat aplikasi
+              untuk "belum ditaruh di mana-mana". Dia ikut berganti bahasa,
+              seperti kalimat layar yang lain. */
+           '<span class="note-folder-nama"' + (f.nama === TANPA_RAK ? '' : ' data-asli') +
+           '>' + H(f.nama) + '</span>' +
            '<span class="note-hitung">' + ket + '</span></button>';
   }
 
