@@ -3423,6 +3423,133 @@ console.log('\ngeser antar pintu, papan ketik, pin, dan arsip yang bisa dikosong
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
 }
 
+console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipindah');
+{
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await hal.fill('#kotak', '');
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.waitForTimeout(200);
+  await hal.fill('#set-label', 'Ngoffee\nAmara');
+  await hal.dispatchEvent('#set-label', 'change');
+  await hal.waitForTimeout(250);
+
+  await hal.click('#l-setelan [data-kembali]').catch(() => {});
+  await hal.evaluate(() => TAlur.keLayarUji('l-tulis'));
+  await hal.waitForTimeout(300);
+
+  /* FOLDERNYA BUKAN WADAH TERSENDIRI: dia nama gudang yang sama dengan yang
+     dipakai kotak Drop dan layar Storage. Membuat folder di sini berarti
+     menambah satu rak yang langsung dikenali di seluruh aplikasi. */
+  cek('ada tombol membuat folder di layar Note',
+      await hal.locator('#b-folder-baru').isVisible());
+  await hal.click('#b-folder-baru');
+  await hal.waitForSelector('#tanya-isi:not(.sembunyi)');
+  await hal.fill('#tanya-isi', 'Cortex Apps');
+  await hal.click('#b-tanya-ya');
+  await hal.waitForTimeout(400);
+  const jadiRak = await hal.evaluate(() =>
+    TAlur.daftarLabelUji().map((l) => l.nama));
+  cek('folder baru jadi rak di daftar gudang yang sama',
+      jadiRak.indexOf('Cortex Apps') >= 0, JSON.stringify(jadiRak));
+
+  /* JUDULNYA SUDAH TERISI NAMA FOLDERNYA. Kamu masuk ke folder itu justru
+     untuk menulis sesuatu miliknya - mengetik namanya lagi adalah menjawab
+     pertanyaan yang sudah kamu jawab dengan membukanya. */
+  await hal.click('#b-tulis-baru');
+  await hal.waitForSelector('#l-catat.aktif');
+  cek('judul memo baru sudah terisi nama foldernya',
+      (await hal.inputValue('#catat-judul')).trim() === 'Cortex Apps',
+      await hal.inputValue('#catat-judul'));
+
+  await hal.fill('#catat-judul', 'Cortex Apps prompt editor');
+  await hal.dispatchEvent('#catat-judul', 'input');
+  await hal.fill('#catat-isi', 'Isi promptnya di sini.');
+  await hal.click('#b-simpan');
+  await hal.waitForTimeout(500);
+  const mendaratDiFolder = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.tulisan && /prompt editor/.test(e.judul || ''))[0]);
+  cek('dan tulisannya mendarat di folder itu',
+      mendaratDiFolder && mendaratDiFolder.kategori === 'Cortex Apps',
+      JSON.stringify(mendaratDiFolder && mendaratDiFolder.kategori));
+  await hal.click('[data-kembali]');
+  await hal.waitForTimeout(300);
+
+  /* EKOR JUDUL YANG DIINGAT. Di dalam satu folder, kata yang menyusul nama
+     foldernya itu-itu saja. Yang ditawarkan cuma yang KAMU sendiri pernah
+     pakai di folder itu - bukan tebakan, bukan kamus. */
+  await hal.click('#b-tulis-baru');
+  await hal.waitForSelector('#l-catat.aktif');
+  await hal.waitForTimeout(250);
+  const ekor = await hal.locator('#catat-ekor .ekor-cip').allInnerTexts();
+  cek('kata yang tadi dipakai ditawarkan lagi di folder yang sama',
+      ekor.indexOf('prompt editor') >= 0, JSON.stringify(ekor));
+  await hal.click('#catat-ekor [data-ekor="prompt editor"]');
+  await hal.waitForTimeout(300);
+  cek('satu ketukan menambahkannya ke judul',
+      (await hal.inputValue('#catat-judul')).trim() === 'Cortex Apps prompt editor',
+      await hal.inputValue('#catat-judul'));
+  /* Sesudah judulnya lengkap, tawarannya pergi - cip yang tidak menjawab apa
+     pun cuma menutupi tulisanmu. */
+  cek('sesudah judulnya lengkap, tawarannya pergi',
+      await hal.locator('#catat-ekor').isHidden());
+  await hal.click('[data-kembali]');
+  await hal.waitForTimeout(300);
+
+  /* Folder muncul sebagai baris rapat di akar, dan membukanya menyaring. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-tulis'));
+  await hal.waitForTimeout(300);
+  /* Naik ke akar dulu: membuat folder langsung membukanya, jadi yang sedang
+     tampil adalah isi folder itu - bukan daftar foldernya. */
+  if (await hal.locator('#tulis-alamat [data-tulis-akar]').count()) {
+    await hal.click('#tulis-alamat [data-tulis-akar]');
+    await hal.waitForTimeout(300);
+  }
+  cek('foldernya tampil sebagai baris di layar Note',
+      (await hal.locator('#tulis-isi [data-tulis-folder="Cortex Apps"]').count()) === 1);
+  const tinggiFolder = await hal.evaluate(() =>
+    Math.round(document.querySelector('.folder-baris').getBoundingClientRect().height));
+  cek('barisnya rapat, bukan setinggi dua baris teks', tinggiFolder <= 48,
+      tinggiFolder + 'px');
+  await hal.click('#tulis-isi [data-tulis-folder="Cortex Apps"]');
+  await hal.waitForTimeout(350);
+  cek('membukanya menyaring isinya saja',
+      (await hal.locator('#tulis-isi .kartu').count()) === 2,
+      String(await hal.locator('#tulis-isi .kartu').count()));
+  cek('dan jejaknya menyebut folder yang sedang dibuka',
+      /Cortex Apps/.test(await hal.locator('#tulis-alamat').innerText()));
+
+  /* MEMILIH BANYAK JUGA ADA DI LAYAR NOTE - bilahnya satu, dipakai dua layar. */
+  cek('tombol Pilih ada di layar Note juga',
+      await hal.locator('#b-tulis-pilih').isVisible());
+  await hal.click('#b-tulis-pilih');
+  await hal.waitForTimeout(200);
+  await hal.click('#tulis-isi .kartu');
+  await hal.waitForTimeout(200);
+  cek('menyentuh kartu berarti memilih selama modenya hidup',
+      (await hal.locator('#tulis-isi .kartu.dipilih').count()) === 1);
+
+  /* MEMINDAH ANTAR FOLDER. Foldernya dibaca dari judul, jadi memindah tanpa
+     menyentuh judul akan diam-diam dibatalkan lagi begitu tulisannya
+     disunting - pemindahan yang membatalkan diri sendiri lebih buruk daripada
+     tidak ada pemindahan sama sekali. */
+  await hal.click('#b-pilih-pindah');
+  await hal.waitForSelector('#tanya-isi:not(.sembunyi)');
+  await hal.fill('#tanya-isi', 'Ngoffee');
+  await hal.click('#b-tanya-ya');
+  await hal.waitForTimeout(600);
+  const sesudahPindah = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.tulisan && /prompt editor/.test(e.judul || ''))[0]);
+  cek('catatannya benar-benar pindah rak',
+      sesudahPindah && sesudahPindah.kategori === 'Ngoffee',
+      JSON.stringify(sesudahPindah && sesudahPindah.kategori));
+  cek('dan judulnya ikut, supaya raknya tidak balik lagi waktu disunting',
+      sesudahPindah && /^Ngoffee /.test(sesudahPindah.judul),
+      sesudahPindah && sesudahPindah.judul);
+
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.fill('#kotak', '');
+}
+
 console.log('\nnama cuma kulit');
 {
   const berkasKode = ['bawaan.js', 'simpan.js', 'otak.js', 'awan.js', 'pelabel.js', 'sinkron.js', 'alur.js', 'sw.js'];
