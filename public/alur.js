@@ -211,10 +211,33 @@
     setTimeout(function () { isian.focus(); isian.select(); }, 30);
   }
 
+  /* Bentuk ketiga: satu daftar yang tinggal diketuk. Mengetik nama tujuan itu
+     friksi yang tidak perlu ada - namanya sudah ada di layar sebelah, dan satu
+     huruf salah ketik berarti pemindahan yang gagal tanpa sebab yang
+     kelihatan. Memilih tidak bisa salah ketik. */
+  function tanyaPilih(judul, ket, daftar, jalan) {
+    tanya(judul, ket, null);
+    var w = $('#tanya-pilih');
+    w.innerHTML = daftar.map(function (x) {
+      return '<button class="tanya-cip" data-pilih="' + H(x) + '">' + H(x) + '</button>';
+    }).join('');
+    w.classList.remove('sembunyi');
+    /* Tidak ada tombol "Lanjut": ketukan pada pilihannya ITU jawabannya, dan
+       tombol kedua sesudahnya cuma menagih persetujuan untuk sesuatu yang
+       sudah kamu putuskan. */
+    $('#b-tanya-ya').classList.add('sembunyi');
+    tanyaPilihJalan = jalan;
+  }
+
+  var tanyaPilihJalan = null;
+
   function tutupTanya() {
     $('#tanya').classList.add('sembunyi');
     $('#tanya-isi').classList.add('sembunyi');
+    $('#tanya-pilih').classList.add('sembunyi');
+    $('#b-tanya-ya').classList.remove('sembunyi');
     tanyaJalan = null;
+    tanyaPilihJalan = null;
   }
 
   function pesan(teks, aksi) {
@@ -934,7 +957,16 @@
      pernah dibaca lagi, tapi dia ikut ke tiap berkas cadangan selamanya. */
   var OBROL_MAKS = 40;
 
-  var AI_MODE = [['jawab', 'Jawab'], ['gambar', 'Gambar']];
+  /* IKON TELANJANG, TANPA TULISAN. Dua kata di kepala layar obrolan menagih
+     dibaca tiap kali layarnya dibuka, padahal isinya cuma dua keadaan yang
+     sudah kelihatan dari mana yang menyala. Bentuknya sama persis dengan cip
+     saringan di layar Drop - satu bahasa untuk satu arti. */
+  var AI_MODE = [
+    ['jawab', 'Jawab',
+     '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-3.8-.9L3 20.5l1.5-4.6A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/>'],
+    ['gambar', 'Gambar',
+     '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>']
+  ];
 
   /* Dipotong SEBELUM digambar, bukan sesudahnya. Tombol Drop di tiap jawaban
      menunjuk pesan lewat nomor urutnya; kalau daftarnya menyusut sesudah
@@ -991,7 +1023,9 @@
     $('#ai-mode').innerHTML = AI_MODE.map(function (m) {
       var nyala = (m[0] === 'gambar') === modeGambar;
       return '<button class="saring-cip' + (nyala ? ' nyala' : '') +
-             '" data-ai-mode="' + m[0] + '">' + H(m[1]) + '</button>';
+             '" data-ai-mode="' + m[0] + '" title="' + H(m[1]) +
+             '" aria-label="' + H(m[1]) + '">' +
+             '<svg viewBox="0 0 24 24" class="ik">' + m[2] + '</svg></button>';
     }).join('');
   }
 
@@ -1654,19 +1688,22 @@
     folderDaftar.forEach(function (n) { isi[n] = []; });
     punya.forEach(function (e) {
       var nama = e.folder || '';
-      /* Yang belum berfolder TIDAK dibuatkan foldernya sendiri. Di akar semua
-         tulisan sudah terdaftar di bawah barisan folder, jadi baris "belum
-         berfolder" cuma menyalin apa yang sudah kelihatan - dan folder yang
-         tidak pernah kamu buat persis yang baru saja dibereskan di sini. */
+      /* Yang belum berfolder dikumpulkan di barisnya sendiri. Di akar yang
+         tampil cuma folder, jadi tanpa baris ini tulisan yang belum kamu
+         taruh di mana pun tidak punya satu jalan pun untuk dilihat lagi.
+         Dia BUKAN folder buatan: dia tidak bisa dihapus dan tidak pernah
+         muncul kalau memang kosong. */
       if (nama && (nama in isi)) isi[nama].push(e);
+      else (isi[TANPA_FOLDER] = isi[TANPA_FOLDER] || []).push(e);
     });
 
     var nama = Object.keys(isi);
     var induk = {};
     nama.forEach(function (n) {
       var pilih = '';
+      if (n === TANPA_FOLDER) { induk[n] = ''; return; }
       nama.forEach(function (c) {
-        if (c === n || c === TANPA_RAK) return;
+        if (c === n || c === TANPA_FOLDER) return;
         if (normalFolder(n).indexOf(normalFolder(c) + ' ') !== 0) return;
         if (!pilih || c.length > pilih.length) pilih = c;
       });
@@ -1678,13 +1715,21 @@
     return nama.map(function (n) {
       return { nama: n, isi: isi[n], induk: induk[n] || '', anak: anak[n] || 0 };
     }).sort(function (a, b) {
-      if ((a.nama === TANPA_RAK) !== (b.nama === TANPA_RAK)) return a.nama === TANPA_RAK ? 1 : -1;
+      /* "Belum berfolder" selalu paling bawah: dia bukan tempat yang kamu
+         pilih, dia sisa yang belum sempat ditaruh. */
+      if ((a.nama === TANPA_FOLDER) !== (b.nama === TANPA_FOLDER)) {
+        return a.nama === TANPA_FOLDER ? 1 : -1;
+      }
       var na = a.isi.length + (a.anak ? 1000 : 0);
       var nb = b.isi.length + (b.anak ? 1000 : 0);
       if (nb !== na) return nb - na;
       return a.nama.localeCompare(b.nama);
     });
   }
+
+  /* Bukan folder buatanmu - dia kumpulan yang belum kamu taruh di mana pun.
+     Tidak bisa dihapus, dan tidak pernah tampil kalau memang kosong. */
+  var TANPA_FOLDER = 'Belum berfolder';
 
   function daftarTulisan() {
     var kueri = ($('#tulis-cari') ? $('#tulis-cari').value : '').trim();
@@ -1694,7 +1739,7 @@
        sudah tahu kamu tidak perlu mencari. */
     if (!kueri && tulisFolder) {
       punya = punya.filter(function (e) {
-        return tulisFolder === TANPA_RAK ? !e.folder : (e.folder || '') === tulisFolder;
+        return tulisFolder === TANPA_FOLDER ? !e.folder : (e.folder || '') === tulisFolder;
       });
     }
     var hasil = kueri ? TOtak.cari(punya, kueri, '', '') : punya.slice();
@@ -1746,27 +1791,36 @@
     var daftar = daftarTulisan();
     var kueri = $('#tulis-cari').value.trim();
 
-    /* Di akar: foldernya dulu, lalu SELURUH tulisan yang terbaru di bawahnya.
-       Bukan folder saja - pertanyaan yang paling sering di layar ini adalah
-       "yang tadi kutulis mana", dan menjawabnya lewat memilih folder dulu
-       berarti kamu harus mengingat di rak mana kamu menaruhnya. */
+    /* SATU TINGKAT, SATU JENIS ISI. Di akar yang tampil FOLDER SAJA; isinya
+       baru terlihat sesudah foldernya dibuka. Menampilkan keduanya sekaligus
+       memperlihatkan tulisan yang sama dua kali - sekali di dalam angka
+       foldernya, sekali sebagai baris di bawahnya - dan yang membaca harus
+       menebak sendiri mana yang mana.
+
+       Yang belum berfolder punya barisnya sendiri, karena tanpa itu dia tidak
+       punya satu pun jalan untuk dilihat lagi. */
     var folderHtml2 = '';
+    var tampilDaftar = daftar;
     if (!kueri) {
       var semuaF = folderTulis();
       var tampil = tulisFolder
         ? semuaF.filter(function (f) { return f.induk === tulisFolder; })
         : semuaF.filter(function (f) { return !f.induk; });
       folderHtml2 = tampil.map(folderTulisHtml).join('');
+      /* Di akar, tulisannya TIDAK ikut digambar - kecuali kalau memang tidak
+         ada folder sama sekali, karena layar yang seluruhnya kosong padahal
+         tulisanmu ada adalah kebohongan yang paling mahal di sini. */
+      if (!tulisFolder && folderHtml2) tampilDaftar = [];
     }
 
-    if (!daftar.length && !folderHtml2) {
+    if (!tampilDaftar.length && !folderHtml2) {
       wadah.innerHTML = '<div class="kosong">' + (kueri
         ? 'Tidak ada tulisan yang cocok.'
         : 'Belum ada tulisan.<br>Yang panjang — brief, instruksi, rancangan — ditulis di sini,<br>bukan di kotak Drop.') +
         '</div>';
       return;
     }
-    wadah.innerHTML = folderHtml2 + daftar.slice(0, 200).map(function (e) {
+    wadah.innerHTML = folderHtml2 + tampilDaftar.slice(0, 200).map(function (e) {
       return kartuHtml(e, { jamPenuh: true });
     }).join('');
     pasangGambarKartu(wadah);
@@ -1834,7 +1888,7 @@
        untuk menulis sesuatu miliknya - mengetik namanya lagi adalah menjawab
        pertanyaan yang sudah kamu jawab dengan membuka foldernya. */
     var isian = $('#catat-judul');
-    if (tulisFolder && tulisFolder !== TANPA_RAK) {
+    if (tulisFolder && tulisFolder !== TANPA_FOLDER) {
       isian.value = tulisFolder + ' ';
       e.folder = tulisFolder;
       gambarRuangCatat();
@@ -1865,7 +1919,7 @@
      berlaku juga di sini. Yang tadinya di dalam naik ke "Belum berfolder", dan
      dari sana bisa dipindahkan lagi ke mana pun. */
   function buangFolder(nama) {
-    if (!nama || nama === TANPA_RAK) return;
+    if (!nama || nama === TANPA_FOLDER) return;
     var isi = semuaTulisan().filter(function (e) { return (e.folder || '') === nama; });
     tanya('Hapus folder “' + nama + '”?',
       isi.length
@@ -2206,17 +2260,11 @@
     if (!dipilih.length) return;
     if (!folderDaftar.length) { pesan('Belum ada folder — buat satu dulu'); return; }
 
-    tanyaKetik('Pindahkan ' + dipilih.length + ' catatan ke mana?',
-      'Folder yang ada: ' + folderDaftar.slice(0, 8).join(' · '),
-      tulisFolder && tulisFolder !== TANPA_RAK ? tulisFolder : '',
-      function (nama) {
-        if (!nama) return;
-        var tujuan = '';
-        folderDaftar.forEach(function (n) {
-          if (TOtak.normal(n) === TOtak.normal(nama)) tujuan = n;
-        });
-        if (!tujuan) { pesan('Folder “' + nama + '” belum ada'); return; }
-
+    tanyaPilih('Pindahkan ' + dipilih.length + ' catatan ke mana?',
+      'Ketuk folder tujuannya.',
+      folderDaftar.filter(function (x) { return x !== tulisFolder; }),
+      function (tujuan) {
+        if (!tujuan) return;
         var n = dipilih.length;
         Promise.all(dipilih.map(function (e) {
           e.folder = tujuan;
@@ -4174,6 +4222,14 @@
       ev.target.value = '';
     });
 
+    $('#tanya-pilih').addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-pilih]');
+      if (!b) return;
+      var j = tanyaPilihJalan;
+      var nilai = b.getAttribute('data-pilih');
+      tutupTanya();
+      if (j) j(nilai);
+    });
     $('#b-tanya-batal').addEventListener('click', tutupTanya);
     $('#b-tanya-ya').addEventListener('click', function () {
       var j = tanyaJalan;

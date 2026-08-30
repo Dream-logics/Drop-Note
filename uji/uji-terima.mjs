@@ -3123,9 +3123,22 @@ console.log('\nNote: ruang menulis, dengan pencariannya sendiri');
   cek('menekan Simpan benar-benar menyimpannya', true);
 
   await hal.evaluate(() => TAlur.keLayarUji('l-tulis'));
-  await hal.waitForTimeout(250);
+  await hal.waitForTimeout(300);
+  /* SATU TINGKAT, SATU JENIS ISI. Di akar yang tampil FOLDER SAJA - isinya
+     baru terlihat sesudah foldernya dibuka. Menampilkan keduanya sekaligus
+     memperlihatkan tulisan yang sama dua kali: sekali di dalam angka
+     foldernya, sekali sebagai baris di bawahnya. */
+  cek('di akar yang tampil folder saja, bukan isinya sekalian',
+      (await hal.locator('#tulis-isi .kartu').count()) === 0 &&
+      (await hal.locator('#tulis-isi [data-tulis-folder]').count()) >= 1,
+      await hal.locator('#tulis-isi').innerText());
+  /* Yang belum berfolder punya barisnya sendiri - tanpa itu dia tidak punya
+     satu pun jalan untuk dilihat lagi. */
+  await hal.click('#tulis-isi [data-tulis-folder="Belum berfolder"]');
+  await hal.waitForTimeout(300);
   const adaDiDaftar = await hal.locator('#tulis-isi .kartu').count();
-  cek('tulisannya muncul di daftar Note', adaDiDaftar === 1, String(adaDiDaftar));
+  cek('tulisannya muncul sesudah foldernya dibuka', adaDiDaftar === 1,
+      String(adaDiDaftar));
 
   /* JUDUL NOTE BERPRILAKU SAMA DENGAN DROP: gudangnya dibaca dari judulnya
      sendiri, tanpa satu kolom pun yang menagih jawaban. */
@@ -3593,14 +3606,26 @@ console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipi
   await hal.waitForTimeout(400);
   await hal.click('#tulis-alamat [data-tulis-akar]');
   await hal.waitForTimeout(300);
+  await hal.click('#tulis-isi [data-tulis-folder="Cortex Apps"]');
+  await hal.waitForTimeout(300);
   await hal.click('#b-tulis-pilih');
   await hal.waitForTimeout(200);
   await hal.click('#tulis-isi .kartu');
   await hal.waitForTimeout(200);
   await hal.click('#b-pilih-pindah');
-  await hal.waitForSelector('#tanya-isi:not(.sembunyi)');
-  await hal.fill('#tanya-isi', 'Rak Kedua');
-  await hal.click('#b-tanya-ya');
+  await hal.waitForSelector('#tanya-pilih:not(.sembunyi)');
+  /* MEMILIH, BUKAN MENGETIK. Mengetik nama folder tujuan itu friksi yang
+     tidak perlu ada - namanya sudah ada di layar sebelah, dan satu huruf
+     salah ketik berarti pemindahan yang gagal tanpa sebab yang kelihatan. */
+  cek('folder tujuan dipilih dengan sekali ketuk, bukan diketik',
+      (await hal.locator('#tanya-pilih [data-pilih="Rak Kedua"]').count()) === 1 &&
+      await hal.locator('#tanya-isi').isHidden());
+  /* Dan folder yang sedang dibuka tidak ditawarkan sebagai tujuan - memindah
+     sesuatu ke tempat yang sudah ditempatinya bukan pilihan, itu ketukan yang
+     tidak menghasilkan apa pun. */
+  cek('folder yang sedang dibuka tidak ikut ditawarkan',
+      (await hal.locator('#tanya-pilih [data-pilih="Cortex Apps"]').count()) === 0);
+  await hal.click('#tanya-pilih [data-pilih="Rak Kedua"]');
   await hal.waitForTimeout(600);
   const sesudahPindah = await hal.evaluate(() => TAlur.semuaEntri()
     .filter((e) => e.tulisan && /prompt editor/.test(e.judul || ''))[0]);
@@ -3616,11 +3641,11 @@ console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipi
   /* MEMILIH FOLDER, LALU MENGHAPUSNYA. Dulu mengetuk folder di mode pilih
      tidak menghasilkan apa pun sama sekali - tombol Pilih terbaca rusak justru
      di layar yang paling butuh membereskan. */
-  await hal.click('#b-pilih-batal').catch(() => {});
+  if (await hal.locator('#b-pilih-batal').isVisible()) await hal.click('#b-pilih-batal');
   await hal.waitForTimeout(150);
   if (await hal.locator('#tulis-alamat [data-tulis-akar]').count()) {
     await hal.click('#tulis-alamat [data-tulis-akar]');
-    await hal.waitForTimeout(250);
+    await hal.waitForTimeout(300);
   }
   await hal.click('#b-tulis-pilih');
   await hal.waitForTimeout(200);

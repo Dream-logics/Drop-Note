@@ -1229,3 +1229,13 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 .catat-ruang-cip.folder{
   background:none;border:1px dashed var(--l);color:var(--m);margin-right:6px;
 }
+/* Daftar pilihan di dalam dialog: cip yang tinggal diketuk. Memilih tidak bisa
+   salah ketik, dan itu seluruh alasannya ada di sini. */
+.tanya-pilih{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;max-height:40vh;overflow-y:auto}
+.tanya-cip{
+  min-height:40px;padding:0 14px;border-radius:20px;
+  border:1px solid var(--l);background:none;color:var(--i);
+  font-size:13.5px;font-weight:600;cursor:pointer;
+}
+.tanya-cip:active{border-color:var(--a);color:var(--a);
+                  background:color-mix(in srgb, var(--a) 10%, transparent)}
