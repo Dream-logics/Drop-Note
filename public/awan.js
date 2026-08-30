@@ -42,6 +42,7 @@
   var tokenSampai = 0;
   var klien = null;
   var muatGis = null;
+  var mintaJalan = null;     /* permintaan token yang sedang berlangsung */
 
   /* ------------------------------------------------------------------ masuk */
 
@@ -73,12 +74,31 @@
   }
 
   /* diam = true: coba tanpa memunculkan apa pun. Dipakai di latar; kalau
-     pemakainya belum pernah mengizinkan, ini memang gagal, dan itu wajar. */
+     pemakainya belum pernah mengizinkan, ini memang gagal, dan itu wajar.
+
+     SATU PERMINTAAN PADA SATU WAKTU. Klien GIS cuma punya SATU `callback`, dan
+     tiap permintaan menimpanya. Waktu aplikasinya baru dibuka, beberapa hal
+     berangkat bersamaan - cadangan, pelabelan, gambar yang mau ditampilkan -
+     dan yang berangkat duluan kehilangan callback-nya di tengah jalan: dia
+     menggantung sampai batas waktu, lalu gagal, padahal tokennya sebenarnya
+     sudah datang untuk yang lain. Itulah "galat pada klik pertama, hilang
+     setelah dimuat ulang". Jadi yang kedua ikut menunggu yang pertama, bukan
+     mengajukan permintaan sendiri. */
   function ambilToken(setelan, diam) {
     if (token && Date.now() < tokenSampai - 60000) return Promise.resolve(token);
+    if (mintaJalan) return mintaJalan;
     var id = (setelan && setelan.clientId) || TBawaan.clientId;
     if (!id) return Promise.reject(new Error('Client ID Google belum diisi'));
 
+    mintaJalan = mintaTokenBaru(id, diam);
+    /* Dilepas setelah selesai, sukses atau gagal - kalau tidak, satu kegagalan
+       mengunci seluruh sisa hidup halaman ini. */
+    var lepas = function () { mintaJalan = null; };
+    mintaJalan.then(lepas, lepas);
+    return mintaJalan;
+  }
+
+  function mintaTokenBaru(id, diam) {
     return siapkanKlien(id).then(function (k) {
       return new Promise(function (terima, tolak) {
         var selesai = false;
@@ -108,16 +128,29 @@
     tokenSampai = 0;
   }
 
+  /* Menghangatkan token di latar begitu aplikasinya terbuka, supaya klik
+     pertama tidak pernah jadi klik yang dingin.
+
+     Tokennya cuma hidup di memori - tidak pernah ditulis ke disk, dan itu
+     memang disengaja: token yang tersimpan di perangkat adalah kunci yang bisa
+     dipungut orang lain. Harganya, tiap kali halaman dimuat, tokennya nol.
+     Kalau yang membayar harga itu klik pertama pemakainya, aplikasinya terasa
+     rusak; kalau yang membayar latar belakang, tidak ada yang merasakannya.
+
+     Boleh gagal total dan diam: belum pernah mengizinkan Google itu keadaan
+     yang sah, bukan kerusakan. */
+  function hangatkan(setelan) {
+    if (token || !((setelan && setelan.clientId) || TBawaan.clientId)) return Promise.resolve(false);
+    return ambilToken(setelan, true).then(function () { return true; },
+                                          function () { return false; });
+  }
+
   /* Email pemakainya dipakai untuk satu hal saja: ditunjukkan kembali
      kepadanya di layar Setelan, supaya jelas akun mana yang dipakai. Yang
      memutuskan dia terdaftar atau tidak adalah proxy, bukan aplikasi ini -
      kalau keputusan itu diambil di sini, siapa pun bisa mengubahnya. */
   function siapa(setelan) {
-    return ambilToken(setelan, true).then(function (t) {
-      return fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: 'Bearer ' + t }
-      });
-    }).then(function (r) {
+    return ambilRespons(setelan, 'https://www.googleapis.com/oauth2/v3/userinfo').then(function (r) {
       if (!r.ok) throw new Error('Tidak bisa membaca akun');
       return r.json();
     }).then(function (j) { return (j && j.email) || ''; });
@@ -135,7 +168,7 @@
 
   /* ------------------------------------------------------------------ dasar */
 
-  /* KENAPA 401 SERING MUNCUL WAKTU APLIKASINYA BARU DIBUKA.
+  /* KENAPA 401 MUNCUL WAKTU APLIKASINYA BARU DIBUKA.
      Tokennya cuma hidup di memori - tidak pernah disimpan, dan itu memang
      disengaja: token yang tersimpan di perangkat adalah kunci yang bisa
      dipungut orang lain. Akibatnya tiap kali halaman dimuat ulang, tokennya
@@ -149,8 +182,13 @@
      Jadi 401 diperlakukan sebagai "tokennya basi", bukan sebagai kegagalan:
      dibuang, diminta yang baru, dan permintaannya diulang SEKALI. Kalau yang
      kedua masih 401, baru menyerah - dan menyerahnya pun diam, karena tidak
-     ada satu pun jalur Google yang berada di jalur drop. */
-  function panggil(setelan, alamat, pilihan, ulangi) {
+     ada satu pun jalur Google yang berada di jalur drop.
+
+     SEMUA yang menyentuh Google lewat pintu ini - termasuk yang mengambil blob
+     dan yang membaca email. Dulu keduanya memakai fetch sendiri tanpa
+     perlakuan 401, jadi mengetuk sebuah gambar tepat setelah aplikasi dibuka
+     menjawab "401" mentah-mentah ke muka pemakainya. */
+  function ambilRespons(setelan, alamat, pilihan, ulangi) {
     return ambilToken(setelan, true).then(function (t) {
       var p = pilihan || {};
       p.headers = p.headers || {};
@@ -159,9 +197,15 @@
     }).then(function (r) {
       if (r.status === 401 && !ulangi) {
         keluar();
-        return panggil(setelan, alamat, pilihan, true);
+        return ambilRespons(setelan, alamat, pilihan, true);
       }
       if (r.status === 401) { keluar(); throw new Error('Izin Google kedaluwarsa'); }
+      return r;
+    });
+  }
+
+  function panggil(setelan, alamat, pilihan) {
+    return ambilRespons(setelan, alamat, pilihan).then(function (r) {
       return r.text().then(function (teks) {
         var j = null;
         try { j = teks ? JSON.parse(teks) : {}; } catch (e) { j = { mentah: teks }; }
@@ -402,10 +446,8 @@
   }
 
   function unduhBerkas(setelan, driveId) {
-    return ambilToken(setelan, true).then(function (t) {
-      return fetch(DRIVE + '/' + driveId + '?alt=media', { headers: { Authorization: 'Bearer ' + t } });
-    }).then(function (r) {
-      if (!r.ok) throw new Error('Berkas tidak bisa diambil (' + r.status + ')');
+    return ambilRespons(setelan, DRIVE + '/' + driveId + '?alt=media').then(function (r) {
+      if (!r.ok) throw new Error('Berkas tidak bisa diambil');
       return r.blob();
     });
   }
@@ -419,6 +461,7 @@
 
   global.TAwan = {
     masuk: masuk, keluar: keluar, punyaToken: punyaToken, ambilToken: ambilToken,
+    hangatkan: hangatkan,
     siapa: siapa,
     siapkanRumah: siapkanRumah,
     tulisBaris: tulisBaris, bacaSemuaBaris: bacaSemuaBaris, hapusBaris: hapusBaris,

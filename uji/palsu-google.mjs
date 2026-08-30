@@ -113,10 +113,28 @@ export function buatGooglePalsu() {
   return { tangani, berkas, lembar, negara };
 }
 
-/* Google Sign-In diganti sepenuhnya: uji ini menguji kode kita, bukan milik Google. */
+/* Google Sign-In diganti sepenuhnya: uji ini menguji kode kita, bukan milik Google.
+
+   DUA SIFAT ASLINYA SENGAJA DITIRU, karena justru itu yang dulu bikin galat di
+   ketukan pertama:
+
+   1. Jawabannya TIDAK seketika. Yang seketika menyembunyikan setiap perlombaan.
+   2. `callback` cuma SATU slot, dan permintaan kedua menimpanya. Jadi kalau
+      aplikasi mengajukan dua permintaan bersamaan, yang pertama kehilangan
+      callback-nya dan menggantung selamanya - persis seperti aslinya.
+
+   window.__mintaToken menghitung berapa kali Google benar-benar dimintai, jadi
+   uji bisa memastikan yang kedua ikut menunggu, bukan mengajukan sendiri. */
 export const STUB_GIS = `
+  window.__mintaToken = 0;
   window.google = { accounts: { oauth2: { initTokenClient(cfg) {
     return { _cfg: cfg, callback: null, error_callback: null,
-      requestAccessToken() { this.callback({ access_token: 'token-palsu', expires_in: 3600 }); } };
+      requestAccessToken() {
+        window.__mintaToken++;
+        var k = this;
+        setTimeout(function () {
+          k.callback({ access_token: 'token-palsu', expires_in: 3600 });
+        }, 30);
+      } };
   } } } };
 `;

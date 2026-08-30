@@ -692,6 +692,49 @@ console.log('\nGoogle: token basi diulang sekali, bukan menyerah');
     .then(() => 'lolos', () => 'gagal'), alamatUji);
   cek('mengulangnya cuma sekali, tidak selamanya', dua === 'lolos' || dua === 'gagal', dua);
   google.negara.tolakSekali = false;
+
+  /* INI SEBAB GALAT DI KETUKAN PERTAMA. Klien GIS cuma punya SATU `callback`,
+     dan tiap permintaan menimpanya. Waktu aplikasinya baru dibuka beberapa hal
+     berangkat bersamaan, dan yang berangkat duluan kehilangan callback-nya di
+     tengah jalan: dia menggantung sampai batas waktu lalu gagal - padahal
+     tokennya sudah datang, untuk yang lain. Memuat ulang halaman "menyembuhkan"
+     karena kebetulan cuma satu yang berangkat. */
+  await hal.evaluate(() => { TAwan.keluar(); window.__mintaToken = 0; });
+  const barengan = await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => Promise.all([
+    TAwan.ambilToken(s, true), TAwan.ambilToken(s, true), TAwan.ambilToken(s, true)
+  ])).then((t) => ({ semua: t.every((x) => !!x), minta: window.__mintaToken }),
+           (e) => ({ semua: false, minta: window.__mintaToken, pesan: e.message })));
+  cek('tiga permintaan berbarengan, tidak ada yang tertinggal',
+      barengan.semua === true, JSON.stringify(barengan));
+  cek('dan Google cuma dimintai SEKALI - sisanya ikut menunggu',
+      barengan.minta === 1, String(barengan.minta));
+
+  /* Kegagalan tidak boleh mengunci sisa hidup halaman: permintaan berikutnya
+     harus tetap boleh mencoba lagi. */
+  await hal.evaluate(() => { TAwan.keluar(); window.__mintaToken = 0; });
+  await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TAwan.ambilToken(s, true)));
+  await hal.evaluate(() => TAwan.keluar());
+  const lagi = await hal.evaluate(() => TSimpan.semuaSetelan()
+    .then((s) => TAwan.ambilToken(s, true)).then(() => true, () => false));
+  cek('sesudah selesai, permintaan berikutnya tetap boleh jalan', lagi === true);
+
+  /* Klik pertama tidak boleh jadi klik yang dingin. */
+  await hal.evaluate(() => TAwan.keluar());
+  const hangat = await hal.evaluate(() => TSimpan.semuaSetelan()
+    .then((s) => TAwan.hangatkan(s)).then(() => TAwan.punyaToken()));
+  cek('token dihangatkan di latar sebelum ada yang diketuk', hangat === true);
+  cek('dan itu benar-benar dipanggil waktu aplikasinya dibuka',
+      /TAwan\.hangatkan\(setelanSaat\)/.test(fs.readFileSync(path.join(AKAR, 'alur.js'), 'utf8')));
+
+  /* Mengambil berkas dulu memakai fetch sendiri, tanpa perlakuan 401 sama
+     sekali - jadi mengetuk sebuah gambar tepat setelah aplikasi dibuka
+     menjawab "401" mentah-mentah ke muka pemakainya. */
+  const awanKode = fs.readFileSync(path.join(AKAR, 'awan.js'), 'utf8');
+  cek('semua yang menyentuh Google lewat satu pintu ber-401',
+      (awanKode.match(/fetch\(/g) || []).length === 1, String((awanKode.match(/fetch\(/g) || []).length));
+  cek('pesan ke pemakai tidak pernah menyebut kode statusnya',
+      !/\(' \+ r\.status \+ '\)/.test(awanKode) &&
+      !/Gagal mengambil: ' \+ err\.message/.test(fs.readFileSync(path.join(AKAR, 'alur.js'), 'utf8')));
 }
 
 console.log('\nAI: kunci milik pembuat, pemakai tinggal pakai');

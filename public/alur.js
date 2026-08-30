@@ -1319,9 +1319,12 @@
       return;
     }
     if (tombol) tombol.textContent = 'Mengambil…';
-    TAwan.unduhBerkas(setelanSaat, e.driveId).then(beri, function (err) {
+    TAwan.unduhBerkas(setelanSaat, e.driveId).then(beri, function () {
       if (tombol) tombol.textContent = 'Unduh berkas';
-      pesan('Gagal mengambil: ' + err.message);
+      /* Pesannya tidak pernah menyebut kode status. "401" tidak memberi tahu
+         apa pun yang bisa dikerjakan pemakainya, dan yang tersisa cuma kesan
+         bahwa aplikasinya rusak. Yang salah hampir selalu jaringannya. */
+      pesan('Berkasnya belum bisa diambil. Coba lagi sebentar.');
     });
   }
 
@@ -2669,6 +2672,13 @@
         gambarMulai();
         tampilkanLayar('l-mulai');
       }
+
+      /* Token Google dihangatkan di latar, sebelum ada yang diketuk. Tokennya
+         tidak pernah disimpan ke disk, jadi tiap kali halaman dimuat harganya
+         harus dibayar sekali - dan yang membayarnya jangan sampai klik pertama
+         pemakainya, karena galat di ketukan pertama terbaca sebagai aplikasi
+         rusak. Boleh gagal, dan gagalnya diam. */
+      TAwan.hangatkan(setelanSaat);
 
       putaranLabel();
       putaranCadangan();
