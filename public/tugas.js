@@ -243,6 +243,31 @@
     return simpan(e).then(function () { return e; });
   }
 
+  /* JALUR MASUK KEDUA: dari layar Drop, lewat cip Todo.
+
+     Pembedanya ACTION, bukan tenggat. "Uji cortex ke staff" itu tugas walau
+     tidak punya tanggal, dan memaksanya punya tanggal cuma melahirkan tanggal
+     kamuflase - besok penuh barang yang sebenarnya tidak harus besok, dan
+     seminggu kemudian daftarnya berhenti dipercaya. Jadi tenggat, prioritas,
+     dan pengingat itu ATRIBUT yang ditambahkan belakangan di dalam daftarnya,
+     bukan syarat masuk.
+
+     Bedanya dengan tambah(): yang ini tidak mewarisi keadaan layar To Do.
+     "Hari ini" dan "penting" itu jawaban yang diberikan orangnya dengan berdiri
+     di layar itu; dari layar Drop dia tidak pernah menjawabnya, jadi tidak
+     boleh dijawabkan. Yang diwarisi cuma gudangnya - dan itu memang sudah dia
+     tulis sendiri di kotaknya. */
+  function tambahDariDrop(teks, kategori) {
+    if (!String(teks || '').trim()) return Promise.resolve(null);
+    var baca = bacaTenggat(teks);
+    var e = tugasBaru(baca.teks || teks);
+    /* Tanggal yang KEBETULAN ditulis tetap dibaca - mengabaikan "besok" yang
+       sudah terlanjur diketik bukan kesederhanaan, itu pura-pura tidak lihat. */
+    if (baca.tenggat) e.tenggat = baca.tenggat;
+    if (kategori) e.kategori = kategori;
+    return simpan(e).then(function () { return e; });
+  }
+
   /* Menyelesaikan tugas berulang tidak mencoretnya - dia melahirkan tugas
      berikutnya. Kalau cuma dicoret, tiap minggu kamu harus mengetiknya lagi,
      dan itu pekerjaan yang justru mau dihapus. */
@@ -567,6 +592,7 @@
 
   global.TTugas = {
     pasang: pasang, buka: buka, gambar: gambar, tambah: tambah,
+    tambahDariDrop: tambahDariDrop,
     tanganiKlik: tanganiKlik, tanganiUbah: tanganiUbah, tanganiTekan: tanganiTekan,
     saring: function (s) { if (s) saringSaat = s; return saringSaat; },
     rak: function (r) { if (r != null) daftarSaat = r; return daftarSaat; },

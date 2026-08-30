@@ -116,7 +116,10 @@ public/pelabel.js   satu-satunya bagian ber-AI: judul + elemen + tag + OCR.
                     ikut dikirim supaya keduanya tidak beranak sendiri;
                     nama elemen menyebut JENIS benda, tidak pernah pemiliknya
 public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
-                    ulang, langkah, catatan. Daftar ganda lewat keyword yang
+                    ulang, langkah, catatan. Dua jalur masuk: layar To Do, dan
+                    cip Todo di layar Drop. Pembedanya ACTION, bukan tenggat -
+                    tugas tanpa tanggal itu sah; yang cuma perlu DIINGAT tanpa
+                    action itu drop biasa. Daftar ganda lewat keyword yang
                     sudah ada - opsional, tidak pernah wajib.
                     Menumpang di toko yang sama supaya ikut cadangan, tapi
                     TIDAK pernah muncul di pencarian catatan, tidak dihitung
@@ -152,7 +155,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (316 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (333 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
