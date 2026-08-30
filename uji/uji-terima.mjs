@@ -1584,6 +1584,21 @@ console.log('\nteks bayangan: melengkapi nama gudang sambil diketik');
   await hal.dispatchEvent('#set-label', 'change');
   await hal.waitForTimeout(250);
 
+  /* Nama gudang disimpan UTUH. Dulu dipotong diam-diam di 16 huruf demi
+     lebar barisan label - dan "MAP Mata Angin Pratama" tersimpan jadi "MAP
+     Mata Angin P", yang tidak berarti apa-apa. Memotong data demi tampilan
+     adalah cara paling sunyi untuk merusak daftar orang. */
+  const panjang = await hal.evaluate(() => TOtak.uraiLabel(
+    'MAP Mata Angin Pratama\nAmara Operasional').map((l) => l.nama));
+  cek('nama gudang panjang tidak dipotong diam-diam',
+      panjang[0] === 'MAP Mata Angin Pratama' && panjang[1] === 'Amara Operasional',
+      JSON.stringify(panjang));
+  /* Yang memendekkan cuma gaya, dengan titik-titik. */
+  const gayaLabel = fs.readFileSync(path.join(AKAR, 'gaya.css'), 'utf8');
+  cek('yang memendekkannya cuma tampilan',
+      /\.label-baris-nama\{[^}]*text-overflow:ellipsis/.test(gayaLabel) &&
+      /#b-label-teks\{[^}]*text-overflow:ellipsis/.test(gayaLabel));
+
   const pohon = await hal.evaluate(() => TOtak.pohonLabel(TAlur.daftarLabelUji()));
   const apps = pohon.filter((l) => l.nama === 'Amara Apps')[0];
   cek('gudang bertingkat terbaca dari namanya sendiri',

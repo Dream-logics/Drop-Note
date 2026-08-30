@@ -555,18 +555,24 @@
      pernah berubah, jadi dia pantas jadi barisan tetap yang selalu ada di
      tempat yang sama, bukan daftar yang menyusun ulang dirinya sendiri.
 
-     Namanya sengaja disingkat ("Cons", "Intr Dev") karena yang muat dalam
-     satu baris itulah yang benar-benar dipakai. Tapi singkatan cuma hidup di
-     kepala pemakainya - AI melabeli dengan kata utuh. Karena itu tiap label
-     boleh membawa kata lain sesudah tanda '=', dan semuanya dihitung sebagai
-     label yang sama. Tanpa itu, label yang rapi justru tidak menemukan
-     apa-apa. */
+     Tanda '=' ada untuk SATU keadaan saja: kata yang dipakai AI berbeda dari
+     kata yang ada di kepalamu. "PS" cuma hidup di kepalamu, sementara AI
+     melabeli "ProjectSpace" - tanpa jembatan itu, label yang rapi justru
+     tidak menemukan apa-apa. Dia BUKAN kamus sinonim: "Kiddo = kids, anak"
+     tidak menambah apa pun, karena tidak ada yang pernah menuliskannya beda.
+
+     PANJANG NAMANYA TIDAK DIBATASI. Dulu dipotong di 16 huruf supaya muat di
+     barisan label yang melintang - tapi itu memotong DATA demi TAMPILAN, dan
+     memotongnya diam-diam: "Amara Operasional" tersimpan jadi "Amara
+     Operasiona", dan "MAP Mata Angin Pratama" jadi "MAP Mata Angin P" yang
+     tidak berarti apa-apa. Sekarang nama gudang disimpan utuh, dan yang
+     memendekkannya cuma gaya - dengan titik-titik, di layar, bukan di data. */
 
   function uraiLabel(teks) {
     var keluar = [];
     String(teks || '').split(/[\r\n]+/).forEach(function (baris) {
       var potong = baris.split('=');
-      var nama = potong[0].replace(/^#+/, '').trim().slice(0, 16);
+      var nama = potong[0].replace(/^#+/, '').trim();
       if (!nama) return;
       var istilah = [normal(nama)];
       (potong[1] || '').split(',').forEach(function (a) {
@@ -577,7 +583,12 @@
         keluar.push({ nama: nama, istilah: istilah });
       }
     });
-    return keluar.slice(0, 40);
+    /* Batasnya ada bukan demi kerapian, tapi karena pohonnya disusun ulang
+       tiap huruf yang kamu ketik - dan menyusunnya membandingkan tiap gudang
+       dengan tiap gudang lain. Seratus dua puluh masih tidak terasa; seribu
+       akan membuat pengetikan tersendat, dan pengetikan yang tersendat
+       membunuh kebiasaannya. */
+    return keluar.slice(0, 120);
   }
 
   /* HIERARKI DARI PENAMAAN, bukan dari sintaks baru. Label yang namanya
