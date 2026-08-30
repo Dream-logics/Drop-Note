@@ -549,24 +549,43 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   color:var(--m);opacity:.8;padding-top:10px;
 }
 
-.tugas{border-bottom:1px solid var(--l);padding:4px 2px}
+/* DIRAPATKAN. Tiap baris dulu setinggi dua baris teks - judulnya di atas,
+   keterangan dan tanggal di bawahnya - padahal sebagian besar tugas tidak
+   punya keterangan sama sekali. Daftar yang barisnya setinggi dua baris
+   berhenti bisa dipindai sekali lihat, dan daftar tugas justru dibuka untuk
+   dipindai. Sekarang barisnya satu baris kecuali memang ada tenggat, langkah,
+   atau daftarnya. */
+.tugas{border-bottom:1px solid var(--l);padding:0 2px}
 .tugas:last-child{border-bottom:none}
 .tugas.terbuka{background:color-mix(in srgb, var(--p) 55%, transparent);
-               border-radius:10px;padding:4px 9px 10px}
-.tugas-atas{display:flex;align-items:flex-start;gap:11px;padding:9px 0;cursor:pointer}
+               border-radius:10px;padding:0 9px 10px}
+/* center, bukan flex-start: bulatan dan bintangnya sejajar dengan judulnya,
+   bukan menggantung di atasnya. */
+.tugas-atas{display:flex;align-items:center;gap:11px;padding:7px 0;cursor:pointer}
+/* Judul dan tanggal SEBARIS: tanggalnya didorong ke tepi kanan, judul yang
+   panjang dipendekkan dengan titik-titik supaya barisnya tidak pernah
+   melipat. */
+.tugas-baris1{display:flex;align-items:baseline;gap:10px}
+.tugas-baris1 .tugas-judul{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tugas-baris1 .tugas-dibuat{flex:0 0 auto;font-size:11.5px;color:var(--m);margin-left:0}
 .tugas-centang{
-  width:24px;height:24px;flex:0 0 auto;margin-top:1px;border:2px solid var(--lt);
+  width:24px;height:24px;flex:0 0 auto;border:2px solid var(--lt);
   border-radius:50%;background:none;color:var(--at);cursor:pointer;
   display:flex;align-items:center;justify-content:center;padding:0;
 }
 .tugas-centang .ik{width:14px;height:14px;stroke-width:3}
 .tugas-centang.kena{background:var(--ap);border-color:var(--ap)}
+/* Bulatan berulang: garisnya putus-putus dan berisi panah melingkar, jadi
+   bentuknya sendiri sudah mengatakan "ini kembali lagi" - bukan janji palsu
+   "centang aku, aku hilang". */
+.tugas-centang.berulang{border-style:dashed;border-color:var(--lt);color:var(--m)}
+.tugas-centang .ik.ulang{width:15px;height:15px;stroke-width:2;opacity:.75}
 .tugas-centang.kecil{width:20px;height:20px}
 .tugas-centang.kecil .ik{width:12px;height:12px}
 .tugas-teks{flex:1;min-width:0}
 .tugas-judul{font-size:14.5px;line-height:1.4;word-break:break-word}
 .tugas.kelar .tugas-judul{text-decoration:line-through;color:var(--m)}
-.tugas-ket{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:3px;
+.tugas-ket{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:2px;
            font-size:11.5px;color:var(--m)}
 .titik-pisah{opacity:.5}
 /* Yang lewat tenggat merah, dan cuma itu yang merah di layar ini - kalau
@@ -578,9 +597,9 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 .tugas-tenggat.dekat{color:var(--a);font-weight:600}
 .tugas-tenggat.lewat{color:var(--bahaya);font-weight:700}
 .tugas-bintang{
-  width:40px;height:40px;flex:0 0 auto;border:none;background:none;color:var(--m);
+  width:36px;height:36px;flex:0 0 auto;border:none;background:none;color:var(--m);
   display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.45;
-  margin:-8px -8px -8px 0;
+  margin:-6px -8px -6px 0;
 }
 .tugas-bintang .ik{width:17px;height:17px}
 /* Bedanya harus TIGA sekaligus - terisi, beraksen, dan lebih tebal. Satu
@@ -589,9 +608,9 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
    "penting" berhenti dipakai. */
 .tugas-bintang.nyala{color:var(--a);opacity:1}
 .tugas-bintang.nyala .ik{fill:currentColor;stroke-width:1.4;width:19px;height:19px}
-.tugas-dibuat{margin-left:auto;opacity:.75}
+.tugas-dibuat{opacity:.75}
 
-.tugas-rinci{padding:2px 0 6px 35px}
+.tugas-rinci{padding:0 0 6px 35px}
 .tugas-label{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
              color:var(--m);margin:14px 0 6px}
 .tugas-langkah{display:flex;flex-direction:column;gap:2px}
@@ -732,6 +751,11 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   border-radius:17px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;
 }
 .saring-cip .ik{width:16px;height:16px}
+/* Reset dibedakan: dia satu-satunya cip di baris ini yang MENGHAPUS keadaan,
+   bukan menyaringnya. Garis putus-putus - bentuk yang sama dengan cip gudang
+   tersering, dan sama-sama berarti "ini jalan pintas, bukan saringan". */
+.saring-cip.reset{border-style:dashed;color:var(--m)}
+.saring-cip.reset:active{color:var(--bahaya);border-color:var(--bahaya)}
 .saring-cip.nyala{
   border-color:transparent;color:var(--a);font-weight:700;
   background:color-mix(in srgb, var(--a) 14%, transparent);
@@ -796,6 +820,17 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 .kartu-pin.nyala{opacity:1;color:var(--a)}
 .kartu-pin.nyala .ik{fill:color-mix(in srgb, var(--a) 22%, transparent)}
 .kartu.terpin{border-left:2px solid var(--a)}
+
+/* --- pilihan tema warna --- */
+.tema-baris{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.tema-cip{
+  display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 12px;
+  border:1px solid var(--l);background:none;color:var(--i);border-radius:20px;
+  font-size:13px;font-weight:600;cursor:pointer;
+}
+.tema-bulat{width:16px;height:16px;border-radius:50%;flex:0 0 auto}
+.tema-cip.nyala{border-color:var(--a);color:var(--a)}
+#set-tema-warna{padding:0;height:34px;background:none;border:none}
 
 /* --- pratinjau gambar ---
    Alas gelap, bukan putih: yang dilihat gambarnya, dan latar terang mencuri

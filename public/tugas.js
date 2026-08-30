@@ -383,36 +383,49 @@
                '<path d="M8 3v4"/><path d="M16 3v4"/><path d="M3 10h18"/></svg>' +
                H(tulisTenggat(e.tenggat)) + '</span>');
     }
-    /* "berulang bulanan" itu dua kata untuk satu keterangan yang jarang
-       dibaca, dan dia berdiri persis di sebelah tenggat - yang justru selalu
-       dibaca. Ikon panah melingkar mengatakan hal yang sama tanpa merebut
-       lebar; kata lengkapnya tetap ada di title untuk yang butuh. */
-    if (e.ulang) {
-      ket.push('<span class="tugas-ulang" title="Berulang ' + H(e.ulang) + '">' +
-               '<svg viewBox="0 0 24 24" class="ik"><path d="M20 11a8 8 0 0 0-14-4.5L4 9"/>' +
-               '<path d="M4 5v4h4"/><path d="M4 13a8 8 0 0 0 14 4.5L20 15"/>' +
-               '<path d="M20 19v-4h-4"/></svg></span>');
-    }
+    /* Panah berulang TIDAK ditulis dua kali. Bulatannya sendiri sudah membawa
+       panah melingkar, dan mengulanginya di baris keterangan melahirkan baris
+       kedua yang isinya cuma satu ikon - persis kepadatan yang mau dibuang. */
     if (langkah.length) ket.push('<span>' + kelar + '/' + langkah.length + ' langkah</span>');
     if (e.kategori) ket.push('<span>#' + H(e.kategori) + '</span>');
 
 
+    /* BULATAN YANG BERULANG BUKAN KOTAK CENTANG KOSONG.
+
+       Bulatan kosong berjanji "centang aku, aku hilang" - dan itu bohong untuk
+       tugas berulang: mencentangnya tidak menghapusnya, dia lahir lagi dengan
+       tanggal berikutnya. Todoist dan Things menyelesaikannya dengan cara yang
+       sama: bulatannya diberi panah melingkar, jadi bentuknya sendiri sudah
+       mengatakan "ini kembali lagi". Tetap bisa dicentang, dan artinya tetap
+       "yang ini beres" - yang berubah cuma janjinya. */
+    var isiCentang = e.selesai
+      ? '<svg viewBox="0 0 24 24" class="ik"><path d="M5 12.5l5 5L19 7"/></svg>'
+      : (e.ulang
+          ? '<svg viewBox="0 0 24 24" class="ik ulang"><path d="M17 9a6 6 0 0 0-10.5-3L5 7.5"/>' +
+            '<path d="M5 4v3.5h3.5"/><path d="M7 15a6 6 0 0 0 10.5 3L19 16.5"/>' +
+            '<path d="M19 20v-3.5h-3.5"/></svg>'
+          : '');
+
     b.push('<div class="tugas-atas">' +
-      '<button class="tugas-centang' + (e.selesai ? ' kena' : '') + '" data-centang aria-label="Selesai">' +
-        (e.selesai ? '<svg viewBox="0 0 24 24" class="ik"><path d="M5 12.5l5 5L19 7"/></svg>' : '') +
+      '<button class="tugas-centang' + (e.selesai ? ' kena' : '') +
+        (!e.selesai && e.ulang ? ' berulang' : '') + '" data-centang aria-label="Selesai">' +
+        isiCentang +
       '</button>' +
       '<div class="tugas-teks">' +
-        '<div class="tugas-judul">' + H(e.judul || '(tanpa judul)') + '</div>' +
-        /* Tanggal dibuat berdiri di luar deret yang dipisah titik - kalau ikut
-         digabung, titik pemisahnya menggantung sendirian saat tanggalnya
-         didorong ke tepi kanan. Dan yang dipakai tanggal DIBUAT, bukan diubah:
-         yang menolong di daftar tugas adalah "sudah berapa lama ini
-         menganggur", dan mencentang satu langkah tidak boleh membuat tugas
-         lama tampak baru. */
-      '<div class="tugas-ket">' +
-        ket.join('<span class="titik-pisah">·</span>') +
-        '<span class="tugas-dibuat">' + H(TOtak.waktuRingkas(e.dibuat)) + '</span>' +
-      '</div>' +
+        '<div class="tugas-baris1">' +
+          '<div class="tugas-judul">' + H(e.judul || '(tanpa judul)') + '</div>' +
+          /* Tanggal dibuat naik ke BARIS JUDUL, tidak lagi punya barisnya
+             sendiri. Dulu dia selalu ada, jadi tiap tugas - termasuk yang cuma
+             satu kalimat tanpa tenggat - memakan dua baris penuh, dan daftar
+             yang barisnya setinggi dua baris berhenti bisa dipindai sekali
+             lihat. Yang dipakai tanggal DIBUAT, bukan diubah: yang menolong di
+             sini "sudah berapa lama ini menganggur", dan mencentang satu
+             langkah tidak boleh membuat tugas lama tampak baru. */
+          '<span class="tugas-dibuat">' + H(TOtak.waktuRingkas(e.dibuat)) + '</span>' +
+        '</div>' +
+        /* Baris kedua cuma lahir kalau memang ada isinya. */
+        (ket.length ? '<div class="tugas-ket">' +
+          ket.join('<span class="titik-pisah">·</span>') + '</div>' : '') +
       '</div>' +
       '<button class="tugas-bintang' + (e.penting ? ' nyala' : '') + '" data-penting aria-label="Penting">' +
         '<svg viewBox="0 0 24 24" class="ik"><path d="M12 3l2.6 5.8 6.4.7-4.8 4.3 1.4 6.2L12 17l-5.6 3 1.4-6.2L3 9.5l6.4-.7z"/></svg>' +
