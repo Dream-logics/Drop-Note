@@ -1438,6 +1438,26 @@ console.log('\ntag andalan: rak yang sudah diputuskan sendiri');
   cek('AI tidak lagi disuruh menebak yang tidak tertulis',
       !/walaupun tidak tertulis di catatannya/.test(arahan));
 
+  /* TAG HARUS BISA DITUNJUK ASALNYA. Larangan saja tidak cukup - larangan cuma
+     menyebut yang tidak boleh, dan yang tidak disebut akan tetap dikarang.
+     Yang menutup celahnya aturan positif: cuma DUA sumber yang sah, dan tiap
+     tag harus lolos satu per satu. */
+  cek('tiap tag wajib bisa ditunjuk asalnya',
+      /TAG HARUS BISA DITUNJUK ASALNYA/.test(arahan) &&
+      /kata mana di catatan ini yang jadi alasannya/.test(arahan));
+  cek('sumbernya cuma dua, dan disebut terang-terangan',
+      /KATA YANG MEMANG TERTULIS/.test(arahan) &&
+      /BENTUK YANG MENYEBUT DIRINYA SENDIRI/.test(arahan) &&
+      /DI LUAR DUA SUMBER ITU, TIDAK ADA LAGI/.test(arahan));
+  /* Bentuk yang menyebut dirinya sendiri itu BACAAN, bukan tafsiran - dan
+     batasnya ikut ditulis supaya tidak melebar jadi tebakan lagi. */
+  cek('bentuk yang menyebut diri dicontohkan, berikut batasnya',
+      /08xx atau \+628xx/.test(arahan) && /BUKAN tafsiran, ini bacaan/.test(arahan) &&
+      /nama orang bukan "klien"/.test(arahan));
+  /* Contoh yang benar DAN yang salah, dari kasus yang benar-benar terjadi. */
+  cek('contohnya menunjukkan yang benar dan yang salah sekaligus',
+      /BENAR : \["Sandy", "WhatsApp"\]/.test(arahan) && /SALAH : /.test(arahan));
+
   /* Dan yang menegakkan kodenya, bukan cuma arahannya: aturan yang cuma
      diminta akan bocor persis di hari tersibuk. */
   const lolos = await hal.evaluate(() =>
