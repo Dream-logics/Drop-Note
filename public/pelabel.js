@@ -158,7 +158,7 @@
       '',
       '   a. KATA PERTAMA adalah penanda jenisnya: satu kata benda yang menyebut catatan ini',
       '      barang apa. Yang sudah dipakai: Link, Prompt, Menu, Code, OTP, PIN, API, Password,',
-      '      Email, Telepon, Akun, Nomor, Alamat, Jadwal, Harga, Resep, Berkas, Idea.',
+      '      Email, WhatsApp, Akun, Nomor, Alamat, Jadwal, Harga, Resep, Berkas, Idea.',
       '      Boleh DUA KATA kalau memang begitu namanya di sumbernya: "Client ID", "Client',
       '      Secret", "API Key". Jangan dipendekkan jadi satu kata dan jangan diganti istilah',
       '      lain - dia mencarinya dengan nama yang dia dengar dari Google, bukan namamu.',
@@ -166,8 +166,17 @@
       '      Dengan begitu daftar hasil bisa dipindai dari tepi kiri saja, tanpa membaca',
       '      seluruh barisnya.',
       '      Pilih yang paling KHUSUS: "kode otp" jadi "OTP", bukan "Code"; "nomor telepon"',
-      '      jadi "Telepon", bukan "Nomor". Kata umum yang cuma jadi ancang-ancang ke istilah',
+      '      jadi "WhatsApp", bukan "Nomor" - nomor seluler hari ini hampir tidak pernah',
+      '      benar-benar ditelepon, dan "WhatsApp" itulah kata yang ada di kepalanya waktu',
+      '      mencari. Kata umum yang cuma jadi ancang-ancang ke istilah',
       '      khususnya jangan ikut ditulis lagi.',
+      '',
+      '      WHATSAPP LAWAN TELEPON DIBACA DARI BENTUK ANGKANYA, bukan dari kata di sekitarnya:',
+      '        08xx, +628xx  -> seluler, bisa di-WhatsApp     -> "WhatsApp"',
+      '        021, 0361, 031 dan kode area lain              -> "Telepon"',
+      '        108, 188, 14000, 1500888 (nomor layanan)       -> "Telepon"',
+      '      Halo BCA 14000 dan Damkar 113 TIDAK BISA di-WhatsApp sama sekali; menamainya',
+      '      WhatsApp membuat satu-satunya tindakan yang mungkin jadi salah alamat.',
       '',
       '   b. INGGRIS DULU kalau istilahnya bentrok. Dia mengetik "link" waktu mencari, jadi',
       '      tulis "Link" - JANGAN "Tautan". Begitu juga Password (bukan Sandi), Email (bukan',
@@ -212,17 +221,35 @@
       '   Kalau memang tidak ada yang menonjol, kembalikan elemen kosong. Itu jawaban yang sah:',
       '   berarti catatan itu utuh sebagai catatan. JANGAN mengarang elemen supaya tidak kosong.',
       '',
-      '3. TAG. 8 sampai 20 tag, satu kata masing-masing (boleh gabungan tanpa spasi).',
-      '   Anggap seperti tagar di bawah satu unggahan Instagram: banyak, dan tiap satunya',
-      '   PANCINGAN - satu kemungkinan kata yang nanti diketik orangnya waktu mencari.',
-      '   Karena itu sengaja dari beberapa sudut sekaligus, bukan satu sudut diulang-ulang:',
-      '   nama proyek atau klien, jenis barangnya, orang yang terlibat, tempat, keadaan',
-      '   (mendesak/rutin/sekali pakai), dan sebutan sehari-hari yang mungkin dia pakai',
-      '   walaupun tidak tertulis di catatannya.',
-      '   Yang dilarang cuma satu: tag yang TIDAK nyangkut sama sekali. Tag yang tepat tidak',
-      '   pernah jadi sampah - dia satu pintu lagi menuju catatan yang sama.',
-      '   Setiap entri WAJIB dapat minimal 8 tag. Tidak boleh ada satu pun yang pulang tanpa tag:',
-      '   orangnya sedang kehabisan tenaga, dan menyusun tag itu memang tugasmu, bukan tugasnya.',
+      '3. TAG. SEBANYAK YANG BENAR-BENAR ADA DI CATATANNYA, TIDAK LEBIH.',
+      '   Tidak ada jumlah minimum. Dua sampai tiga untuk catatan sebaris; enam paling banyak',
+      '   untuk yang memang panjang dan berkonteks. Delapan itu batas atas, bukan sasaran.',
+      '',
+      '   TAG ITU RUANGAN, BUKAN JARING. Tag yang meleset dulu cuma pintu tambahan yang',
+      '   tidak terpakai; sekarang dia menentukan catatan itu MENDARAT DI FOLDER MANA. Satu',
+      '   tebakan yang salah tidak lagi gratis - dia menaruh barang di kamar yang salah.',
+      '',
+      '   DUA LARANGAN, DAN KEDUANYA SOAL YANG SAMA - jangan menuliskan apa pun yang tidak',
+      '   ada di catatannya:',
+      '',
+      '   a. JANGAN MENGARANG HUBUNGAN, SIFAT, ATAU KEADAAN. "Sandy 087575686578" itu sebuah',
+      '      nomor milik seseorang bernama Sandy. Titik. Kamu TIDAK tahu Sandy itu teman,',
+      '      keluarga, atau urusan pribadi - dia bisa saja salesman mobil yang menawarkan',
+      '      produk. Tag "teman", "pribadi", "penting", "mendesak", "rutin" hanya boleh ditulis',
+      '      kalau kata itu MEMANG ADA di catatannya.',
+      '',
+      '   b. JANGAN MEMAKAI KATA YANG MENYEBUT BENTUKNYA, BUKAN ISINYA: catatan, data, info,',
+      '      daftar, berkas, dokumen, nomor, teks, memo. Kata seperti itu cocok untuk hampir',
+      '      semua yang pernah disimpan, jadi sebagai ruangan dia tidak memisahkan apa pun -',
+      '      dan folder yang isinya seluruh timbunan sama saja dengan tidak ada folder.',
+      '',
+      '   Dan jangan menulis satu benda dengan tiga kata: "Telepon", "nomor", dan "seluler"',
+      '   itu satu hal. Pilih SATU, yang paling sering diketik orangnya waktu mencari.',
+      '',
+      '   Yang PANTAS jadi tag: nama proyek atau klien, nama orang yang disebut, tempat yang',
+      '   disebut, dan jenis barangnya - semuanya yang benar-benar tertulis. Kalau sebuah',
+      '   catatan cuma pantas dapat dua tag, beri dua. Dua tag yang tepat mengalahkan delapan',
+      '   yang setengahnya karangan.',
       '',
       '   Daftar di bawah adalah rak yang SUDAH ADA - bukan daftar tertutup, bukan pilihan terbatas.',
       '   Kalau maknanya sama, pakai ulang dan salin PERSIS penulisannya, huruf besar-kecilnya sekalian.',
@@ -310,7 +337,7 @@
           (e.elemen || []).forEach(function (x) {
             if (x.nama && elBaru.indexOf(x.nama) < 0) elBaru.push(x.nama);
           });
-          e.tag = gabungTag(e.tag, h.tag);
+          e.tag = gabungTag(e.tag, (h.tag || []).slice(0, TAG_MAKS_BARU));
           e.tag.forEach(function (t) { if (tagBaru.indexOf(t) < 0) tagBaru.push(t); });
           e.diLabeliAI = true;
           e.diubah = Date.now();
@@ -323,11 +350,28 @@
       });
   }
 
+  /* KATA YANG MENYEBUT BENTUKNYA, BUKAN ISINYA.
+
+     "catatan", "data", "daftar", "berkas", "nomor" - semuanya cocok untuk
+     hampir apa pun yang pernah disimpan di sini, jadi sebagai penyaring dia
+     tidak memisahkan satu pun. Dan sejak tag ikut menentukan folder, satu tag
+     seperti ini menyeret sepertiga timbunan ke ruangan bernama "catatan".
+
+     Ditegakkan di sini, bukan cuma diminta di arahan: aturan yang cuma diminta
+     akan bocor persis di hari tersibuk. Daftarnya sengaja PENDEK dan cuma
+     berisi kata yang menyebut wadah - bukan daftar kata terlarang yang tumbuh
+     tiap kali ada tag jelek. */
+  var TAG_BENTUK = ['catatan', 'catat', 'data', 'info', 'informasi', 'daftar',
+                    'berkas', 'file', 'dokumen', 'teks', 'memo', 'nomor', 'nomer',
+                    'entri', 'entry', 'note', 'notes', 'umum', 'lainnya', 'lain'];
+
   /* Huruf besarnya DIPERTAHANKAN. Tag ini dilihat pemakainya, dan
      "#ShamiraWeb" lebih cepat dikenali daripada "#shamiraweb" - sementara
      pencocokannya sendiri tetap tidak peduli huruf besar-kecil. */
   function bersihTag(t) {
-    return String(t || '').replace(/^#+/, '').replace(/[^A-Za-z0-9]+/g, '').slice(0, 24);
+    var v = String(t || '').replace(/^#+/, '').replace(/[^A-Za-z0-9]+/g, '').slice(0, 24);
+    if (TAG_BENTUK.indexOf(v.toLowerCase()) >= 0) return '';
+    return v;
   }
 
   function samaTag(a, b) { return String(a).toLowerCase() === String(b).toLowerCase(); }
@@ -342,6 +386,13 @@
        itu TAMPILANNYA, dan itu urusan kartu, bukan urusan penyimpanan. */
     return gabung.slice(0, 30);
   }
+
+  /* Batas atas jumlah tag BARU per entri. Arahannya sudah meminta secukupnya,
+     tapi model yang kelebihan semangat tetap bisa mengirim lima belas - dan
+     yang kelima belas sudah pasti karangan, karena catatannya cuma tiga kata.
+     Yang disebut duluan yang dipertahankan: model menulis yang paling yakin
+     lebih dulu. */
+  var TAG_MAKS_BARU = 8;
 
   /* Tag andalan disebut LEBIH DULU daripada yang pernah dipakai: itu rak yang
      sudah dia putuskan sendiri, dan model membaca daftar dari depan. */
@@ -414,8 +465,12 @@
       '  NAMA ELEMEN MENYEBUT JENIS BENDANYA, TIDAK PERNAH PEMILIKNYA: "No WhatsApp", bukan',
       '  "No WhatsApp Bunda". Pemiliknya sudah ada di judul dan di tag.',
       namaEl ? '  Nama yang sudah dipakai - salin persis kalau maknanya sama: ' + namaEl : '',
-      '- tag: 8 sampai 20, satu kata masing-masing, seperti tagar di bawah unggahan Instagram:',
-      '  tiap satunya pancingan, satu kemungkinan kata yang nanti diketik saat mencari.',
+      '- tag: sebanyak yang benar-benar ada di dokumennya, tidak lebih. Dua sampai tiga untuk',
+      '  yang isinya sedikit, enam paling banyak untuk yang panjang. Tidak ada jumlah minimum.',
+      '  JANGAN mengarang hubungan atau sifat yang tidak tertulis, dan jangan memakai kata yang',
+      '  menyebut BENTUKNYA (catatan, data, info, daftar, berkas, dokumen, nomor) - kata seperti',
+      '  itu cocok untuk hampir semua yang pernah disimpan, jadi sebagai ruangan dia tidak',
+      '  memisahkan apa pun.',
       '  Daftar di bawah rak yang sudah ada, bukan daftar tertutup: pakai ulang kalau maknanya sama',
       '  (salin persis penulisannya), buat baru tanpa ragu kalau tidak ada yang cocok.',
       daftar ? '  Rak yang sudah ada: ' + daftar : '  Belum ada rak sama sekali; susun sendiri dari nol.',
@@ -475,7 +530,7 @@
             }
             e.label = gabungLabel(e.label, h.label);
             e.elemen = TOtak.gabungElemen(h.elemen, e.elemen, daftarNamaElemen(setelan));
-            e.tag = gabungTag(e.tag, h.tag);
+            e.tag = gabungTag(e.tag, (h.tag || []).slice(0, TAG_MAKS_BARU));
             /* Teksnya ditaruh di isi, bukan di kolom baru: dengan begitu
                pencarian yang sudah ada langsung menemukannya, tanpa satu baris
                pun perubahan di otak.js. */
@@ -539,6 +594,11 @@
     /* Cuma untuk uji: melihat arahan yang benar-benar dikirim, bukan menebak
        dari kodenya. */
     arahanUji: function (setelan) { return arahanLabel(daftarTag(setelan), daftarNamaElemen(setelan)); },
-    antreUji: function (semua) { return antreLabel(semua).map(function (e) { return e.id; }); }
+    antreUji: function (semua) { return antreLabel(semua).map(function (e) { return e.id; }); },
+    /* Cuma untuk uji: memperlihatkan tag yang benar-benar lolos saringan
+       kodenya, bukan menebaknya dari arahan yang dikirim. */
+    saringTagUji: function (tag) {
+      return gabungTag([], (tag || []).slice(0, TAG_MAKS_BARU));
+    }
   };
 })(window);

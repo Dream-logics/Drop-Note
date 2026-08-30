@@ -117,7 +117,7 @@
         yang ditulis dua kali. Panjang tidak menambah pintu masuk - tag yang
         menambahnya.
      3. KATA PERTAMA ITU PENANDA JENISNYA, satu kata benda: Link, Nomor, API,
-        Telepon. Dengan begitu daftar hasil bisa dipindai dari tepi kiri saja,
+        WhatsApp. Dengan begitu daftar hasil bisa dipindai dari tepi kiri saja,
         tanpa membaca seluruh barisnya. */
 
   /* URUTANNYA ADALAH PRIORITAS, bukan sekadar daftar. "kode otp bca" memuat
@@ -141,7 +141,12 @@
        rahasia ditandai gemboknya sendiri - istilahnya tidak menentukan itu. */
     ['Password', ['password', 'sandi', 'kata sandi', 'pass', 'pw', 'passwd', 'pwd']],
     ['Email', ['email', 'surel', 'e-mail', 'mail', 'emailnya']],
-    ['Telepon', ['telepon', 'telpon', 'telp', 'hp', 'phone', 'nomor hp', 'wa', 'whatsapp']],
+    /* WhatsApp, BUKAN Telepon. Nomor seluler hari ini hampir tidak pernah
+       benar-benar ditelepon - yang dilakukan orangnya membuka WhatsApp, dan
+       itulah kata yang ada di kepalanya waktu mencari. Menyimpannya sebagai
+       "Telepon" berarti aplikasinya sendiri yang bikin dia lupa. */
+    ['WhatsApp', ['whatsapp', 'wa', 'telepon', 'telpon', 'telp', 'hp', 'phone',
+                  'nomor hp', 'no hp', 'kontak']],
     ['Akun', ['akun', 'account', 'login', 'username', 'user']],
     /* "rekening" sengaja TIDAK dianggap sinonim "nomor": dia jenis barangnya,
        bukan kata lain untuk hal yang sama. Kalau disamakan, "Nomor rekening
@@ -196,7 +201,7 @@
   /* Penanda yang diturunkan dari elemen, dipakai kalau judulnya sendiri belum
      menyebut satu pun istilah yang dikenal. */
   var PENANDA_JENIS = {
-    tautan: 'Link', surel: 'Email', telepon: 'Telepon',
+    tautan: 'Link', surel: 'Email', telepon: 'WhatsApp',
     kode: 'Code', nomor: 'Nomor', alamat: 'Alamat', berkas: 'Berkas',
     jadwal: 'Jadwal', harga: 'Harga', prompt: 'Prompt'
   };
@@ -277,7 +282,7 @@
     if (adaIstilah >= 0) {
       kata.splice(adaIstilah, panjangnya);
       /* Kata umum yang menempel tepat SEBELUM istilah khususnya ikut dibuang:
-         "kode otp" -> OTP, "nomor telepon" -> Telepon. Yang umum di situ cuma
+         "kode otp" -> OTP, "nomor telepon" -> WhatsApp. Yang umum di situ cuma
          ancang-ancang menuju yang khusus, dan menyisakannya berarti judulnya
          menyebut jenis yang sama dua kali. Yang datang SESUDAHNYA dibiarkan -
          "Nomor rekening BCA" masih menyimpan "rekening", dan kata itu dipakai
@@ -437,7 +442,10 @@
   var POLA_ELEMEN = [
     { jenis: 'tautan',  pola: /\bhttps?:\/\/[^\s<>"']+/gi },
     { jenis: 'surel',   pola: /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi },
-    { jenis: 'telepon', pola: /(?:\+62|\b0)8\d{7,12}\b/g },
+    /* Seluler DAN nomor layanan sekaligus. Keduanya ditangkap di sini, lalu
+       dibedakan oleh jenisNomorTelepon() - kalau cuma seluler yang ditangkap,
+       "Halo BCA 14000" lolos jadi "kode" tanpa nama. */
+    { jenis: 'telepon', pola: /(?:\+62|\b0)\d{8,13}\b|\b1\d{2,6}\b/g },
     /* SATU penanda = SATU elemen, walau di dalamnya ada tanda hubung dan titik.
        Ini pelajaran mahal: memisah di tiap tanda hubung mencincang satu Client
        ID Google jadi empat "kode" yang tidak berguna satu pun - dan yang utuh
@@ -445,6 +453,31 @@
        potongan; potongannya sendiri tidak pernah dipakai siapa-siapa. */
     { jenis: 'penanda', pola: /[A-Za-z0-9][A-Za-z0-9._-]{3,}[A-Za-z0-9]/g }
   ];
+
+  /* WHATSAPP LAWAN TELEPON, DIBACA DARI BENTUK NOMORNYA.
+
+     Nomor seluler hampir tidak pernah benar-benar ditelepon - yang dilakukan
+     orangnya membuka WhatsApp. Tapi 14000, 108, dan 021-xxx memang TIDAK BISA
+     di-WhatsApp sama sekali, dan menamainya "WhatsApp" bikin satu-satunya
+     tindakan yang mungkin jadi salah alamat.
+
+     Bedanya kelihatan dari angkanya sendiri, jadi tidak ada yang perlu ditebak:
+
+       08xx / +628xx          -> seluler, di-WhatsApp
+       021, 0361, 031...      -> kode area (nol lalu BUKAN delapan) -> telepon
+       108, 14000, 1500888    -> nomor layanan, tanpa nol di depan  -> telepon
+
+     Yang tidak berbentuk nomor telepon sama sekali dikembalikan kosong. */
+  function jenisNomorTelepon(teks) {
+    var d = String(teks || '').replace(/[^\d+]/g, '');
+    if (/^(?:\+?62|0)8\d{7,12}$/.test(d)) return 'WhatsApp';
+    /* Nol lalu bukan delapan: itu kode area, dan kode area tidak punya
+       WhatsApp. */
+    if (/^0[1-79]\d{6,11}$/.test(d)) return 'Telepon';
+    /* Nomor layanan pendek: tanpa nol di depan, tiga sampai tujuh angka. */
+    if (/^1\d{2,6}$/.test(d)) return 'Telepon';
+    return '';
+  }
 
   /* Yang lolos cuma yang mengandung angka: tanpa itu, tiap kata biasa dalam
      kalimat ikut terangkat jadi "elemen". */
@@ -471,6 +504,15 @@
     POLA_ELEMEN.forEach(function (p) {
       sisa = sisa.replace(p.pola, function (cocok) {
         var jenis = p.jenis === 'penanda' ? jenisPenanda(cocok.replace(/[.\-_]+$/, '')) : p.jenis;
+        /* Nomor telepon dinamai sejak di sini, tanpa menunggu AI: namanya
+           ditentukan bentuk angkanya, dan bentuk angka tidak perlu ditafsirkan
+           siapa-siapa. */
+        if (jenis === 'telepon') {
+          var namaN = jenisNomorTelepon(cocok);
+          if (!namaN) return cocok;
+          tambahElemen(keluar, jenis, cocok, namaN);
+          return ' ';
+        }
         if (jenis) tambahElemen(keluar, jenis, cocok);
         /* Diganti spasi, bukan dibiarkan: kalau tidak, pola berikutnya
            memungut potongan dari dalam alamat yang sudah terambil utuh -
@@ -831,6 +873,7 @@
     buangSerpihan: buangSerpihan,
     uraiLabel: uraiLabel, tulisLabel: tulisLabel, cocokLabel: cocokLabel,
     pohonLabel: pohonLabel, lengkapiRuang: lengkapiRuang, bacaRuang: bacaRuang,
+    jenisNomorTelepon: jenisNomorTelepon,
     normal: normal, jarak: jarak, waktuPendek: waktuPendek,
     tanggalIndo: tanggalIndo, waktuRingkas: waktuRingkas,
     tanggalPendek: tanggalPendek
