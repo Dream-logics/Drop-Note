@@ -2431,19 +2431,25 @@
      Ini satu-satunya cara memindahkan barang yang mendarat di gudang yang
      salah - dan sengaja cuma sebuah tawaran, bukan daftar tertutup: kategori
      tidak harus nama gudang. */
-  function isiDaftarGudang() {
-    var d = $('#daftar-gudang');
-    if (!d) return;
-    d.innerHTML = daftarLabel().map(function (l) {
-      return '<option value="' + H(l.nama) + '"></option>';
-    }).join('');
+  /* KABAR, BUKAN GERBANG - persis seperti cip gudang di layar Drop. Dia cuma
+     memberi tahu ke rak mana tulisan ini akan mendarat, dibaca dari judulnya.
+     Tidak bisa diketuk: kalau raknya salah, yang dibetulkan judulnya, dan
+     dengan begitu cuma ada SATU tempat yang menentukan - bukan dua yang
+     diam-diam bisa berbeda. */
+  function gambarRuangCatat() {
+    var w = $('#catat-ruang');
+    if (!w) return;
+    var ruang = TOtak.bacaRuang($('#catat-judul').value.trim(), daftarLabel());
+    var nama = ruang ? ruang.nama : (entriCatat && entriCatat.kategori) || '';
+    w.innerHTML = nama
+      ? '<span class="catat-ruang-cip">#' + H(nama) + '</span>'
+      : '<span class="catat-ruang-sepi">Belum berlabel — AI menyortirnya nanti</span>';
   }
 
   function keCatat(e) {
     entriCatat = e;
     $('#catat-judul').value = e.judul || '';
-    $('#catat-kat').value = e.kategori || '';
-    isiDaftarGudang();
+    gambarRuangCatat();
     $('#riwayat').classList.add('sembunyi');
     gambarLampiranCatat(e);
     gambarGembok(e);
@@ -2520,7 +2526,13 @@
     if (!e) return Promise.resolve();
 
     var judul = $('#catat-judul').value.trim();
-    var kat = $('#catat-kat').value.trim();
+    /* GUDANGNYA DIBACA DARI JUDUL, aturan yang sama persis dengan kotak Drop.
+       Kalau judulnya tidak menyebut satu gudang pun, raknya yang lama DIPEGANG
+       - bukan dikosongkan. Menghapus satu kata dari judul tidak pernah boleh
+       berarti "keluarkan tulisan ini dari raknya"; itu kehilangan diam-diam,
+       dan yang kehilangan tidak akan pernah tahu sebabnya. */
+    var ruang = TOtak.bacaRuang(judul, daftarLabel());
+    var kat = ruang ? ruang.nama : (e.kategori || '');
     var isi = $('#catat-isi').value;
 
     /* Entri terkunci: kolom isinya berisi sandi, bukan teks. Menyimpan apa
@@ -3760,6 +3772,13 @@
 
     if (ev.target.closest('a')) return;   /* tautan dibuka, bukan kartunya */
 
+    /* DI LAYAR NOTE, MENYENTUH KARTU BERARTI LANJUT MENULIS. Di layar hasil
+       dan di Storage kamu sedang MEMINDAI - membuka rincian di tempat menjaga
+       posisi gulirmu, dan itu benar di sana. Di sini kamu datang untuk
+       menulis, dan pratinjau yang mengembang cuma satu ketukan yang berdiri di
+       antara kamu dan tulisanmu sendiri. */
+    if (layarSaat === 'l-tulis') { bukaKartu(id); return; }
+
     /* Menyentuh kartunya = membuka rinciannya di tempat, bukan pindah layar.
        Pindah layar itu mahal saat sedang memindai: kamu kehilangan posisi
        gulir dan harus mencari lagi dari atas. Yang benar-benar mau menyunting
@@ -3778,10 +3797,18 @@
     $('#catat-judul').addEventListener('input', function () {
       /* Judul yang diketik sendiri tidak pernah ditimpa AI. */
       if (entriCatat && $('#catat-judul').value.trim()) entriCatat.judulManual = true;
+      /* Kabarnya menyusul tiap huruf, bukan sesudah disimpan: yang menolong di
+         sini justru melihat raknya berubah SEBELUM kamu berhenti mengetik. */
+      gambarRuangCatat();
       tanda('menyimpan…');
       simpanTertunda();
     });
-    $('#catat-kat').addEventListener('input', function () { tanda('menyimpan…'); simpanTertunda(); });
+    $('#b-salin-catat').addEventListener('click', function () {
+      var judul = $('#catat-judul').value.trim();
+      var isi = $('#catat-isi').value;
+      if (!judul && !isi.trim()) { pesan('Belum ada yang ditulis'); return; }
+      salin(judul && isi.trim() ? judul + '\n\n' + isi : (judul || isi));
+    });
     $('#catat-isi').addEventListener('input', function () { tanda('menyimpan…'); simpanTertunda(); });
 
     $('#b-riwayat').addEventListener('click', function () {

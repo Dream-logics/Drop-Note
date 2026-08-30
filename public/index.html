@@ -381,15 +381,17 @@
   </header>
 
   <input id="catat-judul" class="catat-judul" placeholder="Judul" autocomplete="off">
-  <div class="kat-baris rapat">
-    <span class="kat-pagar">#</span>
-    <!-- datalist, bukan select: gudangnya ditawarkan, tapi kolomnya tetap
-         bisa diketik bebas. Barang yang mendarat di gudang yang salah
-         dipindah dari sini - satu kolom, tanpa layar tambahan. -->
-    <input id="catat-kat" class="kat-input" placeholder="kategori" autocomplete="off"
-           spellcheck="false" list="daftar-gudang">
-    <datalist id="daftar-gudang"></datalist>
-  </div>
+  <!-- KOLOM KATEGORI DIBUANG, DAN JANGAN DIKEMBALIKAN.
+       Dia satu kolom kosong yang menagih jawaban tiap kali layar ini dibuka -
+       dan jawabannya sudah kamu tulis sendiri di baris judul di atasnya. Di
+       kotak Drop gudangnya memang sudah dibaca dari kalimat yang diketik;
+       menanyakannya lagi di sini berarti dua aturan berbeda untuk satu hal
+       yang sama, dan yang harus mengingat bedanya cuma kamu.
+
+       Yang tinggal cuma KABARNYA - satu baris redup yang bilang ke rak mana
+       tulisan ini akan mendarat. Tidak bisa diketuk, tidak minta apa-apa:
+       kalau raknya salah, yang dibetulkan judulnya. -->
+  <div class="catat-ruang" id="catat-ruang"></div>
   <div id="catat-lampiran"></div>
   <textarea id="catat-isi" class="catat-isi" placeholder="Tulis di sini. Boleh sepuluh kata hari ini, sepuluh lagi besok."></textarea>
   <div class="riwayat sembunyi" id="riwayat"></div>
@@ -404,6 +406,14 @@
        Di bawah, bukan di kepala: tangan sedang di papan ketik, dan sudut
        kanan bawah tempat jempol sudah bertumpu. -->
   <div class="catat-dok">
+    <!-- Salin SELURUH tulisan - judul dan isinya sekaligus. Kartu di layar
+         hasil sudah punya salinnya sendiri, tapi di sini yang mau disalin
+         justru yang panjang: prompt, brief, instruksi - yang memang ditulis
+         untuk ditempel ke tempat lain. Menyorotnya dengan jempol sampai ujung
+         layar ketiga adalah pekerjaan yang aplikasi ini ada untuk menghapus. -->
+    <button class="ikon-btn" id="b-salin-catat" aria-label="Salin seluruh tulisan">
+      <svg viewBox="0 0 24 24" class="ik"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    </button>
     <button class="tbl simpan" id="b-simpan">
       <svg viewBox="0 0 24 24" class="ik"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg><span>Simpan</span>
     </button>

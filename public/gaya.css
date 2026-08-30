@@ -1068,3 +1068,19 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   border-radius:14px;
 }
 .catat-dok .tbl.simpan .ik{width:18px;height:18px}
+
+
+/* Kabar rak di layar tulis: redup, kecil, tidak bisa diketuk. Dia menggantikan
+   satu kolom kosong yang dulu menagih jawaban tiap kali layar ini dibuka -
+   padahal jawabannya sudah ditulis di baris judul, sebaris di atasnya. */
+.catat-ruang{margin:6px 0 2px;min-height:22px;font-size:12px}
+.catat-ruang-cip{
+  display:inline-flex;align-items:center;padding:2px 9px;border-radius:12px;
+  color:var(--a);font-weight:600;
+  background:color-mix(in srgb, var(--a) 12%, transparent);
+}
+.catat-ruang-sepi{color:var(--m)}
+/* Salin duduk di kiri Simpan, sebagai ikon telanjang: dia tindakan kedua di
+   layar ini, dan tindakan kedua tidak pantas sebesar yang pertama. */
+.catat-dok{display:flex;align-items:center;gap:8px}
+.catat-dok .tbl.simpan{flex:1}
