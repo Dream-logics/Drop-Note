@@ -97,6 +97,18 @@
     'Pekan depan': 'Next week',
     'Tanpa tenggat': 'No due date',
     'baru saja': 'just now',
+    /* Nama hari dipakai kartu tugas untuk tenggat dalam pekan ini ("Jumat").
+       Tanpa ini, satu-satunya kata Indonesia yang tersisa di antarmuka Inggris
+       justru muncul di tempat yang paling sering dilirik. Aman ditukar
+       mentah-mentah: yang ditulis pemakainya dijaga penanda data-asli, dan
+       "Minggu" sebagai satuan waktu tidak pernah berdiri sendiri di layar. */
+    'Minggu': 'Sunday',
+    'Senin': 'Monday',
+    'Selasa': 'Tuesday',
+    'Rabu': 'Wednesday',
+    'Kamis': 'Thursday',
+    'Jumat': 'Friday',
+    'Sabtu': 'Saturday',
 
     /* --- layar Note --- */
     'Cari di catatanmu…': 'Search your notes…',
@@ -177,8 +189,14 @@
 
     /* --- To Do --- */
     'Tambah': 'Add',
+    /* Kata contohnya IKUT diterjemahkan - ini satu-satunya teks di aplikasi
+       yang isinya perintah, bukan keterangan. Menyalin "besok" apa adanya ke
+       antarmuka Inggris berarti mengiklankan kata yang, sampai versi ini,
+       memang tidak dimengerti pembacanya. Pembacanya sekarang mengerti
+       keduanya, jadi contoh yang ditawarkan cukup yang sebahasa dengan
+       layarnya. */
     'Tambah tugas — tulis “besok”, “jumat”, “tgl 25”':
-      'Add a task — write “besok”, “jumat”, “tgl 25”',
+      'Add a task — write “tomorrow”, “friday”, “the 25th”',
     'Penting': 'Important',
     'Berulang': 'Repeating',
     'Selesai': 'Done',
@@ -347,7 +365,16 @@
   /* Yang DIRAKIT dari potongan - angka plus kata. Kalimat utuhnya tidak pernah
      ada di kode, jadi dia tidak bisa dicari di kamus di atas; yang dicocokkan
      bentuknya. Urutannya penting: yang lebih khusus lebih dulu. */
+  /* Delapan dari dua belas singkatan bulan sudah sama di kedua bahasa (Jan,
+     Feb, Mar, Apr, Jun, Jul, Sep, Nov) - yang perlu ditukar cuma empat. Ini
+     satu-satunya pola yang penggantinya sebuah FUNGSI: menuliskannya sebagai
+     empat pola terpisah berarti empat baris yang mengerjakan satu hal, dan
+     tanggalnya masih ditempeli jam ("3 Mei · 14.20") jadi yang dicocokkan
+     kepalanya saja, bukan seluruh simpulnya. */
+  var BULAN_EN = { Mei: 'May', Agu: 'Aug', Okt: 'Oct', Des: 'Dec' };
+
   var POLA = [
+    [/^(\d{1,2}) (Mei|Agu|Okt|Des)\b/, function (_, d, b) { return d + ' ' + BULAN_EN[b]; }],
     [/^(\d+) hasil$/, '$1 results'],
     [/^Kosong$/, 'Empty'],
     [/^(\d+) catatan$/, '$1 notes'],

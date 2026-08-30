@@ -1703,6 +1703,42 @@ console.log('\nto-do: daftar yang mengurut sendiri');
   cek('kalimat tanpa tanggal dibiarkan utuh',
       (await baca('tidak ada tanggalnya')).tenggat === 0);
 
+  /* DUA BAHASA SEKALIGUS, bukan mengikuti setelan. Setelan bahasa mengubah
+     yang dibaca mata; yang diketik jari tidak ikut berganti sekaligus - orang
+     yang memakai antarmuka Inggris tetap mengetik "besok" waktu buru-buru. */
+  const tmr = await baca('pay the rent tomorrow');
+  cek('"tomorrow" jadi tenggat, dan ikut dicabut dari judulnya',
+      tmr.teks === 'pay the rent' && tmr.tenggat === hariIni + 86400000,
+      JSON.stringify(tmr));
+  cek('"today" dan "tonight" sama-sama hari ini',
+      (await baca('call vendor today')).tenggat === hariIni &&
+      (await baca('send the quote tonight')).tenggat === hariIni);
+  /* "day after tomorrow" berisi kata "tomorrow" utuh - kalau urutan polanya
+     terbalik, lusa selamanya jadi besok dan sisa judulnya "day after". */
+  const lusaEn = await baca('site visit day after tomorrow');
+  cek('"day after tomorrow" tidak tertelan pola "tomorrow"',
+      lusaEn.tenggat === hariIni + 2 * 86400000 && lusaEn.teks === 'site visit',
+      JSON.stringify(lusaEn));
+  cek('"in 3 days" dan "3 days" sama-sama terbaca',
+      (await baca('follow up in 3 days')).tenggat === hariIni + 3 * 86400000 &&
+      (await baca('reply 3 days')).tenggat === hariIni + 3 * 86400000);
+  cek('"next week" dan "next month" terbaca',
+      (await baca('team sync next week')).tenggat === hariIni + 7 * 86400000 &&
+      (await baca('renew licence next month')).tenggat > hariIni + 20 * 86400000);
+  cek('nama hari Inggris terbaca, dan yang diambil yang AKAN DATANG',
+      (await baca('send invoice friday')).tenggat ===
+      (await baca('kirim invoice jumat')).tenggat);
+  /* Tanggal telanjang Inggris WAJIB berakhiran urutan. "pay 25 sacks of
+     cement" bukan tenggat tanggal 25, dan satu salah tebak seperti itu
+     membuat orang berhenti memercayai seluruh isian ini. */
+  cek('"the 25th" terbaca', (await baca('bayar pajak the 25th')).tenggat > 0);
+  cek('angka telanjang tanpa akhiran urutan TIDAK dianggap tanggal',
+      (await baca('pay 25 sacks of cement')).tenggat === 0,
+      JSON.stringify(await baca('pay 25 sacks of cement')));
+  cek('singkatan tiga huruf nama hari TIDAK dianggap tanggal',
+      (await baca('get the sun shade')).tenggat === 0 &&
+      (await baca('i sat down')).tenggat === 0);
+
   await hal.evaluate(() => { TTugas.saring('semua'); TTugas.rak(''); TTugas.buka(); });
   await hal.fill('#tugas-baru', 'rapat tim minggu depan');
   await hal.dispatchEvent('#tugas-baru', 'input');
@@ -3977,6 +4013,49 @@ console.log('\nbahasa: Inggris bawaannya, dan tidak ada kalimat yang terlewat');
   cek('aria-label ikut diterjemahkan',
       (await halEn.getAttribute('#b-setelan', 'aria-label')) === 'Settings');
 
+  /* Isian tugas itu SATU-SATUNYA teks di aplikasi yang isinya perintah, bukan
+     keterangan: kata contohnya benar-benar diketik ulang orangnya. Menyalin
+     "besok" apa adanya ke layar Inggris berarti mengiklankan kata yang tidak
+     dimengerti pembacanya - dan sekarang pembacanya mengerti keduanya, jadi
+     yang ditawarkan harus sebahasa dengan layarnya. */
+  const isianTugasEn = await halEn.getAttribute('#tugas-baru', 'placeholder');
+  cek('isian tugas menawarkan kata tenggat yang Inggris',
+      /tomorrow/.test(isianTugasEn) && /friday/.test(isianTugasEn) &&
+      !/besok|jumat|tgl/.test(isianTugasEn), isianTugasEn);
+  /* Dan yang ditawarkan itu benar-benar DIMENGERTI pembacanya - kalau tidak,
+     isiannya menjanjikan sesuatu yang tidak ada. */
+  cek('dan kata yang ditawarkannya memang dibaca sebagai tenggat',
+      await halEn.evaluate(() => {
+        const h = TTugas.hariMulai(Date.now());
+        return TTugas.bacaTenggat('pay rent tomorrow').tenggat === h + 86400000 &&
+               TTugas.bacaTenggat('send invoice friday').tenggat > h &&
+               TTugas.bacaTenggat('pay tax the 25th').tenggat > 0;
+      }) === true);
+
+  /* Nama hari muncul di kartu tugas untuk tenggat dalam pekan ini, dan kartu
+     justru yang paling sering dilirik - satu "Jumat" di sana lebih kentara
+     daripada sepuluh kalimat Indonesia di Setelan. Singkatan bulan ikut:
+     empat dari dua belas berbeda ejaannya. */
+  cek('nama hari ikut berganti di kartu tugas',
+      await halEn.evaluate(async () => {
+        /* Ditambah lewat jalur yang dipakai orangnya, dan tenggatnya dititipkan
+           di kalimatnya sendiri - tiga hari ke depan supaya yang ditulis nama
+           harinya, bukan "Today"/"Tomorrow" yang punya kalimatnya sendiri. */
+        const e = await TTugas.tambah('due date sweep in 3 days');
+        TTugas.gambar();
+        TAlur.keLayarUji('l-tugas');
+        await new Promise((r) => setTimeout(r, 500));
+        const baris = document.querySelector('.tugas[data-id="' + e.id + '"]');
+        const teks = baris ? baris.innerText : '';
+        return !/Minggu|Senin|Selasa|Rabu|Kamis|Jumat|Sabtu/.test(teks) &&
+               /Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday/.test(teks);
+      }) === true);
+  cek('singkatan bulan yang berbeda ejaannya ikut ditukar',
+      await halEn.evaluate(() => [
+        TBahasa.t('3 Mei'), TBahasa.t('17 Agu'), TBahasa.t('1 Okt · 14.20'),
+        TBahasa.t('25 Des 25'), TBahasa.t('6 Sep')
+      ].join('|')) === '3 May|17 Aug|1 Oct · 14.20|25 Dec 25|6 Sep');
+
   /* Diuji dalam keadaan yang PALING RAMAI - tersambung, AI nyala, sandi
      terpasang. Keadaan kosong menyembunyikan separuh kalimat layar ini, dan
      yang tersembunyi persis yang paling mudah terlewat diterjemahkan. */
@@ -4047,10 +4126,13 @@ console.log('\nbahasa: Inggris bawaannya, dan tidak ada kalimat yang terlewat');
     }, l);
     await halEn.waitForTimeout(450);
     (await sapu()).forEach((s) => {
-      /* "besok/jumat/tgl" sengaja tetap Indonesia: itu kata yang benar-benar
-         DIKENALI pembaca tenggat, bukan kalimat layar. Menerjemahkannya
-         berarti menjanjikan sesuatu yang tidak dimengerti kodenya. */
-      if (/besok|jumat|tgl|HAPUS/.test(s)) return;
+      /* "HAPUS" tetap Indonesia dengan sengaja: itu kata yang harus DIKETIK
+         ULANG untuk membuka tombol hapus-semua, bukan kalimat yang dibaca -
+         menerjemahkannya berarti mengubah kuncinya, dan orang yang hafal
+         kuncinya jadi tidak bisa masuk. Contoh kata tenggat ("besok", "jumat")
+         TIDAK lagi dikecualikan: pembacanya sekarang mengerti keduanya, jadi
+         yang ditawarkan layar Inggris harus kata Inggris. */
+      if (/HAPUS/.test(s)) return;
       if (ID_KATA.test(s) && sisa.indexOf(s) < 0) sisa.push(s);
     });
   }

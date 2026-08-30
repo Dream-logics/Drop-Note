@@ -180,10 +180,26 @@
      Yang ditangkap sengaja cuma bentuk yang benar-benar dipakai sehari-hari.
      Penanggalan pintar yang menebak terlalu jauh lebih menakutkan daripada
      menolong: satu salah tebak, dan orangnya berhenti memercayai seluruh
-     isian ini. */
+     isian ini.
+
+     DUA BAHASA SEKALIGUS, BUKAN MENGIKUTI SETELAN. Setelan bahasa mengubah
+     yang DIBACA mata; yang diketik jari tidak ikut berganti sekaligus - orang
+     yang memakai antarmuka Inggris tetap mengetik "besok" waktu buru-buru,
+     dan sebaliknya. Menyambungkan pembaca ini ke setelan berarti separuh
+     kebiasaan mengetiknya mati tiap kali setelannya digeser, tanpa satu pun
+     pesan yang menjelaskan kenapa. Jadi keduanya selalu dikenali. */
 
   var HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-  var HARI_CARI = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+  /* Nama hari Inggris ditulis LENGKAP saja. Singkatan tiga huruf ("sat",
+     "wed", "mon", "sun") adalah kata biasa dalam kalimat Inggris, dan tugas
+     "get the sun shade" yang tiba-tiba bertenggat Minggu depan adalah persis
+     salah tebak yang membuat orang berhenti percaya. Sisi Indonesianya juga
+     tidak pernah punya singkatan hari. */
+  var HARI_CARI = [
+    ['minggu', 'sunday'], ['senin', 'monday'], ['selasa', 'tuesday'],
+    ['rabu', 'wednesday'], ['kamis', 'thursday'], ['jumat', 'friday'],
+    ['sabtu', 'saturday']
+  ];
 
   function tambahHari(n) { return hariMulai(Date.now() + n * 86400000); }
 
@@ -194,6 +210,16 @@
     var kini = new Date().getDay();
     var maju = (indeks - kini + 7) % 7;
     return tambahHari(maju === 0 ? 7 : maju);
+  }
+
+  /* Tanggal yang sudah lewat berarti bulan depan - orang menulis "tgl 3" di
+     tanggal 28 dengan maksud bulan berikutnya, bukan 25 hari yang lalu. */
+  function tanggalBulanIni(angka) {
+    var d = new Date(); d.setHours(0, 0, 0, 0);
+    var n = Number(angka);
+    if (n < d.getDate()) d.setMonth(d.getMonth() + 1);
+    d.setDate(n);
+    return d.getTime();
   }
 
   function bacaTenggat(teks) {
@@ -209,27 +235,34 @@
                      .replace(/\s+/g, ' ').trim();
     }
 
-    kena(/\s(hari ini|hr ini)\s/i, function () { return tambahHari(0); });
-    kena(/\s(besok|bsk|besuk)\s/i, function () { return tambahHari(1); });
-    kena(/\s(lusa)\s/i, function () { return tambahHari(2); });
+    /* "tonight" ikut hari ini: yang menulisnya sedang memikirkan malam nanti,
+       dan aplikasi ini tidak menyimpan jam - cuma hari. */
+    kena(/\s(hari ini|hr ini|today|tonight)\s/i, function () { return tambahHari(0); });
+    /* Inggris tidak punya satu kata untuk "lusa", jadi bentuk panjangnya
+       dipakai apa adanya - dan DIBACA DULUAN. "day after tomorrow" berisi kata
+       "tomorrow" utuh; kalau urutannya dibalik, lusa selamanya jadi besok dan
+       sisa judulnya "day after". */
+    kena(/\s(lusa|day after tomorrow)\s/i, function () { return tambahHari(2); });
+    kena(/\s(besok|bsk|besuk|tomorrow|tmr|tmrw)\s/i, function () { return tambahHari(1); });
+    /* "in 3 days" dan "3 days" sekaligus - awalan "in" opsional supaya
+       "deadline 3 days" ikut terbaca. */
     kena(/\s(\d{1,3})\s?(hari|hr)\s?(lagi|kedepan|ke depan)\s/i,
          function (m) { return tambahHari(Number(m[1])); });
-    kena(/\s(minggu|pekan)\s?depan\s/i, function () { return tambahHari(7); });
-    kena(/\s(bulan)\s?depan\s/i, function () {
+    kena(/\s(?:in\s)?(\d{1,3})\s?days?\s/i,
+         function (m) { return tambahHari(Number(m[1])); });
+    kena(/\s(?:(minggu|pekan)\s?depan|next\s?week)\s/i, function () { return tambahHari(7); });
+    kena(/\s(?:bulan\s?depan|next\s?month)\s/i, function () {
       var d = new Date(); d.setMonth(d.getMonth() + 1); return hariMulai(d.getTime());
     });
-    kena(/\s(?:tgl|tanggal)\s?(\d{1,2})\s/i, function (m) {
-      var d = new Date(); d.setHours(0, 0, 0, 0);
-      var n = Number(m[1]);
-      /* Tanggal yang sudah lewat berarti bulan depan - orang menulis "tgl 3"
-         di tanggal 28 dengan maksud bulan berikutnya, bukan 25 hari yang lalu. */
-      if (n < d.getDate()) d.setMonth(d.getMonth() + 1);
-      d.setDate(n);
-      return d.getTime();
-    });
+    /* Tanggal telanjang. Sisi Inggrisnya WAJIB berakhiran urutan (25th, 3rd):
+       "on 25" saja terlalu dekat dengan angka biasa - "pay 25 sacks of cement"
+       bukan tenggat tanggal 25. Kata "on" boleh ada boleh tidak. */
+    kena(/\s(?:tgl|tanggal)\s?(\d{1,2})\s/i, function (m) { return tanggalBulanIni(m[1]); });
+    kena(/\s(?:on\s)?(?:the\s)?(\d{1,2})(?:st|nd|rd|th)\s/i,
+         function (m) { return tanggalBulanIni(m[1]); });
     for (var i = 0; i < HARI_CARI.length; i++) {
       (function (idx) {
-        kena(new RegExp('\\s' + HARI_CARI[idx] + '\\s', 'i'),
+        kena(new RegExp('\\s(?:' + HARI_CARI[idx].join('|') + ')\\s', 'i'),
              function () { return hariBerikut(idx); });
       })(i);
     }
