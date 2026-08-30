@@ -475,7 +475,7 @@
       '</button>' +
       '<div class="tugas-teks">' +
         '<div class="tugas-baris1">' +
-          '<div class="tugas-judul">' + H(e.judul || '(tanpa judul)') + '</div>' +
+          '<div class="tugas-judul" data-asli>' + H(e.judul || '(tanpa judul)') + '</div>' +
           /* Tanggal dibuat naik ke BARIS JUDUL, tidak lagi punya barisnya
              sendiri. Dulu dia selalu ada, jadi tiap tugas - termasuk yang cuma
              satu kalimat tanpa tenggat - memakan dua baris penuh, dan daftar

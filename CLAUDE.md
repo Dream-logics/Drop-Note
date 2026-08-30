@@ -103,6 +103,17 @@ public/index.html   kerangka semua layar (mulai, utama/Drop, tulis/Note,
                     layar Drop: di sana dia pilihan palsu yang menagih jawaban
                     sebelum kamu tahu tulisanmu panjang atau pendek
 public/bawaan.js    SATU-SATUNYA tempat nama aplikasi & model AI ditulis
+public/bahasa.js    LAPISAN bahasa, bukan pengganti. Teks tetap ditulis
+                    Indonesia di seluruh kode; berkas ini menukarnya jadi
+                    Inggris tepat sebelum dibaca mata, lewat MutationObserver.
+                    Kuncinya kalimat Indonesianya SENDIRI - bukan kunci
+                    simbolis - supaya kodenya tetap terbaca apa adanya.
+                    BAWAANNYA INGGRIS. Yang TIDAK PERNAH diterjemahkan: nama
+                    pintu (Drop/Note/To Do/Storage), nama aplikasi, dan apa pun
+                    yang ditulis pemakainya - dijaga penanda data-asli. Uji
+                    terimanya MENYAPU tiap layar mencari sisa kalimat
+                    Indonesia; menambah kalimat baru tanpa terjemahannya akan
+                    gagal di sana.
 public/gaya.css     gaya; SATU tema putih, tidak mengikuti setelan HP
 public/simpan.js    IndexedDB — entri, berkas (blob), setelan, cadangan
 public/otak.js      SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
@@ -229,7 +240,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (536 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (548 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
@@ -247,6 +258,8 @@ dan supaya tidak perlu belajar gaya baru:
   … })(window)` yang menggantung satu objek global (`TSimpan`, `TOtak`,
   `TPelabel`).
 - **Bahasa Indonesia** untuk komentar, nama variabel, dan seluruh teks di layar.
+  Terjemahan Inggrisnya menyusul di `public/bahasa.js`, TIDAK di tempat teksnya
+  ditulis - jadi menambah kalimat baru tetap satu baris Indonesia apa adanya.
 - **Komentar menjelaskan KENAPA, bukan APA.** Kalau satu keputusan bisa
   disalahpahami sebagai kekeliruan, tulis alasannya di situ. Contoh gayanya ada
   di kepala tiap berkas.

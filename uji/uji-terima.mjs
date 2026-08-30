@@ -138,6 +138,16 @@ await hal.route('**', async (rute) => {
 await hal.goto(alamat);
 await hal.waitForFunction(() => window.TAlur && window.TSimpan && window.TOtak && window.TAwan);
 
+/* SELURUH UJI INI BERJALAN DALAM BAHASA SUMBERNYA: Indonesia. Bahasa layar
+   bawaannya Inggris, dan itu memang yang dilihat orang yang baru membukanya -
+   tapi yang diperiksa di sini kalimat yang DITULIS di kode, bukan salinannya.
+   Menguji lewat terjemahan berarti tiap kalimat diperiksa dua langkah jauhnya
+   dari tempatnya lahir, dan yang gagal jadi tidak jelas: salah kalimatnya atau
+   salah terjemahannya. Terjemahannya punya kelompok ujinya sendiri di bawah. */
+await hal.evaluate(() => TSimpan.setel('bahasa', 'id'));
+await hal.reload();
+await hal.waitForFunction(() => window.TAlur && window.TSimpan && window.TOtak && window.TAwan);
+
 console.log('\npemasangan swalayan');
 {
   await hal.waitForSelector('#l-mulai.aktif', { timeout: 4000 });
@@ -3686,6 +3696,154 @@ console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipi
 
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.fill('#kotak', '');
+}
+
+console.log('\nbahasa: Inggris bawaannya, dan tidak ada kalimat yang terlewat');
+{
+  /* Bahasa BAWAANNYA INGGRIS. Aplikasinya ditulis Indonesia, tapi yang
+     memakainya belum tentu - dan yang membuka aplikasi asing dalam bahasa yang
+     tidak dia mengerti berhenti di layar pertama. */
+  const halEn = await konteks.newPage();
+  const galatEn = [];
+  halEn.on('pageerror', (e) => galatEn.push(e.message));
+  await halEn.route('**', async (rute) => {
+    const u = rute.request().url();
+    if (u.startsWith('http://127.0.0.1:' + port)) return rute.continue();
+    if (/googleapis\.com/.test(u)) {
+      return rute.fulfill(google.tangani(u, rute.request().method(), rute.request().postData()));
+    }
+    return rute.abort();
+  });
+  await halEn.goto(alamat);
+  await halEn.waitForFunction(() => window.TAlur && window.TBahasa);
+  await halEn.evaluate(() => Promise.all([
+    TSimpan.setel('bahasa', ''), TSimpan.setel('dipasang', 1)
+  ]));
+  await halEn.reload();
+  await halEn.waitForFunction(() => window.TAlur && window.TBahasa);
+  await halEn.waitForTimeout(600);
+
+  cek('tanpa dipilih apa pun, bahasanya Inggris',
+      (await halEn.evaluate(() => TBahasa.sekarang())) === 'en');
+
+  /* NAMA PINTU TIDAK IKUT DITERJEMAHKAN. Itu nama tempat, bukan kalimat - dan
+     nama tempat yang berganti bahasa membuat jarimu harus belajar ulang. */
+  const pintu = await halEn.locator('#l-utama [data-tab] .tab').allInnerTexts();
+  cek('nama pintu tetap Drop, Note, To Do, Storage',
+      JSON.stringify(pintu.map((x) => x.trim())) ===
+        JSON.stringify(['Drop', 'Note', 'To Do', 'Storage']),
+      JSON.stringify(pintu));
+
+  /* Kalimat layar - di HTML maupun yang digambar dari JS - benar-benar
+     berganti, termasuk placeholder dan aria-label. */
+  cek('kotak drop bicara Inggris',
+      (await halEn.getAttribute('#kotak', 'placeholder')) === 'Type or search…');
+  cek('placeholder yang disetel dari JS ikut',
+      await halEn.evaluate(async () => {
+        document.querySelector('#b-ai').click();
+        await new Promise((r) => setTimeout(r, 400));
+        const v = document.querySelector('#kotak').placeholder;
+        document.querySelector('#b-ai').click();
+        return v;
+      }) === 'Ask anything…');
+  cek('aria-label ikut diterjemahkan',
+      (await halEn.getAttribute('#b-setelan', 'aria-label')) === 'Settings');
+
+  /* Diuji dalam keadaan yang PALING RAMAI - tersambung, AI nyala, sandi
+     terpasang. Keadaan kosong menyembunyikan separuh kalimat layar ini, dan
+     yang tersembunyi persis yang paling mudah terlewat diterjemahkan. */
+  await halEn.evaluate(() => Promise.all([
+    TSimpan.setel('cadanganNyala', 1),
+    TSimpan.setel('modeAI', 'penuh'),
+    TSimpan.setel('cadanganBerhasil', Date.now())
+  ]).then(() => TSimpan.semuaSetelan()).then((s) => {
+    Object.keys(s).forEach(function (k) { TAlur.setelanUji()[k] = s[k]; });
+    TAlur.gambarSetelan();
+    TAlur.keLayarUji('l-setelan');
+  }));
+  /* Dibaca lewat evaluate, bukan locator: layar ini menggambar ulang sendiri
+     tiap kali status cadangan berubah, dan jeda sekejap antara menunggu dan
+     membaca sudah cukup untuk menangkapnya setengah jadi. */
+  const setelanEn = await halEn.waitForFunction(() => {
+    var v = document.querySelector('#l-setelan').innerText;
+    return v.length > 800 ? v : false;
+  }, null, { timeout: 8000 }).then((h) => h.jsonValue());
+  cek('layar Setelan bicara Inggris',
+      /Connected to your Drive/.test(setelanEn) &&
+      !/Tersambung ke Drive-mu/.test(setelanEn) &&
+      !/Catatanmu cuma ada/.test(setelanEn),
+      setelanEn.length + ' huruf: ' + setelanEn.replace(/\n/g, ' | ').slice(0, 200));
+  /* Bagian yang jauh di bawah layar ikut - pemilih bahasanya sendiri, dan
+     tombol paling berbahaya di aplikasi ini. */
+  cek('sampai bagian paling bawah pun ikut',
+      /Language/.test(setelanEn) && /Wipe all data/.test(setelanEn),
+      setelanEn.replace(/\n/g, ' | ').slice(-200));
+  /* Keterangan panjang yang terpotong <b> ikut utuh - menerjemahkan
+     potongannya berarti separuh Indonesia separuh Inggris di satu baris. */
+  cek('keterangan yang terpotong tag ikut utuh, bukan separuh-separuh',
+      /gives each note a title and keywords/.test(setelanEn) &&
+      !/memberi judul dan kata kunci/.test(setelanEn));
+
+  /* SAPUAN TERAKHIR: tidak boleh ada satu pun kalimat Indonesia yang tersisa
+     di layar mana pun. Ini yang menjawab "pastikan tidak ada nama menu yang
+     terlewati" - bukan dengan membaca daftar, tapi dengan menyapu layarnya. */
+  const ID_KATA = /\b(yang|tidak|dengan|untuk|dari|kamu|sudah|belum|bisa|akan|atau|tanpa|jadi|cuma|catatan|tulisan|simpan|hapus|buang|pilih|tambah|kembali|setelan|kunci|cadangan|arsip|gudang|layar|kotak|tugas|judul|masuk|keluar|ketuk|jatuhkan|menyimpan|tersimpan)\b/i;
+  const sapu = async () => halEn.evaluate(() => {
+    const out = [];
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let n;
+    while ((n = w.nextNode())) {
+      const s = (n.nodeValue || '').trim();
+      if (!s) continue;
+      const e = n.parentElement;
+      /* Yang kamu tulis sendiri tidak dihitung - itu memang bukan kalimat
+         layar, dan menerjemahkannya justru kerusakan. */
+      if (e && e.closest('textarea, [data-asli], .kartu, .tugas')) continue;
+      out.push(s);
+    }
+    document.querySelectorAll('[placeholder],[aria-label],[title]').forEach((el) => {
+      if (el.closest('[data-asli]')) return;
+      ['placeholder', 'aria-label', 'title'].forEach((a) => {
+        const v = el.getAttribute(a);
+        if (v && v.trim()) out.push(v.trim());
+      });
+    });
+    return out;
+  });
+  const sisa = [];
+  for (const l of ['l-utama', 'l-tulis', 'l-tugas', 'l-note', 'l-setelan']) {
+    await halEn.evaluate((x) => {
+      if (x === 'l-setelan') TAlur.gambarSetelan();
+      if (x === 'l-tugas') TTugas.gambar();
+      TAlur.keLayarUji(x);
+    }, l);
+    await halEn.waitForTimeout(450);
+    (await sapu()).forEach((s) => {
+      /* "besok/jumat/tgl" sengaja tetap Indonesia: itu kata yang benar-benar
+         DIKENALI pembaca tenggat, bukan kalimat layar. Menerjemahkannya
+         berarti menjanjikan sesuatu yang tidak dimengerti kodenya. */
+      if (/besok|jumat|tgl|HAPUS/.test(s)) return;
+      if (ID_KATA.test(s) && sisa.indexOf(s) < 0) sisa.push(s);
+    });
+  }
+  cek('tidak ada satu pun kalimat Indonesia yang tersisa di layar',
+      sisa.length === 0, JSON.stringify(sisa.slice(0, 6)));
+
+  /* Dan bisa dikembalikan: memilih Indonesia memuat ulang, lalu semuanya
+     kembali ke kalimat aslinya. */
+  await halEn.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await halEn.evaluate(() => TSimpan.setel('bahasa', 'id'));
+  await halEn.reload();
+  await halEn.waitForFunction(() => window.TAlur && window.TBahasa);
+  await halEn.waitForTimeout(500);
+  cek('memilih Indonesia mengembalikan kalimat aslinya',
+      (await halEn.getAttribute('#kotak', 'placeholder')) === 'Tulis atau cari…');
+  cek('dan nama pintunya tetap sama di kedua bahasa',
+      JSON.stringify((await halEn.locator('#l-utama [data-tab] .tab').allInnerTexts())
+        .map((x) => x.trim())) ===
+        JSON.stringify(['Drop', 'Note', 'To Do', 'Storage']));
+  cek('tidak ada galat JavaScript di jalur bahasa', galatEn.length === 0, galatEn.join(' | '));
+  await halEn.close();
 }
 
 console.log('\nnama cuma kulit');
