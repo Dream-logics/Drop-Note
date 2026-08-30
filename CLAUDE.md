@@ -146,8 +146,15 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     Tulisan tetap ikut terjaring pencarian utama: yang
                     ditambahkan layar Note pintu yang lebih sempit, bukan
                     dinding kedua.
+                    Di layar Note, MENYENTUH KARTU = LANJUT MENULIS (bukan
+                    membuka rincian di tempat seperti di hasil dan Storage).
                     Layar 'l-note' itu STORAGE - gudang berfolder, isinya
                     semua yang pernah jatuh.
+                    LAYAR TULIS TIDAK PUNYA KOLOM KATEGORI, dan jangan
+                    dikembalikan: gudangnya dibaca dari JUDUL, aturan yang sama
+                    persis dengan kotak Drop. Yang tampil cuma kabarnya. Judul
+                    tanpa nama gudang tidak mengosongkan rak yang lama.
+                    Doknya: salin (ikon) + Simpan.
                     Teks bayangan melengkapi nama gudang sambil diketik;
                     yang menerima PANAH di ujung ekornya - satu-satunya bagian
                     bayangan yang duduk DI ATAS kotak teks, letaknya diukur
@@ -195,7 +202,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (481 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (486 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

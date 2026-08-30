@@ -1854,22 +1854,39 @@ console.log('\nteks bayangan: melengkapi nama gudang sambil diketik');
     if (e) TAlur.keCatat(e);
   }));
   await hal.waitForTimeout(300);
-  const gudang = await hal.locator('#daftar-gudang option').evaluateAll(
-    (n) => n.map((o) => o.value));
-  cek('kolom kategori menawarkan gudang yang sudah ada',
-      gudang.indexOf('Amara Sales') >= 0 && gudang.indexOf('Ultima') >= 0,
-      JSON.stringify(gudang));
-  /* Tawaran, bukan daftar tertutup: kategori tidak harus nama gudang. */
-  cek('kolomnya tetap bisa diketik bebas',
-      (await hal.locator('#catat-kat').getAttribute('list')) === 'daftar-gudang' &&
-      (await hal.locator('#catat-kat').evaluate((n) => n.tagName)) === 'INPUT');
-  await hal.fill('#catat-kat', 'Amara Sales');
-  await hal.dispatchEvent('#catat-kat', 'input');
+  /* KOLOM KATEGORI DIBUANG. Dia satu kolom kosong yang menagih jawaban tiap
+     kali layar ini dibuka - padahal jawabannya sudah ditulis di baris judul di
+     atasnya. Dua tempat yang menentukan satu hal yang sama, dan yang harus
+     mengingat bedanya cuma orangnya. */
+  cek('tidak ada lagi kolom kategori di layar tulis',
+      (await hal.locator('#catat-kat').count()) === 0);
+  /* Yang tinggal cuma KABARNYA: satu baris redup yang menyebut raknya. */
+  cek('raknya dikabarkan, bukan ditanyakan',
+      /Amara Apps/.test(await hal.locator('#catat-ruang').innerText()),
+      await hal.locator('#catat-ruang').innerText());
+
+  /* Memindah rak = MEMBETULKAN JUDULNYA, aturan yang sama persis dengan kotak
+     Drop. Satu tempat yang menentukan, bukan dua yang diam-diam bisa beda. */
+  await hal.fill('#catat-judul', 'Amara Sales galat masuk halaman kasir');
+  await hal.dispatchEvent('#catat-judul', 'input');
   await hal.waitForTimeout(1100);
   const pindah = await hal.evaluate(() => TSimpan.semua().then(
     (a) => a.filter((e) => /halaman kasir/.test((e.teks || '') + ' ' + (e.judul || '')))[0]));
-  cek('gudangnya benar-benar berpindah', pindah && pindah.kategori === 'Amara Sales',
+  cek('membetulkan judul memindahkan gudangnya',
+      pindah && pindah.kategori === 'Amara Sales',
       JSON.stringify(pindah && pindah.kategori));
+
+  /* Dan judul yang tidak menyebut gudang apa pun TIDAK mengosongkan raknya.
+     Menghapus satu kata tidak pernah boleh berarti "keluarkan dari raknya" -
+     itu kehilangan diam-diam, dan yang kehilangan tidak akan tahu sebabnya. */
+  await hal.fill('#catat-judul', 'Galat masuk halaman kasir');
+  await hal.dispatchEvent('#catat-judul', 'input');
+  await hal.waitForTimeout(1100);
+  const tetap = await hal.evaluate(() => TSimpan.semua().then(
+    (a) => a.filter((e) => /halaman kasir/.test((e.teks || '') + ' ' + (e.judul || '')))[0]));
+  cek('judul tanpa nama gudang tidak mengosongkan raknya',
+      tetap && tetap.kategori === 'Amara Sales',
+      JSON.stringify(tetap && tetap.kategori));
 
   await hal.evaluate(() => TSimpan.semua().then((a) => {
     const e = a.filter((x) => /halaman kasir/.test((x.teks || '') + ' ' + (x.judul || '')))[0];
@@ -3107,6 +3124,39 @@ console.log('\nNote: ruang menulis, dengan pencariannya sendiri');
   await hal.waitForTimeout(250);
   const adaDiDaftar = await hal.locator('#tulis-isi .kartu').count();
   cek('tulisannya muncul di daftar Note', adaDiDaftar === 1, String(adaDiDaftar));
+
+  /* JUDUL NOTE BERPRILAKU SAMA DENGAN DROP: gudangnya dibaca dari judulnya
+     sendiri, tanpa satu kolom pun yang menagih jawaban. */
+  await hal.click('#tulis-isi .kartu');
+  await hal.waitForSelector('#l-catat.aktif');
+  await hal.fill('#catat-judul', 'Ngoffee instruksi editor font');
+  await hal.dispatchEvent('#catat-judul', 'input');
+  await hal.waitForTimeout(300);
+  cek('raknya terbaca dari judul, sambil diketik',
+      /Ngoffee/.test(await hal.locator('#catat-ruang').innerText()),
+      await hal.locator('#catat-ruang').innerText());
+  await hal.click('#b-simpan');
+  await hal.waitForTimeout(400);
+  const ruangNote = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.tulisan && /instruksi editor font/i.test(e.judul || ''))[0]);
+  cek('dan benar-benar mendarat di rak itu', ruangNote && ruangNote.kategori === 'Ngoffee',
+      JSON.stringify(ruangNote && ruangNote.kategori));
+
+  /* SALIN SELURUH TULISAN - judul dan isinya sekaligus. Yang ditulis di sini
+     justru yang panjang: prompt, brief, instruksi - yang memang dibuat untuk
+     ditempel ke tempat lain. Menyorotnya dengan jempol sampai ujung layar
+     ketiga adalah pekerjaan yang aplikasi ini ada untuk menghapus. */
+  cek('ada tombol salin di layar tulis', await hal.locator('#b-salin-catat').isVisible());
+  await konteks.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
+  await hal.click('#b-salin-catat');
+  await hal.waitForTimeout(300);
+  const tersalin = await hal.evaluate(() =>
+    navigator.clipboard.readText().then((x) => x, () => ''));
+  cek('menyalin judul DAN isinya sekaligus',
+      /Ngoffee instruksi editor font/.test(tersalin) && /Menu Font/.test(tersalin),
+      JSON.stringify(tersalin.slice(0, 80)));
+  await hal.click('[data-kembali]');
+  await hal.waitForTimeout(300);
 
   /* Catatan yang dibuka lalu ditinggal tanpa satu huruf pun TIDAK boleh jadi
      baris kosong di timbunan - tombol ini akan sering ditekan lalu diurungkan. */
