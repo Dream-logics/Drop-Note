@@ -609,6 +609,17 @@
      berubah karena catatannya jatuh pukul 08.02 atau 17.40 - yang menolong
      cuma "hari ini" lawan "sudah lama". Menuliskan jam berarti membayar
      selebar enam huruf untuk keterangan yang tidak pernah dipakai. */
+  /* Di layar Note jamnya IKUT DITULIS, dan itu tidak bertentangan dengan
+     alasan dia dibuang di tempat lain. Di hasil pencarian yang menolong cuma
+     "hari ini" lawan "sudah lama"; di Note kamu sedang membuka arsip, dan di
+     situ tiga catatan dari hari yang sama memang perlu dibedakan. */
+  function waktuLengkap(ts) {
+    var d = new Date(ts || Date.now());
+    var jj = ('0' + d.getHours()).slice(-2);
+    var mm = ('0' + d.getMinutes()).slice(-2);
+    return waktuRingkas(ts) + ' · ' + jj + '.' + mm;
+  }
+
   function waktuRingkas(ts) {
     var d = new Date(ts || Date.now());
     var kini = new Date();
@@ -876,6 +887,7 @@
     jenisNomorTelepon: jenisNomorTelepon,
     normal: normal, jarak: jarak, waktuPendek: waktuPendek,
     tanggalIndo: tanggalIndo, waktuRingkas: waktuRingkas,
+    waktuLengkap: waktuLengkap,
     tanggalPendek: tanggalPendek
   };
 })(window);

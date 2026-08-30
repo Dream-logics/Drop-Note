@@ -779,3 +779,23 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
    bawahnya karena dia tentang yang sedang kamu cari. */
 .dok-bawah .ruang-baris{order:-2;width:100%;padding-bottom:4px}
 .dok-bawah .saring-baris{order:-1;width:100%;padding-bottom:6px}
+
+
+/* Judul bagian di dalam daftar tugas. Redup dan kecil: dia pembatas, bukan
+   isi - kalau setara dengan tugasnya, dia ikut minta dibaca. */
+.tugas-bagian{
+  font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--m);padding:16px 2px 6px;border-top:1px solid var(--l);margin-top:8px;
+}
+
+/* --- pratinjau gambar ---
+   Alas gelap, bukan putih: yang dilihat gambarnya, dan latar terang mencuri
+   perhatian dari benda yang justru jadi alasan layar ini dibuka. Ini
+   satu-satunya tempat di aplikasi ini yang gelap, dan alasannya cuma itu. */
+.lihat{
+  position:fixed;inset:0;z-index:20;background:rgba(16,18,20,.93);
+  display:flex;align-items:center;justify-content:center;
+  padding:calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px);
+  cursor:zoom-out;
+}
+.lihat img{cursor:zoom-out;max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}

@@ -38,7 +38,12 @@
     ['penting', 'Penting'], ['selesai', 'Selesai']
   ];
 
-  var saringSaat = 'hariini';
+  /* BAWAANNYA "SEMUA", bukan "Hari ini". Tugas tanpa tenggat itu sah - itu
+     justru bentuk yang paling sering - dan kalau layar ini dibuka langsung di
+     "Hari ini", semua yang tanpa tanggal tidak kelihatan sama sekali. Daftar
+     yang menyembunyikan sebagian besar isinya waktu dibuka akan berhenti
+     dipercaya, lalu berhenti dibuka. */
+  var saringSaat = 'semua';
   var daftarSaat = '';      /* '' = semua daftar */
   var terbukaId = '';
   var alat = null;          /* dipinjamkan alur.js: $, H, pesan, muat, dll */
@@ -337,9 +342,28 @@
       return;
     }
 
-    $('#tugas-daftar').innerHTML = daftar.map(function (e) {
-      return barisHtml(e, H);
-    }).join('');
+    /* DUA BAGIAN, dan pembatasnya BERULANG atau tidak.
+
+       Yang berulang itu jenis lain: dia tidak pernah selesai, cuma jatuh tempo
+       lagi. Bayar wifi tiap bulan tidak akan pernah hilang dari daftar, jadi
+       kalau dia berbaur dengan yang sekali jalan, daftarnya terlihat tidak
+       pernah berkurang - dan daftar yang tidak pernah berkurang berhenti
+       terasa seperti kemajuan.
+
+       Yang berulang di BAWAH karena dia tidak menuntut apa-apa hari ini; yang
+       sekali jalan di atas karena itu yang benar-benar bisa dicoret. */
+    var sekali = daftar.filter(function (e) { return !e.ulang; });
+    var ulang = daftar.filter(function (e) { return !!e.ulang; });
+
+    var isi = sekali.map(function (e) { return barisHtml(e, H); }).join('');
+    if (ulang.length) {
+      /* Judul bagian cuma muncul kalau KEDUANYA ada. Judul di atas daftar yang
+         seluruhnya satu jenis tidak memisahkan apa pun, dia cuma baris yang
+         harus dilewati. */
+      if (sekali.length) isi += '<div class="tugas-bagian">Berulang</div>';
+      isi += ulang.map(function (e) { return barisHtml(e, H); }).join('');
+    }
+    $('#tugas-daftar').innerHTML = isi;
   }
 
   function barisHtml(e, H) {
