@@ -176,7 +176,11 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     KAMU PAKAI di folder itu ditawarkan sebagai cip
                     ('ekorJudul' di setelan) - tawaran, bukan tebakan.
                     Bilah pilih SATU untuk dua layar (Note & Storage),
-                    melayang di bawah: buang, gabung, pindah folder. Pindah
+                    melayang di bawah: buang, gabung, pindah - dan FOLDER ikut
+                    bisa dipilih di keduanya. Tapi foldernya BUKAN benda yang
+                    sama: folder Note dari 'folderNote', folder Storage dari
+                    rak tiap catatan. Yang ditawarkan dialog pindah HARUS
+                    folder layar itu sendiri. Pindah
                     ikut mengganti kolom 'folder' saja - judulnya tidak
                     diutak-atik. Penandanya kolom
                     'tulisan', BUKAN jenis tersendiri - jenis yang beda bikin
@@ -240,7 +244,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (548 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (557 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
