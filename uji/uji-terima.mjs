@@ -3289,6 +3289,7 @@ console.log('\nTo Do: yang belum dibaca, dan urutan yang bisa ditebak');
       /vendor kaca/.test(await hal.locator('#tugas-daftar').innerText()));
 
   await hal.click('#tugas-saring [data-tsaring="semua"]');
+
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.fill('#kotak', '');
 }
@@ -3476,20 +3477,29 @@ console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipi
   await hal.evaluate(() => TAlur.keLayarUji('l-tulis'));
   await hal.waitForTimeout(300);
 
-  /* FOLDERNYA BUKAN WADAH TERSENDIRI: dia nama gudang yang sama dengan yang
-     dipakai kotak Drop dan layar Storage. Membuat folder di sini berarti
-     menambah satu rak yang langsung dikenali di seluruh aplikasi. */
+  /* FOLDER NOTE ITU DAFTARNYA SENDIRI, DIBUAT TANGAN. Diturunkan dari daftar
+     gudang, lima belas rak yang dipakai kotak Drop tiba-tiba muncul di sini
+     sebagai folder kosong yang tidak pernah dibuat siapa pun. Rak lahir dari
+     catatan yang jatuh dan disortir mesin; folder lahir karena kamu memutuskan
+     ada tempat yang perlu diisi. */
   cek('ada tombol membuat folder di layar Note',
       await hal.locator('#b-folder-baru').isVisible());
+  const sebelumFolder = await hal.locator('#tulis-isi [data-tulis-folder]').count();
+  cek('rak gudang TIDAK ikut jadi folder Note', sebelumFolder === 0,
+      String(sebelumFolder));
   await hal.click('#b-folder-baru');
   await hal.waitForSelector('#tanya-isi:not(.sembunyi)');
   await hal.fill('#tanya-isi', 'Cortex Apps');
   await hal.click('#b-tanya-ya');
   await hal.waitForTimeout(400);
-  const jadiRak = await hal.evaluate(() =>
-    TAlur.daftarLabelUji().map((l) => l.nama));
-  cek('folder baru jadi rak di daftar gudang yang sama',
-      jadiRak.indexOf('Cortex Apps') >= 0, JSON.stringify(jadiRak));
+  const jadiFolder = await hal.evaluate(() => TSimpan.setelan('folderNote'));
+  cek('folder baru tersimpan di daftarnya sendiri',
+      /Cortex Apps/.test(jadiFolder || ''), String(jadiFolder));
+  /* Dan daftar gudang TIDAK ikut berubah: dua daftar yang berbeda, dan
+     membuat folder di Note tidak boleh diam-diam menambah rak untuk Drop. */
+  const rakTetap = await hal.evaluate(() => TAlur.daftarLabelUji().map((l) => l.nama));
+  cek('dan daftar gudang tidak ikut berubah',
+      rakTetap.indexOf('Cortex Apps') < 0, JSON.stringify(rakTetap));
 
   /* JUDULNYA SUDAH TERISI NAMA FOLDERNYA. Kamu masuk ke folder itu justru
      untuk menulis sesuatu miliknya - mengetik namanya lagi adalah menjawab
@@ -3508,8 +3518,8 @@ console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipi
   const mendaratDiFolder = await hal.evaluate(() => TAlur.semuaEntri()
     .filter((e) => e.tulisan && /prompt editor/.test(e.judul || ''))[0]);
   cek('dan tulisannya mendarat di folder itu',
-      mendaratDiFolder && mendaratDiFolder.kategori === 'Cortex Apps',
-      JSON.stringify(mendaratDiFolder && mendaratDiFolder.kategori));
+      mendaratDiFolder && mendaratDiFolder.folder === 'Cortex Apps',
+      JSON.stringify(mendaratDiFolder && mendaratDiFolder.folder));
   await hal.click('[data-kembali]');
   await hal.waitForTimeout(300);
 
@@ -3571,19 +3581,83 @@ console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipi
      menyentuh judul akan diam-diam dibatalkan lagi begitu tulisannya
      disunting - pemindahan yang membatalkan diri sendiri lebih buruk daripada
      tidak ada pemindahan sama sekali. */
+  /* Folder tujuan harus ADA - memindahkan ke nama yang belum pernah dibuat
+     adalah membuat folder secara diam-diam, dan folder yang lahir tanpa kamu
+     memintanya persis masalah yang baru saja dibereskan. */
+  await hal.click('#b-pilih-batal');
+  await hal.waitForTimeout(150);
+  await hal.click('#b-folder-baru');
+  await hal.waitForSelector('#tanya-isi:not(.sembunyi)');
+  await hal.fill('#tanya-isi', 'Rak Kedua');
+  await hal.click('#b-tanya-ya');
+  await hal.waitForTimeout(400);
+  await hal.click('#tulis-alamat [data-tulis-akar]');
+  await hal.waitForTimeout(300);
+  await hal.click('#b-tulis-pilih');
+  await hal.waitForTimeout(200);
+  await hal.click('#tulis-isi .kartu');
+  await hal.waitForTimeout(200);
   await hal.click('#b-pilih-pindah');
   await hal.waitForSelector('#tanya-isi:not(.sembunyi)');
-  await hal.fill('#tanya-isi', 'Ngoffee');
+  await hal.fill('#tanya-isi', 'Rak Kedua');
   await hal.click('#b-tanya-ya');
   await hal.waitForTimeout(600);
   const sesudahPindah = await hal.evaluate(() => TAlur.semuaEntri()
     .filter((e) => e.tulisan && /prompt editor/.test(e.judul || ''))[0]);
-  cek('catatannya benar-benar pindah rak',
-      sesudahPindah && sesudahPindah.kategori === 'Ngoffee',
-      JSON.stringify(sesudahPindah && sesudahPindah.kategori));
-  cek('dan judulnya ikut, supaya raknya tidak balik lagi waktu disunting',
-      sesudahPindah && /^Ngoffee /.test(sesudahPindah.judul),
+  cek('catatannya benar-benar pindah folder',
+      sesudahPindah && sesudahPindah.folder === 'Rak Kedua',
+      JSON.stringify(sesudahPindah && sesudahPindah.folder));
+  /* Judulnya TIDAK diutak-atik: foldernya kolomnya sendiri, jadi tidak ada
+     aturan kedua yang diam-diam membatalkan pemindahan ini nanti. */
+  cek('dan judulnya dibiarkan utuh',
+      sesudahPindah && /prompt editor/.test(sesudahPindah.judul),
       sesudahPindah && sesudahPindah.judul);
+
+  /* MEMILIH FOLDER, LALU MENGHAPUSNYA. Dulu mengetuk folder di mode pilih
+     tidak menghasilkan apa pun sama sekali - tombol Pilih terbaca rusak justru
+     di layar yang paling butuh membereskan. */
+  await hal.click('#b-pilih-batal').catch(() => {});
+  await hal.waitForTimeout(150);
+  if (await hal.locator('#tulis-alamat [data-tulis-akar]').count()) {
+    await hal.click('#tulis-alamat [data-tulis-akar]');
+    await hal.waitForTimeout(250);
+  }
+  await hal.click('#b-tulis-pilih');
+  await hal.waitForTimeout(200);
+  await hal.click('#tulis-isi [data-tulis-folder="Cortex Apps"]');
+  await hal.waitForTimeout(250);
+  cek('mengetuk folder di mode pilih benar-benar memilihnya',
+      (await hal.locator('#tulis-isi [data-tulis-folder="Cortex Apps"].dipilih').count()) === 1);
+  cek('dan bilahnya menyebut folder, bukan cuma catatan',
+      /folder/.test(await hal.locator('#pilih-jumlah').innerText()),
+      await hal.locator('#pilih-jumlah').innerText());
+
+  const isiSebelumHapus = await hal.evaluate(() =>
+    TAlur.semuaEntri().filter((e) => e.folder === 'Cortex Apps').length);
+  await hal.click('#b-pilih-buang');
+  await hal.waitForSelector('#tanya:not(.sembunyi)');
+  /* MEMBUANG FOLDER TIDAK MEMBUANG ISINYA, dan dialognya menyebut itu -
+     ketakutan yang menahan orang menekan tombol ini persis ketakutan itu. */
+  cek('dialognya menegaskan isinya tidak ikut terhapus',
+      /tidak ikut terhapus/i.test(await hal.locator('#tanya').innerText()) ||
+      isiSebelumHapus === 0,
+      await hal.locator('#tanya').innerText());
+  await hal.click('#b-tanya-ya');
+  await hal.waitForTimeout(600);
+  cek('foldernya benar-benar hilang dari daftar',
+      (await hal.locator('#tulis-isi [data-tulis-folder="Cortex Apps"]').count()) === 0);
+  const isiSelamat = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.tulisan && !e.pensiun && /Cortex Apps/.test(e.judul || '')).length);
+  cek('tapi tulisan yang tadi di dalamnya selamat, cuma naik keluar folder',
+      isiSelamat >= 1, String(isiSelamat));
+  /* Dan tidak ada satu pun yang masih menunjuk folder yang sudah tidak ada -
+     tulisan yatim yang menunjuk rak hantu adalah baris yang tidak akan pernah
+     muncul di folder mana pun lagi. Yang tadi dipindah ke folder lain tetap di
+     sana; yang dilepas cuma penghuni folder yang dihapus. */
+  const yatim = await hal.evaluate(() =>
+    TAlur.semuaEntri().filter((e) => e.folder === 'Cortex Apps').length);
+  cek('dan tidak ada yang masih menunjuk folder yang sudah tidak ada',
+      yatim === 0, String(yatim));
 
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.fill('#kotak', '');
