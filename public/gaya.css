@@ -438,12 +438,27 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
 .awas .set-ket b{color:var(--bahaya)}
 
 /* --- pesan sekilas --- */
+/* DI ATAS, DAN PELAN.
+
+   Dulu dia blok teal pekat di bawah-tengah - tepat di jalur jempol, tepat di
+   atas dok kalau doknya dipindah ke bawah, dan tepat menutupi hasil pertama.
+   Sebuah kabar "sudah tersimpan" tidak pantas berteriak lebih keras daripada
+   isi layarnya sendiri: yang perlu dia sampaikan cuma "iya, masuk", dan itu
+   sudah cukup dibilang dengan berbisik.
+
+   Sekarang dia turun dari atas, di luar jangkauan jempol, dengan alas
+   permukaan dan tinta aksen - bukan blok warna. */
 .pesan{
-  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 22px);transform:translate(-50%,14px);
-  background:var(--ap);color:var(--at);font-size:13.5px;font-weight:700;padding:11px 18px;border-radius:11px;
+  position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 130px);transform:translate(-50%,-12px);
+  background:var(--p);color:var(--a);font-size:13px;font-weight:600;padding:9px 16px;border-radius:20px;
+  border:1px solid color-mix(in srgb, var(--a) 30%, transparent);
+  box-shadow:0 2px 10px rgba(0,0,0,.07);
   opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;z-index:9;max-width:88vw;text-align:center;
 }
 .pesan.tampil{opacity:1;transform:translate(-50%,0)}
+/* Yang sedang berjalan ditulis lebih redup daripada yang sudah selesai:
+   bedanya harus kelihatan tanpa dibaca. */
+.pesan.jalan{color:var(--m);border-color:var(--l)}
 
 /* --- tambahan untuk alur (dropnote.js) --- */
 .lamp.rekam{border-color:var(--bahaya);color:var(--bahaya)}
@@ -452,7 +467,7 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
                  color:var(--a);text-decoration:none}
 /* Pesan sekilas yang membawa tindakan (Urungkan) - satu-satunya toast yang
    bisa diklik, jadi umurnya juga lebih panjang. */
-.pesan-aksi{background:none;border:none;color:var(--at);font-weight:800;
+.pesan-aksi{background:none;border:none;color:var(--a);font-weight:800;
             text-decoration:underline;margin-left:14px;padding:0;cursor:pointer}
 
 /* --- layar pemasangan --- */

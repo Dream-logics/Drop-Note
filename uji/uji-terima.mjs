@@ -232,8 +232,52 @@ console.log('\njudul: kata yang ada di kepalanya, bukan yang paling rapi');
      ancang-ancang ikut dibuang - kalau tidak, jenisnya disebut dua kali. */
   cek('kode otp mendarat di OTP, bukan Code',
       (await susun('kode otp bca jgn dishare', { elemen: [] })) === 'OTP bca jgn dishare');
-  cek('nomor telepon mendarat di Telepon, bukan Nomor',
-      (await susun('nomor telepon pak har', { elemen: [] })) === 'Telepon pak har');
+  /* WhatsApp, bukan Telepon: nomor seluler hari ini hampir tidak pernah
+     benar-benar ditelepon, dan "WA" itulah kata yang ada di kepalanya waktu
+     mencari. Menyimpannya sebagai "Telepon" berarti aplikasinya sendiri yang
+     bikin dia lupa. */
+  cek('nomor telepon mendarat di WhatsApp, bukan Nomor',
+      (await susun('nomor telepon pak har', { elemen: [] })) === 'WhatsApp pak har',
+      await susun('nomor telepon pak har', { elemen: [] }));
+  cek('"wa" dan "telepon" berakhir di istilah yang sama',
+      (await hal.evaluate(() => TOtak.bakuIstilah('wa'))) === 'WhatsApp' &&
+      (await hal.evaluate(() => TOtak.bakuIstilah('telepon'))) === 'WhatsApp');
+
+  /* TAPI TIDAK SEMUA NOMOR BISA DI-WHATSAPP. Halo BCA 14000 dan Damkar 113
+     memang telepon, dan menamainya WhatsApp membuat satu-satunya tindakan yang
+     mungkin jadi salah alamat. Bedanya kelihatan dari bentuk angkanya sendiri,
+     jadi tidak ada yang perlu ditebak. */
+  const nomor = await hal.evaluate(() => {
+    const f = (x) => TOtak.jenisNomorTelepon(x);
+    return {
+      seluler: f('08123456789'), internasional: f('+6281234567890'),
+      bertanda: f('0812-3456-789'),
+      jakarta: f('0217654321'), bali: f('0361751234'),
+      layanan: f('14000'), pendek: f('188'), bebas: f('1500888'),
+      bukan: f('12345678901234')
+    };
+  });
+  cek('nomor seluler dibaca sebagai WhatsApp',
+      nomor.seluler === 'WhatsApp' && nomor.internasional === 'WhatsApp' &&
+      nomor.bertanda === 'WhatsApp', JSON.stringify(nomor));
+  cek('kode area dibaca sebagai Telepon, bukan WhatsApp',
+      nomor.jakarta === 'Telepon' && nomor.bali === 'Telepon');
+  cek('nomor layanan pendek juga Telepon',
+      nomor.layanan === 'Telepon' && nomor.pendek === 'Telepon' && nomor.bebas === 'Telepon');
+  cek('deretan angka yang bukan nomor telepon tidak ikut dinamai',
+      nomor.bukan === '');
+
+  /* Dan itu dikerjakan tanpa AI sama sekali - bentuk angka tidak perlu
+     ditafsirkan siapa-siapa. */
+  const dariPola = await hal.evaluate(() =>
+    TOtak.elemenOtomatis({ isi: 'Selvi 08123456789 dan Halo BCA 14000' })
+      .map((x) => x.nama + '=' + x.nilai));
+  cek('keduanya dinamai sendiri oleh logic, tanpa menunggu AI',
+      dariPola.indexOf('WhatsApp=08123456789') >= 0 &&
+      dariPola.indexOf('Telepon=14000') >= 0, JSON.stringify(dariPola));
+  cek('aturannya ikut dikirim ke AI juga',
+      /WHATSAPP LAWAN TELEPON DIBACA DARI BENTUK ANGKANYA/.test(
+        await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TPelabel.arahanUji(s)))));
   cek('kode api mendarat di API',
       (await susun('kode api gemini buat proxy', { elemen: [] })) === 'API gemini buat proxy');
 
@@ -1375,8 +1419,34 @@ console.log('\ntag andalan: rak yang sudah diputuskan sendiri');
   cek('daftar andalan bukan daftar tertutup', /bukan daftar tertutup/.test(arahan));
   cek('AI disuruh membuat tag baru kalau tidak ada yang cocok',
       /BUAT TAG BARU/.test(arahan));
-  cek('tidak boleh ada catatan yang pulang tanpa tag',
-      /WAJIB dapat minimal 8 tag/.test(arahan));
+  /* TAG ITU RUANGAN, BUKAN JARING - dan itu membalik aturan lamanya.
+
+     Dulu arahannya menuntut MINIMAL 8 tag dan bahkan menyuruh menebak sebutan
+     yang "tidak tertulis di catatannya". Itu masuk akal waktu tag cuma pintu
+     tambahan yang boleh meleset. Sejak tag ikut menentukan folder, tebakan
+     yang salah tidak lagi gratis: dia menaruh barang di kamar yang salah.
+
+     "Sandy 087575686578" pulang membawa sembilan tag, tiga di antaranya -
+     teman, pribadi, catatan - tidak ada satu pun di catatannya. Sandy bisa
+     saja salesman mobil. */
+  cek('tidak ada lagi jumlah tag minimum yang dipaksakan',
+      !/WAJIB dapat minimal/.test(arahan) && /TIDAK LEBIH/.test(arahan));
+  cek('mengarang hubungan dan sifat dilarang terang-terangan',
+      /JANGAN MENGARANG HUBUNGAN/.test(arahan) && /salesman mobil/.test(arahan));
+  cek('kata yang menyebut bentuk, bukan isi, ikut dilarang',
+      /MENYEBUT BENTUKNYA, BUKAN ISINYA/.test(arahan));
+  cek('AI tidak lagi disuruh menebak yang tidak tertulis',
+      !/walaupun tidak tertulis di catatannya/.test(arahan));
+
+  /* Dan yang menegakkan kodenya, bukan cuma arahannya: aturan yang cuma
+     diminta akan bocor persis di hari tersibuk. */
+  const lolos = await hal.evaluate(() =>
+    TPelabel.saringTagUji(['Sandy', 'catatan', 'Data', 'nomor', 'Ngoffee', 'info']));
+  cek('kata bentuk dibuang oleh kodenya, bukan cuma diminta',
+      lolos.join(',') === 'Sandy,Ngoffee', JSON.stringify(lolos));
+  cek('tag baru per entri dibatasi',
+      (await hal.evaluate(() => TPelabel.saringTagUji(
+        ['a1','a2','a3','a4','a5','a6','a7','a8','a9','a10','a11','a12']).length)) === 8);
 
   /* Dan tanpa satu pun tag andalan pun, AI tetap harus menyusun sendiri. */
   const kosong = await hal.evaluate(() => TPelabel.arahanUji({ tagFavorit: [], hashtag: [] }));
@@ -1989,9 +2059,11 @@ console.log('\nfolder Note: dipilih dari temannya, dan bertingkat');
       ['No', 'catatan', 'daftar', 'berkas', 'kontak'].every((x) => namaFolder.indexOf(x) < 0),
       JSON.stringify(namaFolder));
   cek('yang punya paling banyak teman yang jadi folder',
-      namaFolder.indexOf('Telepon') >= 0 && namaFolder.indexOf('Rekening') >= 0);
+      namaFolder.indexOf('WhatsApp') >= 0 && namaFolder.indexOf('Rekening') >= 0,
+      JSON.stringify(namaFolder));
+  /* "Telepon" dan "WhatsApp" itu satu benda, dan yang menang WhatsApp. */
   cek('satu benda tidak dipecah jadi dua rak',
-      namaFolder.indexOf('whatsapp') < 0 && namaFolder.indexOf('WhatsApp') < 0);
+      namaFolder.indexOf('Telepon') < 0 && namaFolder.indexOf('whatsapp') < 0);
 
   /* Kategori dua kata dipakai UTUH, dan hierarkinya kelihatan: "Amara Sales"
      ada DI DALAM "Amara", bukan berdiri sejajar dengannya. */

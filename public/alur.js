@@ -148,9 +148,23 @@
   /* Pesan boleh membawa satu tindakan (biasanya "Urungkan"). Itu sebabnya
      membuang tidak perlu bertanya lebih dulu: urungnya ditawarkan setelah,
      bukan sebelum - dan yang tidak butuh tinggal mengabaikannya. */
+  /* Kabar yang sedang BERJALAN: tidak hilang sendiri, karena yang diberitakan
+     belum selesai. Dia ditutup oleh yang menyalakannya - dan kalau lupa
+     ditutup, kabar yang menggantung selamanya lebih buruk daripada tidak ada
+     kabar sama sekali, jadi dia tetap punya batas waktu yang panjang. */
+  function pesanJalan(teks) {
+    var kotak = $('#pesan');
+    kotak.textContent = teks;
+    kotak.style.pointerEvents = 'none';
+    kotak.classList.add('jalan', 'tampil');
+    clearTimeout(pesanJam);
+    pesanJam = setTimeout(sembunyikanPesan, 30000);
+  }
+
   function pesan(teks, aksi) {
     var kotak = $('#pesan');
     kotak.textContent = teks;
+    kotak.classList.remove('jalan');
     kotak.style.pointerEvents = 'none';
     if (aksi) {
       var tombol = document.createElement('button');
@@ -2326,6 +2340,10 @@
     var sekarang = $('#b-cadang-sekarang');
     if (sekarang) sekarang.addEventListener('click', function () {
       sekarang.textContent = 'Mengirim…';
+      /* Satu-satunya penyimpanan di aplikasi ini yang benar-benar makan waktu
+         dan tidak punya tanda lain. Sisanya menulis ke perangkat sendiri dan
+         sudah selesai sebelum sempat diberitakan. */
+      pesanJalan('Menyalin ke Drive…');
       TSinkron.putaran(setelanSaat, true).then(function (n) {
         sekarang.textContent = 'Kirim sekarang';
         pesan(n ? n + ' catatan naik ke Drive' : (setelanSaat.cadanganGalat || 'Semua sudah tersalin'));
