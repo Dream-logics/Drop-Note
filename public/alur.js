@@ -1059,10 +1059,13 @@
     wadah.innerHTML = riwayatAI.map(pesanAiHtml).join('') +
       (sedangTanyaAI ? '<div class="ai-pesan"><div class="ai-gelembung ai-tunggu">•••</div></div>' : '');
     pasangGambarKartu(wadah);
-    /* Yang terbaru di bawah, tepat di atas kotaknya - bentuk yang sudah
-       dikenali dari tiap aplikasi pesan, dan yang membuat jawaban terakhir
-       tidak perlu dicari. */
-    global.scrollTo(0, document.body.scrollHeight);
+    /* YANG DIGULIR PETAKNYA, BUKAN HALAMANNYA. Sejak tinggi layar Drop
+       dipatok, halamannya sengaja tidak bisa digulir sama sekali - jadi
+       menyuruh window menggulir ke dasar tidak mengerjakan apa pun, dan
+       jawaban yang baru datang tinggal di bawah garis pandang sampai kamu
+       menggulirnya sendiri. Yang punya gulirannya sekarang petak obrolan. */
+    var petak = $('#petak-ai');
+    if (petak) petak.scrollTop = petak.scrollHeight;
   }
 
   function blobDariB64(b64, tipe) {
@@ -1925,26 +1928,26 @@
      dalamnya tetap tulisan yang kamu ketik sendiri, dan aturan nomor empat
      berlaku juga di sini. Yang tadinya di dalam naik ke "Belum berfolder", dan
      dari sana bisa dipindahkan lagi ke mana pun. */
-  function buangFolder(nama) {
-    if (!nama || nama === TANPA_FOLDER) return;
-    var isi = semuaTulisan().filter(function (e) { return (e.folder || '') === nama; });
-    tanya('Hapus folder “' + nama + '”?',
+  function buangFolderTerpilih(daftar) {
+    var isi = [];
+    daftar.forEach(function (n) { isi = isi.concat(isiFolder(n)); });
+    tanya('Hapus ' + daftar.length + ' folder?',
       isi.length
-        ? isi.length + ' tulisan di dalamnya TIDAK ikut terhapus — mereka naik ke “' + TANPA_RAK + '”.'
+        ? isi.length + ' catatan di dalamnya TIDAK ikut terhapus — mereka cuma keluar dari foldernya.'
         : 'Foldernya kosong, jadi tidak ada yang ikut hilang.',
       function () {
-        folderDaftar = folderDaftar.filter(function (n) { return n !== nama; });
-        Promise.all([simpanFolder()].concat(isi.map(function (e) {
-          e.folder = '';
-          e.diubah = Date.now();
-          segarkanCache(e);
-          return TSimpan.taruh(e);
-        }))).then(function () { return muatSemua(); })
-          .then(function () {
-            if (tulisFolder === nama) tulisFolder = null;
-            gambarTulis();
-            pesan('Folder “' + nama + '” dihapus');
-          });
+        /* Folder Note punya daftarnya sendiri, jadi namanya ikut dicoret dari
+           sana. Folder Storage tidak: dia lahir dari rak tiap catatan, jadi
+           dia hilang sendiri begitu tidak ada lagi yang menunjuk ke situ. */
+        if (diLayarTulis()) {
+          folderDaftar = folderDaftar.filter(function (n) { return daftar.indexOf(n) < 0; });
+          simpanFolder();
+          if (daftar.indexOf(tulisFolder) >= 0) tulisFolder = null;
+        } else if (daftar.indexOf(noteFolder) >= 0) {
+          noteFolder = null;
+        }
+        pindahkanEntri(isi, '', daftar.length + ' folder dihapus');
+        if (!isi.length) { batalPilih(); segarkanTampilan(); pesan(daftar.length + ' folder dihapus'); }
       });
   }
 
@@ -2134,7 +2137,7 @@
      Di halaman depan Storage isinya penuh, tapi semuanya folder. */
   function adaKartuNote() {
     var w = wadahPilih();
-    return !!w && !!w.querySelector('.kartu, [data-tulis-folder]');
+    return !!w && !!w.querySelector('.kartu, [data-tulis-folder], [data-note-folder]');
   }
 
   function mulaiPilih(nyala) {
@@ -2158,8 +2161,9 @@
     $$('.kartu', w).forEach(function (k) {
       k.classList.toggle('dipilih', !!pilihNote[k.getAttribute('data-id')]);
     });
-    $$('[data-tulis-folder]', w).forEach(function (f) {
-      f.classList.toggle('dipilih', !!pilihFolder[f.getAttribute('data-tulis-folder')]);
+    $$('[data-tulis-folder], [data-note-folder]', w).forEach(function (f) {
+      var nama = f.getAttribute('data-tulis-folder') || f.getAttribute('data-note-folder');
+      f.classList.toggle('dipilih', !!pilihFolder[nama]);
     });
   }
 
@@ -2195,12 +2199,14 @@
     if (nf) sebut.push(nf + ' folder');
     $('#pilih-jumlah').textContent = sebut.length ? sebut.join(' · ') + ' dipilih'
                                                   : 'Ketuk yang mau dipilih';
-    /* Gabung dan Pindah cuma berlaku untuk catatan; folder tidak digabung dan
-       tidak dipindah ke dalam dirinya sendiri. Tombol yang tidak berlaku
-       disembunyikan, bukan dimatikan - tombol mati masih menagih dibaca. */
-    $('#b-pilih-gabung').classList.toggle('sembunyi', n < 2 || !!nf);
+    /* Folder yang dipilih MENDAHULUI catatan: begitu ada folder di antaranya,
+       Gabung dan Pindah bekerja pada foldernya - karena memindahkan folder dan
+       memindahkan satu catatan di dalamnya adalah dua maksud yang berbeda, dan
+       yang lebih besar yang dimaksud orang. Tombol yang tidak berlaku
+       disembunyikan, bukan dimatikan: tombol mati masih menagih dibaca. */
+    $('#b-pilih-gabung').classList.toggle('sembunyi', nf ? nf < 2 : n < 2);
     $('#b-pilih-buang').classList.toggle('sembunyi', !n && !nf);
-    $('#b-pilih-pindah').classList.toggle('sembunyi', !n || !!nf);
+    $('#b-pilih-pindah').classList.toggle('sembunyi', !n && !nf);
   }
 
   function alihPilih(id) {
@@ -2226,11 +2232,11 @@
      yang benar-benar terhapus" tetap berlaku, dan itulah yang membuat tombol
      ini boleh ada sama sekali. */
   function buangPilih() {
-    var folderPilih = Object.keys(pilihFolder);
+    var folderPilih = folderTerpilih();
     /* Folder dulu, sendirian: menghapusnya bukan mengarsipkan apa pun, dan
        menggabungkan dua pertanyaan yang berbeda akibatnya jadi satu dialog
        adalah cara tercepat membuat orang menekan "Lanjut" tanpa membaca. */
-    if (folderPilih.length) { buangFolder(folderPilih[0]); return; }
+    if (folderPilih.length) { buangFolderTerpilih(folderPilih); return; }
 
     var dipilih = entriPilih();
     if (!dipilih.length) return;
@@ -2259,32 +2265,105 @@
      ditawarkan, bukan ditanyakan kosong: mengetik judul untuk sesuatu yang
      baru saja kamu tunjuk sendiri adalah pertanyaan yang jawabannya sudah ada
      di layar. */
-  /* MEMINDAH ANTAR FOLDER. Foldernya kolomnya sendiri, jadi memindah cukup
-     mengganti kolom itu - tidak ada judul yang perlu ikut ditulis ulang, dan
-     tidak ada aturan kedua yang diam-diam membatalkannya nanti. */
+  /* ===================== FOLDER: DUA LAYAR, DUA ARTI =====================
+     Note dan Storage sama-sama punya folder, tapi foldernya BUKAN benda yang
+     sama. Folder Note kamu buat sendiri dan tersimpan di daftarnya sendiri;
+     folder Storage lahir dari rak yang dibaca mesin dari tiap catatan. Yang
+     dulu keliru di sini: satu daftar dipakai untuk dua layar, jadi memindah
+     catatan di Storage menawarkan folder milik Note - nama yang tidak ada
+     hubungannya sama sekali dengan yang sedang dilihat. */
+  function diLayarTulis() { return layarSaat === 'l-tulis'; }
+
+  function folderLayar() {
+    return diLayarTulis()
+      ? folderTulis().filter(function (f) { return f.nama !== TANPA_FOLDER; })
+      : folderNote().filter(function (f) { return f.nama !== TANPA_RAK; });
+  }
+
+  function namaFolderLayar() {
+    return folderLayar().map(function (f) { return f.nama; });
+  }
+
+  /* Satu-satunya tempat yang tahu kolom mana yang menyimpan foldernya. */
+  function taruhFolder(e, nama) {
+    if (diLayarTulis()) e.folder = nama; else e.kategori = nama;
+  }
+
+  function isiFolder(nama) {
+    var f = folderLayar().filter(function (x) { return x.nama === nama; })[0];
+    return f ? f.isi.slice() : [];
+  }
+
+  function folderTerpilih() { return Object.keys(pilihFolder); }
+
+  /* Menuliskan perpindahan sekelompok catatan, lalu menyegarkan layarnya.
+     Dipakai tiga tempat - pindah, gabung, dan buang folder - dan ketiganya
+     memang pekerjaan yang sama persis di bawahnya. */
+  function pindahkanEntri(daftar, tujuan, kabar) {
+    if (!daftar.length) { batalPilih(); return Promise.resolve(); }
+    return Promise.all(daftar.map(function (e) {
+      taruhFolder(e, tujuan);
+      e.diubah = Date.now();
+      segarkanCache(e);
+      return TSimpan.taruh(e);
+    })).then(function () {
+      batalPilih();
+      return muatSemua();
+    }).then(function () {
+      segarkanTampilan();
+      if (kabar) pesan(kabar);
+    });
+  }
+
   function pindahPilih() {
+    var folderPilih = folderTerpilih();
+    var semuaNama = namaFolderLayar();
+
+    /* FOLDER YANG DIPILIH: isinya yang pindah, bukan foldernya sendiri.
+       Foldernya cuma nama tempat - yang benar-benar berpindah selalu isinya. */
+    if (folderPilih.length) {
+      var tujuanBoleh = semuaNama.filter(function (x) { return folderPilih.indexOf(x) < 0; });
+      if (!tujuanBoleh.length) { pesan('Tidak ada folder lain untuk dituju'); return; }
+      tanyaPilih('Pindahkan isi ' + folderPilih.length + ' folder ke mana?',
+        'Ketuk folder tujuannya. Foldernya sendiri hilang begitu kosong.',
+        tujuanBoleh, function (tujuan) {
+          if (!tujuan) return;
+          var isi = [];
+          folderPilih.forEach(function (n) { isi = isi.concat(isiFolder(n)); });
+          pindahkanEntri(isi, tujuan, isi.length + ' catatan pindah ke “' + tujuan + '”');
+        });
+      return;
+    }
+
     var dipilih = entriPilih();
     if (!dipilih.length) return;
-    if (!folderDaftar.length) { pesan('Belum ada folder — buat satu dulu'); return; }
-
+    if (!semuaNama.length) { pesan('Belum ada folder — buat satu dulu'); return; }
+    var sedang = diLayarTulis() ? tulisFolder : noteFolder;
     tanyaPilih('Pindahkan ' + dipilih.length + ' catatan ke mana?',
       'Ketuk folder tujuannya.',
-      folderDaftar.filter(function (x) { return x !== tulisFolder; }),
+      semuaNama.filter(function (x) { return x !== sedang; }),
       function (tujuan) {
         if (!tujuan) return;
-        var n = dipilih.length;
-        Promise.all(dipilih.map(function (e) {
-          e.folder = tujuan;
-          e.diubah = Date.now();
-          segarkanCache(e);
-          return TSimpan.taruh(e);
-        })).then(function () {
-          batalPilih();
-          return muatSemua();
-        }).then(function () {
-          segarkanTampilan();
-          pesan(n + ' catatan pindah ke “' + tujuan + '”');
+        pindahkanEntri(dipilih, tujuan,
+          dipilih.length + ' catatan pindah ke “' + tujuan + '”');
+      });
+  }
+
+  /* MENGGABUNG FOLDER. Bedanya dengan Pindah cuma DARI MANA tujuannya diambil:
+     di sini dari antara yang kamu pilih sendiri, jadi dua rak yang ternyata
+     benda yang sama bisa dilebur tanpa mengetik satu nama pun. */
+  function gabungFolder() {
+    var folderPilih = folderTerpilih();
+    if (folderPilih.length < 2) return;
+    tanyaPilih('Gabung ' + folderPilih.length + ' folder jadi satu?',
+      'Ketuk yang mau dipertahankan — isi yang lain pindah ke sana.',
+      folderPilih, function (tujuan) {
+        if (!tujuan) return;
+        var isi = [];
+        folderPilih.forEach(function (n) {
+          if (n !== tujuan) isi = isi.concat(isiFolder(n));
         });
+        pindahkanEntri(isi, tujuan, folderPilih.length + ' folder digabung jadi “' + tujuan + '”');
       });
   }
 
@@ -4145,6 +4224,14 @@
     $('#note-isi').addEventListener('click', function (ev) {
       var f = ev.target.closest('[data-note-folder]');
       if (f) {
+        /* Selama mode pilih hidup, mengetuk folder berarti MEMILIHNYA - bukan
+           membukanya. Tanpa ini, folder di halaman depan Storage tidak punya
+           satu pun cara untuk dibereskan: yang bisa dipilih cuma isinya, dan
+           isinya baru kelihatan sesudah foldernya dibuka satu-satu. */
+        if (pilihNyala || jumlahPilih() || jumlahFolderPilih()) {
+          alihPilihFolder(f.getAttribute('data-note-folder'));
+          return;
+        }
         batalPilih();
         noteFolder = f.getAttribute('data-note-folder');
         gambarNote(); global.scrollTo(0, 0); return;
@@ -4152,7 +4239,7 @@
       /* Begitu ada yang dipilih, MENYENTUH KARTU BERARTI MEMILIH. Dua arti
          untuk satu ketukan adalah cara tercepat membuat orang ragu, jadi
          selama mode pilih hidup, membuka kartunya ditunda. */
-      if (pilihNyala || jumlahPilih()) {
+      if (pilihNyala || jumlahPilih() || jumlahFolderPilih()) {
         var k = ev.target.closest('.kartu');
         if (k) { alihPilih(k.getAttribute('data-id')); return; }
       }
@@ -4280,7 +4367,9 @@
     });
     $('#b-pilih-batal').addEventListener('click', batalPilih);
     $('#b-pilih-buang').addEventListener('click', buangPilih);
-    $('#b-pilih-gabung').addEventListener('click', gabungPilih);
+    $('#b-pilih-gabung').addEventListener('click', function () {
+      if (jumlahFolderPilih()) gabungFolder(); else gabungPilih();
+    });
     $('#b-pilih-pindah').addEventListener('click', pindahPilih);
 
     $('#lihat').addEventListener('click', tutupLihat);

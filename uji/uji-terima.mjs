@@ -2763,17 +2763,60 @@ console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan')
     await hal.click('#note-alamat [data-note-akar]');
     await hal.waitForTimeout(250);
   }
-  /* DI HALAMAN DEPAN STORAGE yang tampil cuma FOLDER - tidak ada satu kartu
-     pun yang bisa ditunjuk. Tombol yang ada tapi tidak menghasilkan apa-apa
-     lebih buruk daripada tombol yang tidak ada: yang pertama terbaca sebagai
-     rusak. */
-  cek('tombol Pilih tidak ditawarkan di halaman folder',
-      await hal.locator('#b-pilih-mulai').isHidden());
+  /* DI HALAMAN DEPAN STORAGE FOLDERNYA SENDIRI YANG BISA DIPILIH. Dulu tombol
+     Pilih disembunyikan di sini karena tidak ada kartu untuk ditunjuk - dan
+     itu berarti folder di halaman depan tidak punya satu pun cara untuk
+     dibereskan: yang bisa dipilih cuma isinya, dan isinya baru kelihatan
+     sesudah tiap folder dibuka satu-satu. */
+  cek('tombol Pilih ditawarkan di halaman folder juga',
+      await hal.locator('#b-pilih-mulai').isVisible());
+  await hal.click('#b-pilih-mulai');
+  await hal.waitForTimeout(200);
+  const folderStorage = await hal.locator('#note-isi [data-note-folder]').first()
+    .getAttribute('data-note-folder');
+  await hal.click('#note-isi [data-note-folder="' + folderStorage + '"]');
+  await hal.waitForTimeout(250);
+  cek('mengetuk folder Storage memilihnya, bukan membukanya',
+      (await hal.locator('#note-isi [data-note-folder].dipilih').count()) === 1 &&
+      (await hal.locator('#note-alamat').innerText()).indexOf(folderStorage) < 0,
+      await hal.locator('#note-alamat').innerText());
+  cek('dan Buang serta Pindah ditawarkan untuk folder itu',
+      await hal.locator('#b-pilih-buang').isVisible() &&
+      await hal.locator('#b-pilih-pindah').isVisible());
+
+  /* YANG DITAWARKAN FOLDER LAYAR INI, bukan folder layar sebelah. Dulu satu
+     daftar dipakai untuk dua layar, jadi memindah catatan di Storage
+     menawarkan folder milik Note - nama yang tidak ada hubungannya sama sekali
+     dengan yang sedang dilihat. */
+  await hal.click('#b-pilih-pindah');
+  await hal.waitForSelector('#tanya-pilih:not(.sembunyi)');
+  const tawaran = await hal.locator('#tanya-pilih [data-pilih]').allInnerTexts();
+  /* Yang ditawarkan boleh termasuk rak ANAK yang tidak tampil di akar - itu
+     tujuan yang sah. Yang tidak boleh: nama yang cuma ada di daftar folder
+     Note, karena itu layar yang berbeda dan raknya tidak ada hubungannya. */
+  const folderNoteSaja = await hal.evaluate(() =>
+    TSimpan.setelan('folderNote').then((v) => {
+      try { return JSON.parse(v || '[]'); } catch (e) { return []; }
+    }));
+  const rakStorage = await hal.evaluate(() =>
+    TAlur.semuaEntri().filter((e) => !e.pensiun && e.jenis !== 'tugas')
+      .map((e) => e.kategori || '').filter(Boolean));
+  cek('folder yang ditawarkan milik Storage, bukan milik Note',
+      tawaran.length > 0 &&
+      tawaran.every((x) => folderNoteSaja.indexOf(x.trim()) < 0 ||
+                           rakStorage.indexOf(x.trim()) >= 0),
+      JSON.stringify(tawaran) + ' vs note: ' + JSON.stringify(folderNoteSaja));
+  cek('dan folder yang dipilih tidak menawarkan dirinya sendiri',
+      tawaran.map((x) => x.trim()).indexOf(folderStorage) < 0);
+  await hal.click('#b-tanya-batal');
+  await hal.waitForTimeout(150);
+  await hal.click('#b-pilih-batal');
+  await hal.waitForTimeout(200);
 
   await hal.fill('#note-cari', 'badgeuji');
   await hal.dispatchEvent('#note-cari', 'input');
   await hal.waitForTimeout(300);
-  cek('tapi muncul begitu ada kartu yang bisa ditunjuk',
+  cek('dan kartu tetap bisa dipilih seperti biasa',
       await hal.locator('#b-pilih-mulai').isVisible());
   cek('bilah pilih masih tertutup sebelum diminta',
       await hal.locator('#pilih-bilah').isHidden());
@@ -3052,6 +3095,29 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
   cek('pertanyaannya ikut jadi judulnya', /KPR bunga tetap/.test(kartuAI.judul), kartuAI.judul);
   cek('judul itu tidak akan ditimpa AI', kartuAI.manual === true);
 
+  /* JAWABANNYA LANGSUNG TERLIHAT, tanpa digulir dulu. Sejak tinggi layar Drop
+     dipatok, halamannya tidak bisa digulir sama sekali - jadi menyuruh window
+     menggulir ke dasar tidak mengerjakan apa pun, dan jawaban yang baru datang
+     tinggal di bawah garis pandang. Yang punya gulirannya petak obrolan. */
+  for (let i = 0; i < 6; i++) {
+    await hal.fill('#kotak', 'pertanyaan panjang nomor ' + i + ' supaya obrolannya melebihi tinggi layar');
+    await hal.click('#b-drop');
+    await hal.waitForFunction((n) => TAlur.riwayatAIUji().length >= n, (i + 2) * 2,
+                              { timeout: 8000 });
+  }
+  await hal.waitForTimeout(400);
+  const terlihat = await hal.evaluate(() => {
+    const petak = document.querySelector('#petak-ai');
+    const pesan = petak.querySelectorAll('.ai-pesan');
+    const akhir = pesan[pesan.length - 1].getBoundingClientRect();
+    const p = petak.getBoundingClientRect();
+    return { atas: Math.round(akhir.top - p.top), bawah: Math.round(akhir.bottom - p.bottom),
+             tinggi: Math.round(p.height) };
+  });
+  cek('jawaban terakhir sudah terlihat tanpa digulir dulu',
+      terlihat.atas >= -2 && terlihat.atas < terlihat.tinggi && terlihat.bawah <= 4,
+      JSON.stringify(terlihat));
+
   /* Mode gambar: model lain, jawaban lain, dan hasilnya mendarat di toko
      berkas lewat jalan yang sama dengan gambar yang dilampirkan sendiri. */
   await hal.click('#ai-mode [data-ai-mode="gambar"]');
@@ -3312,6 +3378,7 @@ console.log('\nTo Do: yang belum dibaca, dan urutan yang bisa ditebak');
       /vendor kaca/.test(await hal.locator('#tugas-daftar').innerText()));
 
   await hal.click('#tugas-saring [data-tsaring="semua"]');
+
 
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.fill('#kotak', '');
@@ -3693,6 +3760,45 @@ console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipi
     TAlur.semuaEntri().filter((e) => e.folder === 'Cortex Apps').length);
   cek('dan tidak ada yang masih menunjuk folder yang sudah tidak ada',
       yatim === 0, String(yatim));
+
+  /* MENGGABUNG FOLDER. Bedanya dengan Pindah cuma DARI MANA tujuannya
+     diambil: di sini dari antara yang kamu pilih sendiri, jadi dua rak yang
+     ternyata benda yang sama bisa dilebur tanpa mengetik satu nama pun. */
+  if (await hal.locator('#b-pilih-batal').isVisible()) await hal.click('#b-pilih-batal');
+  await hal.waitForTimeout(150);
+  if (await hal.locator('#tulis-alamat [data-tulis-akar]').count()) {
+    await hal.click('#tulis-alamat [data-tulis-akar]');
+    await hal.waitForTimeout(300);
+  }
+  const folderAda = await hal.locator('#tulis-isi [data-tulis-folder]').count();
+  if (folderAda >= 2) {
+    await hal.click('#b-tulis-pilih');
+    await hal.waitForTimeout(200);
+    const nama = await hal.locator('#tulis-isi [data-tulis-folder]')
+      .evaluateAll((n) => n.map((e) => e.getAttribute('data-tulis-folder')).slice(0, 2));
+    await hal.click('#tulis-isi [data-tulis-folder="' + nama[0] + '"]');
+    await hal.click('#tulis-isi [data-tulis-folder="' + nama[1] + '"]');
+    await hal.waitForTimeout(250);
+    cek('dua folder bisa dipilih sekaligus',
+        (await hal.locator('#tulis-isi [data-tulis-folder].dipilih').count()) === 2);
+    cek('dan Gabung ditawarkan begitu ada dua',
+        await hal.locator('#b-pilih-gabung').isVisible());
+    await hal.click('#b-pilih-gabung');
+    await hal.waitForSelector('#tanya-pilih:not(.sembunyi)');
+    /* Yang ditawarkan cuma yang KAMU pilih sendiri - menggabung ke folder
+       ketiga yang tidak kamu tunjuk adalah jawaban untuk pertanyaan lain. */
+    const pilihanGabung = await hal.locator('#tanya-pilih [data-pilih]').allInnerTexts();
+    cek('yang ditawarkan cuma folder yang dipilih',
+        pilihanGabung.length === 2 &&
+        pilihanGabung.every((x) => nama.indexOf(x.trim()) >= 0),
+        JSON.stringify(pilihanGabung));
+    await hal.click('#tanya-pilih [data-pilih="' + nama[0] + '"]');
+    await hal.waitForTimeout(600);
+    const sesudahGabungF = await hal.evaluate((n) => TAlur.semuaEntri()
+      .filter((e) => e.folder === n).length, nama[1]);
+    cek('isi folder yang kalah benar-benar pindah', sesudahGabungF === 0,
+        String(sesudahGabungF));
+  }
 
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.fill('#kotak', '');
