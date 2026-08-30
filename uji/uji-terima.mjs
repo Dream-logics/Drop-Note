@@ -4156,6 +4156,127 @@ console.log('\nbahasa: Inggris bawaannya, dan tidak ada kalimat yang terlewat');
   await halEn.close();
 }
 
+console.log('\njari sungguhan: tekan lama di layar sentuh, sampai foldernya benar-benar hilang');
+{
+  /* KENAPA HALAMAN SENDIRI. Uji tekan-lama yang lain menembakkan 'pointerdown'
+     telanjang - dan itu justru melewatkan dua hal yang cuma ada di jari:
+
+     1. Jari yang kelihatannya diam TIDAK PERNAH benar-benar diam. Satu-dua
+        piksel getaran selama setengah detik itu normal, dan dulu piksel
+        pertama sudah membatalkan penghitungnya.
+     2. MENGANGKAT jari melahirkan satu klik di tempat yang sama - dan di sana
+        mode pilih sudah menyala, jadi kliknya membaca ketukan itu sebagai
+        "batalkan pilihan ini" dan mencabut kembali apa yang baru ditandai.
+
+     Keduanya sempurna di tetikus yang memang diam dan tidak melahirkan klik
+     kedua, jadi tidak ada satu pun uji lama yang bisa melihatnya. Yang
+     terlihat di HP: bilah pilih muncul, isinya nol, dan Buang tidak membuang
+     apa pun. */
+  const konteksJari = await browser.newContext({ hasTouch: true, isMobile: true,
+                                                 viewport: { width: 412, height: 915 } });
+  await konteksJari.addInitScript(STUB_GIS);
+  const halJ = await konteksJari.newPage();
+  halJ.on('pageerror', (e) => galat.push('jari: ' + e.message));
+  await halJ.route('**', async (rute) => {
+    const u = rute.request().url();
+    if (u.startsWith('http://127.0.0.1:' + port)) return rute.continue();
+    return rute.abort();
+  });
+  await halJ.goto(alamat);
+  await halJ.waitForFunction(() => window.TAlur);
+  await halJ.evaluate(() => Promise.all([
+    TSimpan.setel('dipasang', 1), TSimpan.setel('bahasa', 'id')]));
+  await halJ.reload();
+  await halJ.waitForFunction(() => window.TAlur);
+  await halJ.waitForTimeout(400);
+  await halJ.evaluate(async () => {
+    const n = (id, j, kat, folder) => TSimpan.taruh({ id, jenis: 'teks', judul: j, isi: j,
+      kategori: kat, folder: folder || '', tulisan: !!folder,
+      tag: [], label: [], elemen: [], daftar: [], dibuat: Date.now(), diubah: Date.now(),
+      dipakai: 0, diLabeliAI: true, diBacaAI: true });
+    await n('j1', 'jarikat satu', 'JariKat'); await n('j2', 'jarikat dua', 'JariKat');
+    await n('j3', 'jarilain satu', 'JariLain');
+    await n('j4', 'Brief jari', '', 'JariFolder');
+    await TSimpan.setel('folderNote', JSON.stringify(['JariFolder', 'JariKosong']));
+  });
+  await halJ.reload();
+  await halJ.waitForFunction(() => window.TAlur);
+  await halJ.waitForTimeout(500);
+
+  const cdp = await konteksJari.newCDPSession(halJ);
+  const titik = async (pilih) => {
+    const k = await halJ.locator(pilih).boundingBox();
+    return { x: Math.round(k.x + k.width / 2), y: Math.round(k.y + k.height / 2) };
+  };
+  /* Menahan SAMBIL BERGETAR, lalu diangkat - dan angkatnya melahirkan klik. */
+  const tahan = async (pilih) => {
+    const { x, y } = await titik(pilih);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    for (let i = 0; i < 6; i++) {
+      await halJ.waitForTimeout(100);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove',
+        touchPoints: [{ x: x + (i % 2 ? 1 : -1), y: y + (i % 2 ? 1 : 0) }] });
+    }
+    await halJ.waitForTimeout(150);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await halJ.waitForTimeout(350);
+  };
+  const ketuk = async (pilih) => {
+    const { x, y } = await titik(pilih);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    await halJ.waitForTimeout(60);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await halJ.waitForTimeout(350);
+  };
+
+  await halJ.click('#l-utama [data-tab-ke="l-note"]');
+  await halJ.waitForTimeout(500);
+  await tahan('#note-isi [data-note-folder="JariKat"]');
+  cek('menahan folder dengan jari yang bergetar tetap memilihnya',
+      (await halJ.locator('#note-isi [data-note-folder].dipilih').count()) === 1);
+  /* Inilah yang dulu nol: kliknya lahir, dan mencabut kembali pilihannya. */
+  cek('dan pilihannya BERTAHAN sesudah jarinya diangkat',
+      (await halJ.innerText('#pilih-jumlah')).indexOf('1 folder') === 0,
+      await halJ.innerText('#pilih-jumlah'));
+  await ketuk('#note-isi [data-note-folder="JariLain"]');
+  cek('folder kedua ikut dengan ketukan biasa',
+      (await halJ.locator('#note-isi [data-note-folder].dipilih').count()) === 2);
+  await ketuk('#b-pilih-buang');
+  cek('Buang membuka pertanyaannya', await halJ.locator('#tanya').isVisible());
+  await ketuk('#b-tanya-ya');
+  await halJ.waitForTimeout(800);
+  const sisaRak = await halJ.locator('#note-isi [data-note-folder]').allInnerTexts();
+  cek('dan sesudah dikonfirmasi rak itu BENAR-BENAR hilang',
+      !sisaRak.some((x) => /JariKat|JariLain/.test(x)), JSON.stringify(sisaRak));
+  cek('isinya tidak ikut terhapus - dia keluar ke rak tanpa label',
+      (await halJ.evaluate(() => TAlur.semuaEntri()
+        .filter((e) => e.id === 'j1' && !e.pensiun && !e.kategori).length)) === 1);
+
+  await halJ.click('#l-note [data-tab-ke="l-tulis"]');
+  await halJ.waitForTimeout(500);
+  await tahan('#tulis-isi [data-tulis-folder="JariKosong"]');
+  cek('di layar Note pun menahan folder memilihnya',
+      (await halJ.locator('#tulis-isi [data-tulis-folder].dipilih').count()) === 1);
+  await ketuk('#b-pilih-buang');
+  await ketuk('#b-tanya-ya');
+  await halJ.waitForTimeout(800);
+  cek('dan foldernya hilang dari daftarnya sendiri',
+      !(await halJ.locator('#tulis-isi [data-tulis-folder]').allInnerTexts())
+        .some((x) => /JariKosong/.test(x)));
+
+  /* Klik yang ditelan itu SATU, bukan seterusnya: ketukan biasa sesudahnya
+     harus tetap MEMBUKA foldernya, bukan memilihnya. */
+  await ketuk('#tulis-isi [data-tulis-folder="JariFolder"]');
+  await halJ.waitForTimeout(300);
+  cek('ketukan biasa tetap membuka foldernya, bukan memilih',
+      (await halJ.innerText('#tulis-alamat')).indexOf('JariFolder') >= 0 &&
+      (await halJ.locator('#pilih-bilah').isHidden()),
+      await halJ.innerText('#tulis-alamat'));
+
+  await halJ.close();
+  await konteksJari.close();
+}
+
 console.log('\nnama cuma kulit');
 {
   const berkasKode = ['bawaan.js', 'simpan.js', 'otak.js', 'awan.js', 'pelabel.js', 'sinkron.js', 'alur.js', 'sw.js'];

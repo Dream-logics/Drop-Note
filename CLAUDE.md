@@ -205,6 +205,16 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     folder, di ketiga layar yang punya bilah pilih. Itu
                     kebiasaan dari WhatsApp, bukan penemuan baru, jadi tombol
                     "Pilih" tetap ada tapi bukan lagi satu-satunya jalan.
+                    DUA HAL YANG CUMA ADA DI JARI, dan keduanya sudah pernah
+                    membuat fitur ini mati diam-diam: jari yang kelihatannya
+                    diam tetap bergetar 1-2px (jadi ada ambang geser, bukan
+                    batal di piksel pertama), dan MENGANGKAT jari melahirkan
+                    satu klik di tempat yang sama - klik itu harus DITELAN,
+                    kalau tidak dia mencabut kembali yang baru ditandai dan
+                    yang terlihat cuma bilah pilih berisi nol. Uji yang
+                    menembakkan 'pointerdown' telanjang tidak bisa melihat
+                    keduanya; harus konteks hasTouch dengan getaran dan
+                    angkatan sungguhan.
                     Yang terpilih HARUS kelihatan beda (.dipilih) - kalau tidak,
                     orang lupa tadi menandai yang mana dan batal semuanya.
                     Pilihan TERKUNCI di layarnya: pindah pintu membatalkannya,
@@ -269,7 +279,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (580 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (589 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
