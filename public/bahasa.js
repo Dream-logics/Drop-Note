@@ -128,8 +128,8 @@
     'Folder itu sudah ada': 'That folder already exists',
     'Belum ada folder — buat satu dulu': 'No folders yet — make one first',
     'Ketuk folder tujuannya.': 'Tap the folder to move them to.',
-    'Namanya boleh dua kata — "Cortex Apps" otomatis jadi rak di dalam "Cortex".':
-      'Two words is fine — "Cortex Apps" nests inside "Cortex" on its own.',
+    'Nama pendek satu-dua kata. Sub foldernya dibuat dari dalam sini.':
+      'A short name, one or two words. Sub-folders are made from inside it.',
     'Foldernya kosong, jadi tidak ada yang ikut hilang.':
       'The folder is empty, so nothing goes with it.',
     'rak': 'shelves',
@@ -389,6 +389,9 @@
     [/^(\d+) diarsipkan$/, '$1 archived'],
     [/^(\d+) label$/, '$1 labels'],
     [/^(\d+) tag andalan$/, '$1 go-to tags'],
+    /* Satu rak bukan "1 shelves". Jamak yang salah di baris yang dilihat tiap
+       hari terbaca sebagai aplikasi yang tidak selesai dikerjakan. */
+    [/^1 rak$/, '1 shelf'],
     [/^(\d+) rak$/, '$1 shelves'],
     [/^(\d+) langkah$/, '$1 steps'],
     [/^(\d+) belum selesai$/, '$1 unfinished'],
@@ -406,6 +409,8 @@
     [/^Pindahkan (\d+) catatan ke mana\?$/, 'Move $1 notes where?'],
     [/^Folder “(.+)” dibuat$/, 'Folder “$1” created'],
     [/^Folder “(.+)” dihapus$/, 'Folder “$1” deleted'],
+    [/^Dibuat di dalam “(.+)”\. Cukup nama pendeknya\.$/,
+     'Created inside “$1”. Just the short name is enough.'],
     [/^Folder “(.+)” belum ada$/, 'There is no folder “$1”'],
     [/^(\d+) tulisan di dalamnya TIDAK ikut terhapus — mereka naik ke “(.+)”\.$/,
      'The $1 notes inside are NOT deleted — they move up to “$2”.'],
