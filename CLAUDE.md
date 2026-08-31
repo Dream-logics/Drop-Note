@@ -206,9 +206,28 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     sesudah foldernya dibuka; yang belum berfolder punya
                     barisnya sendiri. Folder tujuan pindah DIPILIH, tidak
                     diketik. Membuka folder lalu "tulis baru" mengisi
-                    judulnya dengan nama folder itu, dan ekor judul yang PERNAH
-                    KAMU PAKAI di folder itu ditawarkan sebagai cip
-                    ('ekorJudul' di setelan) - tawaran, bukan tebakan.
+                    judulnya dengan nama folder itu LENGKAP sampai akarnya
+                    ("Prompt Cortex", bukan "Cortex"), dan menambahkan "(2)",
+                    "(3)" kalau judul itu sudah ada. Nomornya dihitung dari
+                    yang SUDAH ADA, bukan dari hitungan yang disimpan -
+                    hitungan simpanan meleset begitu satu tulisan dibuang.
+                    Yang pertama tidak bernomor. Perbandingannya JANGAN lewat
+                    TOtak.normal(): normal() membuang semua tanda baca, tanda
+                    kurungnya sekalian, jadi "(2)" jatuh jadi "2" dan yang
+                    ketiga ikut bernomor (2). Ekor judul yang PERNAH KAMU PAKAI
+                    di folder itu ditawarkan sebagai cip ('ekorJudul' di
+                    setelan) - tawaran, bukan tebakan.
+                    SUSUNAN FOLDER DIBACA DARI NAMANYA: "Prompt Cortex" itu
+                    anak "Prompt", tanpa batas tingkat. Tapi AWALANNYA DIPASANG
+                    APLIKASI, bukan diketik pemakainya - "+ Folder" membuat
+                    folder di tempat kamu berdiri, jadi di dalam "Prompt" kamu
+                    cukup mengetik "Cortex". Menyuruh orang menebak sendiri
+                    bahwa namanya wajib diawali nama induknya berarti sub
+                    foldernya tidak pernah terbentuk: yang terjadi dia mengetik
+                    "Test level 2" dan itu mendarat di akar. Barisnya menulis
+                    NAMA PENDEKNYA saja (di dalam "Prompt", anaknya tertulis
+                    "Cortex"); nama panjangnya tetap identitasnya. Panah kembali
+                    naik SATU tingkat, tidak melompat ke akar.
                     Bilah pilih SATU untuk dua layar (Note & Storage),
                     melayang di bawah: buang, gabung, pindah - dan FOLDER ikut
                     bisa dipilih di keduanya. Tapi foldernya BUKAN benda yang
@@ -300,7 +319,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (599 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (614 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

@@ -3894,15 +3894,23 @@ console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipi
   await hal.click('[data-kembali]');
   await hal.waitForTimeout(300);
 
+  /* PANAHNYA NAIK SATU TINGKAT, bukan melompat ke akar - jadi pulang ke akar
+     dari susunan tiga tingkat berarti menekannya tiga kali, persis seperti
+     yang dilakukan jarinya. */
+  const keAkarTulis = async () => {
+    for (let i = 0; i < 8; i++) {
+      if (!(await hal.locator('#tulis-alamat .folder-balik').count())) break;
+      await hal.click('#tulis-alamat .folder-balik');
+      await hal.waitForTimeout(250);
+    }
+  };
+
   /* Folder muncul sebagai baris rapat di akar, dan membukanya menyaring. */
   await hal.evaluate(() => TAlur.keLayarUji('l-tulis'));
   await hal.waitForTimeout(300);
   /* Naik ke akar dulu: membuat folder langsung membukanya, jadi yang sedang
      tampil adalah isi folder itu - bukan daftar foldernya. */
-  if (await hal.locator('#tulis-alamat [data-tulis-akar]').count()) {
-    await hal.click('#tulis-alamat [data-tulis-akar]');
-    await hal.waitForTimeout(300);
-  }
+  await keAkarTulis();
   cek('foldernya tampil sebagai baris di layar Note',
       (await hal.locator('#tulis-isi [data-tulis-folder="Cortex Apps"]').count()) === 1);
   const tinggiFolder = await hal.evaluate(() =>
@@ -3936,13 +3944,16 @@ console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipi
      memintanya persis masalah yang baru saja dibereskan. */
   await hal.click('#b-pilih-batal');
   await hal.waitForTimeout(150);
+  /* DI AKAR DULU. "+ Folder" membuat folder di tempat kamu berdiri, jadi
+     menekannya dari dalam "Cortex Apps" akan melahirkan anaknya - bukan
+     saudara yang dibutuhkan sebagai tujuan pindah. */
+  await keAkarTulis();
   await hal.click('#b-folder-baru');
   await hal.waitForSelector('#tanya-isi:not(.sembunyi)');
   await hal.fill('#tanya-isi', 'Rak Kedua');
   await hal.click('#b-tanya-ya');
   await hal.waitForTimeout(400);
-  await hal.click('#tulis-alamat [data-tulis-akar]');
-  await hal.waitForTimeout(300);
+  await keAkarTulis();
   await hal.click('#tulis-isi [data-tulis-folder="Cortex Apps"]');
   await hal.waitForTimeout(300);
   await hal.click('#b-tulis-pilih');
@@ -3980,10 +3991,7 @@ console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipi
      di layar yang paling butuh membereskan. */
   if (await hal.locator('#b-pilih-batal').isVisible()) await hal.click('#b-pilih-batal');
   await hal.waitForTimeout(150);
-  if (await hal.locator('#tulis-alamat [data-tulis-akar]').count()) {
-    await hal.click('#tulis-alamat [data-tulis-akar]');
-    await hal.waitForTimeout(300);
-  }
+  await keAkarTulis();
   await hal.click('#b-tulis-pilih');
   await hal.waitForTimeout(200);
   await hal.click('#tulis-isi [data-tulis-folder="Cortex Apps"]');
@@ -4026,10 +4034,7 @@ console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipi
      ternyata benda yang sama bisa dilebur tanpa mengetik satu nama pun. */
   if (await hal.locator('#b-pilih-batal').isVisible()) await hal.click('#b-pilih-batal');
   await hal.waitForTimeout(150);
-  if (await hal.locator('#tulis-alamat [data-tulis-akar]').count()) {
-    await hal.click('#tulis-alamat [data-tulis-akar]');
-    await hal.waitForTimeout(300);
-  }
+  await keAkarTulis();
   const folderAda = await hal.locator('#tulis-isi [data-tulis-folder]').count();
   if (folderAda >= 2) {
     await hal.click('#b-tulis-pilih');
@@ -4256,6 +4261,146 @@ console.log('\nbahasa: Inggris bawaannya, dan tidak ada kalimat yang terlewat');
         JSON.stringify(['Drop', 'Note', 'To Do', 'Storage']));
   cek('tidak ada galat JavaScript di jalur bahasa', galatEn.length === 0, galatEn.join(' | '));
   await halEn.close();
+}
+
+console.log('\nfolder Note bertingkat: dibuat dari tempat kamu berdiri, ditulis seukur tingkatnya');
+{
+  /* SUSUNAN TIGA TINGKAT, dibuat lewat jalur yang dipakai jarinya - bukan
+     lewat pintu belakang yang cuma ada di uji.
+
+     Aturannya sendiri tidak berubah: susunan dibaca dari NAMA, jadi
+     "Prompt Cortex" itu anak "Prompt". Yang dulu salah bukan aturannya, tapi
+     siapa yang harus tahu aturannya - untuk membuat sub folder kamu harus
+     menebak sendiri bahwa namanya wajib diawali nama induknya, dan menebak
+     itu tidak pernah terjadi. Yang terjadi: kamu mengetik "Test level 2", dia
+     mendarat di akar, dan susunan yang kamu bayangkan tidak pernah ada. */
+  await hal.evaluate(() => Promise.all(TAlur.semuaEntri()
+    .filter((e) => e.tulisan && !e.pensiun)
+    .map((e) => { e.pensiun = true; return TSimpan.taruh(e); })));
+  await hal.evaluate(() => TSimpan.setel('folderNote', '[]'));
+  await hal.reload();
+  await hal.waitForFunction(() => window.TAlur);
+  await hal.waitForTimeout(500);
+  await hal.evaluate(() => TAlur.keLayarUji('l-tulis'));
+  await hal.waitForTimeout(300);
+
+  const buatFolder = async (nama) => {
+    await hal.click('#b-folder-baru');
+    await hal.waitForSelector('#tanya-isi:not(.sembunyi)');
+    const ket = await hal.innerText('#tanya-ket');
+    await hal.fill('#tanya-isi', nama);
+    await hal.click('#b-tanya-ya');
+    await hal.waitForTimeout(400);
+    return ket;
+  };
+  const naik = async () => {
+    await hal.click('#tulis-alamat .folder-balik');
+    await hal.waitForTimeout(300);
+  };
+  const jejakTulis = async () =>
+    (await hal.innerText('#tulis-alamat')).replace(/\s+/g, ' ').trim();
+  const barisFolder = () =>
+    hal.locator('#tulis-isi [data-tulis-folder]').allInnerTexts();
+
+  await buatFolder('Kumpulan Ide');
+  await naik();
+  cek('folder di akar tetap lahir di akar',
+      (await hal.evaluate(() => TSimpan.setelan('folderNote')))
+        .indexOf('Kumpulan Ide') >= 0);
+  await buatFolder('Prompt');
+  const ketDalam = await buatFolder('Cortex');
+  cek('di dalam folder, pertanyaannya menyebut induknya',
+      ketDalam.indexOf('Prompt') >= 0, ketDalam);
+  /* AWALANNYA DIPASANG APLIKASI. Kamu mengetik "Cortex"; yang tersimpan
+     "Prompt Cortex", karena itu yang membuatnya jadi anak. */
+  cek('nama yang tersimpan sudah berawalan induknya',
+      (await hal.evaluate(() => TSimpan.setelan('folderNote')))
+        .indexOf('Prompt Cortex') >= 0);
+  cek('dan jejaknya menunjukkan jalurnya, bukan cuma nama panjangnya',
+      (await jejakTulis()).indexOf('Prompt / Cortex') >= 0, await jejakTulis());
+
+  await buatFolder('Draf');
+  cek('tingkatnya tidak dibatasi dua - anak dari anak tetap jadi',
+      (await hal.evaluate(() => TSimpan.setelan('folderNote')))
+        .indexOf('Prompt Cortex Draf') >= 0);
+  cek('dan jejak tiga tingkat menyebut ketiganya',
+      (await jejakTulis()).indexOf('Prompt / Cortex / Draf') >= 0, await jejakTulis());
+
+  /* PANAHNYA NAIK SATU TINGKAT. Panah yang selalu pulang ke akar berarti tiap
+     kali kamu salah masuk kamu harus menyusuri ulang dari awal. */
+  await naik();
+  cek('panah kembali naik SATU tingkat, bukan melompat ke akar',
+      (await jejakTulis()).indexOf('Prompt / Cortex') >= 0, await jejakTulis());
+  await naik();
+  cek('dan sekali lagi sampai di induknya', (await jejakTulis()).indexOf('Prompt') >= 0);
+
+  /* YANG DITULIS CUMA EKORNYA. Mengulang "Prompt" di tiap baris, di layar
+     yang judulnya sudah "Prompt", memakan lebar yang justru dibutuhkan nama
+     aslinya - dan tidak memberitahu apa pun. */
+  const dalamPrompt = await barisFolder();
+  cek('di dalam induknya, anaknya ditulis dengan nama pendek saja',
+      dalamPrompt.some((x) => x.split('\n')[0] === 'Cortex'),
+      JSON.stringify(dalamPrompt));
+  cek('dan cucunya TIDAK ikut naik - satu tingkat, satu daftar',
+      !dalamPrompt.some((x) => /Draf/.test(x)), JSON.stringify(dalamPrompt));
+
+  await naik();
+  const diAkar = await barisFolder();
+  cek('di akar yang tampil cuma folder akar',
+      diAkar.some((x) => /Prompt/.test(x)) &&
+      diAkar.some((x) => /Kumpulan Ide/.test(x)) &&
+      !diAkar.some((x) => /Cortex|Draf/.test(x)), JSON.stringify(diAkar));
+
+  /* Yang sudah hafal awalannya tidak boleh dihukum dengan "Prompt Prompt X". */
+  await hal.click('#tulis-isi [data-tulis-folder="Prompt"]');
+  await hal.waitForTimeout(300);
+  await buatFolder('Prompt Gemini');
+  const daftarF = await hal.evaluate(() => TSimpan.setelan('folderNote'));
+  cek('mengetik nama lengkapnya tidak melipatgandakan awalannya',
+      daftarF.indexOf('Prompt Gemini') >= 0 &&
+      daftarF.indexOf('Prompt Prompt') < 0, daftarF);
+
+  /* JUDUL YANG SUDAH BERNOMOR SENDIRI. Dua tulisan berjudul sama persis tidak
+     bisa dibedakan di hasil pencarian - dan yang membedakannya, tanggal,
+     justru yang paling tidak kamu ingat. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-tulis'));
+  await hal.waitForTimeout(200);
+  for (let i = 0; i < 8; i++) {
+    if (!(await hal.locator('#tulis-alamat .folder-balik').count())) break;
+    await naik();
+  }
+  await hal.click('#tulis-isi [data-tulis-folder="Prompt"]');
+  await hal.waitForTimeout(300);
+  await hal.click('#tulis-isi [data-tulis-folder="Prompt Cortex"]');
+  await hal.waitForTimeout(300);
+  const judulKe = [];
+  for (let i = 0; i < 3; i++) {
+    await hal.click('#b-tulis-baru');
+    await hal.waitForTimeout(450);
+    judulKe.push(await hal.inputValue('#catat-judul'));
+    await hal.fill('#catat-isi', 'isi ke ' + (i + 1));
+    await hal.dispatchEvent('#catat-isi', 'input');
+    await hal.waitForTimeout(600);
+    await hal.click('#b-simpan');
+    await hal.waitForTimeout(500);
+    await hal.click('#l-catat [data-kembali]');
+    await hal.waitForTimeout(500);
+  }
+  cek('judul tulisan baru terisi nama folder LENGKAP sampai akarnya',
+      judulKe[0] === 'Prompt Cortex', JSON.stringify(judulKe));
+  /* Nomornya dihitung dari yang SUDAH ADA, bukan dari hitungan yang disimpan:
+     hitungan yang disimpan meleset begitu satu tulisan dibuang. Dan yang
+     pertama tidak bernomor - "(1)" pada satu-satunya berkas cuma derau. */
+  cek('yang kedua dan ketiga bernomor sendiri',
+      judulKe[1] === 'Prompt Cortex (2)' && judulKe[2] === 'Prompt Cortex (3)',
+      JSON.stringify(judulKe));
+
+  /* Perbandingannya TIDAK lewat TOtak.normal(): normal() membuang semua tanda
+     baca, tanda kurungnya sekalian, jadi "(2)" jatuh jadi "2" dan nomornya
+     tidak pernah terbaca lagi - yang ketiga ikut bernomor (2). */
+  cek('nomornya benar-benar terbaca, bukan tersapu normalisasi tanda baca',
+      (await hal.evaluate(() => TAlur.semuaEntri()
+        .filter((e) => /^Prompt Cortex \(3\)$/.test(e.judul || '')).length)) === 1);
 }
 
 console.log('\njari sungguhan: tekan lama di layar sentuh, sampai foldernya benar-benar hilang');

@@ -1739,6 +1739,54 @@
     return TSimpan.setel('folderNote', JSON.stringify(folderDaftar));
   }
 
+  /* ===================== TINGKAT FOLDER NOTE =====================
+     Susunannya dibaca dari NAMANYA sendiri: "Prompt Cortex" itu anak "Prompt".
+     Itu tetap - tidak ada kolom induk yang harus dirawat, dan memindahkan satu
+     folder cukup dengan mengganti namanya.
+
+     Yang dulu salah bukan aturannya, tapi siapa yang harus tahu aturannya.
+     Untuk membuat sub folder kamu harus menebak sendiri bahwa namanya WAJIB
+     diawali nama induknya - dan menebak itu tidak pernah terjadi. Yang terjadi:
+     kamu mengetik "Test level 2", dia mendarat di akar, dan susunan yang kamu
+     bayangkan tidak pernah terbentuk.
+
+     Jadi awalannya sekarang DIPASANG APLIKASI, bukan diketik kamu: "+ Folder"
+     di dalam "Prompt" membuat anaknya "Prompt", apa pun yang kamu ketik. */
+  function indukDari(nama, semua) {
+    var pilih = '';
+    (semua || folderDaftar).forEach(function (c) {
+      if (c === nama) return;
+      if (normalFolder(nama).indexOf(normalFolder(c) + ' ') !== 0) return;
+      /* Yang terpanjang menang: "Prompt Cortex Satu" milik "Prompt Cortex",
+         bukan milik "Prompt". */
+      if (!pilih || c.length > pilih.length) pilih = c;
+    });
+    return pilih;
+  }
+
+  /* Yang DITULIS di barisnya cuma ekornya. Di dalam "Prompt", anak bernama
+     "Prompt Cortex" ditulis "Cortex" - mengulang nama induknya di tiap baris
+     memakan lebar yang justru dibutuhkan nama aslinya, dan mengulanginya di
+     layar yang judulnya sudah "Prompt" tidak memberitahu apa pun. Nama
+     panjangnya tetap identitasnya; yang dipendekkan cuma tulisannya. */
+  function namaPendek(nama, induk) {
+    if (!induk) return nama;
+    var sisa = String(nama).slice(induk.length).trim();
+    return sisa || nama;
+  }
+
+  /* Rantai dari akar sampai folder ini - dipakai remah jejak, dan dipakai
+     panah kembali untuk naik SATU tingkat, bukan melompat ke akar. */
+  function jalurFolder(nama) {
+    var jalur = [];
+    var n = nama;
+    while (n) {
+      jalur.unshift(n);
+      n = indukDari(n, folderDaftar);
+    }
+    return jalur;
+  }
+
   function folderTulis() {
     var punya = semuaTulisan();
     var isi = {};
@@ -1760,15 +1808,9 @@
 
     var nama = Object.keys(isi);
     var induk = {};
+    var tanpaSisa = nama.filter(function (n) { return n !== TANPA_FOLDER; });
     nama.forEach(function (n) {
-      var pilih = '';
-      if (n === TANPA_FOLDER) { induk[n] = ''; return; }
-      nama.forEach(function (c) {
-        if (c === n || c === TANPA_FOLDER) return;
-        if (normalFolder(n).indexOf(normalFolder(c) + ' ') !== 0) return;
-        if (!pilih || c.length > pilih.length) pilih = c;
-      });
-      induk[n] = pilih;
+      induk[n] = n === TANPA_FOLDER ? '' : indukDari(n, tanpaSisa);
     });
     var anak = {};
     nama.forEach(function (n) { if (induk[n]) anak[induk[n]] = (anak[induk[n]] || 0) + 1; });
@@ -1821,7 +1863,7 @@
     var n = f.isi.length;
     return '<button class="folder-baris" data-tulis-folder="' + H(f.nama) + '">' +
       '<svg viewBox="0 0 24 24" class="ik"><path d="M4 6a2 2 0 0 1 2-2h3.5l2 2.5H18a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>' +
-      '<span class="folder-nama" data-asli>' + H(f.nama) + '</span>' +
+      '<span class="folder-nama" data-asli>' + H(namaPendek(f.nama, f.induk)) + '</span>' +
       (f.anak ? '<span class="folder-anak">' + f.anak + ' rak</span>' : '') +
       /* Angka nol tidak digambar untuk folder yang isinya ada di rak-rak
          anaknya - "1 rak · 0" membaca seperti folder kosong, padahal isinya
@@ -1853,10 +1895,25 @@
         '<span class="note-jejak-kini">“' + H(kueri) + '”</span>';
       return;
     }
-    w.innerHTML = tulisFolder
-      ? panahKembali('data-tulis-akar') +
-        '<span class="note-jejak-kini">' + H(tulisFolder) + '</span>'
-      : '<span class="note-jejak-kini">Semua folder</span>';
+    if (!tulisFolder) {
+      w.innerHTML = '<span class="note-jejak-kini">Semua folder</span>';
+      return;
+    }
+    /* Panahnya naik SATU TINGKAT, bukan melompat ke akar. Di susunan tiga
+       tingkat, panah yang selalu pulang ke akar berarti tiap kali kamu salah
+       masuk kamu harus menyusuri ulang dari awal - dan yang begitu berhenti
+       dipakai sesudah dua kali. */
+    var jalur = jalurFolder(tulisFolder);
+    var naik = jalur.length > 1 ? jalur[jalur.length - 2] : '';
+    w.innerHTML = panahKembali('data-tulis-naik="' + H(naik) + '"') +
+      (jalur.length > 1
+        ? '<span class="note-jejak-induk">' +
+          H(jalur.slice(0, -1).map(function (n, i) {
+            return namaPendek(n, i ? jalur[i - 1] : '');
+          }).join(' / ')) + ' /</span>'
+        : '') +
+      '<span class="note-jejak-kini">' +
+      H(namaPendek(tulisFolder, naik)) + '</span>';
   }
 
   function gambarTulis() {
@@ -1943,7 +2000,10 @@
     /* Cuma waktu judulnya masih SEBATAS nama foldernya. Sesudah kamu mengetik
        kata berikutnya, tawaran ini sudah tidak menjawab apa pun - dan cip yang
        tidak menjawab apa pun cuma menutupi tulisanmu. */
-    var sisa = folder ? judul.trim().slice(folder.length).trim() : judul.trim();
+    /* Nomornya tidak dihitung sebagai "sudah mengetik ekornya" - dia dipasang
+       aplikasi, bukan olehmu, jadi tawarannya tetap berlaku. */
+    var tanpaNomor = judul.trim().replace(/\s*\(\d+\)$/, '');
+    var sisa = folder ? tanpaNomor.slice(folder.length).trim() : tanpaNomor;
     if (!daftar.length || sisa) { w.classList.add('sembunyi'); w.innerHTML = ''; return; }
     w.classList.remove('sembunyi');
     w.innerHTML = daftar.map(function (x) {
@@ -1955,17 +2015,50 @@
      catatan yang masih kosong, jadi membuka lalu keluar tanpa mengetik apa pun
      tidak meninggalkan baris kosong di timbunan - dan itu penting, karena
      tombol ini akan sering ditekan lalu diurungkan. */
+  /* JUDUL YANG SUDAH BERNOMOR SENDIRI. Judul kedua yang sama persis dengan
+     judul pertama membuat keduanya tidak bisa dibedakan di hasil pencarian -
+     dan yang membedakannya, tanggal, justru yang paling tidak kamu ingat.
+
+     Nomornya dihitung dari yang SUDAH ADA, bukan dari hitungan yang disimpan:
+     hitungan yang disimpan akan meleset begitu satu tulisan dibuang, dan
+     "Prompt Cortex (7)" di folder berisi tiga tulisan membaca seperti kesalahan.
+     Yang pertama tidak bernomor - "(1)" pada satu-satunya berkas cuma derau. */
+  function judulBernomor(dasar) {
+    /* DIBANDINGKAN APA ADANYA, bukan lewat TOtak.normal(). normal() membuang
+       semua tanda baca - termasuk tanda kurungnya - jadi "Prompt Cortex (2)"
+       jatuh jadi "prompt cortex 2" dan nomornya tidak pernah terbaca lagi.
+       Akibatnya tulisan ketiga ikut bernomor (2), dan dua berkas dengan judul
+       yang sama persis persis itu yang mau dihindari. */
+    var rapi = function (x) { return String(x || '').trim().toLowerCase(); };
+    var d = rapi(dasar);
+    var pakai = {};
+    semuaEntri.forEach(function (e) {
+      if (e.pensiun || e.dihapus) return;
+      var j = rapi(e.judul);
+      if (!j) return;
+      if (j === d) { pakai[1] = true; return; }
+      var m = j.match(/^(.*?)\s*\((\d+)\)$/);
+      if (m && m[1] === d) pakai[Number(m[2])] = true;
+    });
+    if (!pakai[1]) return dasar;
+    var n = 2;
+    while (pakai[n]) n++;
+    return dasar + ' (' + n + ')';
+  }
+
   function tulisBaru() {
     var e = entriBaru('teks');
     e.tulisan = true;
     keCatat(e);
-    /* JUDULNYA SUDAH TERISI NAMA FOLDERNYA. Kamu masuk ke folder itu justru
-       untuk menulis sesuatu miliknya - mengetik namanya lagi adalah menjawab
-       pertanyaan yang sudah kamu jawab dengan membuka foldernya. */
+    /* JUDULNYA SUDAH TERISI NAMA FOLDERNYA - lengkap sampai akarnya, karena
+       "Cortex" sendirian tidak memberitahu Cortex yang mana. Kamu masuk ke
+       folder itu justru untuk menulis sesuatu miliknya; mengetik namanya lagi
+       adalah menjawab pertanyaan yang sudah kamu jawab dengan membukanya. */
     var isian = $('#catat-judul');
     if (tulisFolder && tulisFolder !== TANPA_FOLDER) {
-      isian.value = tulisFolder + ' ';
+      isian.value = judulBernomor(tulisFolder);
       e.folder = tulisFolder;
+      e.judulManual = true;
       gambarRuangCatat();
       gambarEkorCatat();
     }
@@ -1973,10 +2066,21 @@
     isian.setSelectionRange(isian.value.length, isian.value.length);
   }
 
+  /* FOLDER BARU LAHIR DI TEMPAT KAMU BERDIRI. Di akar dia folder akar; di
+     dalam "Prompt" dia anak "Prompt", dan awalannya dipasang di sini - kamu
+     cukup mengetik "Cortex". Tingkatnya tidak dibatasi: di dalam
+     "Prompt Cortex" yang lahir "Prompt Cortex Draf". */
   function folderBaru() {
-    tanyaKetik('Folder baru', 'Namanya boleh dua kata — "Cortex Apps" otomatis jadi rak di dalam "Cortex".',
-      '', function (nama) {
-        if (!nama) return;
+    var induk = (tulisFolder && tulisFolder !== TANPA_FOLDER) ? tulisFolder : '';
+    tanyaKetik('Folder baru',
+      induk ? 'Dibuat di dalam “' + induk + '”. Cukup nama pendeknya.'
+            : 'Nama pendek satu-dua kata. Sub foldernya dibuat dari dalam sini.',
+      '', function (ketik) {
+        if (!ketik) return;
+        /* Diketik lengkap juga boleh - orang yang sudah hafal awalannya tidak
+           boleh dihukum dengan "Prompt Prompt Cortex". */
+        var nama = (induk && normalFolder(ketik).indexOf(normalFolder(induk) + ' ') !== 0)
+          ? induk + ' ' + ketik : ketik;
         var punya = folderDaftar.some(function (n) {
           return TOtak.normal(n) === TOtak.normal(nama);
         });
@@ -4277,8 +4381,11 @@
     });
     $('#tulis-cari').addEventListener('input', gambarTulis);
     $('#tulis-alamat').addEventListener('click', function (ev) {
-      if (!ev.target.closest('[data-tulis-akar]')) return;
-      tulisFolder = null;
+      /* Dua penanda, dua arti: pencarian pulang ke akar (hasilnya memang tidak
+         punya tingkat), tapi di dalam folder panahnya naik satu tingkat. */
+      var naik = ev.target.closest('[data-tulis-naik]');
+      if (!naik && !ev.target.closest('[data-tulis-akar]')) return;
+      tulisFolder = naik ? (naik.getAttribute('data-tulis-naik') || null) : null;
       $('#tulis-cari').value = '';
       batalPilih();
       gambarTulis();
@@ -4313,7 +4420,11 @@
       var b = ev.target.closest('[data-ekor]');
       if (!b) return;
       var isian = $('#catat-judul');
-      isian.value = isian.value.replace(/\s+$/, '') + ' ' + b.getAttribute('data-ekor');
+      /* Nomornya dibuang: begitu ekornya dipilih, judulnya bukan lagi nama
+         folder yang tadi bertabrakan - "Prompt Cortex (2) brief" bernomor
+         untuk tabrakan yang sudah tidak ada. */
+      isian.value = isian.value.replace(/\s*\(\d+\)$/, '').replace(/\s+$/, '') +
+                    ' ' + b.getAttribute('data-ekor');
       if (entriCatat) entriCatat.judulManual = true;
       gambarRuangCatat();
       gambarEkorCatat();
