@@ -3891,7 +3891,10 @@
               bukan sebagai bacaan - dan yang panjang akan memakan gambarnya,
               padahal gambar itu yang kamu datangi. */
            ((e.isi || '').trim() && !e.rahasia
-             ? '<div class="lihat-isi" data-asli>' + H((e.isi || '').trim()) + '</div>' : '') +
+             ? '<div class="lihat-isi" data-lihat-isi data-asli>' + H((e.isi || '').trim()) + '</div>' +
+               ((e.isi || '').trim().length > 90
+                 ? '<button class="lihat-isi-lagi" data-lihat-isi>Selengkapnya</button>' : '')
+             : '') +
            '<div class="lihat-aksi">' +
              '<button class="lihat-tutup" id="b-lihat-tutup">Tutup</button>' +
            '</div>';
@@ -5650,6 +5653,19 @@
        TIDAK menutup: di situ ada tulisan yang mungkin mau kamu sorot. */
     $('#lihat').addEventListener('click', function (ev) {
       if (ev.target.closest('#b-lihat-tutup')) { tutupLihat(); return; }
+      /* Caption yang terpotong dibuka DI TEMPAT, bukan di layar lain: yang mau
+         kamu baca sekarang cuma dua kalimat, dan memindahkan layar untuk itu
+         berarti kehilangan gambarnya - padahal gambarnya yang sedang kamu
+         cocokkan dengan kalimatnya. */
+      if (ev.target.closest('[data-lihat-isi]')) {
+        var teks = $('#lihat-info') && $('#lihat-info').querySelector('.lihat-isi');
+        var lagi = $('#lihat-info') && $('#lihat-info').querySelector('.lihat-isi-lagi');
+        if (teks) {
+          var penuh = teks.classList.toggle('penuh');
+          if (lagi) lagi.textContent = penuh ? 'Ringkas' : 'Selengkapnya';
+        }
+        return;
+      }
       if (ev.target.closest('#lihat-info')) return;
       tutupLihat();
     });

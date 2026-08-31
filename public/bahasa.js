@@ -123,6 +123,8 @@
     '(tanpa divisi)': '(no division)',
     'Jenis bendanya, satu-dua kata.': 'The kind of thing, one or two words.',
     'Akhiri sesi': 'End session',
+    'Selengkapnya': 'Show more',
+    'Ringkas': 'Show less',
     'Sesi ditutup': 'Session closed',
     'Kamu lihat apa?': 'What are you seeing?',
     'Dua-tiga kata, sudut pandangmu — bukan yang tergambar. “interior mesjid”, “sofa unik minimalis”, “menu murah enak”.':

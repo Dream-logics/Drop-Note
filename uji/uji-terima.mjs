@@ -5255,13 +5255,14 @@ console.log('\ndriver: satu foto, puluhan sudut pandang');
      memang orang sholat; yang DILIHAT pemotretnya konsep lampu gantung
      berlafadz untuk dekorasi mushala. */
   const arahan = await hal.evaluate(() => TPelabel.arahanUji(TAlur.setelanUji()));
-  cek('arahan AI menyebut driver sebagai sudut pandang, bukan keterangan tambahan',
-      /DRIVER/.test(arahan) && /sudut pandang/i.test(arahan), String(arahan.length));
-  cek('dan melarang tag yang cocok untuk semua gambar',
-      /seratus persen foto adalah foto/i.test(arahan));
-  cek('kalau driver dan gambar terasa bertabrakan, drivernya yang menang',
-      /drivernya yang\s*\n?\s*menang/i.test(arahan.replace(/\s+/g, ' ')) ||
-      /drivernya yang menang/i.test(arahan.replace(/\s+/g, ' ')));
+  cek('arahan label tetap menyebut driver sebagai sudut pandang — tiga baris, bukan empat puluh',
+      /DRIVER/.test(arahan) && /sudut pandangnya/i.test(arahan) &&
+      /bahasanya mengikuti bahasa driver/i.test(arahan), String(arahan.length));
+  /* Larangan tag kosong pindah ke arahan GAMBAR, tempat dia sebenarnya berlaku -
+     dan ditegakkan kodenya lewat TAG_BENTUK, bukan cuma diminta. */
+  cek('dan melarang tag yang cocok untuk semua gambar, di tempat yang tepat',
+      /foto, gambar, image, screenshot, kamera/.test(
+        await hal.evaluate(() => TPelabel.arahanGambarUji('uji', []))));
 
   /* Drivernya ikut berangkat ke AI, dan ditaruh SEBELUM isinya: model membaca
      dari atas, jadi sudut pandangnya harus sudah terpasang sebelum dia melihat
@@ -5306,6 +5307,147 @@ console.log('\ndriver: satu foto, puluhan sudut pandang');
   cek('driver ikut dicadangkan, kolomnya di ekor',
       kolomDriver[kolomDriver.length - 1] === 'driver',
       JSON.stringify(kolomDriver.slice(-3)));
+}
+
+console.log('\narahan gambar: pendek, dua lapis, bahasamu');
+{
+  /* PROMPT PANJANG MEMBUAT MODEL KEHILANGAN FOKUS, dan yang tenggelam justru
+     drivernya. Dibuktikan di lapangan: prompt tiga kalimat yang ditulis
+     pemakainya sendiri mengalahkan arahan dua ratus baris milik aplikasi ini,
+     pada gambar yang sama persis. */
+  const arahanGbr = await hal.evaluate(() => TPelabel.arahanGambarUji(
+    'Bedroom Interior Lighting', ['Sofa', 'Interior']));
+  const arahanDok = await hal.evaluate(() => TPelabel.arahanUji(TAlur.setelanUji()));
+  cek('arahan gambar jauh lebih pendek daripada arahan dokumen',
+      arahanGbr.length * 4 < arahanDok.length,
+      arahanGbr.length + ' vs ' + arahanDok.length);
+  cek('dan tetap di bawah 1200 karakter — cukup pendek untuk tidak buyar',
+      arahanGbr.length < 1200, String(arahanGbr.length));
+
+  /* DUA LAPIS, dan pembagian ini yang paling menentukan. Yang luas menaruh foto
+     di kamar yang benar; yang sempit memisahkannya di dalam kamar. Satu tag
+     tidak bisa mengerjakan keduanya. */
+  cek('sepuluh tag diminta dalam dua lapis, bukan "sebanyak yang ada"',
+      /10 hashtag/.test(arahanGbr) && /5 luas/.test(arahanGbr) && /5 sempit/.test(arahanGbr),
+      arahanGbr);
+  /* Tanpa ini "kamar tidur" pecah jadi #kamar dan #tidur, dan keduanya lumpuh
+     sendirian. */
+  cek('satu hashtag satu kata',
+      /SATU HASHTAG SATU KATA/.test(arahanGbr));
+  /* Kalau kamu mengetik driver dalam bahasa Inggris, tagnya tidak boleh pulang
+     dalam bahasa Indonesia. Dulu arahannya sendiri yang menerjemahkannya. */
+  cek('bahasa jawaban mengikuti bahasa keywords, bukan dipaksa Indonesia',
+      /BAHASA JAWABAN MENGIKUTI BAHASA KEYWORDS/.test(arahanGbr) &&
+      !/Bahasa Indonesia/.test(arahanGbr), arahanGbr);
+  /* Yang benar untuk SELURUH himpunannya tidak pernah bisa menaikkan atau
+     menurunkan peringkat siapa pun. Yang cuma luas masih bisa. */
+  cek('yang dilarang cuma kata yang benar untuk semua foto',
+      /foto, gambar, image, screenshot, kamera/.test(arahanGbr));
+  /* Pustaka tag menyeragamkan EJAAN saja. Waktu dia boleh memasok konsep,
+     yang keluar #dapur untuk foto kamar tidur. */
+  cek('pustaka tag cuma menyeragamkan ejaan, tidak memasok konsep',
+      /salin ejaannya persis/.test(arahanGbr) &&
+      !/pakai ulang kalau maknanya sama/.test(arahanGbr), arahanGbr);
+  cek('drivernya ditaruh paling atas sebagai Keywords',
+      arahanGbr.indexOf('Keywords: Bedroom Interior Lighting') === 0, arahanGbr.slice(0, 60));
+
+  /* ARAHAN DOKUMEN KEMBALI BERSIH. Paragraf driver yang ditempelkan ke sana
+     bertabrakan dengan perintahnya sendiri - "sebutkan jenis dokumennya",
+     "tulis apa adanya, jangan menafsirkan" - dan yang kalah drivernya. */
+  const arahanDok2 = await hal.evaluate(() => TPelabel.arahanUji(TAlur.setelanUji()));
+  cek('arahan label tidak lagi memuat paragraf driver empat puluh baris',
+      arahanDok2.indexOf('DRIVER') > 0 && arahanDok2.indexOf('karpet mesjid') < 0,
+      String(arahanDok2.length));
+
+  /* KATA DRIVERMU JADI TAG LEWAT KODE, bukan lewat permintaan. Itu satu-satunya
+     teks di entri yang lahir dari kepalanya; kalau AI kebetulan tidak
+     memakainya, kata yang paling pasti dia ingat enam bulan lagi justru yang
+     hilang. */
+  const kata = await hal.evaluate(() => TPelabel.kataDriverUji('Bedroom Interior Lighting'));
+  cek('kata drivermu jadi tag, ditegakkan kodenya',
+      JSON.stringify(kata) === JSON.stringify(['Bedroom', 'Interior', 'Lighting']),
+      JSON.stringify(kata));
+  /* Bahasa apa pun ikut apa adanya - Rusia sekalipun, itu tetap kata yang akan
+     dia ketik lagi waktu mencari. */
+  const rusia = await hal.evaluate(() => TPelabel.kataDriverUji('интерьер спальни'));
+  cek('bahasa apa pun ikut apa adanya, bukan diterjemahkan',
+      rusia.length === 2, JSON.stringify(rusia));
+  const sambung = await hal.evaluate(() => TPelabel.kataDriverUji('sofa di ruang tamu'));
+  cek('kata sambung yang terlalu pendek tidak ikut jadi ruangan',
+      sambung.indexOf('di') < 0 && sambung.indexOf('sofa') >= 0, JSON.stringify(sambung));
+
+  /* CAPTION YANG TERPOTONG HARUS BISA DIBACA. Teks yang dipotong "…" tanpa satu
+     pun cara membacanya lebih buruk daripada tidak ditampilkan sama sekali:
+     yang terbaca bukan "ringkas" tapi "ada yang disembunyikan". */
+  const PNG4 = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGP8z8Dw'
+             + 'nwEJMKEL0FIQAG3+AwOfLbXbAAAAAElFTkSuQmCC';
+  const binPng4 = Buffer.from(PNG4, 'base64');
+  await hal.evaluate(async (b64) => {
+    const bin = atob(b64); const arr = new Uint8Array(bin.length);
+    for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j);
+    const blob = new Blob([arr], { type: 'image/png' });
+    await TSimpan.taruhBerkas('bcap', blob, 'capuji.png', 'image/png');
+    await TSimpan.taruh({ id: 'gcap', jenis: 'gambar', judul: 'Caption panjang uji',
+      /* Sengaja PANJANG. Uji ini berjalan di layar lebar, dan caption dua ratus
+         karakter masih muat dua baris di situ - jadi tidak ada yang terpotong,
+         tidak ada yang bisa dibuktikan, dan ujinya lulus atau gagal karena
+         lebar jendela, bukan karena fiturnya. */
+      isi: 'Foto interior kamar tidur gelap dengan fokus pada pencahayaan aksen modern dari '
+         + 'cermin LED bulat yang menyala di atas meja rias kayu minimalis, dengan rak dinding '
+         + 'kecil di sampingnya dan tirai gelap yang menutup seluruh dinding belakang. Nuansa '
+         + 'kayu hangat berpadu dengan cahaya putih netral, memberi kesan tenang dan modern '
+         + 'tanpa terasa dingin. Meja riasnya bergaya minimalis dengan laci tanpa pegangan, '
+         + 'dan cerminnya memakai lampu tepi yang menyala rata sehingga wajah tidak berbayang '
+         + 'saat berdandan. Rak dinding kecil di sampingnya dipakai menaruh botol parfum dan '
+         + 'perawatan wajah, sekaligus jadi aksen dekoratif yang memecah bidang dinding kosong.',
+      kategori: '', folder: '', album: '', sumber: 'kamera', driver: 'bedroom interior lighting',
+      thumb: '', berkasId: 'bcap', namaBerkas: 'capuji.png', tipeBerkas: 'image/png',
+      ukuran: blob.size, tag: ['Bedroom'], label: [], elemen: [], daftar: [],
+      dibuat: Date.now(), diubah: Date.now(), dipakai: 0, diLabeliAI: true, diBacaAI: true });
+    await TAlur.muatUlangUji();
+  }, PNG4);
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(500);
+  await hal.fill('#galeri-cari', 'Caption panjang uji');
+  await hal.dispatchEvent('#galeri-cari', 'input');
+  await hal.waitForTimeout(450);
+  await hal.locator('#galeri-isi .petak-satu').first().click();
+  await hal.waitForTimeout(600);
+  cek('caption panjang menawarkan jalan untuk membacanya',
+      await hal.locator('.lihat-isi-lagi').isVisible());
+  /* Diukur dari TINGGINYA, bukan dari scrollHeight: -webkit-line-clamp memotong
+     dengan menyembunyikan barisnya, jadi scrollHeight ikut terpotong dan
+     selisihnya nol - ukuran yang kelihatan masuk akal tapi tidak pernah bisa
+     membuktikan apa pun. */
+  const tinggiRingkas = await hal.evaluate(() =>
+    document.querySelector('.lihat-isi').getBoundingClientRect().height);
+  await hal.click('.lihat-isi-lagi');
+  await hal.waitForTimeout(350);
+  const tinggiPenuh = await hal.evaluate(() =>
+    document.querySelector('.lihat-isi').getBoundingClientRect().height);
+  cek('dan captionnya memang tumbuh waktu dibuka, bukan cuma ganti kelas',
+      tinggiPenuh > tinggiRingkas + 8,
+      Math.round(tinggiRingkas) + ' -> ' + Math.round(tinggiPenuh));
+  cek('mengetuknya membuka penuh, tanpa pindah layar',
+      (await hal.evaluate(() =>
+        document.querySelector('.lihat-isi').classList.contains('penuh'))) === true &&
+      (await hal.locator('#lihat').isVisible()));
+  cek('dan previewnya tidak ikut tertutup — itu bagian dari membaca',
+      (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-galeri');
+  cek('tombolnya berubah jadi jalan pulang',
+      (await hal.innerText('.lihat-isi-lagi')) === 'Ringkas',
+      await hal.innerText('.lihat-isi-lagi'));
+  await hal.click('#b-lihat-tutup');
+  await hal.waitForTimeout(350);
+  await hal.fill('#galeri-cari', '');
+  await hal.dispatchEvent('#galeri-cari', 'input');
+  await hal.waitForTimeout(300);
+  await hal.evaluate(async () => {
+    const e = TAlur.semuaEntri().filter((x) => x.id === 'gcap')[0];
+    if (e) { e.pensiun = true; await TSimpan.taruh(e); }
+    await TAlur.muatUlangUji();
+  });
+  await hal.waitForTimeout(300);
 }
 
 const TBAWAAN_NAMA = await hal.evaluate(() => TBawaan.nama);
