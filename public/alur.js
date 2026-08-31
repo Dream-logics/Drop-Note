@@ -2634,7 +2634,7 @@
         gambarGaleri();
         /* Pelabelan AI menyusul di belakang dan boleh gagal diam-diam. */
         sundulLabel();
-        kabarkanTujuan(baru, album, !!diBuka);
+        kabarkanTujuan(baru, album, !!diBuka, driver);
         return daftar.length;
       })
       .catch(function (e) { pesan('Gagal: ' + (e && e.message ? e.message : e)); return 0; });
@@ -2718,13 +2718,27 @@
      dengan satu jalan keluar. Kalau tidak ada: dialognya yang dibuka, karena
      tidak ada yang bisa didiamkan - mendiamkannya berarti foto tanpa alamat,
      dan itu persis keadaan yang sedang dilawan layar ini. */
-  function kabarkanTujuan(ids, album, diBuka) {
+  function kabarkanTujuan(ids, album, diBuka, driver) {
     if (!ids.length) return;
     if (album) {
       pakaiLengket(album);
-      /* Berdiri di dalam albumnya berarti kamu sudah menjawab; menawarkan
-         "Ganti" di situ cuma mempertanyakan jawaban yang baru saja diberikan. */
-      if (diBuka) { pesan(ids.length + ' gambar masuk'); return; }
+      if (diBuka) {
+        /* BERDIRI DI DALAM ALBUM MENJAWAB "KE MANA", BUKAN "APA YANG KAMU
+           LIHAT". Dua pertanyaan, dan dulu di sini keduanya kuanggap satu:
+           begitu kamu memotret dari dalam album, drivernya tidak pernah
+           ditanya sama sekali - lalu fotonya berangkat ke AI tanpa satu kata
+           pun sudut pandang, dan yang menjawab jadi pembaca dokumen yang
+           menebak dari gambar. "Bedroom Interior" jadi "Ruang Tamu Modern",
+           dan tagnya diambil dari pustaka: #AmaraLiving pada foto kamar tidur.
+
+           Jadi albumnya memang tidak ditanya lagi - itu sudah kamu jawab
+           dengan berdiri di sana - tapi drivernya tetap ditagih sekali per
+           sesi. Sesudah itu jepretan berikutnya mewarisi, dan harganya
+           kembali nol. */
+        if (!driver) { tanyaDriver(ids, true); return; }
+        pesan(ids.length + ' gambar masuk');
+        return;
+      }
       /* "Ganti" MENANYAKAN SUDUT PANDANGNYA LAGI, bukan cuma memindahkan
          foldernya. Kamu tidak menekan Ganti karena albumnya salah - kamu
          menekannya karena konteksnya sudah berpindah: tadi granit, sekarang
@@ -2759,7 +2773,7 @@
 
      Ditanya SEKALI di jepretan pertama, lalu diwariskan bersama albumnya -
      jadi harganya satu ketikan untuk sepuluh jepretan, bukan sepuluh. */
-  function tanyaDriver(ids) {
+  function tanyaDriver(ids, albumSudahAda) {
     tanyaKetik('Kamu lihat apa?',
       'Dua-tiga kata, sudut pandangmu — bukan yang tergambar. ' +
       '“interior mesjid”, “sofa unik minimalis”, “menu murah enak”.',
@@ -2769,8 +2783,16 @@
            hilang cuma sudut pandangnya. Menahan alurnya sampai dia mengetik
            berarti dialog ini jadi gerbang, dan gerbang di jalur masuk itu
            persis yang dilarang aturan nomor satu. */
-        if (!driver) { pilihAlbumUntuk(ids); return; }
+        if (!driver) { if (!albumSudahAda) pilihAlbumUntuk(ids); return; }
         taruhDriver(ids, driver).then(function () {
+          /* Albumnya sudah terjawab dengan berdiri di dalamnya - menanyakannya
+             lagi berarti menagih jawaban yang barusan diberikan. */
+          if (albumSudahAda) {
+            pakaiLengket(albumLengket, driver);
+            gambarGaleri();
+            sundulLabel();
+            return;
+          }
           setTimeout(function () { pilihAlbumUntuk(ids, driver); }, 30);
         });
       });

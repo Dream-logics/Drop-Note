@@ -657,6 +657,26 @@
     ].join('\n');
   }
 
+  /* FOTO REFERENSI LAWAN DOKUMEN, dan aturannya pantas punya nama karena
+     dialah yang memilih arahan mana yang berangkat.
+
+     Yang kamu POTRET atau UNGGAH sendiri selalu foto referensi, ada drivernya
+     atau tidak - kamera tidak pernah menghasilkan faktur. Yang punya driver
+     juga, dari mana pun dia masuk: driver berarti kamu sudah memberitahu
+     sedang melihat apa.
+
+     Sisanya - yang jatuh lewat kotak Drop tanpa driver - dibaca sebagai
+     dokumen, dan di situ tangkapan layar struk, KTP, dan faktur memang yang
+     terbanyak.
+
+     Dulu yang memilih cuma drivernya, dan itu meninggalkan lubang yang
+     mematikan seluruh perbaikan ini: satu foto yang lolos tanpa sempat
+     ditanya sudut pandangnya jatuh ke pembaca dokumen, lalu dijawab dalam
+     bahasa Indonesia dengan tag yang disedot dari pustaka. */
+  function fotoReferensi(e) {
+    return !!(e && (e.driver || e.sumber === 'kamera' || e.sumber === 'unggah'));
+  }
+
   var BISA_DIBACA = /^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/i;
 
   function keBase64(blob) {
@@ -693,15 +713,23 @@
         return ambilBlob(setelan, e).then(function (blob) {
           if (!blob) { e.diBacaAI = true; return TSimpan.taruh(e).then(function () { return n; }); }
           return keBase64(blob).then(function (b64) {
-            /* DUA ARAHAN, DAN YANG MEMILIH ITU DRIVERNYA - bukan jenis berkasnya.
-               Driver berarti kamu memotret sesuatu untuk dilihat lagi nanti:
-               itu foto referensi, dan dia dapat arahan pendek. Tanpa driver,
-               yang masuk ke sini biasanya tangkapan layar faktur atau KTP -
-               dan di situ yang dibutuhkan justru pembaca dokumen yang teliti. */
-            var pakaiGambar = !!e.driver;
+            /* DUA ARAHAN, DAN YANG MEMILIH ASAL-USULNYA - bukan drivernya.
+               Dulu yang memilih drivernya, dan itu meninggalkan satu lubang
+               yang persis mematikan seluruh perbaikan ini: foto yang masuk
+               tanpa sempat ditanya sudut pandangnya jatuh ke pembaca dokumen,
+               lalu dijawab dalam bahasa Indonesia dengan tag dari pustaka -
+               #AmaraLiving pada foto kamar tidur.
+
+               Yang benar: apa pun yang kamu POTRET atau UNGGAH sendiri adalah
+               foto referensi, ada drivernya atau tidak. Kamera tidak pernah
+               menghasilkan faktur. Yang masuk lewat kotak Drop lain ceritanya -
+               di situ tangkapan layar struk dan KTP memang yang terbanyak, dan
+               pembaca dokumen yang teliti memang yang dibutuhkan. */
+            var pakaiGambar = fotoReferensi(e);
             return tanya(setelan, [
               { inline_data: { mime_type: e.tipeBerkas, data: b64 } },
-              { text: pakaiGambar ? 'Keywords: ' + e.driver : 'Baca dokumen ini.' }
+              { text: e.driver ? 'Keywords: ' + e.driver
+                    : (pakaiGambar ? 'Baca gambar ini.' : 'Baca dokumen ini.') }
             ], pakaiGambar
                  ? arahanGambar(e.driver, daftarTag(setelan))
                  : arahanBaca(daftarTag(setelan), daftarNamaElemen(setelan)));
@@ -928,6 +956,7 @@
        yang benar-benar jadi tag - bukan menebaknya dari kodenya. */
     arahanGambarUji: arahanGambar,
     kataDriverUji: kataDriver,
+    fotoReferensiUji: fotoReferensi,
     antreUji: function (semua) { return antreLabel(semua).map(function (e) { return e.id; }); },
     /* Cuma untuk uji: memperlihatkan tag yang benar-benar lolos saringan
        kodenya, bukan menebaknya dari arahan yang dikirim. */
