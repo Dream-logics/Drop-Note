@@ -4372,6 +4372,29 @@ console.log('\nfolder Note bertingkat: dibuat dari tempat kamu berdiri, ditulis 
       daftarF.indexOf('Prompt Gemini') >= 0 &&
       daftarF.indexOf('Prompt Prompt') < 0, daftarF);
 
+  /* NAMA FOLDER IKUT DICARI, aturan yang sama dengan album Gallery: folder itu
+     kata yang KAMU ketik, jadi dia justru kata yang paling mungkin kamu ketik
+     lagi. Umpannya sengaja tidak menyebut "Prompt" di judul maupun isinya -
+     kalau menyebut, dia lolos lewat jalur lama dan bugnya tersembunyi. */
+  await hal.evaluate(async () => {
+    await TSimpan.taruh({ id: 'folderuji', jenis: 'teks', judul: 'Brief tanpa kata itu',
+      isi: 'isi biasa saja', kategori: '', folder: 'Prompt Gemini', tulisan: true,
+      album: '', sumber: '', tag: [], label: [], elemen: [], daftar: [],
+      dibuat: Date.now(), diubah: Date.now(), dipakai: 0,
+      diLabeliAI: true, diBacaAI: true });
+    await TAlur.muatUlangUji();
+  });
+  await hal.waitForTimeout(300);
+  cek('tulisan ketemu lewat nama FOLDER-nya, bukan cuma judul dan isinya',
+      (await hal.evaluate(() => TOtak.cari(TAlur.semuaEntri(), 'Gemini', '', '')
+        .filter((e) => e.id === 'folderuji').length)) === 1);
+  await hal.evaluate(async () => {
+    const e = TAlur.semuaEntri().filter((x) => x.id === 'folderuji')[0];
+    if (e) { e.pensiun = true; await TSimpan.taruh(e); }
+    await TAlur.muatUlangUji();
+  });
+  await hal.waitForTimeout(250);
+
   /* JUDUL YANG SUDAH BERNOMOR SENDIRI. Dua tulisan berjudul sama persis tidak
      bisa dibedakan di hasil pencarian - dan yang membedakannya, tanggal,
      justru yang paling tidak kamu ingat. */
@@ -4673,6 +4696,51 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
       !!yangDiunggah && yangDiunggah.album === 'Rumahuji Dapuruji' &&
       yangDiunggah.sumber === 'unggah' && yangDiunggah.jenis === 'gambar',
       JSON.stringify(yangDiunggah));
+
+  /* TEMPAT YANG KAMU NAMAI SENDIRI IKUT DICARI. Foto yang kamu potret di dalam
+     album "Kopo Project" tidak punya kata "Kopo" di judulnya, di tagnya, atau
+     di deskripsi AI-nya - satu-satunya yang menyebutnya adalah albumnya. Tanpa
+     ini, mencari "Kopo" menjawab "tidak ada yang cocok" padahal nama albumnya
+     jelas-jelas tertulis di layar, dan yang terbaca: pencariannya rusak.
+
+     Umpannya HARUS begitu: judul dan tag yang kebetulan menyebut nama albumnya
+     akan lolos lewat jalur lama, dan itu yang menyembunyikan bugnya. */
+  await hal.evaluate(async () => {
+    const e = TAlur.semuaEntri().filter((x) => x.namaBerkas === 'unggahuji.png')[0];
+    if (e) {
+      e.judul = 'Penjual nanas';
+      e.tag = ['gambar'];
+      e.isi = 'Sebuah mobil pick up mengangkut buah.';
+      await TSimpan.taruh(e);
+    }
+    await TAlur.muatUlangUji();
+  });
+  await hal.waitForTimeout(300);
+  const lewatAlbum = await hal.evaluate(() => {
+    const e = TAlur.semuaEntri().filter((x) => x.namaBerkas === 'unggahuji.png')[0];
+    return {
+      album: e && e.album,
+      /* Dicari lewat kata yang CUMA ada di nama albumnya. */
+      ketemu: TOtak.cari(TAlur.semuaEntri(), 'Rumahuji', '', '')
+        .filter((x) => x.namaBerkas === 'unggahuji.png').length,
+      judulBersih: e && !/rumahuji/i.test(e.judul + ' ' + (e.tag || []).join(' ') + ' ' + e.isi)
+    };
+  });
+  cek('umpannya benar - nama albumnya tidak bocor ke judul, tag, atau isinya',
+      !!lewatAlbum.judulBersih, JSON.stringify(lewatAlbum));
+  cek('gambar ketemu lewat nama ALBUM-nya, bukan cuma judul dan tag',
+      lewatAlbum.ketemu === 1, JSON.stringify(lewatAlbum));
+  /* Dan lewat kotak carinya sendiri, bukan cuma lewat mesinnya. */
+  await hal.fill('#galeri-cari', 'Rumahuji');
+  await hal.dispatchEvent('#galeri-cari', 'input');
+  await hal.waitForTimeout(400);
+  cek('dan kotak cari Gallery benar-benar memperlihatkannya',
+      (await hal.locator('#galeri-isi .petak-satu').count()) >= 1 &&
+      (await hal.locator('#galeri-isi .kosong').count()) === 0,
+      String(await hal.locator('#galeri-isi .petak-satu').count()));
+  await hal.fill('#galeri-cari', '');
+  await hal.dispatchEvent('#galeri-cari', 'input');
+  await hal.waitForTimeout(350);
 
   /* PREVIEW, BUKAN CUMA LAPISAN HITAM. Gambar yang membesar tanpa satu tombol
      pun tidak memberitahu cara keluarnya - dan layar yang tidak memberitahu

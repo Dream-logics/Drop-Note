@@ -136,7 +136,13 @@ public/bahasa.js    LAPISAN bahasa, bukan pengganti. Teks tetap ditulis
                     gagal di sana.
 public/gaya.css     gaya; SATU tema putih, tidak mengikuti setelan HP
 public/simpan.js    IndexedDB — entri, berkas (blob), setelan, cadangan
-public/otak.js      SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
+public/otak.js      PENCARIANNYA menilai judul, label, tag, elemen, kategori,
+                    isi, nama berkas, DAN nama tempat yang kamu namai sendiri
+                    ('folder' Note + 'album' Gallery). Yang terakhir gampang
+                    terlupa waktu menambah kolom tempat baru - dan akibatnya
+                    foto di album "Kopo Project" tidak ketemu waktu dicari
+                    "Kopo", padahal albumnya tertulis di layar.
+                    SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
                     alamat, bakukan istilah judul (Inggris dulu kalau bentrok:
                     Link bukan Tautan), betulkan kategori salah ketik, tarik
                     kata kunci, pisahkan elemen berpola, nilai hasil pencarian,
@@ -349,7 +355,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (642 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (646 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

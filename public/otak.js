@@ -872,6 +872,17 @@
         return normal(x.nilai).indexOf(w) >= 0 || normal(x.nama).indexOf(w) >= 0;
       })) n += 4;
       if (normal(e.kategori).indexOf(w) >= 0) n += 4;
+      /* TEMPAT YANG KAMU NAMAI SENDIRI ikut dicari, dan itu bukan tambahan
+         kecil: folder Note dan album Gallery adalah kata yang KAMU ketik, jadi
+         dia justru kata yang paling mungkin kamu ketik lagi enam bulan lagi.
+         Tanpa ini, foto yang kamu potret di dalam album "Kopo Project" tidak
+         ketemu waktu dicari "Kopo" - dan yang terbaca: pencariannya rusak,
+         padahal albumnya jelas-jelas tertulis di layar.
+
+         Dinilai setara kategori: dia memang alamat yang sama, cuma di layar
+         yang berbeda. */
+      if (normal(e.folder).indexOf(w) >= 0) n += 4;
+      if (normal(e.album).indexOf(w) >= 0) n += 4;
       /* Isi dan elemen entri rahasia sudah berupa sandi - mencocokkannya
          cuma menghasilkan kecocokan palsu. Judul, tag, dan labelnya tetap
          terbuka, dan itu memang yang membuatnya masih bisa DITEMUKAN. */
