@@ -3398,17 +3398,57 @@
      membuka layar tulis seperti biasa. */
   var lihatUrl = '';
 
+  /* Keterangan yang MEMANG MENOLONG, bukan seluruh isi barisnya. Yang dicari
+     orang waktu memandangi satu foto: ini apa, dari mana masuknya, kapan, dan
+     ada di album mana - plus apa yang dibaca AI di dalamnya, karena itulah
+     yang membuat foto tanpa judul tetap bisa ditemukan enam bulan lagi. */
+  function lihatInfoHtml(e) {
+    var baris = [];
+    var sumber = e.jenis === 'gambar'
+      ? ({ kamera: 'Kamera', unggah: 'Unggah' }[e.sumber] || 'Drop') : '';
+    if (sumber) baris.push(sumber);
+    baris.push(TOtak.waktuRingkas(e.dibuat));
+    if (e.ukuran) baris.push(ukuranTeks(e.ukuran));
+    var alamat = (e.album || '') || (e.kategori || '');
+    var tag = (e.tag || []).filter(Boolean).slice(0, 6);
+    return '<div class="lihat-judul" data-asli>' +
+             H(e.judul || e.namaBerkas || '(tanpa judul)') + '</div>' +
+           '<div class="lihat-ket">' + H(baris.join(' · ')) +
+             (alamat ? ' · <span data-asli>' + H(alamat) + '</span>' : '') + '</div>' +
+           (tag.length ? '<div class="lihat-tag">' + tag.map(function (t) {
+             return '<span class="tag" data-asli>#' + H(t) + '</span>';
+           }).join('') + '</div>' : '') +
+           /* Deskripsi AI dipotong dua baris. Dia menolong sebagai pengenal,
+              bukan sebagai bacaan - dan yang panjang akan memakan gambarnya,
+              padahal gambar itu yang kamu datangi. */
+           ((e.isi || '').trim() && !e.rahasia
+             ? '<div class="lihat-isi" data-asli>' + H((e.isi || '').trim()) + '</div>' : '') +
+           '<div class="lihat-aksi">' +
+             '<button class="lihat-tutup" id="b-lihat-tutup">Tutup</button>' +
+           '</div>';
+  }
+
   function lihatGambar(e) {
     var lapis = $('#lihat');
     var img = $('#lihat-isi');
     if (!lapis || !img) return;
-    tutupLihat();
+    tutupLihat(true);
     /* Thumbnail-nya dipasang DULU: dia sudah ada di memori, jadi layarnya
        terisi seketika. Yang penuh menggantikannya begitu siap - kalau
        menunggu, yang terlihat cuma kotak hitam kosong selama sekejap, dan
        sekejap itu terbaca sebagai macet. */
     img.src = e.thumb || '';
+    var info = $('#lihat-info');
+    if (info) info.innerHTML = lihatInfoHtml(e);
     lapis.classList.remove('sembunyi');
+    /* SATU LANGKAH RIWAYAT. Di HP, jalan keluar pertama yang dicoba orang dari
+       gambar penuh layar adalah tombol Kembali - dan tanpa langkah ini, tombol
+       itu meninggalkan layarnya sama sekali (atau menutup aplikasinya), yang
+       terbaca persis seperti "tidak bisa kembali". */
+    if (pakaiRiwayatBrowser) {
+      try { history.pushState({ layar: layarSaat, lihat: 1 }, ''); }
+      catch (x) { pakaiRiwayatBrowser = false; }
+    }
 
     var pasang = function (blob) {
       if (!blob) return;
@@ -3422,10 +3462,17 @@
     }
   }
 
-  function tutupLihat() {
+  /* diamSaja: dipanggil dari dalam popstate atau sebelum membuka yang baru -
+     di situ riwayatnya sudah bergerak sendiri, jadi menariknya lagi akan
+     melompat satu layar terlalu jauh ke belakang. */
+  function tutupLihat(diamSaja) {
     var lapis = $('#lihat');
+    var terbuka = lapis && !lapis.classList.contains('sembunyi');
     if (lapis) lapis.classList.add('sembunyi');
     if (lihatUrl) { URL.revokeObjectURL(lihatUrl); lihatUrl = ''; }
+    if (terbuka && !diamSaja && pakaiRiwayatBrowser) {
+      try { history.back(); } catch (x) { /* riwayatnya memang tidak dipakai */ }
+    }
   }
 
   /* PIN: yang dipin selalu di paling atas.
@@ -5013,7 +5060,15 @@
     });
     $('#b-pilih-pindah').addEventListener('click', pindahPilih);
 
-    $('#lihat').addEventListener('click', tutupLihat);
+    /* Mengetuk latarnya tetap menutup - kebiasaan itu sudah ada dan tidak
+       boleh dicabut. Yang ditambahkan tombolnya, karena ketukan yang tidak
+       diberitahukan sama dengan tidak ada. Ketukan pada keterangan di bawah
+       TIDAK menutup: di situ ada tulisan yang mungkin mau kamu sorot. */
+    $('#lihat').addEventListener('click', function (ev) {
+      if (ev.target.closest('#b-lihat-tutup')) { tutupLihat(); return; }
+      if (ev.target.closest('#lihat-info')) return;
+      tutupLihat();
+    });
     document.addEventListener('keydown', function (ev) {
       if (ev.key === 'Escape') tutupLihat();
     });
@@ -5283,6 +5338,11 @@
     });
 
     global.addEventListener('popstate', function (ev) {
+      /* Tombol Kembali HP menutup previewnya DULU, dan berhenti di situ -
+         satu tekanan, satu langkah. Kalau dia sekaligus memindahkan layar,
+         kamu keluar dari gambar dan dari album sekaligus tanpa memintanya. */
+      var lapis = $('#lihat');
+      if (lapis && !lapis.classList.contains('sembunyi')) { tutupLihat(true); return; }
       tampilkanLayar((ev.state && ev.state.layar) || 'l-utama');
     });
 

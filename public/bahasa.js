@@ -159,6 +159,7 @@
     'Salin seluruh tulisan': 'Copy the whole note',
     'Riwayat': 'History',
     'Kembali': 'Back',
+    'Tutup': 'Close',
     'tersimpan': 'saved',
     'menyimpan…': 'saving…',
     'gagal menyimpan': 'save failed',

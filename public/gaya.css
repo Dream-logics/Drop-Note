@@ -524,20 +524,20 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   border-bottom:2px solid transparent;margin-bottom:-1px;
 }
 .tab .ik{width:16px;height:16px}
-/* LIMA PINTU BERARTI IKONNYA PERGI DI HP. Empat pintu masih muat bersama
-   ikonnya di 412px; yang kelima memotong "Storage" jadi "Stor…" - dan pintu
-   bernama "Stor…" tidak memberitahu apa pun.
+/* DI HP, IKONNYA NAIK KE ATAS NAMANYA. Bersebelahan, lima pintu tidak muat:
+   di 360px tiap pintu cuma dapat 63px, dan "Storage" plus ikon di sampingnya
+   butuh lebih. Yang bersebelahan memaksa memilih antara memotong nama atau
+   membuang ikon - dan keduanya kehilangan sesuatu.
 
-   Yang mengalah ikonnya, bukan namanya, dan itu bukan pilihan yang berat:
-   ikon tanpa nama masih bisa ditebak salah, nama tanpa ikon tidak pernah.
-   Ikonnya tetap digambar di layar lebar - dia tidak memakan apa pun di sana. */
+   Ditumpuk, yang dibutuhkan cuma selebar kata terpanjangnya, dan yang dibayar
+   tinggi baris: empat belas piksel di layar sembilan ratus piksel. Ini juga
+   bentuk tab bar yang sudah dikenal jari dari aplikasi lain. */
 @media (max-width: 480px){
-  .tab .ik{display:none}
-  .tab{gap:0}
-}
-/* Layar yang benar-benar sempit (320px, HP lama) mundur satu tingkat lagi. */
-@media (max-width: 344px){
-  .tab{font-size:12.5px}
+  .tab{
+    flex-direction:column;gap:2px;font-size:12px;min-height:52px;
+    letter-spacing:0;padding:4px 1px 0;
+  }
+  .tab .ik{width:17px;height:17px}
 }
 .tab.nyala{color:var(--a);border-bottom-color:var(--a);font-weight:700}
 
@@ -965,13 +965,48 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    Alas gelap, bukan putih: yang dilihat gambarnya, dan latar terang mencuri
    perhatian dari benda yang justru jadi alasan layar ini dibuka. Ini
    satu-satunya tempat di aplikasi ini yang gelap, dan alasannya cuma itu. */
+/* z-index 40, DI ATAS dok kamera Gallery (30) dan bilah pilih. Tombol yang
+   menyembul di atas gambar penuh layar bukan cuma jelek - dia menagih ketukan
+   yang artinya bukan "tutup", dan yang mengetuknya mengira layarnya rusak. */
 .lihat{
-  position:fixed;inset:0;z-index:20;background:rgba(16,18,20,.93);
-  display:flex;align-items:center;justify-content:center;
+  position:fixed;inset:0;z-index:40;background:rgba(14,16,18,.975);
+  display:flex;flex-direction:column;
   padding:calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px);
   cursor:zoom-out;
 }
+/* Gambarnya mengambil semua sisa ruang; keterangannya seukur isinya sendiri. */
+.lihat-bingkai{
+  flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+}
 .lihat img{cursor:zoom-out;max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+
+.lihat-info{
+  flex:0 0 auto;margin-top:12px;color:#f2f3f4;cursor:auto;
+  max-height:42vh;overflow-y:auto;
+}
+.lihat-judul{font-size:15px;font-weight:700;line-height:1.35}
+.lihat-ket{font-size:12.5px;color:#b9bec3;margin-top:3px}
+.lihat-tag{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.lihat-tag .tag{
+  background:rgba(255,255,255,.13);color:#e7eaec;border:none;
+  padding:2px 8px;border-radius:11px;font-size:11.5px;
+}
+/* Dipotong dua baris: deskripsi AI menolong sebagai PENGENAL, bukan sebagai
+   bacaan - dan yang panjang memakan gambarnya, padahal gambar itu yang kamu
+   datangi. Selebihnya tetap ada di kartunya. */
+.lihat-isi{
+  font-size:12.5px;color:#c9ced2;margin-top:8px;line-height:1.5;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+/* Dibaca dari KANAN, sama seperti baris tombol lain: jempol kanan bertumpu di
+   sudut kanan bawah, dan inilah tindakan layar ini. */
+.lihat-aksi{display:flex;justify-content:flex-end;margin-top:12px}
+.lihat-tutup{
+  min-height:44px;padding:0 22px;border-radius:22px;
+  border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);
+  color:#fff;font-size:14px;font-weight:600;cursor:pointer;
+}
+.lihat-tutup:active{background:rgba(255,255,255,.2)}
 
 
 /* --- konfirmasi --- */
