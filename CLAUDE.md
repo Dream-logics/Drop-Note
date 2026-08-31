@@ -96,9 +96,20 @@ public/index.html   kerangka semua layar (mulai, utama/Drop, tulis/Note,
                     tugas/To Do, note/Storage, catat, setelan).
                     LIMA pintu di kepala: Drop - Note - To Do - Storage -
                     Gallery, digambar dari alur.js ke <div data-tab>.
-                    Lima nama tidak muat bersama ikonnya di HP, jadi IKONNYA
-                    yang pergi di bawah 480px - nama pintu tidak pernah boleh
-                    terpotong
+                    Lima nama tidak muat BERSEBELAHAN dengan ikonnya di HP,
+                    jadi di bawah 480px ikonnya NAIK ke atas namanya. Yang
+                    dibayar tinggi baris; ikon tidak pernah dibuang dan nama
+                    pintu tidak pernah dipotong
+                    GAMBAR YANG DIKETUK membuka '#lihat' - preview, bukan
+                    lapisan hitam: ada namanya, sumber/tanggal/ukuran/album,
+                    tag, deskripsi AI (dipotong dua baris), dan tombol Tutup.
+                    Empat jalan keluar dan semuanya wajib: tombol, ketuk latar,
+                    Escape, dan tombol Kembali HP (satu langkah riwayat
+                    didorong waktu membuka - tanpa itu Kembali meninggalkan
+                    layarnya, dan itu yang terbaca sebagai "beku"). Ketukan di
+                    keterangannya TIDAK menutup. z-index 40, DI ATAS dok kamera
+                    Gallery - kalau di bawah, yang duduk di sudut kanan bawah
+                    tombol kamera dan mengetuknya memotret
                     TIDAK ADA layar hasil dan TIDAK ADA tombol Cari: kotak drop
                     itu sendiri pencariannya, hasilnya di bawahnya
                     Layar tulis didatangi dari hasil pencarian DAN dari
@@ -338,7 +349,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (633 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (642 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

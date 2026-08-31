@@ -4580,6 +4580,16 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
         const baris = new Set(t.map((x) => Math.round(x.getBoundingClientRect().top)));
         return baris.size === 1 && t.every((x) => x.scrollWidth <= x.clientWidth + 1);
       }) === true);
+  /* IKONNYA TETAP ADA, dan itu bukan hiasan: yang dituju mata pertama kali di
+     baris pintu adalah bentuknya, baru namanya. Bersebelahan lima pintu tidak
+     muat, jadi ikonnya NAIK ke atas namanya - yang dibayar tinggi baris, bukan
+     ikon yang hilang atau nama yang terpotong. */
+  cek('dan ikonnya tetap digambar di tiap pintu',
+      await hal.evaluate(() => [...document.querySelectorAll('#l-utama [data-tab] .tab')]
+        .every((x) => {
+          const i = x.querySelector('.ik');
+          return i && i.getBoundingClientRect().width > 0;
+        })) === true);
 
   await hal.click('#l-utama [data-tab-ke="l-galeri"]');
   await hal.waitForTimeout(500);
@@ -4663,6 +4673,56 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
       !!yangDiunggah && yangDiunggah.album === 'Rumahuji Dapuruji' &&
       yangDiunggah.sumber === 'unggah' && yangDiunggah.jenis === 'gambar',
       JSON.stringify(yangDiunggah));
+
+  /* PREVIEW, BUKAN CUMA LAPISAN HITAM. Gambar yang membesar tanpa satu tombol
+     pun tidak memberitahu cara keluarnya - dan layar yang tidak memberitahu
+     cara keluarnya terbaca sebagai layar yang membeku, walau mengetuknya
+     sebenarnya menutup. */
+  await hal.locator('#galeri-isi .petak-satu img').first().click();
+  await hal.waitForTimeout(600);
+  cek('mengetuk gambar membuka previewnya', await hal.locator('#lihat').isVisible());
+  const infoLihat = (await hal.innerText('#lihat-info')).replace(/\s+/g, ' ');
+  cek('previewnya menyebut namanya dan keterangan yang menolong',
+      /Kamera|Unggah|Drop/.test(infoLihat) && infoLihat.length > 8, infoLihat);
+  cek('dan ada tombol Tutup yang kelihatan',
+      await hal.locator('#b-lihat-tutup').isVisible());
+  /* Doknya melayang di sudut yang sama. Tanpa z-index yang benar, yang duduk
+     di sudut kanan bawah tombol kamera - dan mengetuknya memotret, bukan
+     menutup. */
+  cek('previewnya di ATAS dok kamera, bukan di bawahnya',
+      (await hal.evaluate(() => {
+        const el = document.elementFromPoint(innerWidth - 40, innerHeight - 40);
+        return el ? (el.id || '') : '';
+      })) === 'b-lihat-tutup');
+  await hal.click('#b-lihat-tutup');
+  await hal.waitForTimeout(400);
+  cek('tombol Tutup benar-benar menutupnya',
+      await hal.locator('#lihat').isHidden());
+  cek('dan layarnya tetap di Gallery, tidak ikut berpindah',
+      (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-galeri');
+
+  /* Di HP, jalan keluar pertama yang dicoba orang dari gambar penuh layar
+     adalah tombol Kembali - dan tanpa satu langkah riwayat, tombol itu
+     meninggalkan layarnya sama sekali. */
+  await hal.locator('#galeri-isi .petak-satu img').first().click();
+  await hal.waitForTimeout(500);
+  await hal.goBack();
+  await hal.waitForTimeout(500);
+  cek('tombol Kembali HP menutup previewnya, bukan memindahkan layar',
+      (await hal.locator('#lihat').isHidden()) &&
+      (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-galeri');
+
+  /* Mengetuk keterangannya TIDAK menutup: di situ ada tulisan yang mungkin mau
+     kamu baca ulang atau sorot, dan yang tertutup di tengah membaca terbaca
+     sebagai layar yang tidak bisa dipegang. */
+  await hal.locator('#galeri-isi .petak-satu img').first().click();
+  await hal.waitForTimeout(500);
+  await hal.locator('#lihat .lihat-judul').click();
+  await hal.waitForTimeout(350);
+  cek('mengetuk keterangannya tidak ikut menutup',
+      await hal.locator('#lihat').isVisible());
+  await hal.click('#b-lihat-tutup');
+  await hal.waitForTimeout(350);
 
   /* PETAKNYA SENDIRI SEBUAH TOMBOL, dan itu jebakan yang sudah pernah
      mematikan tekan lama: penjaga "jangan menahan di atas tombol" menolaknya

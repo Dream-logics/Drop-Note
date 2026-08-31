@@ -498,8 +498,18 @@
      kecil untuk menjawabnya. Menutupnya cukup dengan menyentuh di mana saja:
      satu tombol silang di layar penuh yang cuma berisi satu gambar adalah
      sasaran yang harus dicari untuk sesuatu yang sudah jelas. -->
+<!-- PREVIEW, BUKAN CUMA LAPISAN HITAM. Gambar yang membesar tanpa satu
+     tombol pun tidak memberitahu cara keluarnya - dan layar yang tidak
+     memberitahu cara keluarnya terbaca sebagai layar yang membeku, walau
+     mengetuknya sebenarnya menutup. Jadi ada tombol Tutup yang kelihatan,
+     ada namanya, dan ada keterangan yang memang menolong: dari mana
+     gambarnya masuk, kapan, sebesar apa, di album mana, dan apa yang dibaca
+     AI di dalamnya. -->
 <div class="lihat sembunyi" id="lihat">
-  <img id="lihat-isi" alt="">
+  <div class="lihat-bingkai">
+    <img id="lihat-isi" alt="">
+  </div>
+  <div class="lihat-info" id="lihat-info"></div>
 </div>
 
 <!-- SATU-SATUNYA DIALOG KONFIRMASI DI APLIKASI INI, dan itu disengaja.
