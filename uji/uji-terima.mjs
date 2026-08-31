@@ -4880,6 +4880,222 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
   await hal.waitForTimeout(300);
 }
 
+console.log('\nsesi jepretan — album lengket');
+{
+  /* SURVEY LAPANGAN, dan ini alur yang sebenarnya: sepuluh jepretan dalam lima
+     menit, semuanya milik tempat yang sama. Menagih pilihan sepuluh kali untuk
+     satu jawaban yang sama adalah sembilan tagihan yang tidak perlu - dan itu
+     yang bikin orang berhenti memilih sama sekali, lalu dua puluh ribu foto
+     jatuh ke satu tumpukan tanpa alamat. */
+  const PNG3 = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGP8z8Dw'
+             + 'nwEJMKEL0FIQAG3+AwOfLbXbAAAAAElFTkSuQmCC';
+  const binPng3 = Buffer.from(PNG3, 'base64');
+
+  await hal.evaluate(() => Promise.all([
+    TSimpan.setel('folderGaleri', '[]'),
+    TSimpan.setel('albumLengket', ''),
+    TSimpan.setel('albumLengketPada', '0')
+  ]));
+  await hal.reload();
+  await hal.waitForFunction(() => window.TAlur);
+  await hal.waitForTimeout(600);
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(400);
+
+  const potret = async (nama) => {
+    await hal.setInputFiles('#galeri-pilih-kamera',
+      [{ name: nama, mimeType: 'image/png', buffer: binPng3 }]);
+    await hal.waitForTimeout(1400);
+  };
+  const albumDari = (nama) => hal.evaluate((n) => {
+    const e = TAlur.semuaEntri().filter((x) => x.namaBerkas === n)[0];
+    return e ? (e.album || '') : '(hilang)';
+  }, nama);
+
+  /* JEPRETAN PERTAMA TIDAK PUNYA APA-APA UNTUK DIWARISI, jadi di sinilah -
+     dan cuma di sini - pilihannya ditagih. */
+  await potret('sesi1.png');
+  cek('jepretan pertama menagih tujuannya, karena tidak ada yang bisa diwarisi',
+      await hal.locator('#tanya-pilih').isVisible() &&
+      (await hal.innerText('#tanya-judul')).indexOf('folder') >= 0,
+      await hal.innerText('#tanya-judul'));
+  /* TAPI GAMBARNYA SUDAH TERSIMPAN SEBELUM DIALOGNYA MUNCUL. Aturan nomor satu
+     tidak punya pengecualian, bahkan untuk aturan yang bagus: dialog tujuan itu
+     tawaran di belakang, bukan gerbang di depan. Kalau dialognya ditutup begitu
+     saja, fotonya tetap ada - cuma belum beralamat. */
+  cek('gambarnya sudah tersimpan sebelum satu dialog pun muncul',
+      (await albumDari('sesi1.png')) === '');
+
+  /* Divisinya diambil dari label rak yang sudah dia tulis sendiri di Setelan -
+     itulah pembagian yang benar-benar dipakai kepalanya. Yang diketik cuma
+     JENIS BENDANYA, bukan tempat kejadiannya: tempat kejadian selesai, jenis
+     benda yang dipanggil lagi enam bulan kemudian. */
+  await hal.click('#tanya-pilih [data-pilih="*baru"]');
+  await hal.waitForTimeout(350);
+  const divisiCip = (await hal.locator('#tanya-pilih [data-pilih]').allInnerTexts())
+    .map((x) => x.trim());
+  /* Dicocokkan dengan daftar label yang SEDANG hidup, bukan dengan bawaannya:
+     daftar itu miliknya dan boleh dia sunting kapan saja - uji yang mematok
+     nama bawaan akan gagal justru karena aplikasinya bekerja dengan benar. */
+  const labelHidup = await hal.evaluate(() => TAlur.daftarLabelUji().map((l) => l.nama));
+  cek('divisinya ditawarkan dari label rak yang sudah ditulis sendiri',
+      labelHidup.length >= 1 &&
+      labelHidup.every((n) => divisiCip.indexOf(n) >= 0) &&
+      divisiCip.length === labelHidup.length + 1,
+      JSON.stringify(divisiCip) + ' vs ' + JSON.stringify(labelHidup));
+  const DIV1 = labelHidup[0];
+  const DIV2 = labelHidup[1] || labelHidup[0];
+  await hal.click('#tanya-pilih [data-pilih="' + DIV1 + '"]');
+  await hal.waitForSelector('#tanya-isi:not(.sembunyi)');
+  await hal.fill('#tanya-isi', 'Granituji');
+  await hal.click('#b-tanya-ya');
+  await hal.waitForTimeout(900);
+  cek('jepretan pertama mendarat di divisi / jenis benda',
+      (await albumDari('sesi1.png')) === DIV1 + ' Granituji',
+      await albumDari('sesi1.png'));
+
+  /* DIVISINYA IKUT JADI ALBUM SUNGGUHAN. Susunan di sini dibaca dari nama, jadi
+     tanpa baris "Cons" akarnya rata: lima belas nama panjang berjajar, dan
+     pembagian yang seharusnya menolong tidak pernah kelihatan. */
+  const pohonAlbum = JSON.parse(await hal.evaluate(() => TSimpan.setelan('folderGaleri')));
+  cek('divisinya ikut didaftarkan, jadi akarnya bertingkat bukan rata',
+      pohonAlbum.indexOf(DIV1) >= 0 && pohonAlbum.indexOf(DIV1 + ' Granituji') >= 0,
+      JSON.stringify(pohonAlbum));
+
+  /* BERUNTUN. Dua jepretan berikutnya tidak ditagih apa pun - nol ketukan untuk
+     hal yang paling sering benar. */
+  await potret('sesi2.png');
+  cek('jepretan berikutnya mewarisi tujuannya, tanpa satu ketukan pun',
+      (await albumDari('sesi2.png')) === DIV1 + ' Granituji' &&
+      (await hal.locator('#tanya').isHidden()),
+      await albumDari('sesi2.png'));
+  cek('dan bilah tujuannya mengabarkan ke mana, dengan satu jalan keluar',
+      (await hal.innerText('#pesan')).indexOf(DIV1 + ' / Granituji') >= 0 &&
+      (await hal.locator('#pesan .pesan-aksi').count()) === 1,
+      await hal.innerText('#pesan'));
+
+  /* BEDA KONTEKS DALAM SATU JAM. Survey material yang sama, benda yang lain:
+     "Ganti" itu jalan keluarnya, dan yang dipilih jadi sesi yang baru. */
+  await potret('sesi3.png');
+  await hal.click('#pesan .pesan-aksi');
+  await hal.waitForSelector('#tanya-pilih:not(.sembunyi)');
+  const tawarSesi = (await hal.locator('#tanya-pilih [data-pilih]').allInnerTexts())
+    .map((x) => x.trim());
+  cek('“Ganti” membuka daftar dengan album sesi yang berjalan di paling depan',
+      tawarSesi[0] === DIV1 + ' / Granituji', JSON.stringify(tawarSesi));
+  await hal.click('#tanya-pilih [data-pilih="*baru"]');
+  await hal.waitForTimeout(300);
+  await hal.click('#tanya-pilih [data-pilih="' + DIV2 + '"]');
+  await hal.waitForSelector('#tanya-isi:not(.sembunyi)');
+  await hal.fill('#tanya-isi', 'Sofauji');
+  await hal.click('#b-tanya-ya');
+  await hal.waitForTimeout(900);
+  cek('yang dipilih memindahkan fotonya, bukan cuma menutup dialognya',
+      (await albumDari('sesi3.png')) === DIV2 + ' Sofauji',
+      await albumDari('sesi3.png'));
+  await potret('sesi4.png');
+  cek('dan sesinya berganti - jepretan sesudahnya mewarisi yang baru',
+      (await albumDari('sesi4.png')) === DIV2 + ' Sofauji',
+      await albumDari('sesi4.png'));
+
+  /* BILAH SESI DIBACA SEBELUM TOMBOLNYA DITEKAN. Bilah tujuan sesudah jepretan
+     memberi tahu ke mana fotonya SUDAH masuk; yang ini ke mana jepretan
+     berikutnya AKAN masuk - dan cuma yang kedua yang bisa diurungkan gratis. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(400);
+  cek('sesi yang berjalan terbaca di atas tombol kamera, sebelum dipotret',
+      (await hal.locator('#galeri-lengket').isVisible()) &&
+      (await hal.innerText('#galeri-lengket')).indexOf(DIV2 + ' / Sofauji') >= 0,
+      await hal.innerText('#galeri-lengket'));
+
+  /* SATU JAM, BERGULIR DARI JEPRETAN TERAKHIR. Sepuluh foto dalam lima menit
+     itu satu sesi; satu banner kompetitor jam sepuluh pagi dan satu foto lain
+     jam empat sore itu dua kejadian yang tidak ada hubungannya. Salah alamat
+     lebih buruk daripada tanpa alamat - yang salah alamat tidak pernah kamu
+     curigai. */
+  await hal.evaluate(() => TSimpan.setel('albumLengketPada', String(Date.now() - 3700000)));
+  await hal.reload();
+  await hal.waitForFunction(() => window.TAlur);
+  await hal.waitForTimeout(600);
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(400);
+  cek('lewat satu jam, bilah sesinya hilang sendiri',
+      await hal.locator('#galeri-lengket').isHidden());
+  await potret('sesi5.png');
+  cek('dan jepretan sesudahnya ditagih lagi, tidak mewarisi sesi yang basi',
+      (await hal.locator('#tanya-pilih').isVisible()) &&
+      (await albumDari('sesi5.png')) === '');
+  const tawarBasi = (await hal.locator('#tanya-pilih [data-pilih]').allInnerTexts())
+    .map((x) => x.trim());
+  cek('yang ditawarkan bertingkat, bukan nama panjang yang rata',
+      tawarBasi.indexOf(DIV1 + ' / Granituji') >= 0 &&
+      tawarBasi.indexOf(DIV2 + ' / Sofauji') >= 0,
+      JSON.stringify(tawarBasi));
+  await hal.click('#tanya-pilih [data-pilih="' + DIV1 + ' / Granituji"]');
+  await hal.waitForTimeout(900);
+  cek('memilih album yang sudah ada juga menghidupkan sesinya lagi',
+      (await albumDari('sesi5.png')) === DIV1 + ' Granituji' &&
+      (await hal.locator('#galeri-lengket').isVisible()),
+      await albumDari('sesi5.png'));
+
+  /* "Use last scene set up UNTIL IT DROPPED." Silangnya itu yang menjatuhkan -
+     tanpa jalan menutup sesi, satu-satunya cara mengakhirinya adalah menunggu
+     satu jam sambil tidak memotret apa pun. */
+  await hal.click('#galeri-lengket [data-lengket-buang]');
+  await hal.waitForTimeout(400);
+  cek('silangnya menutup sesinya',
+      await hal.locator('#galeri-lengket').isHidden());
+  await potret('sesi6.png');
+  cek('dan sesudah ditutup, jepretannya ditagih lagi',
+      await hal.locator('#tanya-pilih').isVisible());
+  await hal.click('#b-tanya-batal');
+  await hal.waitForTimeout(250);
+
+  /* BERDIRI DI DALAM ALBUMNYA MENANG ATAS INGATAN APA PUN - itu keputusan yang
+     baru saja kamu ambil - dan menawarkan "Ganti" di situ cuma mempertanyakan
+     jawaban yang barusan diberikan. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(300);
+  await hal.click('#galeri-isi [data-galeri-folder="' + DIV2 + '"]');
+  await hal.waitForTimeout(350);
+  await hal.click('#galeri-isi [data-galeri-folder="' + DIV2 + ' Sofauji"]');
+  await hal.waitForTimeout(350);
+  await potret('sesi7.png');
+  cek('memotret di dalam album langsung mendarat di situ, tanpa ditanya',
+      (await albumDari('sesi7.png')) === DIV2 + ' Sofauji' &&
+      (await hal.locator('#tanya').isHidden()),
+      await albumDari('sesi7.png'));
+  cek('dan di dalam album, “Ganti” tidak ditawarkan - jawabannya sudah diberikan',
+      (await hal.locator('#pesan .pesan-aksi').count()) === 0);
+
+  /* DAN INI UJUNGNYA: bisa dipanggil lagi. Nama albumnya tidak pernah ditulis
+     di judul atau tag fotonya - satu-satunya yang menyebutnya albumnya. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(300);
+  await hal.click('#galeri-alamat [data-galeri-naik]');
+  await hal.waitForTimeout(300);
+  await hal.fill('#galeri-cari', 'Granituji');
+  await hal.dispatchEvent('#galeri-cari', 'input');
+  await hal.waitForTimeout(450);
+  cek('dipanggil lagi lewat nama albumnya, dari akar mana pun',
+      (await hal.locator('#galeri-isi .petak-satu').count()) === 3,
+      String(await hal.locator('#galeri-isi .petak-satu').count()));
+  await hal.fill('#galeri-cari', '');
+  await hal.dispatchEvent('#galeri-cari', 'input');
+  await hal.waitForTimeout(300);
+
+  await hal.evaluate(() => Promise.all(TAlur.semuaEntri()
+    .filter((e) => /^sesi\d\.png$/.test(e.namaBerkas || ''))
+    .map((e) => { e.pensiun = true; return TSimpan.taruh(e); })));
+  await hal.evaluate(() => Promise.all([
+    TSimpan.setel('folderGaleri', '[]'),
+    TSimpan.setel('albumLengket', ''),
+    TSimpan.setel('albumLengketPada', '0')
+  ]));
+  await hal.evaluate(() => TAlur.muatUlangUji());
+  await hal.waitForTimeout(300);
+}
+
 console.log('\nnama cuma kulit');
 {
   const berkasKode = ['bawaan.js', 'simpan.js', 'otak.js', 'awan.js', 'pelabel.js', 'sinkron.js', 'alur.js', 'sw.js'];

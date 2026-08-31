@@ -1390,6 +1390,32 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    menambah yang baru. */
 #l-galeri.mode-pilih .galeri-dok{display:none}
 
+/* Duduk PERSIS di atas doknya, bukan di kepala layar: yang dibaca sedetik
+   sebelum menekan tombol harus berada di jalur mata menuju tombol itu.
+   Garis putus-putusnya kosakata yang di aplikasi ini sudah berarti "sementara,
+   bisa dijatuhkan" - sama dengan Reset dan "+ Folder". */
+.galeri-lengket{
+  position:fixed;right:16px;z-index:29;
+  bottom:calc(78px + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:6px;
+  max-width:calc(100% - 32px);
+  padding:6px 6px 6px 12px;border-radius:18px;
+  border:1px dashed var(--a);background:var(--p);color:var(--a);
+  font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.10);
+}
+.galeri-lengket .lengket-nama{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+/* 44px penuh walau rupanya kecil - ini dipakai satu tangan sambil berjalan,
+   dan silang yang meleset berarti sesi yang tidak pernah bisa dijatuhkan. */
+.galeri-lengket .lengket-buang{
+  width:32px;height:32px;margin:-6px -6px -6px 0;
+  border:0;background:none;color:var(--m);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.galeri-lengket .lengket-buang .ik{width:16px;height:16px}
+#l-galeri.mode-pilih .galeri-lengket{display:none}
+
 /* Doknya melayang di atas isinya, jadi petak terakhir harus punya ruang untuk
    lewat di bawahnya - kalau tidak, gambar paling bawah tidak pernah bisa
    ditekan. */

@@ -222,11 +222,19 @@
   /* Bentuk ketiga: satu daftar yang tinggal diketuk. Mengetik nama tujuan itu
      friksi yang tidak perlu ada - namanya sudah ada di layar sebelah, dan satu
      huruf salah ketik berarti pemindahan yang gagal tanpa sebab yang
-     kelihatan. Memilih tidak bisa salah ketik. */
+     kelihatan. Memilih tidak bisa salah ketik.
+
+     Isinya boleh dua macam. Teks biasa itu DATA pemakainya - nama folder, nama
+     album - jadi dia bertanda data-asli dan tidak pernah diterjemahkan. Bentuk
+     objek {teks, kunci} itu kalimat aplikasinya sendiri ("+ Folder baru"), dan
+     yang itu justru HARUS ikut berganti bahasa. */
   function tanyaPilih(judul, ket, daftar, jalan) {
     tanya(judul, ket, null);
     var w = $('#tanya-pilih');
     w.innerHTML = daftar.map(function (x) {
+      if (x && typeof x === 'object') {
+        return '<button class="tanya-cip" data-pilih="' + H(x.kunci) + '">' + H(x.teks) + '</button>';
+      }
       return '<button class="tanya-cip" data-pilih="' + H(x) + '" data-asli>' + H(x) + '</button>';
     }).join('');
     w.classList.remove('sembunyi');
@@ -2224,6 +2232,16 @@
     return TSimpan.setel('folderGaleri', JSON.stringify(albumDaftar));
   }
 
+  function tambahAlbum(nama) {
+    if (!nama) return false;
+    var punya = albumDaftar.some(function (n) {
+      return TOtak.normal(n) === TOtak.normal(nama);
+    });
+    if (punya) return false;
+    albumDaftar.push(nama);
+    return true;
+  }
+
   function semuaGambar() {
     return semuaEntri.filter(function (e) {
       return e.jenis === 'gambar' && !e.pensiun && !e.dihapus;
@@ -2327,12 +2345,27 @@
       '</button>';
   }
 
+  /* Yang digambar cuma kalau sesinya HIDUP dan kamu berdiri di akar. Di dalam
+     album, tujuannya sudah tertulis di remah jejak tepat di atas kepalamu -
+     dua kabar untuk satu jawaban cuma bikin ragu yang mana yang berlaku. */
+  function gambarLengket() {
+    var w = $('#galeri-lengket');
+    if (!w) return;
+    var tampil = lengketHidup() && !galeriFolder;
+    w.classList.toggle('sembunyi', !tampil);
+    if (!tampil) { w.innerHTML = ''; return; }
+    w.innerHTML = '<span class="lengket-nama" data-asli>→ ' + H(labelAlbum(albumLengket)) + '</span>' +
+      '<button class="lengket-buang" data-lengket-buang aria-label="Akhiri sesi">' +
+      '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>';
+  }
+
   function gambarGaleri() {
     var wadah = $('#galeri-isi');
     if (!wadah) return;
     gambarJejakGaleri();
     gambarSaringGaleri();
     gambarTampilGaleri();
+    gambarLengket();
 
     var daftar = daftarGambar();
     var kueri = $('#galeri-cari').value.trim();
@@ -2430,7 +2463,12 @@
       return f && /^image\//.test(f.type || '');
     });
     if (!daftar.length) return Promise.resolve(0);
-    var album = (galeriFolder && galeriFolder !== TANPA_ALBUM) ? galeriFolder : '';
+    /* Tiga sumber alamat, dan urutannya bukan selera: album yang SEDANG DIBUKA
+       menang atas ingatan apa pun, karena berdiri di dalamnya itu keputusan
+       yang baru saja kamu ambil. Sesudah itu baru ingatan sesi. */
+    var diBuka = (galeriFolder && galeriFolder !== TANPA_ALBUM) ? galeriFolder : '';
+    var album = diBuka || (lengketHidup() ? albumLengket : '');
+    var baru = [];
     pesan(daftar.length > 1 ? 'Memasukkan ' + daftar.length + ' gambar…' : 'Memasukkan…');
     return daftar.reduce(function (rantai, f) {
       return rantai.then(function () {
@@ -2454,6 +2492,7 @@
                sesuatu untuk dipegang, dan sampai dia jalan yang terbaca
                setidaknya bukan "(tanpa judul)". */
             e.judul = nama.replace(/\.[a-z0-9]+$/i, '');
+            baru.push(e.id);
             return TSimpan.taruh(e);
           });
         });
@@ -2462,12 +2501,188 @@
       .then(function () { return muatSemua(); })
       .then(function () {
         gambarGaleri();
-        pesan(daftar.length + ' gambar masuk');
         /* Pelabelan AI menyusul di belakang dan boleh gagal diam-diam. */
         sundulLabel();
+        kabarkanTujuan(baru, album, !!diBuka);
         return daftar.length;
       })
       .catch(function (e) { pesan('Gagal: ' + (e && e.message ? e.message : e)); return 0; });
+  }
+
+  /* ===================== ALBUM LENGKET =====================
+     Ini jawaban untuk satu-satunya hal yang membuat dua puluh ribu foto jadi
+     timbunan: memotret berlangsung tiga detik, memilih tempatnya tidak.
+
+     Yang sebenarnya terjadi di lapangan: kamu memotret BERUNTUN. Survey satu
+     gerai menghasilkan sepuluh jepretan dalam lima menit, dan kesepuluhnya
+     milik tempat yang sama. Menagih pilihan sepuluh kali untuk satu jawaban
+     yang sama adalah sembilan tagihan yang tidak perlu - dan itu yang bikin
+     orang berhenti memilih sama sekali, lalu semuanya jatuh ke satu tumpukan.
+
+     Jadi jepretan berikutnya MEWARISI tujuan jepretan sebelumnya, dan yang
+     ditawarkan cuma jalan keluarnya ("Ganti"). Mendiamkannya berarti menerima:
+     nol ketukan untuk hal yang paling sering benar.
+
+     TAPI WARISAN ITU KEDALUWARSA SATU JAM. Bedanya begini: sepuluh foto dalam
+     lima menit itu satu sesi; satu foto banner kompetitor dari balik setir
+     jam sepuluh pagi dan satu foto lain jam empat sore itu dua kejadian yang
+     tidak ada hubungannya. Tanpa batas waktu, yang kedua akan mendarat di
+     album yang sudah berhenti berlaku - dan salah alamat lebih buruk daripada
+     tanpa alamat, karena yang salah alamat tidak pernah kamu curigai.
+
+     Jamnya BERGULIR dari jepretan terakhir, bukan dari awal sesi: survey tiga
+     jam tetap satu sesi selama tanganmu tidak berhenti.
+
+     Yang TIDAK dilakukan di sini: menahan gambarnya sampai kamu memilih.
+     Gambarnya sudah tersimpan sebelum satu dialog pun muncul - aturan nomor
+     satu tidak punya pengecualian, bahkan untuk aturan yang bagus. Dialog
+     tujuan itu tawaran di belakang, bukan gerbang di depan. */
+
+  var LENGKET_MS = 3600000;
+  var albumLengket = '';
+  var albumLengketPada = 0;
+
+  function muatLengket(s) {
+    albumLengket = (s && s.albumLengket) || '';
+    albumLengketPada = Number((s && s.albumLengketPada) || 0) || 0;
+  }
+
+  /* Album yang sudah dihapus tidak boleh mewariskan apa pun - kalau tidak,
+     jepretan berikutnya mendarat di nama yang tidak ada barisnya di layar,
+     dan itu sama saja dengan hilang. */
+  function lengketHidup() {
+    if (!albumLengket) return false;
+    if (Date.now() - albumLengketPada >= LENGKET_MS) return false;
+    return albumDaftar.indexOf(albumLengket) >= 0;
+  }
+
+  function pakaiLengket(nama) {
+    albumLengket = nama || '';
+    albumLengketPada = nama ? Date.now() : 0;
+    return Promise.all([
+      TSimpan.setel('albumLengket', albumLengket),
+      TSimpan.setel('albumLengketPada', String(albumLengketPada))
+    ]);
+  }
+
+  /* "Cons / Granit", bukan "Cons Granit". Nama panjangnya tetap identitasnya,
+     tapi yang dibaca sekilas di bilah tujuan harus memperlihatkan tingkatnya -
+     di situlah kamu melihat bahwa divisinya sudah benar walau jenisnya salah. */
+  function labelAlbum(nama) {
+    if (!nama) return TANPA_ALBUM;
+    var jalur = jalurFolder(nama, albumDaftar);
+    return jalur.map(function (n, i) {
+      return namaPendek(n, i ? jalur[i - 1] : '');
+    }).join(' / ');
+  }
+
+  /* Bilah tujuan sesudah tiap jepretan. Kalau ada yang diwarisi: kabarnya saja,
+     dengan satu jalan keluar. Kalau tidak ada: dialognya yang dibuka, karena
+     tidak ada yang bisa didiamkan - mendiamkannya berarti foto tanpa alamat,
+     dan itu persis keadaan yang sedang dilawan layar ini. */
+  function kabarkanTujuan(ids, album, diBuka) {
+    if (!ids.length) return;
+    if (album) {
+      pakaiLengket(album);
+      /* Berdiri di dalam albumnya berarti kamu sudah menjawab; menawarkan
+         "Ganti" di situ cuma mempertanyakan jawaban yang baru saja diberikan. */
+      if (diBuka) { pesan(ids.length + ' gambar masuk'); return; }
+      pesan('→ ' + labelAlbum(album), {
+        teks: 'Ganti',
+        jalan: function () { pilihAlbumUntuk(ids); }
+      });
+      return;
+    }
+    pilihAlbumUntuk(ids);
+  }
+
+  /* Urutannya yang bekerja, bukan daftarnya. Yang paling mungkin benar duduk
+     paling depan: album sesi yang sedang berjalan, lalu yang terakhir kamu
+     pakai, baru sisanya. Daftar album yang panjang tanpa urutan sama saja
+     dengan tidak ada daftar - kamu tetap harus membacanya satu per satu. */
+  function albumTerurut() {
+    var pakaiTerakhir = {};
+    semuaGambar().forEach(function (e) {
+      if (!e.album) return;
+      var t = e.dibuat || 0;
+      if (!pakaiTerakhir[e.album] || t > pakaiTerakhir[e.album]) pakaiTerakhir[e.album] = t;
+    });
+    return albumDaftar.slice().sort(function (a, b) {
+      if (lengketHidup()) {
+        if (a === albumLengket) return -1;
+        if (b === albumLengket) return 1;
+      }
+      var ta = pakaiTerakhir[a] || 0, tb = pakaiTerakhir[b] || 0;
+      if (ta !== tb) return tb - ta;
+      return a.localeCompare(b);
+    });
+  }
+
+  function taruhAlbum(ids, nama) {
+    var kena = semuaEntri.filter(function (e) { return ids.indexOf(e.id) >= 0; });
+    return Promise.all(kena.map(function (e) {
+      e.album = nama;
+      e.diubah = Date.now();
+      return TSimpan.taruh(e);
+    })).then(function () {
+      return pakaiLengket(nama);
+    }).then(function () {
+      return muatSemua();
+    }).then(function () {
+      gambarGaleri();
+      pesan('→ ' + labelAlbum(nama));
+    });
+  }
+
+  function pilihAlbumUntuk(ids) {
+    var urut = albumTerurut();
+    var pilihan = urut.map(labelAlbum);
+    pilihan.push({ teks: '+ Folder baru', kunci: '*baru' });
+    tanyaPilih('Masuk folder mana?',
+      ids.length > 1 ? ids.length + ' gambar' : '',
+      pilihan, function (nilai) {
+        if (nilai === '*baru') { albumBaruUntuk(ids); return; }
+        var i = pilihan.indexOf(nilai);
+        if (i < 0 || !urut[i]) return;
+        taruhAlbum(ids, urut[i]);
+      });
+  }
+
+  /* DUA TINGKAT, DAN TINGKAT ATASNYA SUDAH KAMU TULIS SENDIRI. Divisinya
+     diambil dari label rak di Setelan - MAP, Cons, FnB Dev, dan seterusnya -
+     karena itulah pembagian yang benar-benar dipakai kepalanya, dan dia sudah
+     mengetiknya sekali. Menagih dia mengarang pembagian kedua khusus untuk
+     foto berarti dua peta untuk satu kepala.
+
+     Yang diketik cuma tingkat bawahnya, dan itu JENIS BENDANYA ("Granit",
+     "Sofa", "Menu"), bukan tempat kejadiannya. Tempat kejadian selesai; jenis
+     benda yang dipanggil lagi enam bulan kemudian. */
+  function albumBaruUntuk(ids) {
+    var divisi = daftarLabel().map(function (l) { return l.nama; });
+    var pilihan = divisi.slice();
+    pilihan.push({ teks: '(tanpa divisi)', kunci: '*tanpa' });
+    tanyaPilih('Divisi mana?', 'Lalu ketik jenis bendanya.', pilihan, function (nilai) {
+      var induk = nilai === '*tanpa' ? '' : nilai;
+      setTimeout(function () {
+        tanyaKetik('Folder baru',
+          induk ? 'Di dalam “' + induk + '”. Jenis bendanya, satu-dua kata.'
+                : 'Jenis bendanya, satu-dua kata.',
+          '', function (ketik) {
+            if (!ketik) return;
+            var nama = (induk && normalFolder(ketik).indexOf(normalFolder(induk) + ' ') !== 0)
+              ? induk + ' ' + ketik : ketik;
+            /* DIVISINYA IKUT DIDAFTARKAN SEBAGAI ALBUM. Susunan folder di sini
+               dibaca dari nama, jadi "Cons Granit" cuma jadi anak "Cons" kalau
+               "Cons" memang ada barisnya. Tanpa ini akarnya rata: lima belas
+               nama panjang berjajar, dan divisi yang seharusnya membaginya
+               tidak pernah kelihatan - persis timbunan yang dilawan. */
+            if (induk) tambahAlbum(induk);
+            tambahAlbum(nama);
+            simpanAlbum();
+            taruhAlbum(ids, nama);
+          });
+      }, 30);
+    });
   }
 
   /* ===================== LAYAR STORAGE =====================
@@ -4885,6 +5100,12 @@
       mulaiPilih(!(pilihNyala || jumlahPilih()));
     });
     $('#galeri-cari').addEventListener('input', gambarGaleri);
+    $('#galeri-lengket').addEventListener('click', function (ev) {
+      if (!ev.target.closest('[data-lengket-buang]')) return;
+      pakaiLengket('');
+      gambarLengket();
+      pesan('Sesi ditutup');
+    });
     $('#galeri-alamat').addEventListener('click', function (ev) {
       var naik = ev.target.closest('[data-galeri-naik]');
       if (!naik && !ev.target.closest('[data-galeri-akar]')) return;
@@ -5397,6 +5618,7 @@
       muatEkor(setelanSaat);
       muatFolder(setelanSaat);
       muatAlbum(setelanSaat);
+      muatLengket(setelanSaat);
       if (setelanSaat.gayaGaleri) gayaGaleri = setelanSaat.gayaGaleri;
       /* Temanya dipasang SEBELUM apa pun digambar - kalau sesudah, warnanya
          berkedip dari teal ke pilihanmu tiap kali aplikasinya dibuka. */
