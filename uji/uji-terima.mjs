@@ -4722,6 +4722,17 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
     { name: 'unggahuji.png', mimeType: 'image/png', buffer: binPng }
   ]);
   await hal.waitForTimeout(2200);
+  /* BERDIRI DI DALAM ALBUM MENJAWAB "KE MANA", BUKAN "APA YANG KAMU LIHAT" -
+     jadi albumnya tidak ditanya lagi, tapi sudut pandangnya tetap ditagih
+     sekali. Tanpa langkah ini, unggahannya berangkat ke AI tanpa satu kata pun
+     driver dan jatuh ke pembaca dokumen. */
+  cek('unggahan di dalam album tetap ditanya sudut pandangnya',
+      await hal.locator('#tanya-isi').isVisible());
+  await hal.fill('#tanya-isi', 'nanas pickup');
+  await hal.click('#b-tanya-ya');
+  await hal.waitForTimeout(900);
+  cek('dan albumnya tidak ditanya lagi — itu sudah dijawab dengan berdiri di sana',
+      await hal.locator('#tanya').isHidden());
   const yangDiunggah = await hal.evaluate(() => TAlur.semuaEntri()
     .filter((e) => e.namaBerkas === 'unggahuji.png')
     .map((e) => ({ album: e.album, sumber: e.sumber, jenis: e.jenis }))[0]);
@@ -5130,9 +5141,17 @@ console.log('\nsesi jepretan — driver, gerbong, album lengket');
   await hal.click('#galeri-isi [data-galeri-folder="Interior Sofauji"]');
   await hal.waitForTimeout(350);
   await potret('sesi7.png');
-  cek('memotret di dalam album langsung mendarat di situ, tanpa ditanya',
-      (await fotoUji('sesi7.png')).album === 'Interior Sofauji' &&
-      (await hal.locator('#tanya').isHidden()),
+  /* DUA PERTANYAAN, BUKAN SATU. Berdiri di dalam album menjawab "ke mana";
+     "apa yang kamu lihat" belum terjawab sama sekali. */
+  cek('memotret di dalam album langsung mendarat di situ',
+      (await fotoUji('sesi7.png')).album === 'Interior Sofauji',
+      JSON.stringify(await fotoUji('sesi7.png')));
+  cek('albumnya tidak ditanya lagi, tapi sudut pandangnya tetap ditagih sekali',
+      await hal.locator('#tanya-isi').isVisible());
+  await ketikDriver('sudut sofa');
+  cek('dan sesudah dijawab, tidak ada pertanyaan kedua',
+      (await hal.locator('#tanya').isHidden()) &&
+      (await fotoUji('sesi7.png')).driver === 'sudut sofa',
       JSON.stringify(await fotoUji('sesi7.png')));
 
   /* DIPANGGIL LAGI LEWAT KALIMATMU SENDIRI. Enam bulan lagi yang paling pasti
@@ -5447,6 +5466,119 @@ console.log('\narahan gambar: pendek, dua lapis, bahasamu');
     if (e) { e.pensiun = true; await TSimpan.taruh(e); }
     await TAlur.muatUlangUji();
   });
+  await hal.waitForTimeout(300);
+}
+
+console.log('\nberdiri di album menjawab "ke mana", bukan "apa yang kamu lihat"');
+{
+  /* LUBANG YANG MEMATIKAN SELURUH PERBAIKAN SEBELUMNYA. Dua pertanyaan, dan
+     dulu di sini keduanya dianggap satu: begitu kamu memotret dari DALAM
+     album, drivernya tidak pernah ditanya sama sekali. Fotonya berangkat ke AI
+     tanpa satu kata pun sudut pandang, jatuh ke pembaca dokumen, dan yang
+     kembali "Foto Interior Ruang Tamu Modern" untuk album Bedroom - lengkap
+     dengan #AmaraLiving yang disedot dari pustaka tag. */
+  const PNG5 = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGP8z8Dw'
+             + 'nwEJMKEL0FIQAG3+AwOfLbXbAAAAAElFTkSuQmCC';
+  const binPng5 = Buffer.from(PNG5, 'base64');
+
+  await hal.evaluate(() => Promise.all([
+    TSimpan.setel('folderGaleri', JSON.stringify(['Interior', 'Interior Kamaruji'])),
+    TSimpan.setel('albumLengket', ''),
+    TSimpan.setel('albumLengketPada', '0'),
+    TSimpan.setel('driverLengket', '')
+  ]));
+  await hal.reload();
+  await hal.waitForFunction(() => window.TAlur);
+  await hal.waitForTimeout(700);
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(500);
+
+  const fotoUji5 = (nama) => hal.evaluate((n) => {
+    const e = TAlur.semuaEntri().filter((x) => x.namaBerkas === n)[0];
+    return e ? { album: e.album || '', driver: e.driver || '' } : null;
+  }, nama);
+  const potret5 = async (nama) => {
+    await hal.setInputFiles('#galeri-pilih-kamera',
+      [{ name: nama, mimeType: 'image/png', buffer: binPng5 }]);
+    await hal.waitForTimeout(1400);
+  };
+
+  await hal.click('#galeri-isi [data-galeri-folder="Interior"]');
+  await hal.waitForTimeout(400);
+  await hal.click('#galeri-isi [data-galeri-folder="Interior Kamaruji"]');
+  await hal.waitForTimeout(400);
+  cek('memang sedang berdiri di dalam albumnya',
+      (await hal.innerText('#galeri-alamat')).indexOf('Kamaruji') >= 0,
+      await hal.innerText('#galeri-alamat'));
+
+  await potret5('dalam1.png');
+  cek('memotret di dalam album TETAP menanyakan sudut pandangnya',
+      (await hal.locator('#tanya-isi').isVisible()) &&
+      (await hal.innerText('#tanya-judul')).indexOf('lihat') >= 0,
+      await hal.innerText('#tanya-judul'));
+  await hal.fill('#tanya-isi', 'Bedroom Interior Lighting');
+  await hal.click('#b-tanya-ya');
+  await hal.waitForTimeout(1000);
+  /* Albumnya sudah kamu jawab dengan berdiri di sana - menanyakannya lagi
+     berarti menagih jawaban yang barusan diberikan. */
+  cek('tapi albumnya TIDAK ditanya lagi — itu sudah dijawab dengan berdiri di sana',
+      await hal.locator('#tanya').isHidden());
+  const dalam1 = await fotoUji5('dalam1.png');
+  cek('drivernya mendarat, albumnya tetap yang sedang dibuka',
+      dalam1.driver === 'Bedroom Interior Lighting' && dalam1.album === 'Interior Kamaruji',
+      JSON.stringify(dalam1));
+
+  /* Sesudah itu harganya kembali nol - itu seluruh gunanya sesi. */
+  await potret5('dalam2.png');
+  const dalam2 = await fotoUji5('dalam2.png');
+  cek('jepretan berikutnya di album yang sama tidak ditanya apa pun',
+      (await hal.locator('#tanya').isHidden()) &&
+      dalam2.driver === 'Bedroom Interior Lighting',
+      JSON.stringify(dalam2));
+
+  /* FOTO KAMERA TIDAK PERNAH DIBACA SEBAGAI DOKUMEN. Dulu yang memilih arahan
+     itu drivernya, jadi satu foto yang lolos tanpa driver langsung jatuh ke
+     pembaca dokumen - dijawab dalam bahasa Indonesia, dengan tag yang disedot
+     dari pustaka. Kamera tidak pernah menghasilkan faktur.
+
+     Diuji lewat ATURANNYA SENDIRI, bukan lewat perjalanan bolak-balik ke
+     layanan AI. Yang bolak-balik itu bergantung pada mode AI, panjang antrean,
+     dan sisa keadaan blok uji sebelumnya - tiga hal yang tidak ada hubungannya
+     dengan aturan yang sedang diuji, dan tiap satunya bisa membuat ujinya
+     gagal atau lulus karena alasan yang salah. */
+  const rute = (e) => hal.evaluate((x) => TPelabel.fotoReferensiUji(x), e);
+  cek('foto kamera TANPA driver tetap dibaca sebagai foto referensi',
+      (await rute({ sumber: 'kamera' })) === true);
+  cek('unggahan dari galeri HP juga — itu tetap foto milikmu, bukan dokumen',
+      (await rute({ sumber: 'unggah' })) === true);
+  cek('yang punya driver selalu foto referensi, dari mana pun dia masuk',
+      (await rute({ sumber: 'drop', driver: 'sofa abu' })) === true);
+  /* Yang jatuh lewat kotak Drop tanpa driver lain ceritanya: di situ tangkapan
+     layar struk dan KTP memang yang terbanyak, dan pembaca dokumen yang teliti
+     memang yang dibutuhkan. Menyeragamkan keduanya merusak sisi yang satunya. */
+  cek('tapi tangkapan layar yang di-drop tetap dibaca sebagai dokumen',
+      (await rute({ sumber: 'drop' })) === false &&
+      (await rute({ sumber: '' })) === false);
+  /* Dan arahannya memang dua benda yang berbeda, bukan dua nama untuk satu. */
+  const dua = await hal.evaluate(() => ({
+    gambar: TPelabel.arahanGambarUji('', []),
+    dokumen: TPelabel.arahanUji(TAlur.setelanUji())
+  }));
+  cek('arahan gambar dan arahan dokumen memang dua benda berbeda',
+      /5 luas/.test(dua.gambar) && !/5 luas/.test(dua.dokumen) &&
+      dua.gambar.length * 4 < dua.dokumen.length,
+      dua.gambar.length + ' vs ' + dua.dokumen.length);
+
+  await hal.evaluate(() => Promise.all(TAlur.semuaEntri()
+    .filter((e) => /^dalam[12]\.png$/.test(e.namaBerkas || ''))
+    .map((e) => { e.pensiun = true; return TSimpan.taruh(e); })));
+  await hal.evaluate(() => Promise.all([
+    TSimpan.setel('folderGaleri', '[]'),
+    TSimpan.setel('albumLengket', ''),
+    TSimpan.setel('albumLengketPada', '0'),
+    TSimpan.setel('driverLengket', '')
+  ]));
+  await hal.evaluate(() => TAlur.muatUlangUji());
   await hal.waitForTimeout(300);
 }
 

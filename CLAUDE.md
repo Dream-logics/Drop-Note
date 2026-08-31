@@ -222,6 +222,18 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     Ditanya SEKALI di jepretan pertama lalu mewaris bersama
                     albumnya; "Ganti" menanyakannya LAGI (menekan Ganti berarti
                     konteksnya berpindah, bukan albumnya yang salah).
+                    BERDIRI DI DALAM ALBUM MENJAWAB "KE MANA", BUKAN "APA YANG
+                    KAMU LIHAT" - dua pertanyaan, dan menyamakannya adalah
+                    kesalahan yang paling mahal di sini: dulu memotret dari
+                    dalam album melewati pertanyaan driver sama sekali, lalu
+                    fotonya berangkat tanpa sudut pandang dan jatuh ke pembaca
+                    dokumen. Yang kembali "Ruang Tamu Modern" untuk album
+                    Bedroom, dengan #AmaraLiving dari pustaka. Jadi albumnya
+                    tidak ditanya lagi, drivernya TETAP ditagih sekali per sesi.
+                    RUTE ARAHAN dipilih fotoReferensi(e), BUKAN ada-tidaknya
+                    driver: kamera/unggah selalu arahan gambar (kamera tidak
+                    pernah menghasilkan faktur), dan yang jatuh lewat Drop
+                    tanpa driver tetap pembaca dokumen.
                     Driver yang datang belakangan memicu pelabelan ULANG.
 public/bawaan.js    (lanjutan) GERBONG ('gerbongAwal', disunting di Setelan) -
                     rak untuk gambar, SUMBUNYA BEDA dengan label rak. Label rak
@@ -520,7 +532,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (721 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (735 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
