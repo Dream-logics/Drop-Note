@@ -86,8 +86,44 @@
 
   /* ---------------------------- setelan ---------------------------- */
 
+  /* Peta kapan tiap setelan terakhir disentuh. Dipakai sinkron untuk memutuskan
+     siapa yang menang antar perangkat - dan dia dicatat DI SINI, di corong
+     tulisannya, bukan di tiap pemanggil. Ada belasan tempat yang menulis
+     setelan; menitipkan cap waktu ke masing-masing berarti satu tempat pasti
+     terlupa, dan yang terlupa itu diam-diam kalah terus di perangkat lain.
+
+     Kuncinya sendiri tidak ikut dicap - kalau ikut, dia menulis dirinya
+     sendiri tanpa henti. */
+  var KUNCI_WAKTU = 'setelanWaktu';
+
   function setel(kunci, nilai) {
-    return urus('setelan', 'readwrite', function (s) { return s.put({ kunci: kunci, nilai: nilai }); });
+    return urus('setelan', 'readwrite', function (s) { return s.put({ kunci: kunci, nilai: nilai }); })
+      .then(function (r) {
+        if (kunci === KUNCI_WAKTU) return r;
+        return capWaktu(kunci).then(function () { return r; });
+      });
+  }
+
+  /* BERBARIS SATU-SATU, dan itu wajib. Mencatat cap berarti baca-ubah-tulis
+     pada SATU peta, jadi dua penyimpanan yang berangkat bersamaan - dan
+     Promise.all([setel(a), setel(b)]) itu bentuk yang paling lazim - sama-sama
+     membaca peta yang sama lalu saling menimpa. Yang kalah kehilangan capnya,
+     lalu di perangkat lain dia terlihat lebih tua daripada yang sebenarnya dan
+     diam-diam dikalahkan. Kegagalannya tidak pernah kelihatan di perangkat
+     tempat kamu menulisnya; yang kelihatan cuma perubahan yang "tidak sampai". */
+  var antreCap = Promise.resolve();
+
+  function capWaktu(kunci) {
+    antreCap = antreCap.then(function () {
+      return setelan(KUNCI_WAKTU).then(function (peta) {
+        var p = peta && typeof peta === 'object' ? peta : {};
+        p[kunci] = Date.now();
+        return urus('setelan', 'readwrite', function (s) {
+          return s.put({ kunci: KUNCI_WAKTU, nilai: p });
+        });
+      });
+    }).catch(function () { /* cap yang gagal bukan alasan tulisannya batal */ });
+    return antreCap;
   }
   function setelan(kunci) {
     return urus('setelan', 'readonly', function (s) { return s.get(kunci); }).then(function (r) {

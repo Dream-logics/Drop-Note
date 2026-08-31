@@ -25,8 +25,15 @@
   var SEKALI = 100;              /* baris per kiriman */
   var POTONG_MAKS = 6;
   var BERKAS_SEKALI = 3;         /* unggahan per putaran; sisanya menyusul */
-  var JEDA = 30 * 60 * 1000;
+  /* Dorongan berkala. Turun dari 30 menit ke 5: dengan empat perangkat,
+     setengah jam berarti catatan yang ditulis di laptop belum ada di HP waktu
+     kamu sudah berdiri di lokasi. Dorongan yang dipicu perubahan (lihat
+     sundulNaik di alur.js) yang mengerjakan sebagian besar; angka ini
+     jaring pengamannya, untuk perubahan yang terlewat karena aplikasinya
+     keburu ditutup. */
+  var JEDA = 5 * 60 * 1000;
   var jalan = false;
+  var menarik = false;
 
   function nyala(s) {
     return !!(s && s.cadanganNyala && ((s.clientId || TBawaan.clientId)));
@@ -219,6 +226,15 @@
         }, Promise.resolve()).then(function () { return naik; });
       })
       .then(function () { return cerminTag(setelan, sarang); })
+      /* SETELAN IKUT NAIK DI SINI JUGA, bukan cuma waktu menarik. Perangkat
+         yang cuma pernah mendorong - dan itu keadaan yang normal untuk HP yang
+         dipakai memotret seharian - tidak akan pernah mengirim daftar folder
+         dan gerbongnya, jadi perangkat lain menerima catatannya tanpa rak.
+         gabungSetelan dua arah dan idempoten, jadi memanggilnya dari dua
+         tempat aman. */
+      .then(function () {
+        return sinkronSetelan(setelan, sarang).catch(function () { return 0; });
+      })
       .then(function () {
         return catat(setelan, 'cadanganBerhasil', Date.now())
           .then(function () { return catat(setelan, 'cadanganGalat', ''); })
@@ -235,8 +251,142 @@
             function () { jalan = false; return naik; });
   }
 
-  /* Menarik balik. Manual, dan sengaja - ini tindakan waktu ganti HP, bukan
-     bagian dari hari biasa. */
+  /* ===================== SETELAN YANG IKUT BERPINDAH =====================
+     Entrinya sudah ikut lewat Sheet, tapi entri saja tidak cukup. Catatan yang
+     sampai di laptop TANPA RAKNYA jatuh semua ke "Belum berlabel" - dan yang
+     terbaca di situ bukan "raknya belum ikut", melainkan "aplikasinya kacau".
+     Alamat itu bagian dari catatannya, bukan hiasan perangkatnya.
+
+     GARISNYA: yang berpindah cuma ISI KEPALA - daftar dan pustaka yang kamu
+     susun sendiri. Tampilan dan sesi tetap milik perangkat masing-masing, dan
+     itu bukan kemalasan:
+
+     - Ukuran petak: HP mau petak kecil, PC mau besar. Menyamakannya berarti
+       satu perangkat selalu salah.
+     - Tema dan bahasa: berganti sendiri tanpa diminta itu yang paling cepat
+       bikin orang merasa kehilangan kendali.
+     - albumLengket / driverLengket: sesi itu KENYATAAN FISIK - kamu sedang
+       berdiri di masjid dengan HP di tangan. Menularkannya ke PC di kantor
+       berarti foto yang diunggah di sana mendarat di album survey yang tidak
+       ada hubungannya, dan salah alamat tidak pernah kamu curigai.
+     - Kunci, token, id berkas Drive: milik perangkat dan akunnya sendiri.
+
+     Menangnya per KUNCI, bukan per berkas. Kalau seluruh berkas yang menang,
+     menambah satu folder di HP menghapus gerbong yang baru kamu tulis di
+     laptop lima menit sebelumnya - dan dengan empat perangkat, kekalahan
+     seperti itu terjadi tiap minggu. */
+  var BERKAS_SETELAN = 'setelan.json';
+
+  var KUNCI_SINKRON = [
+    'label',        /* label rak */
+    'gerbong',      /* rak gambar */
+    'folderNote',   /* folder layar Note */
+    'folderGaleri', /* album Gallery */
+    'hashtag',      /* pustaka tag */
+    'tagUsulan',    /* tag yang masih menunggu dilihat */
+    'tagFavorit',
+    'namaElemen',
+    'ekorJudul',
+    'obrolan'       /* riwayat obrolan AI */
+  ];
+
+  /* DIBACA SEGAR DARI BASIS DATA, bukan dari salinan setelan di memori.
+     Cap waktunya ditulis di dalam TSimpan.setel - jauh dari sini - jadi
+     salinan di memori tidak pernah ikut berubah waktu kamu menyunting daftar
+     folder. Membacanya dari sana berarti sinkron membandingkan dengan cap
+     kemarin, lalu menyimpulkan perubahanmu yang baru saja itu kalah. Yang
+     hilang persis perubahan yang paling baru - dan itu yang paling kamu ingat
+     pernah kamu buat. */
+  function petaWaktu() {
+    return TSimpan.setelan('setelanWaktu').then(function (p) {
+      return (p && typeof p === 'object') ? p : {};
+    }).catch(function () { return {}; });
+  }
+
+  /* Digabung DUA ARAH sekaligus: yang lebih baru menang, dari sisi mana pun
+     dia datang. Yang dikembalikan bentuk gabungannya plus daftar kunci yang
+     berubah di sini - pemanggilnya yang menuliskannya, supaya fungsi ini tetap
+     bisa diuji tanpa basis data. */
+  function gabungSetelan(lokal, waktuLokal, jauh) {
+    var hasil = {}, ubah = [];
+    var isiJauh = (jauh && jauh.kunci) || {};
+    KUNCI_SINKRON.forEach(function (k) {
+      var tl = Number(waktuLokal[k] || 0);
+      var j = isiJauh[k];
+      var tj = j ? Number(j.t || 0) : 0;
+      var adaLokal = lokal[k] !== undefined && lokal[k] !== null;
+      /* Seri dimenangkan yang LOKAL. Dua perangkat yang menulis dalam
+         milidetik yang sama praktis tidak pernah terjadi; yang sering terjadi
+         adalah cap yang sama karena satu perangkat baru saja menarik dari
+         yang lain - dan di situ menulis ulang cuma kerja sia-sia. */
+      if (j && tj > tl) {
+        hasil[k] = { n: j.n, t: tj };
+        ubah.push(k);
+      } else if (adaLokal) {
+        hasil[k] = { n: lokal[k], t: tl || Date.now() };
+      } else if (j) {
+        hasil[k] = { n: j.n, t: tj };
+        ubah.push(k);
+      }
+    });
+    return { kunci: hasil, ubah: ubah };
+  }
+
+  function sinkronSetelan(setelan, sarang) {
+    var idBerkas = setelan.setelanBerkasId || '';
+    var siap = idBerkas ? Promise.resolve({ id: idBerkas })
+      : TAwan.cariBerkas(setelan, BERKAS_SETELAN, sarang.folderAkar);
+    /* Kalau belum ada sama sekali, jangan dibuat DI SINI - biar tulisJson yang
+       membuatnya lewat penjaga balapannya. Membuat di dua tempat berarti
+       penjaganya cuma menjaga separuh. */
+    return siap.then(function (berkas) {
+      if (!berkas) return null;
+      return TAwan.bacaJson(setelan, berkas.id).then(function (isi) {
+        return { id: berkas.id, isi: isi };
+      }).catch(function () { return { id: berkas.id, isi: null }; });
+    }).then(function (jauh) {
+      return petaWaktu().then(function (wl) { return { jauh: jauh, wl: wl }; });
+    }).then(function (d) {
+      var jauh = d.jauh;
+      var gabung = gabungSetelan(setelan, d.wl, jauh && jauh.isi);
+      var tulisLokal = gabung.ubah.map(function (k) {
+        setelan[k] = gabung.kunci[k].n;
+        return TSimpan.setel(k, gabung.kunci[k].n);
+      });
+      return Promise.all(tulisLokal).then(function () {
+        /* Cap waktu yang datang dari jauh ditulis ulang APA ADANYA. TSimpan
+           mencapnya "sekarang" waktu menyimpan, dan kalau dibiarkan, nilai
+           yang baru saja ditarik dari HP akan terlihat lebih baru daripada
+           aslinya - lalu dia balik menimpa perubahan yang lebih baru di sana. */
+        if (!gabung.ubah.length) return null;
+        return petaWaktu().then(function (peta) {
+          gabung.ubah.forEach(function (k) { peta[k] = gabung.kunci[k].t; });
+          setelan.setelanWaktu = peta;
+          return TSimpan.setel('setelanWaktu', peta);
+        });
+      }).then(function () {
+        return TAwan.tulisJson(setelan, sarang.folderAkar, BERKAS_SETELAN,
+                               { kunci: gabung.kunci }, jauh && jauh.id);
+      }).then(function (id) {
+        if (id && id !== setelan.setelanBerkasId) return catat(setelan, 'setelanBerkasId', id);
+        return null;
+      }).then(function () { return gabung.ubah.length; });
+    });
+  }
+
+  /* ===================== TARIK =====================
+     Dulu manual, dan itu benar selama ini cuma aplikasi HP: menarik balik
+     adalah tindakan waktu ganti perangkat, bukan bagian dari hari biasa.
+
+     Dengan empat perangkat, itu berhenti benar. Catatan ditulis di laptop,
+     dibutuhkan di HP sepuluh menit kemudian - dan kalau layarnya kosong
+     sampai kamu ingat menekan tombol Pulihkan, yang terbaca bukan "belum
+     saya tarik", melainkan "datanya hilang". Sekali itu terbaca, kepercayaan
+     yang bikin orang mau menjatuhkan catatan ke sini ikut hilang.
+
+     Jadi sekarang dia jalan sendiri waktu aplikasinya dibuka. Yang TIDAK
+     berubah: dia tetap tidak pernah menyentuh jalur drop, tetap boleh gagal
+     diam-diam, dan tetap kalah oleh yang lebih baru di perangkat ini. */
   function pulihkan(setelan) {
     return rumah(setelan).then(function (sarang) {
       return TAwan.bacaSemuaBaris(setelan, sarang);
@@ -260,6 +410,49 @@
     });
   }
 
+  /* Tarik yang jalan sendiri. Bedanya dengan pulihkan(): dia MEMERIKSA DULU
+     apakah memang ada yang baru, dan berhenti kalau tidak.
+
+     Itu bukan penghematan kecil. Menarik seluruh tabel dua puluh ribu baris
+     tiap kali aplikasinya dibuka adalah ongkos yang dibayar setiap hari untuk
+     jawaban yang hampir selalu "tidak ada yang baru" - dan di HP dengan sinyal
+     seadanya, ongkos itu terasa sebagai aplikasi yang lambat dibuka. Satu
+     panggilan modifiedTime menggantikannya.
+
+     Setelan tetap disinkronkan walau tabelnya tidak berubah: menambah satu
+     folder tidak menyentuh Sheet sama sekali, jadi kalau ikut dilewati, daftar
+     folder tidak akan pernah berpindah perangkat. */
+  function tarik(setelan, paksa) {
+    if (menarik || !nyala(setelan)) return Promise.resolve(0);
+    menarik = true;
+    var sarang = null, ubah = 0;
+    return rumah(setelan).then(function (r) {
+      sarang = r;
+      return sinkronSetelan(setelan, sarang).catch(function () { return 0; });
+    }).then(function (n) {
+      ubah += (n || 0);
+      return TAwan.waktuBerkas(setelan, sarang.sheetId).catch(function () { return 0; });
+    }).then(function (waktu) {
+      var lalu = Number(setelan.tarikSampai) || 0;
+      if (!paksa && waktu && waktu <= lalu) return 0;
+      return pulihkan(setelan).then(function (n) {
+        /* Batas airnya dimajukan SESUDAH berhasil, bukan sebelum: tarikan yang
+           putus di tengah harus diulang, bukan dilewati. */
+        return catat(setelan, 'tarikSampai', waktu || Date.now()).then(function () { return n; });
+      });
+    }).then(function (n) {
+      ubah += (n || 0);
+      return catat(setelan, 'tarikGalat', '').then(function () { return ubah; });
+    }).catch(function (err) {
+      /* Diam, seperti semua yang di berkas ini. Yang di perangkat tetap utuh;
+         yang gagal cuma pertemuannya dengan perangkat lain. */
+      catat(setelan, 'tarikGalat', err.message);
+      if (global.console && console.debug) console.debug('[tarik tertunda]', err.message);
+      return ubah;
+    }).then(function (n) { menarik = false; return n; },
+            function () { menarik = false; return ubah; });
+  }
+
   function coba(setelan) {
     return rumah(setelan).then(function (sarang) {
       return TAwan.bacaSemuaBaris(setelan, sarang).then(function (b) {
@@ -269,8 +462,9 @@
   }
 
   global.TSinkron = {
-    putaran: putaran, pulihkan: pulihkan, coba: coba, rumah: rumah,
+    putaran: putaran, pulihkan: pulihkan, tarik: tarik, coba: coba, rumah: rumah,
     nyala: nyala, belumTerkirim: belumTerkirim,
-    pipihkan: pipihkan, mekarkan: mekarkan
+    pipihkan: pipihkan, mekarkan: mekarkan,
+    gabungSetelan: gabungSetelan, KUNCI_SINKRON: KUNCI_SINKRON
   };
 })(window);

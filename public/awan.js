@@ -215,20 +215,60 @@
     });
   }
 
+  /* TERTUA YANG MENANG, dan pemilihnya harus memberi jawaban yang SAMA di
+     perangkat mana pun - itu seluruh gunanya. Kalau dua perangkat memilih
+     dengan cara yang berbeda, masing-masing memakai rumah yang lain dan
+     keduanya merasa sudah beres. Waktu buat dulu; kalau seri (Drive
+     membulatkan ke detik), id-nya yang memutuskan - dia acak tapi sama-sama
+     terbaca oleh keduanya. */
+  function tertua(daftar) {
+    return (daftar || []).slice().sort(function (a, b) {
+      var ta = Date.parse(a.createdTime || '') || 0;
+      var tb = Date.parse(b.createdTime || '') || 0;
+      if (ta !== tb) return ta - tb;
+      return String(a.id) < String(b.id) ? -1 : 1;
+    })[0];
+  }
+
+  /* DUA PERANGKAT YANG PERTAMA KALI DIBUKA PADA MENIT YANG SAMA sama-sama
+     tidak menemukan apa pun, lalu sama-sama membuat. Hasilnya dua folder
+     bernama sama berisi dua spreadsheet bernama sama - dan dua perangkat yang
+     tidak akan pernah bertemu, tanpa satu pesan galat pun. Keduanya merasa
+     cadangannya jalan; yang satu tidak pernah melihat catatan yang lain.
+
+     Jadi sesudah membuat, dicari LAGI. Kalau ternyata ada yang lain, yang
+     tertua menang dan punya kita dibuang - aman, karena dia baru saja lahir
+     dan masih kosong.
+
+     pageSize sengaja lebih dari satu: dengan satu, tabrakan ini bahkan tidak
+     kelihatan. */
+  function cariSemua(setelan, nama, mime, indukId) {
+    var syarat = "name='" + nama.replace(/'/g, "\\'") + "'" +
+                 (mime ? " and mimeType='" + mime + "'" : '') +
+                 " and trashed=false" + (indukId ? " and '" + indukId + "' in parents" : '');
+    return panggil(setelan, DRIVE + '?q=' + encodeURIComponent(syarat) +
+                   '&fields=files(id,name,createdTime,modifiedTime)&pageSize=10')
+      .then(function (j) { return (j && j.files) || []; });
+  }
+
   function cariAtauBuat(setelan, nama, mime, indukId) {
-    var syarat = "name='" + nama.replace(/'/g, "\\'") + "' and mimeType='" + mime +
-                 "' and trashed=false" + (indukId ? " and '" + indukId + "' in parents" : '');
-    return panggil(setelan, DRIVE + '?q=' + encodeURIComponent(syarat) + '&fields=files(id,name)&pageSize=1')
-      .then(function (j) {
-        if (j.files && j.files.length) return j.files[0].id;
-        var badan = { name: nama, mimeType: mime };
-        if (indukId) badan.parents = [indukId];
-        return panggil(setelan, DRIVE + '?fields=id', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(badan)
-        }).then(function (b) { return b.id; });
+    return cariSemua(setelan, nama, mime, indukId).then(function (ada) {
+      if (ada.length) return tertua(ada).id;
+      var badan = { name: nama, mimeType: mime };
+      if (indukId) badan.parents = [indukId];
+      return panggil(setelan, DRIVE + '?fields=id', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(badan)
+      }).then(function (b) {
+        return cariSemua(setelan, nama, mime, indukId).then(function (lagi) {
+          if (lagi.length <= 1) return b.id;
+          var menang = tertua(lagi);
+          if (menang.id === b.id) return b.id;
+          return hapusBerkas(setelan, b.id).then(function () { return menang.id; });
+        }).catch(function () { return b.id; });
       });
+    });
   }
 
   /* ------------------------------------------------------------------ rumah */
@@ -446,6 +486,73 @@
     }).then(function (j) { return j.id; });
   }
 
+  /* ------------------------------------------------ berkas teks di Drive
+     Untuk yang bukan entri: daftar folder, gerbong, pustaka tag. Semuanya itu
+     satu objek kecil yang dibaca utuh dan ditulis utuh, jadi memaksakannya
+     masuk baris Sheet berarti satu tabel kedua yang bentuknya tidak cocok.
+     Satu berkas JSON di folder yang sama jauh lebih jujur.
+
+     Ditulis lewat PATCH kalau berkasnya sudah ada - kalau selalu POST, tiap
+     penyimpanan melahirkan berkas baru bernama sama, dan sebulan kemudian ada
+     tiga ratus salinan yang tidak ada satu pun tahu mana yang berlaku. */
+  function cariBerkas(setelan, nama, indukId) {
+    /* Lewat pemilih yang sama dengan folder dan spreadsheet: kalau dua
+       perangkat sempat sama-sama membuatnya, keduanya harus memilih salinan
+       yang sama - kalau tidak, setelan mereka berputar di dua berkas yang
+       tidak pernah bertemu. */
+    return cariSemua(setelan, nama, '', indukId).then(function (a) {
+      return a.length ? tertua(a) : null;
+    });
+  }
+
+  /* WADAHNYA DIBUAT LEWAT cariAtauBuat, isinya baru ditulis sesudahnya.
+
+     Kelihatannya berputar - kenapa tidak sekali unggah saja? Karena unggahan
+     tidak punya penjaga balapan. Dua perangkat yang sama-sama belum menemukan
+     berkas ini akan sama-sama membuatnya, dan hasilnya dua setelan.json di
+     folder yang sama: masing-masing perangkat menulis ke salinannya sendiri,
+     keduanya merasa sudah sinkron, dan daftar folder mereka tidak pernah
+     bertemu selamanya. Persis kegagalan yang paling sulit dicurigai, karena
+     tidak ada satu pun pesan galat.
+
+     cariAtauBuat sudah menyelesaikan balapan itu untuk folder dan spreadsheet;
+     lewat sini, berkas setelan ikut memakai penjaga yang sama. */
+  function tulisJson(setelan, folderId, nama, obj, idLama) {
+    var teks = JSON.stringify(obj);
+    var siapId = idLama ? Promise.resolve(idLama)
+      : cariAtauBuat(setelan, nama, 'application/json', folderId);
+    return siapId.then(function (id) {
+      var batas = '-----batas' + Math.random().toString(36).slice(2);
+      var awal = '--' + batas + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' +
+                 '{}\r\n--' + batas + '\r\nContent-Type: application/json\r\n\r\n';
+      var badan = new Blob([awal, teks, '\r\n--' + batas + '--'],
+                           { type: 'multipart/related; boundary=' + batas });
+      return panggil(setelan, UNGGAH + '/' + id + '?uploadType=multipart&fields=id', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'multipart/related; boundary=' + batas },
+        body: badan
+      }).then(function () { return id; });
+    });
+  }
+
+  function bacaJson(setelan, id) {
+    return ambilRespons(setelan, DRIVE + '/' + id + '?alt=media').then(function (r) {
+      if (!r.ok) throw new Error('Berkas tidak bisa dibaca');
+      return r.text();
+    }).then(function (t) {
+      try { return JSON.parse(t); } catch (e) { return null; }
+    });
+  }
+
+  /* Kapan berkasnya terakhir berubah - satu panggilan kecil yang menggantikan
+     pembacaan seluruh tabel. Dengan dua puluh ribu baris, menarik semuanya
+     tiap kali aplikasinya dibuka itu ongkos yang dibayar tiap hari untuk
+     jawaban yang hampir selalu "tidak ada yang baru". */
+  function waktuBerkas(setelan, id) {
+    return panggil(setelan, DRIVE + '/' + id + '?fields=modifiedTime')
+      .then(function (j) { return Date.parse((j && j.modifiedTime) || '') || 0; });
+  }
+
   function unduhBerkas(setelan, driveId) {
     return ambilRespons(setelan, DRIVE + '/' + driveId + '?alt=media').then(function (r) {
       if (!r.ok) throw new Error('Berkas tidak bisa diambil');
@@ -468,6 +575,9 @@
     tulisBaris: tulisBaris, bacaSemuaBaris: bacaSemuaBaris, hapusBaris: hapusBaris,
     unggahBerkas: unggahBerkas, unduhBerkas: unduhBerkas, hapusBerkas: hapusBerkas,
     tulisTag: tulisTag,
+    cariBerkas: cariBerkas, tulisJson: tulisJson, bacaJson: bacaJson,
+    cariSemua: cariSemua, tertua: tertua,
+    waktuBerkas: waktuBerkas,
     KOLOM: KOLOM, TAB_TAG: TAB_TAG,
     /* Cuma untuk uji: memanggil satu alamat Google lewat jalur yang sama
        dengan semua panggilan lain, supaya perlakuan 401-nya benar-benar diuji
