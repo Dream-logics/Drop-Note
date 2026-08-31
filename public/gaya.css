@@ -1005,6 +1005,23 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 .lihat-isi{
   font-size:12.5px;color:#c9ced2;margin-top:8px;line-height:1.5;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  cursor:pointer;
+}
+/* DIKETUK UNTUK TERBUKA PENUH. Teks yang dipotong "…" tanpa satu pun cara
+   membacanya lebih buruk daripada tidak ditampilkan sama sekali: yang terbaca
+   bukan "ringkas" tapi "ada yang disembunyikan dan aku tidak bisa sampai".
+   Batas tingginya tetap ada supaya caption panjang tidak menelan gambarnya -
+   yang justru kamu datangi. */
+/* DISPLAY-nya yang dikembalikan, bukan cuma line-clamp-nya. Selama kotaknya
+   masih -webkit-box, clamp-nya tetap berlaku walau nilainya dilepas - kelasnya
+   berganti, tulisannya tidak. Kelihatan bekerja kalau yang diperiksa cuma
+   kelas; ketahuan bohong begitu yang diukur tingginya. */
+.lihat-isi.penuh{
+  display:block;-webkit-line-clamp:none;max-height:38vh;overflow:auto;
+}
+.lihat-isi-lagi{
+  display:block;margin-top:4px;font-size:12px;color:var(--ap,#8ab4f8);
+  background:none;border:0;padding:0;cursor:pointer;
 }
 /* Dibaca dari KANAN, sama seperti baris tombol lain: jempol kanan bertumpu di
    sudut kanan bawah, dan inilah tindakan layar ini. */

@@ -254,10 +254,47 @@ public/pelabel.js   (lanjutan) PUSTAKA TAG: yang baru MENUNGGU di 'tagUsulan',
                     tercentang: yang ditawarkan PENOLAKAN, bukan pemilihan.
                     Yang dicabut ikut DILEPAS dari entrinya - kalau tidak, dia
                     kembali jadi usulan besok lewat entri yang sama.
-                    TAG_BENTUK sekarang ikut menolak foto/gambar/image/
-                    screenshot/kamera: 100% foto adalah foto, jadi tag itu
-                    tidak memisahkan satu pun dari dua puluh ribu saudaranya -
-                    sama gunanya dengan tag "manusia" pada seseorang
+                    TAG_BENTUK ikut menolak foto/gambar/image/screenshot/
+                    kamera: 100% foto adalah foto, jadi tag itu tidak
+                    memisahkan satu pun dari dua puluh ribu saudaranya - sama
+                    gunanya dengan tag "manusia" pada seseorang. TAPI CUMA YANG
+                    SEPERTI ITU: tag yang sekadar LUAS (Interior, Design,
+                    Modern) TETAP BOLEH, dan daftar ini tidak boleh melar ke
+                    sana. "Luas itu mubazir" adalah ukuran Google - di sana
+                    "interior" bersaing dengan satu miliar gambar, di sini
+                    dengan tiga ribu, dan menyisakan satu dari sepuluh kamar
+                    itu justru pekerjaan yang benar.
+                    bersihTag memakai \p{L}\p{N}, BUKAN [A-Za-z0-9]: yang ASCII
+                    membuang seluruh tag Rusia/Arab/Jepang secara diam-diam -
+                    tidak ditolak dengan pesan, cuma jadi string kosong lalu
+                    lenyap. Kata yang KAMU ketik milikmu, bahasa apa pun
+public/pelabel.js   (lanjutan) ARAHAN GAMBAR TERPISAH dan PENDEK (~950 karakter
+                    lawan ~9600 milik arahan label). Yang panjang bikin model
+                    kehilangan fokus, dan yang tenggelam justru drivernya -
+                    dibuktikan di lapangan: prompt tiga kalimat buatan
+                    pemakainya mengalahkan arahan dua ratus baris aplikasi ini
+                    pada gambar yang sama. Sebabnya arahan panjang itu PEMBACA
+                    DOKUMEN (faktur, KTP) yang ditempeli paragraf driver, dan
+                    isinya masih menyuruh "sebutkan jenis dokumennya" dan
+                    "jangan menafsirkan" - dua perintah yang bertabrakan
+                    langsung dengan sudut pandang.
+                    Yang memilih arahan BUKAN jenis berkasnya, tapi ADA/TIDAKNYA
+                    DRIVER: driver berarti foto referensi (arahan pendek);
+                    tanpa driver biasanya tangkapan layar faktur (pembaca
+                    dokumen yang teliti).
+                    SEPULUH TAG DUA LAPIS: 5 luas (menaruhnya di kamar yang
+                    benar) + 5 sempit (memisahkannya di dalam kamar). Satu tag
+                    tidak bisa mengerjakan keduanya, dan "sebanyak yang
+                    benar-benar ada" menghasilkan enam tag bubur. SATU TAG SATU
+                    KATA - tanpa itu "kamar tidur" pecah jadi #kamar dan #tidur
+                    yang keduanya lumpuh sendirian.
+                    KATA DRIVER JADI TAG LEWAT KODE (kataDriver), bukan lewat
+                    permintaan: itu satu-satunya teks yang lahir dari kepalanya,
+                    dan kalau AI kebetulan tidak memakainya, kata yang paling
+                    pasti dia ingat justru yang hilang.
+                    Pustaka tag menyeragamkan EJAAN saja, tidak pernah memasok
+                    konsep - waktu dia boleh memasok, yang keluar #dapur untuk
+                    foto kamar tidur
 public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
                     ulang, langkah, catatan, penanda BELUM DIBACA.
                     SATU daftar, tidak dibagi bagian "Berulang" lagi - Berulang
@@ -483,7 +520,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (705 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (721 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
