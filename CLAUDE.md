@@ -94,8 +94,11 @@ terpikir, dan itu membatalkan seluruh gunanya.
 ```
 public/index.html   kerangka semua layar (mulai, utama/Drop, tulis/Note,
                     tugas/To Do, note/Storage, catat, setelan).
-                    EMPAT pintu di kepala: Drop - Note - To Do - Storage,
-                    digambar dari alur.js ke <div data-tab>
+                    LIMA pintu di kepala: Drop - Note - To Do - Storage -
+                    Gallery, digambar dari alur.js ke <div data-tab>.
+                    Lima nama tidak muat bersama ikonnya di HP, jadi IKONNYA
+                    yang pergi di bawah 480px - nama pintu tidak pernah boleh
+                    terpotong
                     TIDAK ADA layar hasil dan TIDAK ADA tombol Cari: kotak drop
                     itu sendiri pencariannya, hasilnya di bawahnya
                     Layar tulis didatangi dari hasil pencarian DAN dari
@@ -115,8 +118,8 @@ public/bahasa.js    LAPISAN bahasa, bukan pengganti. Teks tetap ditulis
                     Kuncinya kalimat Indonesianya SENDIRI - bukan kunci
                     simbolis - supaya kodenya tetap terbaca apa adanya.
                     BAWAANNYA INGGRIS. Yang TIDAK PERNAH diterjemahkan: nama
-                    pintu (Drop/Note/To Do/Storage), nama aplikasi, dan apa pun
-                    yang ditulis pemakainya - dijaga penanda data-asli. Uji
+                    pintu (Drop/Note/To Do/Storage/Gallery), nama aplikasi, dan apa
+                    pun yang ditulis pemakainya - dijaga penanda data-asli. Uji
                     terimanya MENYAPU tiap layar mencari sisa kalimat
                     Indonesia; menambah kalimat baru tanpa terjemahannya akan
                     gagal di sana.
@@ -140,6 +143,22 @@ public/pelabel.js   satu-satunya bagian ber-AI: judul + elemen + tag + OCR,
                     Obrolan menjawab teks biasa, BUKAN JSON seperti yang lain,
                     dan karakternya asisten pribadi (ARAHAN_OBROL): seimbang
                     dengan pertanyaannya, SATU rekomendasi bukan daftar pilihan
+public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
+                    untuk timbunan terbesar: foto. Isinya SEMUA entri
+                    berjenis 'gambar' yang sudah ada, jadi tiap tangkapan layar
+                    yang kamu drop mendarat di sini sendiri - tidak ada satu
+                    keputusan pun ditambahkan di jalur masuk. Albumnya daftar
+                    SENDIRI ('folderGaleri'), dibuat tangan, bertingkat lewat
+                    awalan nama, kolomnya 'album' - BUKAN menumpang 'folder'
+                    milik Note. Saringannya SUMBER ('sumber': kamera/unggah/
+                    kosong=drop), bukan jenis: di layar ini semuanya gambar.
+                    Kamera dan unggahan menyimpan LANGSUNG jadi entri di album
+                    yang sedang dibuka, bukan jadi lampiran kotak Drop. Di akar
+                    tampil album saja - KECUALI kalau belum ada satu album pun,
+                    karena satu baris "Belum beralbum" yang menyembunyikan dua
+                    puluh ribu foto adalah dinding tanpa alasan. Dok kameranya
+                    PERGI selama memilih: dia duduk di sudut yang sama dengan
+                    bilah pilih dan akan menutupi Batal
 public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
                     ulang, langkah, catatan, penanda BELUM DIBACA.
                     SATU daftar, tidak dibagi bagian "Berulang" lagi - Berulang
@@ -319,7 +338,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (614 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (633 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

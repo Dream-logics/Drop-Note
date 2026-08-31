@@ -524,13 +524,20 @@ a.elemen-nilai{color:var(--a);text-decoration:none}
   border-bottom:2px solid transparent;margin-bottom:-1px;
 }
 .tab .ik{width:16px;height:16px}
-/* Layar yang benar-benar sempit (320px, HP lama) mundur satu tingkat. Nama
-   pintu yang terpotong lebih buruk daripada nama pintu yang sedikit kecil. */
-@media (max-width: 344px){
-  .tab{font-size:12.5px;gap:0}
-  /* Ikonnya yang mengalah, bukan namanya: ikon tanpa nama masih bisa ditebak
-     salah, nama yang terpotong tidak memberitahu apa pun. */
+/* LIMA PINTU BERARTI IKONNYA PERGI DI HP. Empat pintu masih muat bersama
+   ikonnya di 412px; yang kelima memotong "Storage" jadi "Stor…" - dan pintu
+   bernama "Stor…" tidak memberitahu apa pun.
+
+   Yang mengalah ikonnya, bukan namanya, dan itu bukan pilihan yang berat:
+   ikon tanpa nama masih bisa ditebak salah, nama tanpa ikon tidak pernah.
+   Ikonnya tetap digambar di layar lebar - dia tidak memakan apa pun di sana. */
+@media (max-width: 480px){
   .tab .ik{display:none}
+  .tab{gap:0}
+}
+/* Layar yang benar-benar sempit (320px, HP lama) mundur satu tingkat lagi. */
+@media (max-width: 344px){
+  .tab{font-size:12.5px}
 }
 .tab.nyala{color:var(--a);border-bottom-color:var(--a);font-weight:700}
 
@@ -1279,3 +1286,76 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 .folder-balik:active{background:color-mix(in srgb, var(--a) 12%, transparent)}
 .folder-balik .ik{width:20px;height:20px;stroke-width:2.2}
 .note-jejak-induk{font-size:12px;color:var(--m);margin-right:4px}
+
+
+
+/* ===================== LAYAR GALLERY =====================
+   Bentuknya menyalin layar Note - jejak folder, kotak cari, "+ Folder" - dan
+   itu disengaja: yang sudah dipelajari jari di satu layar tidak boleh harus
+   dipelajari ulang di layar sebelahnya. Yang ditambahkan cuma yang memang
+   cuma ada di sini. */
+
+/* SATU BARIS untuk saringan dan tampilan. Dua baris terpisah mendorong gambar
+   pertama ke bawah layar - dan gambar pertama itu yang dicari. Saringannya
+   yang menggulir kalau kepanjangan; tombol tampilan tidak pernah ikut hanyut,
+   karena dialah yang paling sering ditekan berulang. */
+.galeri-baris{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 12px 8px;border-bottom:1px solid var(--l);
+}
+.galeri-saring{
+  display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+}
+.galeri-saring::-webkit-scrollbar{display:none}
+.galeri-saring .cip{flex:0 0 auto}
+/* Angkanya BERSEBELAHAN, bukan menumpang di atas seperti di layar Drop. Di
+   sana cipnya ikon telanjang, jadi angkanya harus melayang di atasnya; di sini
+   cipnya bertuliskan kata, dan angka yang menempel tanpa jarak terbaca sebagai
+   satu kata ("Semua5"). */
+.galeri-saring .cip-angka{
+  margin-left:5px;font-size:11px;font-weight:700;color:var(--m);
+  font-variant-numeric:tabular-nums;
+}
+.galeri-saring .cip.nyala .cip-angka{color:var(--a)}
+.galeri-tampil{display:flex;gap:2px;flex:0 0 auto}
+
+/* Dua tombol bulat, dibaca dari KANAN: memotret lebih sering daripada
+   mengunggah yang sudah ada, jadi kameranya duduk paling kanan - tepat di
+   tempat jempol kanan sudah bertumpu. Yang kiri lebih kecil dan beralas
+   permukaan: dia pilihan kedua, dan bentuknya mengatakan itu. */
+.galeri-dok{
+  position:fixed;right:16px;z-index:30;
+  bottom:calc(16px + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:10px;
+}
+.galeri-tbl{
+  width:48px;height:48px;border-radius:24px;
+  border:1px solid var(--l);background:var(--p);color:var(--i);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  box-shadow:0 2px 10px rgba(0,0,0,.10);
+}
+.galeri-tbl .ik{width:22px;height:22px}
+.galeri-tbl.utama{
+  width:56px;height:56px;border-radius:28px;
+  background:var(--a);border-color:var(--a);color:var(--at);
+  box-shadow:0 4px 14px rgba(0,0,0,.18);
+}
+.galeri-tbl.utama .ik{width:26px;height:26px}
+.galeri-tbl:active{transform:scale(.94)}
+/* SELAMA MEMILIH, DOKNYA PERGI. Dia melayang di sudut yang sama dengan bilah
+   pilih, jadi tombol kameranya menutupi Batal - dan yang terjadi: kamu memilih
+   sepuluh gambar lalu tidak punya satu pun jalan keluar kecuali memotret. Lagi
+   pula sedang memilih berarti niatnya membereskan yang sudah ada, bukan
+   menambah yang baru. */
+#l-galeri.mode-pilih .galeri-dok{display:none}
+
+/* Doknya melayang di atas isinya, jadi petak terakhir harus punya ruang untuk
+   lewat di bawahnya - kalau tidak, gambar paling bawah tidak pernah bisa
+   ditekan. */
+#galeri-isi{padding-bottom:88px}
+
+/* Petak di layar ini BISA DIPILIH, jadi dia ikut memakai penanda .kartu -
+   dan penanda terpilihnya harus terlihat di atas gambar, bukan di belakangnya. */
+.petak-satu.dipilih{outline:3px solid var(--a);outline-offset:-3px;border-radius:10px}
+.petak-satu.dipilih img{opacity:.72}

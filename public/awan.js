@@ -241,7 +241,7 @@
                'dibuat', 'diubah', 'dipakai', 'diLabeliAI', 'pensiun', 'dihapus', 'riwayat',
                'tag', 'elemen', 'rahasia', 'elemenTerkunci',
                'selesai', 'selesaiPada', 'penting', 'hariIni', 'tenggat', 'ulang',
-               'pin', 'rakLepas'];
+               'pin', 'rakLepas', 'album', 'sumber'];
 
   /* Lewat 26 kolom, Sheets memakai dua huruf (AA, AB, ...). Menghitungnya
      dengan satu fromCharCode menghasilkan '[' dan seluruh cadangan gagal
