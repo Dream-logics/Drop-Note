@@ -320,7 +320,15 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     mendorong dok naik dan layarnya bergoyang di bawah jempol.
                     Saringan itu ikon telanjang, angkanya menumpang DI ATAS
                     ikon (dipatok di kanan, jadi ratusan tumbuh ke KIRI); yang
-                    nol tidak digambar. Reset cip PALING KANAN, sebelah Pin -
+                    nol tidak digambar.
+                    CIP GAMBAR ITU PINTU, bukan saringan: dia membuka Gallery
+                    sambil membawa ketikannya (atau nama rak yang aktif). Layar
+                    Drop TIDAK lagi menggambar petak gambar sama sekali - dua
+                    tempat yang menggambar petak yang sama berarti perbaikan di
+                    satu tempat tidak sampai ke tempat lain, dan yang di Drop
+                    selalu yang lebih miskin. Bentuknya bergaris putus-putus,
+                    kosakata yang di aplikasi ini sudah berarti "jalan pintas,
+                    bukan keadaan" (sama dengan Reset dan "+ Folder"). Reset cip PALING KANAN, sebelah Pin -
                     jangan naikkan lagi ke kepala, itu ujung terjauh dari
                     jempol. Angka "N tersimpan" sudah dibuang dan jangan
                     dikembalikan.
