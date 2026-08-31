@@ -1805,7 +1805,12 @@
   }
 
   function simpanFolder() {
-    return TSimpan.setel('folderNote', JSON.stringify(folderDaftar));
+    /* Salinan di memori ikut disegarkan: dialah yang dibaca sinkron waktu
+       menyusun apa yang naik, dan salinan yang basi mengirim daftar folder
+       versi kemarin ke perangkat lain. */
+    setelanSaat.folderNote = JSON.stringify(folderDaftar);
+    return TSimpan.setel('folderNote', setelanSaat.folderNote)
+      .then(function (r) { sundulNaik(); return r; });
   }
 
   /* ===================== TINGKAT FOLDER NOTE =====================
@@ -2263,7 +2268,9 @@
   }
 
   function simpanAlbum() {
-    return TSimpan.setel('folderGaleri', JSON.stringify(albumDaftar));
+    setelanSaat.folderGaleri = JSON.stringify(albumDaftar);
+    return TSimpan.setel('folderGaleri', setelanSaat.folderGaleri)
+      .then(function (r) { sundulNaik(); return r; });
   }
 
   function tambahAlbum(nama) {
@@ -4780,7 +4787,7 @@
 
   function simpanSetelan(kunci, nilai) {
     setelanSaat[kunci] = nilai;
-    return TSimpan.setel(kunci, nilai);
+    return TSimpan.setel(kunci, nilai).then(function (r) { sundulNaik(); return r; });
   }
 
   function pasangSetelan() {
@@ -4828,9 +4835,18 @@
     var pulih = $('#b-pulihkan');
     if (pulih) pulih.addEventListener('click', function () {
       pulih.textContent = 'Menarik…';
-      TSinkron.pulihkan(setelanSaat).then(function (n) {
+      /* Lewat tarik(), bukan pulihkan() langsung: yang manual pun harus ikut
+         membawa daftar folder dan gerbong. Dipaksa, karena menekan tombol ini
+         berarti kamu memang tidak percaya pada penahan waktunya. */
+      TSinkron.tarik(setelanSaat, true).then(function (n) {
         pulih.textContent = 'Pulihkan dari Drive';
+        muatFolder(setelanSaat);
+        muatAlbum(setelanSaat);
+        muatObrolan(setelanSaat);
+        muatEkor(setelanSaat);
         return muatSemua().then(function () {
+          gambarSetelan();
+          segarkanTampilan();
           pesan(n ? n + ' catatan dipulihkan' : 'Tidak ada yang perlu dipulihkan');
         });
       }, function (err) {
@@ -5022,6 +5038,11 @@
   function sundulLabel() {
     clearTimeout(sundulan);
     sundulan = setTimeout(putaranLabel, JEDA_SUNDUL);
+    /* Menumpang di sini, dan sengaja: tiap tempat yang menulis entri sudah
+       memanggil ini. Menitipkan dorongan sinkron ke masing-masing berarti satu
+       tempat pasti terlupa - dan yang terlupa itu catatan yang tidak pernah
+       sampai ke perangkat lain, tanpa satu tanda pun bahwa dia tertinggal. */
+    sundulNaik();
   }
 
   function putaranLabel() {
@@ -5041,7 +5062,13 @@
       return muatSemua();
     }).then(function () {
       if (layarSaat === 'l-setelan') perbaruiStatusSetelan();
-      segarkanTampilan();
+      /* TIDAK menggambar ulang daftarnya. Dulu boleh, karena dorongan cuma
+         jalan tiap setengah jam; sekarang dia berangkat delapan detik sesudah
+         tiap perubahan, dan menggambar ulang daftar hasil di tengah jempolmu
+         sedang menggeser kartu berarti kartunya lenyap di tengah gerakan.
+         Lagi pula tidak ada yang perlu digambar: mendorong tidak mengubah satu
+         pun yang kelihatan - yang berubah cuma berkasId jadi driveId. Yang
+         MENARIK memang mengubah isinya, dan dia menggambar ulang sendiri. */
       /* Entri yang sedang dibuka ikut disegarkan, kalau dia belum disunting. */
       if (entriCatat) {
         var segar = null;
@@ -5052,6 +5079,60 @@
         }
       }
     }).catch(function () { /* cadangan gagal bukan kabar buruk buat pemakainya */ });
+  }
+
+  /* ===================== SINKRON EMPAT PERANGKAT =====================
+     HP, tablet, laptop, PC. Selama ini awan cuma brankas - satu arah, dan
+     menarik balik adalah tombol manual untuk hari kamu ganti perangkat. Itu
+     benar waktu ini aplikasi HP; begitu perangkatnya empat, dia salah bentuk.
+
+     Yang terjadi kalau dibiarkan: kamu menulis di laptop, membuka HP sepuluh
+     menit kemudian, dan layarnya kosong. Yang terbaca bukan "belum saya
+     tarik" - yang terbaca "datanya hilang". Sekali itu terbaca, kepercayaan
+     yang bikin orang mau menjatuhkan catatan ke sini ikut hilang, dan itu
+     satu-satunya hal yang menentukan aplikasi ini hidup atau mati.
+
+     TIGA PEMICU, dan tidak satu pun di jalur drop:
+     1. Waktu aplikasinya dibuka.
+     2. Waktu kamu kembali ke tab ini dari aplikasi lain. Di HP, aplikasi PWA
+        hampir tidak pernah benar-benar ditutup - dia cuma ditinggal. Tanpa
+        pemicu ini, "dibuka" bisa berarti seminggu yang lalu.
+     3. Beberapa detik sesudah kamu mengubah sesuatu (dorong, bukan tarik).
+
+     Yang ketiga itu yang bikin terasa sinkron dan bukan cadangan: begitu
+     tulisannya selesai, dia sudah di awan sebelum kamu sempat mengangkat
+     perangkat berikutnya. */
+  var JEDA_DORONG = 8000;
+  var dorongan = null;
+  var tarikTerakhir = 0;
+  var JEDA_TARIK = 60000;   /* pindah tab bolak-balik tidak memanggil tabelnya berkali-kali */
+
+  function sundulNaik() {
+    if (!TSinkron.nyala(setelanSaat)) return;
+    clearTimeout(dorongan);
+    dorongan = setTimeout(putaranCadangan, JEDA_DORONG);
+  }
+
+  function tarikSinkron(paksa) {
+    if (!TSinkron.nyala(setelanSaat)) return Promise.resolve(0);
+    if (!paksa && Date.now() - tarikTerakhir < JEDA_TARIK) return Promise.resolve(0);
+    tarikTerakhir = Date.now();
+    return TSinkron.tarik(setelanSaat).then(function (n) {
+      if (!n) return 0;
+      /* Yang turun dari awan mengubah daftar folder dan gerbong juga, bukan
+         cuma entri - jadi salinan di memori dimuat ulang seluruhnya sebelum
+         layarnya digambar. Menggambar dari salinan lama memperlihatkan
+         catatan baru di rak yang sudah tidak ada. */
+      muatFolder(setelanSaat);
+      muatAlbum(setelanSaat);
+      muatObrolan(setelanSaat);
+      muatEkor(setelanSaat);
+      return muatSemua().then(function () {
+        segarkanTampilan();
+        if (layarSaat === 'l-setelan') gambarSetelan();
+        return n;
+      });
+    }).catch(function () { return 0; });
   }
 
   /* ===================== bagikan & pemasangan ===================== */
@@ -5858,10 +5939,13 @@
         return;
       }
       /* Di HP, aplikasi jarang benar-benar ditutup - dia cuma ditinggal.
-         Jadi "dibuka lagi" dihitung sebagai pembukaan, dan cadangannya
-         menyusul di situ. TSinkron sendiri yang menahan supaya tidak
-         menembak berulang dalam satu sesi. */
+         Jadi "dibuka lagi" dihitung sebagai pembukaan: didorong yang belum
+         naik, DAN ditarik yang baru dari perangkat lain. Yang kedua itu yang
+         menentukan waktu perangkatnya empat - kamu menulis di laptop lalu
+         mengangkat HP, dan HP-nya tidak pernah benar-benar dibuka ulang.
+         Keduanya punya penahannya sendiri supaya tidak menembak berulang. */
       putaranCadangan();
+      tarikSinkron();
     });
   }
 
@@ -5938,6 +6022,11 @@
 
       putaranLabel();
       putaranCadangan();
+      /* Ditarik di pembukaan, dan dipaksa: ini satu-satunya saat kita benar
+         benar tahu perangkat lain mungkin sudah menulis sesuatu sejak terakhir
+         kali layar ini hidup. Penahan satu menit berlaku untuk pemicu
+         berikutnya, bukan untuk yang ini. */
+      tarikSinkron(true);
       setInterval(putaranLabel, PUTARAN_LABEL);
     }).catch(function (err) {
       pesan('Penyimpanan tidak bisa dibuka: ' + err.message);
@@ -5972,6 +6061,7 @@
     dropObrolanUji: dropObrolan,
     jenisEfektifUji: jenisEfektif,
     taruhDriverUji: taruhDriver,
+    tarikSinkronUji: tarikSinkron,
     semuaEntri: function () { return semuaEntri; }
   };
 })(window);

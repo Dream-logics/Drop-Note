@@ -5308,6 +5308,240 @@ console.log('\ndriver: satu foto, puluhan sudut pandang');
       JSON.stringify(kolomDriver.slice(-3)));
 }
 
+const TBAWAAN_NAMA = await hal.evaluate(() => TBawaan.nama);
+console.log('\nsinkron empat perangkat');
+{
+  /* HP, tablet, laptop, PC. Selama ini awan cuma brankas - satu arah, dan
+     menarik balik adalah tombol manual untuk hari kamu ganti perangkat. Itu
+     benar waktu ini aplikasi HP; begitu perangkatnya empat, dia salah bentuk.
+
+     Yang diuji di sini PERANGKAT KEDUA YANG SUNGGUHAN: konteks browser
+     terpisah, IndexedDB-nya sendiri, cuma berbagi Drive palsu yang sama.
+     Menguji dua perangkat di dalam satu halaman tidak bisa melihat satu pun
+     kegagalan yang benar-benar terjadi di lapangan - keduanya akan memakai
+     penyimpanan yang sama, dan yang diuji cuma dirinya sendiri. */
+  const konteks2 = await browser.newContext();
+  await konteks2.addInitScript(STUB_GIS);
+  const hal2 = await konteks2.newPage();
+  hal2.on('pageerror', (e) => galat.push('[perangkat 2] ' + e.message));
+  await hal2.route('**', async (rute) => {
+    const permintaan = rute.request();
+    const u = permintaan.url();
+    if (u.startsWith('http://127.0.0.1:' + port)) return rute.continue();
+    if (/googleapis\.com/.test(u)) {
+      return rute.fulfill(google.tangani(u, permintaan.method(), permintaan.postData()));
+    }
+    return rute.abort();
+  });
+  await hal2.goto(alamat);
+  await hal2.waitForFunction(() => window.TAlur && window.TSinkron);
+  await hal2.evaluate(() => Promise.all([
+    TSimpan.setel('bahasa', 'id'), TSimpan.setel('dipasang', 1),
+    TSimpan.setel('cadanganNyala', 1)
+  ]));
+  await hal2.reload();
+  await hal2.waitForFunction(() => window.TAlur && window.TSinkron);
+  await hal2.waitForTimeout(700);
+
+  const dorong = (p) => p.evaluate(() => TSinkron.putaran(TAlur.setelanUji(), true));
+  const tarik = (p) => p.evaluate(() => TAlur.tarikSinkronUji(true));
+  const punya = (p, judul) => p.evaluate((j) => TAlur.semuaEntri()
+    .some((e) => e.judul === j && !e.dihapus), judul);
+  const setelanDi = (p, k) => p.evaluate((k) => TAlur.setelanUji()[k], k);
+
+  await hal.evaluate(() => Promise.all([
+    TSimpan.setel('cadanganNyala', 1),
+    TSimpan.setel('folderNote', JSON.stringify(['Sinkronuji'])),
+    TSimpan.setel('gerbong', 'Ujigerbong = ujikata')
+  ]));
+  await hal.evaluate(() => {
+    const s = TAlur.setelanUji();
+    s.cadanganNyala = 1;
+    s.folderNote = JSON.stringify(['Sinkronuji']);
+    s.gerbong = 'Ujigerbong = ujikata';
+  });
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(400);
+  await hal.fill('#kotak', 'Catatan dari perangkat satu');
+  await hal.click('#b-drop');
+  await hal.waitForTimeout(700);
+  await dorong(hal);
+
+  /* SATU RUMAH, BUKAN DUA. Dua perangkat yang pertama kali dibuka pada menit
+     yang sama sama-sama tidak menemukan apa pun, lalu sama-sama membuat -
+     hasilnya dua folder bernama sama dan dua perangkat yang tidak akan pernah
+     bertemu, tanpa satu pesan galat pun. Keduanya merasa cadangannya jalan. */
+  await tarik(hal2);
+  const rumah1 = await setelanDi(hal, 'sheetId');
+  const rumah2 = await setelanDi(hal2, 'sheetId');
+  cek('dua perangkat memakai satu rumah yang sama di Drive',
+      !!rumah1 && rumah1 === rumah2, rumah1 + ' vs ' + rumah2);
+  cek('dan folder aplikasinya cuma satu, tidak beranak',
+      [...google.berkas.values()].filter((f) => f.name === TBAWAAN_NAMA).length === 1,
+      JSON.stringify([...google.berkas.values()].map((f) => f.name)));
+
+  cek('catatan dari perangkat pertama sampai ke perangkat kedua',
+      await punya(hal2, 'Catatan dari perangkat satu'));
+
+  /* ALAMATNYA IKUT PINDAH, BUKAN CUMA CATATANNYA. Catatan yang sampai di
+     laptop TANPA RAKNYA jatuh semua ke "Belum berlabel" - dan yang terbaca di
+     situ bukan "raknya belum ikut", melainkan "aplikasinya kacau". */
+  cek('daftar folder ikut berpindah, bukan cuma entrinya',
+      String(await setelanDi(hal2, 'folderNote')).indexOf('Sinkronuji') >= 0,
+      String(await setelanDi(hal2, 'folderNote')));
+  cek('gerbong ikut berpindah juga',
+      String(await setelanDi(hal2, 'gerbong')).indexOf('Ujigerbong') >= 0,
+      String(await setelanDi(hal2, 'gerbong')));
+
+  /* DUA ARAH. Yang ditulis di perangkat kedua harus kembali ke yang pertama -
+     tanpa itu ini masih cadangan, cuma dengan tombol yang lebih rajin. */
+  await hal2.fill('#kotak', 'Catatan dari perangkat dua');
+  await hal2.click('#b-drop');
+  await hal2.waitForTimeout(700);
+  await dorong(hal2);
+  await tarik(hal);
+  cek('dan yang ditulis di perangkat kedua kembali ke yang pertama',
+      await punya(hal, 'Catatan dari perangkat dua'));
+
+  /* TARIKAN YANG TIDAK MENEMUKAN APA-APA HARUS MURAH. Menarik seluruh tabel
+     dua puluh ribu baris tiap kali aplikasinya dibuka adalah ongkos yang
+     dibayar setiap hari untuk jawaban yang hampir selalu "tidak ada yang
+     baru" - dan di HP dengan sinyal seadanya, itu terasa sebagai aplikasi
+     yang lambat dibuka. */
+  const sebelumTarik = google.negara.panggilan;
+  const kosong = await tarik(hal);
+  cek('tarikan yang tidak menemukan apa-apa berhenti tanpa membaca tabelnya',
+      kosong === 0 && (google.negara.panggilan - sebelumTarik) <= 5,
+      kosong + ' perubahan, ' + (google.negara.panggilan - sebelumTarik) + ' panggilan');
+
+  /* DUA PERANGKAT MENAMBAH DAFTAR YANG BERBEDA, dan keduanya harus selamat.
+     Kalau seluruh berkas yang menang, menambah satu folder di HP menghapus
+     gerbong yang baru kamu tulis di laptop lima menit sebelumnya - dan dengan
+     empat perangkat, kekalahan seperti itu terjadi tiap minggu. */
+  await hal.evaluate(() => TSimpan.setel('gerbong', 'Ujigerbong = ujikata\nKeduauji')
+    .then(() => { TAlur.setelanUji().gerbong = 'Ujigerbong = ujikata\nKeduauji'; }));
+  await hal2.evaluate(() => TSimpan.setel('folderNote', JSON.stringify(['Sinkronuji', 'Duauji']))
+    .then(() => { TAlur.setelanUji().folderNote = JSON.stringify(['Sinkronuji', 'Duauji']); }));
+  await hal.waitForTimeout(200);
+  await tarik(hal); await tarik(hal2); await tarik(hal);
+  const gerbong1 = String(await setelanDi(hal, 'gerbong'));
+  const folder1 = String(await setelanDi(hal, 'folderNote'));
+  const gerbong2 = String(await setelanDi(hal2, 'gerbong'));
+  const folder2 = String(await setelanDi(hal2, 'folderNote'));
+  cek('perubahan dari dua perangkat sama-sama selamat, menangnya per kunci',
+      gerbong1.indexOf('Keduauji') >= 0 && folder1.indexOf('Duauji') >= 0 &&
+      gerbong2.indexOf('Keduauji') >= 0 && folder2.indexOf('Duauji') >= 0,
+      JSON.stringify([gerbong1, folder1, gerbong2, folder2]));
+
+  /* BERKAS SETELANNYA CUMA SATU. Kalau dua, masing-masing perangkat menulis ke
+     salinannya sendiri, keduanya merasa sudah sinkron, dan daftar folder
+     mereka tidak pernah bertemu selamanya - tanpa satu pesan galat pun. */
+  cek('berkas setelan di Drive cuma satu, tidak beranak tiap penyimpanan',
+      [...google.berkas.values()].filter((f) => f.name === 'setelan.json').length === 1,
+      String([...google.berkas.values()].filter((f) => f.name === 'setelan.json').length));
+
+  /* SESI TIDAK BOLEH MENULAR. albumLengket itu KENYATAAN FISIK - kamu sedang
+     berdiri di masjid dengan HP di tangan. Menularkannya ke PC di kantor
+     berarti foto yang diunggah di sana mendarat di album survey yang tidak ada
+     hubungannya, dan salah alamat tidak pernah kamu curigai. */
+  await hal.evaluate(() => Promise.all([
+    TSimpan.setel('albumLengket', 'Interior Lampuuji'),
+    TSimpan.setel('driverLengket', 'interior mesjid'),
+    TSimpan.setel('gayaGaleri', 'besar')
+  ]));
+  await hal.waitForTimeout(200);
+  await tarik(hal); await tarik(hal2);
+  cek('sesi jepretan tidak ikut berpindah perangkat',
+      !(await setelanDi(hal2, 'albumLengket')) && !(await setelanDi(hal2, 'driverLengket')),
+      JSON.stringify([await setelanDi(hal2, 'albumLengket'),
+                      await setelanDi(hal2, 'driverLengket')]));
+  cek('dan ukuran petak tetap milik perangkatnya sendiri',
+      !(await setelanDi(hal2, 'gayaGaleri')),
+      String(await setelanDi(hal2, 'gayaGaleri')));
+
+  /* YANG LEBIH BARU DI PERANGKAT INI TIDAK BOLEH MUNDUR. Menarik tidak pernah
+     boleh memundurkan tulisan yang belum sempat naik. */
+  await hal2.evaluate(async () => {
+    const e = TAlur.semuaEntri().filter((x) => x.judul === 'Catatan dari perangkat satu')[0];
+    e.judul = 'Disunting di perangkat dua'; e.diubah = Date.now();
+    await TSimpan.taruh(e); await TAlur.muatUlangUji();
+  });
+  await dorong(hal2);
+  await hal.evaluate(async () => {
+    const e = TAlur.semuaEntri().filter((x) => /perangkat satu|perangkat dua/.test(x.judul || ''))
+      .filter((x) => x.judul !== 'Catatan dari perangkat dua')[0];
+    e.judul = 'Disunting di perangkat satu'; e.diubah = Date.now() + 9000;
+    await TSimpan.taruh(e); await TAlur.muatUlangUji();
+  });
+  await tarik(hal);
+  cek('suntingan yang lebih baru di perangkat ini tidak dimundurkan tarikan',
+      await punya(hal, 'Disunting di perangkat satu'),
+      JSON.stringify(await hal.evaluate(() => TAlur.semuaEntri()
+        .filter((e) => /Disunting|perangkat/.test(e.judul || '')).map((e) => e.judul))));
+
+  /* PERANGKAT KETIGA YANG KOSONG SAMA SEKALI. Ini yang sebenarnya diuji: buka
+     aplikasinya di PC yang belum pernah dipakai, dan semuanya sudah ada -
+     tanpa satu tombol pun ditekan. */
+  const konteks3 = await browser.newContext();
+  await konteks3.addInitScript(STUB_GIS);
+  const hal3 = await konteks3.newPage();
+  hal3.on('pageerror', (e) => galat.push('[perangkat 3] ' + e.message));
+  await hal3.route('**', async (rute) => {
+    const permintaan = rute.request();
+    const u = permintaan.url();
+    if (u.startsWith('http://127.0.0.1:' + port)) return rute.continue();
+    if (/googleapis\.com/.test(u)) {
+      return rute.fulfill(google.tangani(u, permintaan.method(), permintaan.postData()));
+    }
+    return rute.abort();
+  });
+  await hal3.goto(alamat);
+  await hal3.waitForFunction(() => window.TAlur && window.TSinkron);
+  await hal3.evaluate(() => Promise.all([
+    TSimpan.setel('bahasa', 'id'), TSimpan.setel('dipasang', 1),
+    TSimpan.setel('cadanganNyala', 1)
+  ]));
+  /* Dimuat ulang, lalu DIDIAMKAN: tarikannya harus berangkat sendiri di
+     pembukaan. Kalau harus dipanggil dari uji, berarti di lapangan pun harus
+     ditekan sendiri - dan itu persis keadaan yang sedang diperbaiki. */
+  await hal3.reload();
+  await hal3.waitForFunction(() => window.TAlur && window.TSinkron);
+  await hal3.waitForTimeout(3000);
+  cek('perangkat yang belum pernah dipakai terisi sendiri waktu dibuka',
+      await punya(hal3, 'Catatan dari perangkat dua'),
+      JSON.stringify(await hal3.evaluate(() => TAlur.semuaEntri().map((e) => e.judul))));
+  cek('lengkap dengan folder dan gerbongnya, tanpa satu tombol pun ditekan',
+      String(await setelanDi(hal3, 'folderNote')).indexOf('Duauji') >= 0 &&
+      String(await setelanDi(hal3, 'gerbong')).indexOf('Keduauji') >= 0,
+      JSON.stringify([await setelanDi(hal3, 'folderNote'), await setelanDi(hal3, 'gerbong')]));
+  cek('dan rumahnya tetap satu walau perangkatnya sudah tiga',
+      [...google.berkas.values()].filter((f) => f.name === TBAWAAN_NAMA).length === 1);
+
+  /* Cap waktu dicatat di corong tulisannya, bukan di tiap pemanggil - ada
+     belasan tempat yang menulis setelan, dan yang terlupa diam-diam kalah
+     terus di perangkat lain. */
+  const capnya = await hal.evaluate(() => TSimpan.setelan('setelanWaktu'));
+  cek('tiap setelan punya cap waktunya sendiri, dicatat di corong tulisannya',
+      capnya && typeof capnya === 'object' && capnya.gerbong > 0 && capnya.folderNote > 0,
+      JSON.stringify(capnya && Object.keys(capnya)));
+
+  await konteks3.close();
+  await konteks2.close();
+  await hal.evaluate(() => Promise.all([
+    TSimpan.setel('cadanganNyala', ''),
+    TSimpan.setel('albumLengket', ''), TSimpan.setel('driverLengket', '')
+  ]));
+  await hal.evaluate(() => {
+    const s = TAlur.setelanUji();
+    s.cadanganNyala = ''; s.albumLengket = ''; s.driverLengket = '';
+  });
+  await hal.evaluate(() => Promise.all(TAlur.semuaEntri()
+    .filter((e) => /perangkat|Disunting/.test(e.judul || ''))
+    .map((e) => { e.pensiun = true; return TSimpan.taruh(e); })));
+  await hal.evaluate(() => TAlur.muatUlangUji());
+  await hal.waitForTimeout(300);
+}
+
 console.log('\nnama cuma kulit');
 {
   const berkasKode = ['bawaan.js', 'simpan.js', 'otak.js', 'awan.js', 'pelabel.js', 'sinkron.js', 'alur.js', 'sw.js'];

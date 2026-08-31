@@ -284,7 +284,45 @@ public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
 public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
                     dikunci, judul & tag tetap terbuka supaya masih bisa
                     ditemukan. Yang terkunci tidak pernah dikirim ke AI
-public/sinkron.js   cadangan satu arah ke Drive; tidak pernah di jalur drop
+public/sinkron.js   SINKRON DUA ARAH lewat Drive; tidak pernah di jalur drop.
+                    Dulu cadangan satu arah, dan itu benar selama ini cuma
+                    aplikasi HP. Dia dipakai di EMPAT perangkat (HP, tablet,
+                    laptop, PC), dan di situ satu arah salah bentuk: kamu
+                    menulis di laptop, membuka HP, layarnya kosong - yang
+                    terbaca bukan "belum saya tarik" tapi "datanya hilang",
+                    dan sekali itu terbaca kepercayaannya ikut hilang.
+                    TARIK jalan sendiri: waktu aplikasinya dibuka, waktu
+                    kembali dari aplikasi lain (di HP PWA jarang benar-benar
+                    ditutup), dan didorong 8 detik sesudah ada yang berubah.
+                    Tarikan MEMERIKSA modifiedTime dulu - menarik dua puluh
+                    ribu baris tiap kali dibuka itu ongkos harian untuk jawaban
+                    yang hampir selalu "tidak ada yang baru".
+                    SETELAN IKUT PINDAH lewat 'setelan.json' di folder yang
+                    sama, MENANGNYA PER KUNCI (peta 'setelanWaktu', dicap di
+                    dalam TSimpan.setel - satu corong, bukan belasan pemanggil,
+                    dan dibaca SEGAR dari basis data karena salinan di memori
+                    tidak pernah ikut berubah). Kalau seluruh berkas yang
+                    menang, menambah folder di HP menghapus gerbong yang baru
+                    ditulis di laptop. Yang ikut cuma ISI KEPALA (label,
+                    gerbong, folderNote, folderGaleri, hashtag, tagUsulan,
+                    tagFavorit, namaElemen, ekorJudul, obrolan).
+                    YANG TIDAK PERNAH IKUT: tampilan (tema, bahasa, gayaGaleri
+                    - berganti sendiri tanpa diminta itu kehilangan kendali)
+                    dan SESI (albumLengket/driverLengket - itu kenyataan fisik,
+                    kamu sedang berdiri di masjid; menularkannya ke PC bikin
+                    unggahan di kantor mendarat di album survey)
+public/awan.js      (lanjutan) cariAtauBuat PUNYA PENJAGA BALAPAN. Dua
+                    perangkat yang pertama kali dibuka pada menit yang sama
+                    sama-sama tidak menemukan apa pun lalu sama-sama membuat -
+                    hasilnya dua folder bernama sama dan dua perangkat yang
+                    tidak akan pernah bertemu, TANPA SATU PESAN GALAT PUN.
+                    Jadi sesudah membuat dicari LAGI; yang tertua menang
+                    (seri diputus id, supaya semua perangkat memilih yang sama)
+                    dan punya sendiri dibuang - aman, dia baru lahir dan kosong.
+                    pageSize harus >1: dengan 1, tabrakannya bahkan tidak
+                    kelihatan. tulisJson lewat penjaga yang sama, kalau tidak
+                    setelan.json beranak dan tiap perangkat menulis ke
+                    salinannya sendiri
 public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     LAYAR NOTE ('l-tulis') itu RUANG MENULIS, bukan hasil
                     saringan Drop: FOLDER + daftar tulisan + pencariannya
@@ -445,7 +483,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (689 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (705 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
