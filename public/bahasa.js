@@ -124,6 +124,17 @@
     'Jenis bendanya, satu-dua kata.': 'The kind of thing, one or two words.',
     'Akhiri sesi': 'End session',
     'Sesi ditutup': 'Session closed',
+    'Kamu lihat apa?': 'What are you seeing?',
+    'Dua-tiga kata, sudut pandangmu — bukan yang tergambar. “interior mesjid”, “sofa unik minimalis”, “menu murah enak”.':
+      'Two or three words — your angle, not what is pictured. “mosque interior”, “unique minimal sofa”, “cheap tasty menu”.',
+    'Gerbong mana?': 'Which track?',
+    '(tanpa gerbong)': '(no track)',
+    'Semua folder…': 'All folders…',
+    'Tag baru dari AI': 'New tags from the AI',
+    'Semuanya sudah tercentang. Cabut yang tidak kamu pakai — yang tersisa masuk pustaka, dan mulai sekarang AI memakainya lagi alih-alih mengarang sinonimnya.':
+      'Everything is already ticked. Untick the ones you will not use — the rest join the library, and from now on the AI reuses them instead of inventing synonyms.',
+    'Gerbong gambar': 'Image tracks',
+    'Rak untuk foto — dan sumbunya beda': 'Shelves for photos — on a different axis',
     'Tulis catatan baru': 'Write a new note',
     'Belum berfolder': 'No folder yet',
     /* Bukan nama rak, melainkan kalimat aplikasi untuk "belum ditaruh di
@@ -443,6 +454,11 @@
     [/^Memasukkan (\d+) gambar…$/, 'Adding $1 images…'],
     [/^(\d+) gambar masuk$/, '$1 images added'],
     [/^(\d+) gambar$/, '$1 images'],
+    [/^(\d+) tag baru dari AI$/, '$1 new tags from the AI'],
+    [/^(\d+) tag masuk pustaka$/, '$1 tags joined the library'],
+    [/^(\d+) gerbong$/, '$1 tracks'],
+    [/^Belum ada gerbong — foto akan minta nama foldernya sendiri\.$/,
+     'No tracks yet — photos will ask for their own folder name.'],
     [/^Di dalam “(.+)”\. Jenis bendanya, satu-dua kata\.$/,
      'Inside “$1”. The kind of thing, one or two words.'],
     [/^1 album$/, '1 folder'],
@@ -496,6 +512,9 @@
 
     'Satu baris satu label — nama proyek, divisi, atau perusahaan. Pendekkan namanya supaya sebaris muat banyak; yang harus digulir jauh tidak akan dipakai. Kalau singkatannya cuma ada di kepalamu, tulis kata panjangnya sesudah <b>=</b> (<i>Cons = construction, konstruksi</i>) supaya tag buatan AI ikut tertangkap. Urutannya tidak diacak ulang, jadi jarimu bisa hafal tempatnya.':
       'One label per line — a project, a division, a company. Keep the names short so a row holds many; whatever needs a long scroll never gets used. If the abbreviation only exists in your head, write the long words after <b>=</b> (<i>Cons = construction, konstruksi</i>) so AI-made tags land there too. The order is never reshuffled, so your fingers can learn it.',
+
+    'Label rak di atas menjawab <b>siapa</b>: proyek, divisi, perusahaan — dan siapa itu punya tanggal selesai. Gerbong menjawab <b>apa</b>, dan apa tidak pernah selesai: satu foto sofa jadi referensi untuk klien mana pun, bertahun sesudah proyek yang melahirkannya ditutup. Yang menentukan sebuah foto masuk gerbong mana bukan fotonya, tapi <b>driver</b> yang kamu ketik waktu memotret. Kata sesudah <b>=</b> yang dicocokkan dengan drivermu. Bertingkat lewat awalan nama, sama seperti folder (<i>FNB</i> lalu <i>FNB Menu</i>). Tambah sendiri kapan saja — yang tidak pernah menambah sendiri itu aplikasinya.':
+      'The shelf labels above answer <b>who</b>: a project, a division, a company — and a who has a finish date. Tracks answer <b>what</b>, and a what never finishes: one photo of a sofa stays a reference for any client, years after the project that produced it closed. What decides a photo’s track is not the photo but the <b>driver</b> you type as you shoot. The words after <b>=</b> are what your driver is matched against. Nested by name prefix, same as folders (<i>FNB</i> then <i>FNB Menu</i>). Add your own any time — the one that never adds on its own is the app.',
 
     'Tulis di sini tag yang pasti sering kamu pakai — nama proyek, nama klien, jenis barang. Daftar ini ikut dikirim ke AI tiap kali melabeli, jadi dia memakai tag <b>ini</b> dan tidak mengarang sinonimnya sendiri. Pisahkan dengan spasi atau baris baru; pagarnya boleh tidak ditulis.':
       'Write the tags you know you will keep using — project names, client names, kinds of thing. This list rides along every time the AI labels something, so it reuses <b>these</b> instead of inventing synonyms of its own. Separate them with spaces or new lines; the hash is optional.',

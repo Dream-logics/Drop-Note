@@ -247,6 +247,32 @@
 
   var tanyaPilihJalan = null;
 
+  /* Bentuk keempat: daftar yang bisa dicentang BANYAK sekaligus, dan semuanya
+     sudah tercentang waktu muncul. Bedanya dengan tanyaPilih bukan cuma
+     jumlahnya - bedanya arah kerjanya. tanyaPilih menagih satu keputusan;
+     yang ini menawarkan satu penolakan. Mendiamkannya berarti menerima
+     semuanya, dan MENCABUT lebih murah daripada memilih satu per satu.
+
+     Dipakai untuk tag usulan AI: lima tag yang biasanya benar tidak pantas
+     menagih lima ketukan, tapi yang satu meleset harus punya jalan keluar. */
+  function tanyaCentang(judul, ket, daftar, jalan) {
+    tanya(judul, ket, function () {
+      var pilih = [];
+      $$('#tanya-pilih [data-centang]').forEach(function (b) {
+        if (b.classList.contains('nyala')) pilih.push(b.getAttribute('data-centang'));
+      });
+      jalan(pilih);
+    });
+    var w = $('#tanya-pilih');
+    w.innerHTML = daftar.map(function (x) {
+      return '<button class="tanya-cip nyala" data-centang="' + H(x) + '" data-asli>' +
+             H(x) + '</button>';
+    }).join('');
+    w.classList.remove('sembunyi');
+    $('#b-tanya-ya').classList.remove('sembunyi');
+    tanyaPilihJalan = null;
+  }
+
   function tutupTanya() {
     $('#tanya').classList.add('sembunyi');
     $('#tanya-isi').classList.add('sembunyi');
@@ -1333,6 +1359,14 @@
     return TOtak.uraiLabel(teks);
   }
 
+  /* Gerbong: daftarnya sendiri, sumbunya sendiri. Lihat bawaan.js untuk
+     alasan kenapa dia tidak boleh menumpang label rak. */
+  function daftarGerbong(s) {
+    var teks = (s || setelanSaat || {}).gerbong;
+    if (teks == null) teks = (TBawaan.gerbongAwal || []).join('\n');
+    return TOtak.uraiLabel(teks);
+  }
+
   /* ===================== LABEL DI LAYAR DEPAN =====================
      Percobaan: memilih label tidak memindahkan layar, hasilnya digambar di
      bawah tombolnya. Alasannya sama dengan alasan tombol "Semua" dulu boleh
@@ -2354,9 +2388,89 @@
     var tampil = lengketHidup() && !galeriFolder;
     w.classList.toggle('sembunyi', !tampil);
     if (!tampil) { w.innerHTML = ''; return; }
-    w.innerHTML = '<span class="lengket-nama" data-asli>→ ' + H(labelAlbum(albumLengket)) + '</span>' +
+    /* Drivernya yang ditulis besar, foldernya kecil di belakang. Yang perlu
+       kamu periksa sebelum menekan tombol bukan alamatnya - alamat masih bisa
+       dipindah kapan saja - tapi apakah sudut pandangnya masih yang tadi.
+       Begitu kamu berpindah dari granit ke alumunium, yang basi drivernya,
+       dan foldernya cuma akibat. */
+    w.innerHTML = '<span class="lengket-nama" data-asli>→ ' +
+      H(driverLengket || labelAlbum(albumLengket)) +
+      (driverLengket ? '<span class="lengket-album">' + H(labelAlbum(albumLengket)) + '</span>' : '') +
+      '</span>' +
       '<button class="lengket-buang" data-lengket-buang aria-label="Akhiri sesi">' +
       '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>';
+  }
+
+  /* ===================== PUSTAKA TAG =====================
+     Hidupnya berputar di lingkaran yang terbatas - dia tidak akan tiba-tiba
+     bicara soal yang bukan minatnya - jadi tagnya SEHARUSNYA konvergen: makin
+     lama makin itu-itu saja, dan makin bisa diandalkan buat menyaring.
+
+     Yang merusak sifat itu bukan satu tag yang salah, tapi tag yang masuk
+     pustaka tanpa pernah dilihat. Sekali "kursi" terdaftar di sebelah "sofa",
+     AI memakai keduanya bergantian selamanya dan tidak satu pun bisa
+     dipercaya. Jadi yang baru menunggu dulu.
+
+     Bilahnya TIDAK menghalangi apa pun dan tidak pernah muncul di tengah
+     memotret - dia menunggu di layar, dan kamu yang mendatanginya. Menunda
+     keputusan yang boleh ditunda itu inti seluruh aplikasi ini. */
+  function tagUsulan() {
+    return (setelanSaat.tagUsulan || []).filter(Boolean);
+  }
+
+  function gambarTagUsul() {
+    var w = $('#galeri-usul');
+    if (!w) return;
+    var n = tagUsulan().length;
+    w.classList.toggle('sembunyi', !n);
+    if (!n) { w.innerHTML = ''; return; }
+    w.innerHTML = '<span>' + n + ' tag baru dari AI</span>' +
+      '<button class="usul-lihat" data-usul-lihat>Lihat</button>';
+  }
+
+  function bukaTagUsul() {
+    var usul = tagUsulan();
+    if (!usul.length) return;
+    tanyaCentang('Tag baru dari AI',
+      'Semuanya sudah tercentang. Cabut yang tidak kamu pakai — yang tersisa masuk pustaka, ' +
+      'dan mulai sekarang AI memakainya lagi alih-alih mengarang sinonimnya.',
+      usul, function (pilih) {
+        var tolak = usul.filter(function (t) { return pilih.indexOf(t) < 0; });
+        terimaTagUsul(pilih, tolak);
+      });
+  }
+
+  function terimaTagUsul(terima, tolak) {
+    var pustaka = (setelanSaat.hashtag || []).slice();
+    terima.forEach(function (t) {
+      if (!pustaka.some(function (x) { return TOtak.normal(x) === TOtak.normal(t); })) pustaka.push(t);
+    });
+    /* YANG DICABUT IKUT DILEPAS DARI FOTONYA, bukan cuma dari pustaka.
+       "Jangan dipakai" berarti jangan dipakai - kalau dia tetap menempel di
+       entrinya, dia tetap muncul di kartu, tetap ikut menentukan alamat, dan
+       tetap kembali sebagai usulan besok lewat entri yang sama. */
+    var kena = tolak.length ? semuaEntri.filter(function (e) {
+      return (e.tag || []).some(function (t) {
+        return tolak.some(function (x) { return TOtak.normal(x) === TOtak.normal(t); });
+      });
+    }) : [];
+    return Promise.all(kena.map(function (e) {
+      e.tag = (e.tag || []).filter(function (t) {
+        return !tolak.some(function (x) { return TOtak.normal(x) === TOtak.normal(t); });
+      });
+      e.diubah = Date.now();
+      return TSimpan.taruh(e);
+    })).then(function () {
+      setelanSaat.hashtag = pustaka.slice(-300);
+      setelanSaat.tagUsulan = [];
+      return Promise.all([
+        TSimpan.setel('hashtag', setelanSaat.hashtag),
+        TSimpan.setel('tagUsulan', [])
+      ]);
+    }).then(function () { return muatSemua(); }).then(function () {
+      gambarGaleri();
+      pesan(terima.length + ' tag masuk pustaka');
+    });
   }
 
   function gambarGaleri() {
@@ -2366,6 +2480,7 @@
     gambarSaringGaleri();
     gambarTampilGaleri();
     gambarLengket();
+    gambarTagUsul();
 
     var daftar = daftarGambar();
     var kueri = $('#galeri-cari').value.trim();
@@ -2468,6 +2583,10 @@
        yang baru saja kamu ambil. Sesudah itu baru ingatan sesi. */
     var diBuka = (galeriFolder && galeriFolder !== TANPA_ALBUM) ? galeriFolder : '';
     var album = diBuka || (lengketHidup() ? albumLengket : '');
+    /* Drivernya ikut mewaris bersama albumnya, dan itu yang membuat sepuluh
+       jepretan beruntun dilabeli AI dari sudut pandang yang sama - bukan
+       masing-masing menurut apa yang kebetulan paling menonjol di gambarnya. */
+    var driver = lengketHidup() ? driverLengket : '';
     var baru = [];
     pesan(daftar.length > 1 ? 'Memasukkan ' + daftar.length + ' gambar…' : 'Memasukkan…');
     return daftar.reduce(function (rantai, f) {
@@ -2487,6 +2606,11 @@
             e.ukuran = blob.size || 0;
             e.album = album;
             e.sumber = sumber;
+            /* DISIMPAN MENTAH, apa adanya. Enam bulan lagi yang paling pasti
+               kamu ingat adalah kalimat yang kamu ketik sendiri - bukan judul
+               atau caption karangan AI. Jadi dia jangan dilebur ke dalam
+               keduanya; dia berdiri sendiri sebagai kata pencarian. */
+            e.driver = driver;
             /* Judulnya nama berkasnya, dan itu memang tidak berarti apa-apa -
                tapi kosong lebih buruk: AI yang melabeli belakangan butuh
                sesuatu untuk dipegang, dan sampai dia jalan yang terbaca
@@ -2541,10 +2665,12 @@
   var LENGKET_MS = 3600000;
   var albumLengket = '';
   var albumLengketPada = 0;
+  var driverLengket = '';
 
   function muatLengket(s) {
     albumLengket = (s && s.albumLengket) || '';
     albumLengketPada = Number((s && s.albumLengketPada) || 0) || 0;
+    driverLengket = (s && s.driverLengket) || '';
   }
 
   /* Album yang sudah dihapus tidak boleh mewariskan apa pun - kalau tidak,
@@ -2556,12 +2682,17 @@
     return albumDaftar.indexOf(albumLengket) >= 0;
   }
 
-  function pakaiLengket(nama) {
+  function pakaiLengket(nama, driver) {
     albumLengket = nama || '';
     albumLengketPada = nama ? Date.now() : 0;
+    /* Drivernya dipertahankan kalau tidak disebut - "Ganti" cuma memindahkan
+       albumnya, dan sudut pandangmu tidak ikut berubah karenanya. */
+    if (driver != null) driverLengket = driver;
+    if (!nama) driverLengket = '';
     return Promise.all([
       TSimpan.setel('albumLengket', albumLengket),
-      TSimpan.setel('albumLengketPada', String(albumLengketPada))
+      TSimpan.setel('albumLengketPada', String(albumLengketPada)),
+      TSimpan.setel('driverLengket', driverLengket)
     ]);
   }
 
@@ -2587,13 +2718,70 @@
       /* Berdiri di dalam albumnya berarti kamu sudah menjawab; menawarkan
          "Ganti" di situ cuma mempertanyakan jawaban yang baru saja diberikan. */
       if (diBuka) { pesan(ids.length + ' gambar masuk'); return; }
+      /* "Ganti" MENANYAKAN SUDUT PANDANGNYA LAGI, bukan cuma memindahkan
+         foldernya. Kamu tidak menekan Ganti karena albumnya salah - kamu
+         menekannya karena konteksnya sudah berpindah: tadi granit, sekarang
+         alumunium. Yang basi drivernya; foldernya cuma akibat. Menawarkan
+         daftar folder di situ berarti menyuruhmu menerjemahkan sendiri
+         konteks baru jadi alamat, dan itu justru pekerjaan yang diambil alih
+         aplikasi ini. */
       pesan('→ ' + labelAlbum(album), {
         teks: 'Ganti',
-        jalan: function () { pilihAlbumUntuk(ids); }
+        jalan: function () { tanyaDriver(ids); }
       });
       return;
     }
-    pilihAlbumUntuk(ids);
+    tanyaDriver(ids);
+  }
+
+  /* ===================== DRIVER =====================
+     Ini pergeseran yang paling menentukan di layar ini: yang kamu ketik BUKAN
+     ALAMAT, tapi NIAT.
+
+     "Interior mesjid" bukan nama folder. Itu sudut pandangmu waktu mengangkat
+     kamera. Dan satu foto tidak punya satu isi - dia punya isi MENURUT
+     drivernya. Foto masjid yang sama, driver "karpet mesjid", jadi barang yang
+     lain sama sekali; foto QR menu di sebuah resto itu FNB kalau yang kamu
+     pikirkan restonya, dan Apps Dev kalau yang kamu pikirkan produknya.
+     Bendanya sama; sudut pandangnya milikmu, dan cuma kamu yang tahu.
+
+     Itu sebabnya AI tidak pernah menebaknya dari gambarnya. Yang dia lihat di
+     foto masjid itu "beberapa orang sedang sholat" - benar, dan sama sekali
+     bukan yang kamu maksud. Dari sini semuanya turun: judul, caption, tag,
+     dan foldernya.
+
+     Ditanya SEKALI di jepretan pertama, lalu diwariskan bersama albumnya -
+     jadi harganya satu ketikan untuk sepuluh jepretan, bukan sepuluh. */
+  function tanyaDriver(ids) {
+    tanyaKetik('Kamu lihat apa?',
+      'Dua-tiga kata, sudut pandangmu — bukan yang tergambar. ' +
+      '“interior mesjid”, “sofa unik minimalis”, “menu murah enak”.',
+      '', function (ketik) {
+        var driver = String(ketik || '').trim().slice(0, 60);
+        /* Dikosongkan pun tidak apa-apa: gambarnya sudah tersimpan, dan yang
+           hilang cuma sudut pandangnya. Menahan alurnya sampai dia mengetik
+           berarti dialog ini jadi gerbang, dan gerbang di jalur masuk itu
+           persis yang dilarang aturan nomor satu. */
+        if (!driver) { pilihAlbumUntuk(ids); return; }
+        taruhDriver(ids, driver).then(function () {
+          setTimeout(function () { pilihAlbumUntuk(ids, driver); }, 30);
+        });
+      });
+  }
+
+  function taruhDriver(ids, driver) {
+    var kena = semuaEntri.filter(function (e) { return ids.indexOf(e.id) >= 0; });
+    return Promise.all(kena.map(function (e) {
+      e.driver = driver;
+      /* Dilabeli ULANG. Driver yang datang belakangan mengubah artinya, jadi
+         judul dan caption yang terlanjur disusun tanpa dia sudah kedaluwarsa -
+         membiarkannya berarti foto masjid itu selamanya berjudul "orang
+         sholat" walau kamu sudah bilang yang kamu lihat lampunya. */
+      e.diLabeliAI = false;
+      e.diBacaAI = false;
+      e.diubah = Date.now();
+      return TSimpan.taruh(e);
+    })).then(function () { return muatSemua(); });
   }
 
   /* Urutannya yang bekerja, bukan daftarnya. Yang paling mungkin benar duduk
@@ -2618,50 +2806,97 @@
     });
   }
 
-  function taruhAlbum(ids, nama) {
+  function taruhAlbum(ids, nama, driver) {
     var kena = semuaEntri.filter(function (e) { return ids.indexOf(e.id) >= 0; });
     return Promise.all(kena.map(function (e) {
       e.album = nama;
       e.diubah = Date.now();
       return TSimpan.taruh(e);
     })).then(function () {
-      return pakaiLengket(nama);
+      return pakaiLengket(nama, driver);
     }).then(function () {
       return muatSemua();
     }).then(function () {
       gambarGaleri();
+      sundulLabel();
       pesan('→ ' + labelAlbum(nama));
     });
   }
 
-  function pilihAlbumUntuk(ids) {
+  /* YANG DIAJUKAN HARUS RELEVAN, BUKAN LENGKAP. Menawarkan FnB, Konstruksi,
+     dan Apps Script untuk foto interior masjid bukan cuma mubazir - itu bikin
+     kamu ragu apakah aplikasinya paham atau cuma menumpahkan daftar. Daftar
+     yang panjang menagih pembacaan; dua-tiga usulan menagih satu ketukan.
+
+     Jadi kalau ada driver, yang tampil DUA LAPIS: gerbong yang cocok dengan
+     drivermu di depan, lalu album yang sudah pernah kamu pakai. Sisanya
+     disembunyikan di belakang "Semua folder" - ada, tapi tidak menghalangi. */
+  function pilihAlbumUntuk(ids, driver, semuanya) {
     var urut = albumTerurut();
-    var pilihan = urut.map(labelAlbum);
+    var usul = [];
+    if (driver && !semuanya) {
+      /* Gerbong dulu - itu jawaban yang dihitung dari drivermu sendiri, jadi
+         dia yang paling mungkin benar, bukan yang kebetulan terakhir dipakai. */
+      TOtak.cocokGerbong(driver, daftarGerbong()).forEach(function (n) {
+        if (usul.indexOf(n) < 0) usul.push(n);
+      });
+      /* Album yang sudah ada ikut, TAPI CUMA YANG NYAMBUNG. Menambahkan yang
+         terakhir dipakai supaya daftarnya terisi adalah kesalahan yang persis
+         sama dengan menumpahkan seluruh daftar: driver "menu murah enak"
+         dijawab tiga folder Interior berturut-turut, dan yang terbaca bukan
+         "aplikasinya menawarkan banyak" tapi "aplikasinya tidak paham".
+         Daftar pendek yang tepat mengalahkan daftar panjang yang lengkap. */
+      var daftarAlbum = albumDaftar.map(function (n) {
+        return { nama: n, istilah: [TOtak.normal(n)] };
+      });
+      TOtak.cocokGerbong(driver, daftarAlbum, 3).forEach(function (n) {
+        if (usul.indexOf(n) < 0) usul.push(n);
+      });
+      /* Album sesi yang sedang berjalan selalu ikut walau namanya tidak
+         nyambung: kamu baru saja memakainya, jadi dia jawaban yang sah. */
+      if (lengketHidup() && usul.indexOf(albumLengket) < 0) usul.push(albumLengket);
+      usul = usul.slice(0, 5);
+    }
+    var dipakai = usul.length ? usul : urut;
+    var pilihan = dipakai.map(labelAlbum);
     pilihan.push({ teks: '+ Folder baru', kunci: '*baru' });
+    if (usul.length && urut.length > usul.length) {
+      pilihan.push({ teks: 'Semua folder…', kunci: '*semua' });
+    }
     tanyaPilih('Masuk folder mana?',
-      ids.length > 1 ? ids.length + ' gambar' : '',
+      driver ? '“' + driver + '”' : (ids.length > 1 ? ids.length + ' gambar' : ''),
       pilihan, function (nilai) {
-        if (nilai === '*baru') { albumBaruUntuk(ids); return; }
+        if (nilai === '*baru') { albumBaruUntuk(ids, driver); return; }
+        if (nilai === '*semua') {
+          setTimeout(function () { pilihAlbumUntuk(ids, driver, true); }, 30);
+          return;
+        }
         var i = pilihan.indexOf(nilai);
-        if (i < 0 || !urut[i]) return;
-        taruhAlbum(ids, urut[i]);
+        if (i < 0 || !dipakai[i]) return;
+        taruhAlbum(ids, dipakai[i], driver);
       });
   }
 
-  /* DUA TINGKAT, DAN TINGKAT ATASNYA SUDAH KAMU TULIS SENDIRI. Divisinya
-     diambil dari label rak di Setelan - MAP, Cons, FnB Dev, dan seterusnya -
-     karena itulah pembagian yang benar-benar dipakai kepalanya, dan dia sudah
-     mengetiknya sekali. Menagih dia mengarang pembagian kedua khusus untuk
-     foto berarti dua peta untuk satu kepala.
+  /* DUA TINGKAT, DAN TINGKAT ATASNYA SUDAH ADA DAFTARNYA. Induknya diambil
+     dari GERBONG di Setelan - FNB, Interior, Construction, Quote - bukan dari
+     label rak. Label rak menjawab SIAPA (proyek, divisi) dan siapa itu punya
+     tanggal selesai; gerbong menjawab APA, dan apa tidak pernah selesai. Foto
+     sofa jadi referensi untuk klien mana pun, bertahun sesudah proyek yang
+     melahirkannya ditutup.
 
      Yang diketik cuma tingkat bawahnya, dan itu JENIS BENDANYA ("Granit",
      "Sofa", "Menu"), bukan tempat kejadiannya. Tempat kejadian selesai; jenis
-     benda yang dipanggil lagi enam bulan kemudian. */
-  function albumBaruUntuk(ids) {
-    var divisi = daftarLabel().map(function (l) { return l.nama; });
-    var pilihan = divisi.slice();
-    pilihan.push({ teks: '(tanpa divisi)', kunci: '*tanpa' });
-    tanyaPilih('Divisi mana?', 'Lalu ketik jenis bendanya.', pilihan, function (nilai) {
+     benda yang dipanggil lagi enam bulan kemudian.
+
+     Gerbong yang cocok dengan drivermu ditaruh paling depan - kalau kamu
+     mengetik "sofa unik minimalis", Interior tidak perlu dicari lagi. */
+  function albumBaruUntuk(ids, driver) {
+    var semua = daftarGerbong().map(function (g) { return g.nama; });
+    var cocok = driver ? TOtak.cocokGerbong(driver, daftarGerbong(), 2) : [];
+    var urut = cocok.concat(semua.filter(function (n) { return cocok.indexOf(n) < 0; }));
+    var pilihan = urut.slice();
+    pilihan.push({ teks: '(tanpa gerbong)', kunci: '*tanpa' });
+    tanyaPilih('Gerbong mana?', 'Lalu ketik jenis bendanya.', pilihan, function (nilai) {
       var induk = nilai === '*tanpa' ? '' : nilai;
       setTimeout(function () {
         tanyaKetik('Folder baru',
@@ -2671,15 +2906,15 @@
             if (!ketik) return;
             var nama = (induk && normalFolder(ketik).indexOf(normalFolder(induk) + ' ') !== 0)
               ? induk + ' ' + ketik : ketik;
-            /* DIVISINYA IKUT DIDAFTARKAN SEBAGAI ALBUM. Susunan folder di sini
-               dibaca dari nama, jadi "Cons Granit" cuma jadi anak "Cons" kalau
-               "Cons" memang ada barisnya. Tanpa ini akarnya rata: lima belas
-               nama panjang berjajar, dan divisi yang seharusnya membaginya
-               tidak pernah kelihatan - persis timbunan yang dilawan. */
+            /* GERBONGNYA IKUT DIDAFTARKAN SEBAGAI ALBUM. Susunan folder di sini
+               dibaca dari nama, jadi "Interior Lampu" cuma jadi anak "Interior"
+               kalau "Interior" memang ada barisnya. Tanpa ini akarnya rata:
+               lima belas nama panjang berjajar, dan pembagian yang seharusnya
+               menolong tidak pernah kelihatan - persis timbunan yang dilawan. */
             if (induk) tambahAlbum(induk);
             tambahAlbum(nama);
             simpanAlbum();
-            taruhAlbum(ids, nama);
+            taruhAlbum(ids, nama, driver);
           });
       }, 30);
     });
@@ -3636,6 +3871,12 @@
              H(e.judul || e.namaBerkas || '(tanpa judul)') + '</div>' +
            '<div class="lihat-ket">' + H(baris.join(' · ')) +
              (alamat ? ' · <span data-asli>' + H(alamat) + '</span>' : '') + '</div>' +
+           /* Drivernya ditulis terpisah, bukan dilebur ke keterangan lain:
+              inilah satu-satunya baris di kartu ini yang kalimatnya kalimatmu
+              sendiri. Judul dan caption karangan AI bisa saja meleset, dan
+              waktu itu terjadi, baris ini yang memberitahu apa yang sebenarnya
+              kamu maksud waktu memotret. */
+           (e.driver ? '<div class="lihat-driver" data-asli>“' + H(e.driver) + '”</div>' : '') +
            (tag.length ? '<div class="lihat-tag">' + tag.map(function (t) {
              return '<span class="tag" data-asli>#' + H(t) + '</span>';
            }).join('') + '</div>' : '') +
@@ -4341,6 +4582,22 @@
       '<div class="set-ket" id="label-jumlah">…</div>',
       '</div>',
 
+      '<div class="set-bagian">Gerbong gambar</div>',
+      '<div class="set-kotak">',
+      '<div class="set-judul">Rak untuk foto — dan sumbunya beda</div>',
+      '<div class="set-ket">Label rak di atas menjawab <b>siapa</b>: proyek, divisi, perusahaan — dan siapa itu punya tanggal selesai. ' +
+        'Gerbong menjawab <b>apa</b>, dan apa tidak pernah selesai: satu foto sofa jadi referensi untuk klien mana pun, ' +
+        'bertahun sesudah proyek yang melahirkannya ditutup. ' +
+        'Yang menentukan sebuah foto masuk gerbong mana bukan fotonya, tapi <b>driver</b> yang kamu ketik waktu memotret. ' +
+        'Kata sesudah <b>=</b> yang dicocokkan dengan drivermu. ' +
+        'Bertingkat lewat awalan nama, sama seperti folder (<i>FNB</i> lalu <i>FNB Menu</i>). ' +
+        'Tambah sendiri kapan saja — yang tidak pernah menambah sendiri itu aplikasinya.</div>',
+      '<textarea class="set-input tinggi" id="set-gerbong" spellcheck="false" ' +
+        'placeholder="FNB = makanan, minuman&#10;FNB Menu">' +
+        H((s.gerbong != null ? s.gerbong : (TBawaan.gerbongAwal || []).join('\n'))) + '</textarea>',
+      '<div class="set-ket" id="gerbong-jumlah">…</div>',
+      '</div>',
+
       '<div class="set-bagian">Tag andalan</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">Rak yang kamu sudah tahu akan dipakai</div>',
@@ -4629,6 +4886,23 @@
            saringannya dibiarkan, hasilnya kosong tanpa sebab yang kelihatan. */
         labelDepan = null;
         simpanSetelan('label', isianLabel.value);
+      });
+    }
+
+    var isianGerbong = $('#set-gerbong');
+    if (isianGerbong) {
+      var tampilJumlahGerbong = function () {
+        var n = TOtak.uraiLabel(isianGerbong.value).length;
+        $('#gerbong-jumlah').textContent = n ? n + ' gerbong'
+          : 'Belum ada gerbong — foto akan minta nama foldernya sendiri.';
+      };
+      tampilJumlahGerbong();
+      isianGerbong.addEventListener('input', tampilJumlahGerbong);
+      isianGerbong.addEventListener('change', function () {
+        var daftar = TOtak.uraiLabel(isianGerbong.value);
+        isianGerbong.value = TOtak.tulisLabel(daftar);
+        tampilJumlahGerbong();
+        simpanSetelan('gerbong', isianGerbong.value);
       });
     }
 
@@ -5100,6 +5374,9 @@
       mulaiPilih(!(pilihNyala || jumlahPilih()));
     });
     $('#galeri-cari').addEventListener('input', gambarGaleri);
+    $('#galeri-usul').addEventListener('click', function (ev) {
+      if (ev.target.closest('[data-usul-lihat]')) bukaTagUsul();
+    });
     $('#galeri-lengket').addEventListener('click', function (ev) {
       if (!ev.target.closest('[data-lengket-buang]')) return;
       pakaiLengket('');
@@ -5253,6 +5530,10 @@
     });
 
     $('#tanya-pilih').addEventListener('click', function (ev) {
+      /* Yang bisa dicentang tidak menutup dialognya - mencabut satu tag itu
+         bagian dari menjawab, bukan jawabannya. Jawabannya tombol Ya. */
+      var c = ev.target.closest('[data-centang]');
+      if (c) { c.classList.toggle('nyala'); return; }
       var b = ev.target.closest('[data-pilih]');
       if (!b) return;
       var j = tanyaPilihJalan;
@@ -5690,6 +5971,7 @@
     riwayatAIUji: function () { return riwayatAI; },
     dropObrolanUji: dropObrolan,
     jenisEfektifUji: jenisEfektif,
+    taruhDriverUji: taruhDriver,
     semuaEntri: function () { return semuaEntri; }
   };
 })(window);

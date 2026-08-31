@@ -150,6 +150,7 @@
       'Kamu membantu seseorang menemukan kembali catatannya sendiri berbulan-bulan kemudian.',
       'Catatannya ditulis dalam tiga detik, jadi konteksnya tidak ikut tertulis. Tugasmu menambalnya.',
       '',
+      ARAHAN_DRIVER,
       'Untuk SETIAP entri, kerjakan tiga langkah berurutan:',
       '',
       '1. SUBJEK -> judul.',
@@ -313,12 +314,65 @@
         '--- ' + i + ' ---',
         'jenis: ' + e.jenis,
         e.kategori ? 'kategori: ' + e.kategori : '',
+        /* Driver ditaruh SEBELUM isinya, dan itu bukan kerapian: model membaca
+           dari atas, dan sudut pandangnya harus sudah terpasang sebelum dia
+           melihat apa yang tergambar. */
+        e.driver ? 'DRIVER: ' + String(e.driver).slice(0, 60) : '',
+        e.album ? 'gerbong: ' + e.album : '',
         e.namaBerkas ? 'berkas: ' + e.namaBerkas : '',
         isi ? 'isi: ' + isi : '',
         daftar ? 'daftar: ' + daftar : ''
       ].filter(Boolean).join('\n');
     }).join('\n');
   }
+
+  /* ===================== DRIVER =====================
+     Satu bagian arahan, dipakai DUA KALI - oleh pelabelan borongan dan oleh
+     pembacaan gambar - karena keduanya bisa menerima entri yang punya driver,
+     dan dua salinan aturan yang sama akan berbeda sendiri begitu salah satunya
+     disunting.
+
+     Ini menambal kesalahan yang paling mahal di layar Gallery. Sebuah foto
+     interior masjid dijawab "beberapa orang sedang melaksanakan sholat di
+     dalam masjid" - benar sebagai deskripsi, dan sama sekali meleset sebagai
+     catatan. Yang dipotret memang orang sholat; yang DILIHAT pemotretnya
+     konsep lampu gantung berlafadz untuk dekorasi mushala. Satu foto punya
+     puluhan sudut pandang, dan cuma dia yang tahu sedang berdiri di mana. */
+  var ARAHAN_DRIVER = [
+    'DRIVER - BACA INI SEBELUM APA PUN.',
+    'Kalau sebuah entri punya baris DRIVER, itu dua-tiga kata yang diketik',
+    'pemiliknya sendiri saat memotret. Itu SUDUT PANDANGNYA, bukan keterangan',
+    'tambahan dan bukan tag - dan sudut pandang itu yang menentukan arti',
+    'gambarnya, bukan apa yang paling menonjol di permukaannya.',
+    '',
+    'Satu foto punya puluhan sudut pandang. Foto interior masjid dengan driver',
+    '"interior mesjid" adalah catatan tentang LAMPU GANTUNG DAN SUASANANYA;',
+    'foto yang sama persis dengan driver "karpet mesjid" adalah catatan tentang',
+    'MOTIF DAN WARNA KARPETNYA. Yang berubah bukan gambarnya - yang berubah',
+    'apa yang sedang dia cari. Menjawab "beberapa orang sedang sholat" itu',
+    'benar sebagai deskripsi dan meleset total sebagai catatan: orang-orang itu',
+    'kebetulan ada di sana, dan bukan itu yang membuatnya memotret.',
+    '',
+    'Jadi kalau ada DRIVER:',
+    '- JUDUL disusun dari drivernya, dipertajam oleh yang benar-benar terlihat.',
+    '  Driver "sofa unik minimalis" pada foto ruang pamer -> "Sofa minimalis',
+    '  dua dudukan abu", BUKAN "Foto ruang pamer furnitur".',
+    '- CAPTION menjelaskan yang terlihat DARI SUDUT ITU, dan sekaligus',
+    '  memperluas pintu masuk pencariannya: sebutkan bahan, warna, bentuk,',
+    '  gaya, dan istilah bidangnya yang mungkin dia pakai enam bulan lagi.',
+    '  Yang di luar sudut itu tidak usah disebut walau kelihatan jelas.',
+    '- TAG diambil dari benda dan istilah di dalam sudut itu.',
+    '',
+    'Yang TIDAK boleh: mengabaikan drivernya karena ada yang lebih menonjol di',
+    'gambar. Kalau driver dan gambar terasa tidak nyambung, drivernya yang',
+    'menang - dia yang ada di sana, kamu tidak.',
+    '',
+    'JANGAN PERNAH menulis tag yang cocok untuk semua gambar: foto, gambar,',
+    'image, picture, kamera, screenshot. Seratus persen foto adalah foto, jadi',
+    'tag seperti itu tidak memisahkan satu pun dari dua puluh ribu lainnya -',
+    'sama gunanya dengan memberi tag "manusia" pada seseorang.',
+    ''
+  ].join('\n');
 
   /* Siapa yang boleh berangkat. Dipisah jadi fungsi sendiri karena ini
      satu-satunya tempat yang memutuskan apa yang meninggalkan perangkat -
@@ -396,9 +450,18 @@
      akan bocor persis di hari tersibuk. Daftarnya sengaja PENDEK dan cuma
      berisi kata yang menyebut wadah - bukan daftar kata terlarang yang tumbuh
      tiap kali ada tag jelek. */
+  /* Yang berikutnya kata untuk GAMBAR, dan di sini dia bahkan lebih kosong
+     daripada "catatan". Seratus persen foto adalah foto - dia tidak pernah
+     punya kesempatan jadi yang lain - jadi #foto tidak memisahkan satu pun
+     dari dua puluh ribu saudaranya. Sama gunanya dengan memberi tag #manusia
+     pada seseorang. Kamera lawan unggahan lawan drop memang perlu dibedakan,
+     dan itu sudah dikerjakan kolom 'sumber' dengan tepat - bukan tugas tag. */
   var TAG_BENTUK = ['catatan', 'catat', 'data', 'info', 'informasi', 'daftar',
                     'berkas', 'file', 'dokumen', 'teks', 'memo', 'nomor', 'nomer',
-                    'entri', 'entry', 'note', 'notes', 'umum', 'lainnya', 'lain'];
+                    'entri', 'entry', 'note', 'notes', 'umum', 'lainnya', 'lain',
+                    'foto', 'poto', 'photo', 'gambar', 'image', 'picture', 'pic',
+                    'img', 'screenshot', 'tangkapanlayar', 'kamera', 'camera',
+                    'jpg', 'jpeg', 'png'];
 
   /* Huruf besarnya DIPERTAHANKAN. Tag ini dilihat pemakainya, dan
      "#ShamiraWeb" lebih cepat dikenali daripada "#shamiraweb" - sementara
@@ -443,16 +506,36 @@
   /* Daftar tag hidup di perangkat, bukan di Sheet. Kalau otoritasnya di Drive,
      pelabelan ikut mati saat Drive belum tersambung - padahal AI harus tetap
      bisa jalan sendiri. Sheet cuma cerminannya, dan cerminan boleh telat. */
+  /* TAG BARU MENUNGGU DI RUANG TUNGGU, TIDAK LANGSUNG MASUK PUSTAKA.
+
+     Alasannya satu kalimat: hidup orangnya berputar di lingkaran yang
+     terbatas, jadi tagnya SEHARUSNYA konvergen - itu-itu saja, dan makin lama
+     makin bisa diandalkan buat menyaring. Yang merusak sifat itu bukan tag
+     yang salah sesekali, tapi tag yang masuk pustaka tanpa pernah dilihat:
+     sekali "kursi" ikut terdaftar di sebelah "sofa", AI akan memakai keduanya
+     bergantian selamanya, dan tidak satu pun bisa dipercaya lagi.
+
+     Jadi tag baru menumpuk di tagUsulan sampai dilihat sekali. Yang sudah ada
+     di pustaka dipakai diam-diam - itu jalur yang normal, dan dia tidak
+     menagih apa pun.
+
+     Tagnya SUDAH menempel di entrinya sejak sekarang, jadi pencarian sudah
+     bisa memakainya hari ini juga. Yang ditunda cuma keanggotaannya di
+     pustaka - dan itu memang keputusan yang boleh menunggu. */
   function catatTag(setelan, tag) {
-    var lama = (setelan.hashtag || []).slice();
+    var pustaka = daftarTag(setelan);
+    var usul = (setelan.tagUsulan || []).slice();
     var berubah = false;
-    tag.forEach(function (t) {
-      if (!lama.some(function (x) { return samaTag(x, t); })) { lama.push(t); berubah = true; }
+    (tag || []).forEach(function (t) {
+      if (pustaka.some(function (x) { return samaTag(x, t); })) return;
+      if (usul.some(function (x) { return samaTag(x, t); })) return;
+      usul.push(t);
+      berubah = true;
     });
     if (!berubah) return Promise.resolve();
-    lama = lama.slice(-300);
-    setelan.hashtag = lama;
-    return TSimpan.setel('hashtag', lama);
+    usul = usul.slice(-60);
+    setelan.tagUsulan = usul;
+    return TSimpan.setel('tagUsulan', usul);
   }
 
   /* Daftar nama elemen yang sudah dipakai - sama peran dengan daftar tag:
@@ -486,12 +569,17 @@
 
   /* ===================== baca berkas (OCR) ===================== */
 
-  function arahanBaca(tagLama, namaElemenLama) {
+  function arahanBaca(tagLama, namaElemenLama, driver) {
     var daftar = (tagLama || []).slice(0, 150).join(', ');
     var namaEl = (namaElemenLama || []).slice(0, 80).join(', ');
     return [
       'Kamu membaca satu dokumen atau foto milik seseorang, supaya dia bisa menemukannya lagi',
       'bertahun-tahun kemudian saat dia cuma ingat samar-samar isinya.',
+      '',
+      ARAHAN_DRIVER,
+      driver ? 'DRIVER gambar ini: "' + String(driver).slice(0, 60) + '"'
+             : 'Gambar ini tidak punya driver; baca apa adanya.',
+      '',
       'Hasilkan:',
       '- judul: maksimal 8 kata, sebutkan jenis dokumennya dan pihak/objek utamanya.',
       '- elemen: nomor, kode, nama pihak, tanggal, dan jumlah yang nanti akan dia SALIN dari',
@@ -514,7 +602,11 @@
       daftar ? '  Rak yang sudah ada: ' + daftar : '  Belum ada rak sama sekali; susun sendiri dari nol.',
       '- label: 5 sampai 12 kata kunci huruf kecil - jenis dokumen, nama orang/perusahaan,',
       '  tahun, nomor penting, dan sebutan sehari-hari yang mungkin dipakai mencarinya.',
-      '- teks: ringkasan isi terpenting, maksimal 600 karakter. Tulis apa adanya, jangan menafsirkan.',
+      driver
+        ? '- teks: CAPTION dari sudut pandang drivernya, maksimal 600 karakter. Sebutkan bahan, ' +
+          '  warna, bentuk, gaya, dan istilah bidangnya - itu yang jadi pintu masuk pencariannya ' +
+          '  enam bulan lagi. Yang di luar sudut itu tidak usah disebut walau kelihatan jelas.'
+        : '- teks: ringkasan isi terpenting, maksimal 600 karakter. Tulis apa adanya, jangan menafsirkan.',
       'Bahasa Indonesia. Jawab HANYA JSON:',
       '{"judul":"...","elemen":[{"jenis":"...","nilai":"...","nama":"..."}],' +
         '"tag":["..."],"label":["..."],"teks":"..."}'
@@ -559,8 +651,9 @@
           return keBase64(blob).then(function (b64) {
             return tanya(setelan, [
               { inline_data: { mime_type: e.tipeBerkas, data: b64 } },
-              { text: 'Baca dokumen ini.' }
-            ], arahanBaca(daftarTag(setelan), daftarNamaElemen(setelan)));
+              { text: e.driver ? 'Baca gambar ini dari sudut pandang: ' + e.driver
+                               : 'Baca dokumen ini.' }
+            ], arahanBaca(daftarTag(setelan), daftarNamaElemen(setelan), e.driver));
           }).then(function (h) {
             if (!h) throw new Error('Dokumen tidak terbaca');
             if (!e.judulManual && h.judul) {
@@ -572,7 +665,20 @@
             /* Teksnya ditaruh di isi, bukan di kolom baru: dengan begitu
                pencarian yang sudah ada langsung menemukannya, tanpa satu baris
                pun perubahan di otak.js. */
-            if (!String(e.isi || '').trim() && h.teks) e.isi = String(h.teks).slice(0, 1500);
+            /* CAPTION MENUMPUK, TIDAK MENIMPA - tapi cuma kalau ada driver.
+               Driver kedua pada foto yang sama itu sudut pandang kedua, bukan
+               ralat: foto masjid yang tadi dibaca sebagai lampu gantung dan
+               sekarang dibaca sebagai motif karpet harus bisa ditemukan lewat
+               KEDUANYA. Caption di sini memang bukan catatan kebenaran; dia
+               daftar pintu masuk, dan pintu tidak pernah terlalu banyak. */
+            if (h.teks) {
+              var lamaIsi = String(e.isi || '').trim();
+              var baruIsi = String(h.teks).trim();
+              if (!lamaIsi) e.isi = baruIsi.slice(0, 1500);
+              else if (e.driver && lamaIsi.toLowerCase().indexOf(baruIsi.toLowerCase()) < 0) {
+                e.isi = (lamaIsi + '\n\n' + baruIsi).slice(0, 1500);
+              }
+            }
             e.diBacaAI = true;
             e.diLabeliAI = true;
             e.diubah = Date.now();
@@ -757,6 +863,9 @@
     /* Cuma untuk uji: melihat arahan yang benar-benar dikirim, bukan menebak
        dari kodenya. */
     arahanUji: function (setelan) { return arahanLabel(daftarTag(setelan), daftarNamaElemen(setelan)); },
+    /* Cuma untuk uji: melihat apa yang benar-benar MENINGGALKAN perangkat -
+       drivernya ikut atau tidak, dan duduk di urutan yang mana. */
+    pesananUji: pesanan,
     antreUji: function (semua) { return antreLabel(semua).map(function (e) { return e.id; }); },
     /* Cuma untuk uji: memperlihatkan tag yang benar-benar lolos saringan
        kodenya, bukan menebaknya dari arahan yang dikirim. */

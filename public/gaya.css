@@ -991,6 +991,9 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 }
 .lihat-judul{font-size:15px;font-weight:700;line-height:1.35}
 .lihat-ket{font-size:12.5px;color:#b9bec3;margin-top:3px}
+/* Kalimatmu sendiri, jadi dia yang paling terang di antara keterangan - yang
+   lain karangan mesin dan boleh redup. */
+.lihat-driver{font-size:13.5px;color:#fff;margin-top:6px;font-style:italic}
 .lihat-tag{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .lihat-tag .tag{
   background:rgba(255,255,255,.13);color:#e7eaec;border:none;
@@ -1406,6 +1409,9 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 .galeri-lengket .lengket-nama{
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+/* Foldernya menyusul di belakang drivernya, lebih redup: dia akibat, bukan
+   yang perlu kamu periksa sebelum menekan tombol. */
+.galeri-lengket .lengket-album{color:var(--m);margin-left:6px;font-size:12px}
 /* 44px penuh walau rupanya kecil - ini dipakai satu tangan sambil berjalan,
    dan silang yang meleset berarti sesi yang tidak pernah bisa dijatuhkan. */
 .galeri-lengket .lengket-buang{
@@ -1415,6 +1421,20 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 }
 .galeri-lengket .lengket-buang .ik{width:16px;height:16px}
 #l-galeri.mode-pilih .galeri-lengket{display:none}
+
+/* Duduk di aliran halaman, BUKAN melayang: dia tidak mendesak, dan yang
+   melayang selalu terbaca mendesak. */
+.galeri-usul{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin:0 12px 8px;padding:8px 8px 8px 12px;
+  border:1px dashed var(--l);border-radius:12px;
+  color:var(--m);font-size:13px;
+}
+.galeri-usul .usul-lihat{
+  min-height:32px;padding:0 14px;border-radius:16px;
+  border:1px solid var(--a);background:none;color:var(--a);
+  font-size:13px;cursor:pointer;
+}
 
 /* Doknya melayang di atas isinya, jadi petak terakhir harus punya ruang untuk
    lewat di bawahnya - kalau tidak, gambar paling bawah tidak pernah bisa

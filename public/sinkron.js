@@ -102,7 +102,7 @@
          kembali ke rak itu begitu cadangannya dipulihkan - dan raknya lahir
          lagi bersamanya. */
       rakLepas: benar(r.rakLepas),
-      album: r.album || '', sumber: r.sumber || '',
+      album: r.album || '', sumber: r.sumber || '', driver: r.driver || '',
       dihapus: false, riwayat: urai(r.riwayat, []), thumb: ''
     };
   }
