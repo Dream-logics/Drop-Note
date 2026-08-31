@@ -175,7 +175,36 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     karena satu baris "Belum beralbum" yang menyembunyikan dua
                     puluh ribu foto adalah dinding tanpa alasan. Dok kameranya
                     PERGI selama memilih: dia duduk di sudut yang sama dengan
-                    bilah pilih dan akan menutupi Batal
+                    bilah pilih dan akan menutupi Batal.
+                    ALBUM LENGKET ('albumLengket' + 'albumLengketPada' di
+                    setelan). Di lapangan orang memotret BERUNTUN: sepuluh
+                    jepretan dalam lima menit, semuanya milik tempat yang sama.
+                    Jadi jepretan berikutnya MEWARISI tujuan yang sebelumnya
+                    dan yang ditawarkan cuma jalan keluarnya ("Ganti" di bilah
+                    tujuan) - mendiamkannya berarti menerima, nol ketukan untuk
+                    hal yang paling sering benar. Warisannya KEDALUWARSA SATU
+                    JAM, bergulir dari jepretan terakhir: satu foto jam sepuluh
+                    pagi dan satu foto jam empat sore itu dua kejadian, dan
+                    salah alamat lebih buruk daripada tanpa alamat - yang salah
+                    alamat tidak pernah kamu curigai. Urutannya: album yang
+                    SEDANG DIBUKA menang atas ingatan apa pun (dan di sana
+                    "Ganti" tidak ditawarkan), lalu ingatan sesi, lalu ditagih.
+                    Gambarnya SUDAH TERSIMPAN sebelum satu dialog pun muncul -
+                    dialog tujuan itu tawaran di belakang, bukan gerbang di
+                    depan; aturan nomor satu tidak punya pengecualian, bahkan
+                    untuk aturan yang bagus. Bilah sesi di atas dok kamera
+                    membacakan tujuan jepretan BERIKUTNYA (bilah tujuan
+                    membacakan yang SUDAH masuk); silangnya menutup sesi -
+                    "use last scene set up until it dropped".
+                    ALBUM BARU LEWAT SESI ITU DUA TINGKAT: induknya DIVISI,
+                    diambil dari label rak di Setelan (MAP, Cons, FnB Dev, …)
+                    karena itulah pembagian yang sudah dipakai kepalanya dan
+                    sudah dia ketik sekali; yang diketik cuma JENIS BENDANYA
+                    ("Granit", "Sofa", "Menu"), bukan tempat kejadiannya -
+                    tempat kejadian selesai, jenis benda yang dipanggil lagi
+                    enam bulan kemudian. Divisinya IKUT didaftarkan sebagai
+                    album: susunan di sini dibaca dari nama, jadi tanpa baris
+                    "Cons" akarnya rata dan pembagiannya tidak pernah kelihatan
 public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
                     ulang, langkah, catatan, penanda BELUM DIBACA.
                     SATU daftar, tidak dibagi bagian "Berulang" lagi - Berulang
@@ -363,7 +392,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (646 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (666 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
