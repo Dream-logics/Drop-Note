@@ -214,7 +214,6 @@ button,input,textarea{font:inherit;color:inherit}
 /* Pilihan ukuran duduk di kepala hasil, bukan di baris sendiri: dia cuma
    berlaku untuk apa yang ada tepat di bawahnya, dan satu baris tambahan di
    sini berarti satu baris gambar lebih sedikit yang terlihat. */
-.tampil-baris{display:flex;gap:2px;align-items:center}
 .tampil-tbl{
   width:32px;height:32px;border:none;background:none;color:var(--m);
   border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -853,7 +852,13 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 /* Reset dibedakan: dia satu-satunya cip di baris ini yang MENGHAPUS keadaan,
    bukan menyaringnya. Garis putus-putus - bentuk yang di aplikasi ini selalu
    berarti "jalan pintas, bukan keadaan". */
-.saring-cip.reset{border-style:dashed}
+/* Garis putus-putus = JALAN PINTAS, bukan keadaan. Kosakata yang sudah dipakai
+   Reset dan "+ Folder", jadi cip Gambar - yang sekarang berpindah layar ke
+   Gallery, bukan menyaring di tempat - memakai bentuk yang sama. Tidak ada
+   yang harus dipelajari ulang, dan satu-satunya cip yang membawa pergi
+   terlihat berbeda SEBELUM diketuk. */
+.saring-cip.reset,.saring-cip.pintu{border-style:dashed}
+.saring-cip.pintu{color:var(--a)}
 .saring-cip.reset:active{color:var(--bahaya);border-color:var(--bahaya)}
 .saring-cip.nyala{
   border-color:transparent;color:var(--a);font-weight:700;

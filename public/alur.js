@@ -159,7 +159,6 @@
      dengan sengaja, lewat cip Gambar - dan di sana dia memang yang dicari. */
   var saringJenis = '';
 
-  var gayaGambar = 'kecil';    /* besar | sedang | kecil | daftar */
   var laciBuka = '';       /* laci mana yang sedang terbuka: label | drop | filter */
   /* Doknya SELALU di bawah. Dulu ini pilihan di Setelan, dan pilihannya
      dihapus: yang di atas terbukti kalah enak dipakai satu tangan - jempol
@@ -1475,9 +1474,15 @@
          Angkanya menumpang DI ATAS ikonnya, bukan di sebelahnya: di sebelah,
          enam saringan plus ikon AI tidak muat sebaris, dan yang melipat
          mendorong seluruh dok naik. */
+      /* Gambar memakai garis putus-putus, bentuk yang di aplikasi ini SUDAH
+         berarti "ini jalan pintas, bukan keadaan" - sama dengan Reset dan
+         "+ Folder". Jadi tidak ada kosakata baru yang harus dipelajari, dan
+         satu-satunya cip yang berpindah layar terlihat berbeda sebelum
+         diketuk. Dia juga tidak pernah menyala: dia bukan keadaan. */
       return '<button class="saring-cip' +
-             (j[0] === '*semua' ? (saringJenis === '*semua' ? ' nyala' : '')
-                                : (jenisEfektif() === j[0] ? ' nyala' : '')) +
+             (j[0] === 'gambar' ? ' pintu'
+              : j[0] === '*semua' ? (saringJenis === '*semua' ? ' nyala' : '')
+                                  : (jenisEfektif() === j[0] ? ' nyala' : '')) +
              (n ? '' : ' sepi') +
              '" data-jenis="' + j[0] + '" title="' + H(j[1]) + '" aria-label="' + H(j[1]) + '">' +
              '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg>' +
@@ -1515,23 +1520,6 @@
     ['kecil', 'Petak kecil', '<rect x="3" y="3" width="3.6" height="3.6" rx=".8"/><rect x="8.4" y="3" width="3.6" height="3.6" rx=".8"/><rect x="13.8" y="3" width="3.6" height="3.6" rx=".8"/><rect x="19.2" y="3" width="1.8" height="3.6" rx=".8"/><rect x="3" y="8.4" width="3.6" height="3.6" rx=".8"/><rect x="8.4" y="8.4" width="3.6" height="3.6" rx=".8"/><rect x="13.8" y="8.4" width="3.6" height="3.6" rx=".8"/><rect x="19.2" y="8.4" width="1.8" height="3.6" rx=".8"/><rect x="3" y="13.8" width="3.6" height="3.6" rx=".8"/><rect x="8.4" y="13.8" width="3.6" height="3.6" rx=".8"/><rect x="13.8" y="13.8" width="3.6" height="3.6" rx=".8"/><rect x="19.2" y="13.8" width="1.8" height="3.6" rx=".8"/>'],
     ['daftar', 'Daftar', '<rect x="3" y="4" width="4" height="4" rx="1"/><rect x="3" y="10" width="4" height="4" rx="1"/><rect x="3" y="16" width="4" height="4" rx="1"/><path d="M10 6h11"/><path d="M10 12h11"/><path d="M10 18h11"/>']
   ];
-
-  function gambarBarisTampilan() {
-    var baris = $('#tampil-baris');
-    baris.classList.toggle('sembunyi', jenisEfektif() !== 'gambar');
-    if (jenisEfektif() !== 'gambar') { baris.innerHTML = ''; return; }
-    baris.innerHTML = GAYA_GAMBAR.map(function (g) {
-      return '<button class="tampil-tbl' + (gayaGambar === g[0] ? ' nyala' : '') +
-             '" data-gaya="' + g[0] + '" title="' + H(g[1]) + '" aria-label="' + H(g[1]) + '">' +
-             '<svg viewBox="0 0 24 24" class="ik">' + g[2] + '</svg></button>';
-    }).join('');
-  }
-
-  function pilihGayaGambar(g) {
-    gayaGambar = g;
-    simpanSetelan('gayaGambar', g);
-    gambarHasilDepan();
-  }
 
   /* ===================== TEMA WARNA =====================
      Yang berganti CUMA AKSENNYA - dasarnya tetap putih redup di semua tema.
@@ -1582,8 +1570,38 @@
     $('#kotak').blur();
   }
 
+  /* GAMBAR ITU PINTU, BUKAN SARINGAN.
+
+     Dulu mengetuknya menyaring hasil di tempat, dan yang muncul petak gambar
+     persis seperti di Gallery - dua tempat memperlihatkan hal yang sama, dan
+     yang di sini selalu yang lebih miskin: tidak ada album, tidak ada kamera,
+     tidak ada unggahan, tidak ada saringan sumber.
+
+     Alasannya berakar lebih dalam daripada duplikasi. Teks bisa dicari karena
+     kata-katanya memang isinya; gambar tidak - dia cuma punya nama berkas,
+     dan sesudah AI membacanya, satu deskripsi. Melawan ketidakmampuan itu
+     butuh HALAMAN, bukan cip: album yang kamu susun sendiri, ukuran petak yang
+     bisa diganti, preview yang menyebutkan apa yang dibaca AI. Jadi cip ini
+     mengantar ke sana, membawa serta kata yang barusan kamu ketik.
+
+     Sama persis dengan cip Todo di dok: yang bentuknya cip belum tentu
+     saringan - ada yang memang pintu. */
+  function keGaleriDariDrop() {
+    var kotak = $('#kotak');
+    var kueri = kotak ? kotak.value.trim() : '';
+    /* Kalau yang menyaring RAK dan bukan ketikan, nama raknya yang dibawa -
+       pencarian menilai kolom tempat, jadi kata itu tetap menemukan isinya. */
+    if (!kueri && labelDepan) kueri = String(labelDepan);
+    galeriFolder = null;
+    galeriSaring = '*semua';
+    var cari = $('#galeri-cari');
+    if (cari) cari.value = kueri;
+    keTab('l-galeri');
+  }
+
   function pilihJenis(j) {
     if (j === '*reset') { resetLayar(); return; }
+    if (j === 'gambar') { keGaleriDariDrop(); return; }
     /* Mengetuk yang sedang menyala mematikannya - tanpa itu, satu-satunya
        jalan keluar adalah menebak cip mana yang berarti "batal". */
     /* Mengetuk yang sedang menyala mengembalikannya ke bawaan, bukan ke
@@ -1661,7 +1679,6 @@
        dicari. Yang lengkap tetap terbaca di kotaknya sendiri, tepat di atas. */
     if (kueri) ket.push('“' + (kueri.length > 28 ? kueri.slice(0, 27) + '…' : kueri) + '”');
     $('#hasil-depan-ket').textContent = ket.join(' · ');
-    gambarBarisTampilan();
     gambarCipSaring();
 
     var wadah = $('#hasil-depan');
@@ -1686,22 +1703,11 @@
       return;
     }
 
-    /* Gambar digambar sebagai PETAK, bukan baris. Judul gambar hampir selalu
-       nama berkas yang tidak berarti apa-apa; yang mengenalinya kembali adalah
-       rupanya. Jenis lain tetap baris, karena di sana justru judulnya yang
-       dikenali. */
-    if (jenisEfektif() === 'gambar' && gayaGambar !== 'daftar') {
-      wadah.innerHTML = '<div class="petak ' + gayaGambar + '">' + hasil.slice(0, 200).map(function (e) {
-        var gambar = e.thumb
-          ? '<img src="' + H(e.thumb) + '" alt="">'
-          : (e.berkasId ? '<img data-berkas="' + H(e.berkasId) + '" alt="">' : '<span class="petak-kosong"></span>');
-        return '<button class="petak-satu" data-buka="' + H(e.id) + '">' + gambar +
-               '<span class="petak-nama">' + H(e.judul || e.namaBerkas || '(tanpa judul)') + '</span></button>';
-      }).join('') + '</div>';
-      pasangGambarKartu(wadah);
-      return;
-    }
-
+    /* TIDAK ADA LAGI PETAK GAMBAR DI SINI. Cip Gambar sekarang pintu ke
+       Gallery, jadi keadaan "hasil depan berisi gambar saja" tidak pernah
+       tercapai lagi - dan menyimpan dua tempat yang menggambar petak yang sama
+       berarti perbaikan di satu tempat diam-diam tidak sampai ke tempat lain.
+       Petaknya tinggal satu, di layar yang memang mengurus gambar. */
     wadah.innerHTML = urutPin(hasil).slice(0, 200).map(kartuHtml).join('');
     pasangGambarKartu(wadah);
   }
@@ -4740,11 +4746,6 @@
       tutupLaci();
     }, true);
     $('#b-tutup-hasil').addEventListener('click', tutupHasilDepan);
-    $('#tampil-baris').addEventListener('click', function (ev) {
-      var b = ev.target.closest('[data-gaya]');
-      if (b) pilihGayaGambar(b.getAttribute('data-gaya'));
-    });
-
 
 
     /* Tugas dipinjami alat yang sudah ada di sini, bukan menyalinnya sendiri:
@@ -5384,7 +5385,6 @@
       /* Ukuran petak yang dipilih ikut dibawa ke pembukaan berikutnya:
          kebiasaan orang menetap di satu ukuran, dan memilihnya lagi tiap kali
          adalah keputusan berulang tanpa guna. */
-      if (setelanSaat.gayaGambar) gayaGambar = setelanSaat.gayaGambar;
       /* BAHASA DIPASANG SEBELUM APA PUN DIGAMBAR. Kalau sesudah, layarnya
          berkedip dari Indonesia ke Inggris tiap kali aplikasinya dibuka - dan
          kedipan itu terbaca sebagai aplikasi yang salah pasang. */

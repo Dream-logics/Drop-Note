@@ -1320,43 +1320,56 @@ console.log('\nukuran petak: cuma muncul waktu yang tampil gambar');
   await hal.evaluate(() => TAlur.muatUlangUji());
   await hal.waitForTimeout(300);
 
-  /* Untuk jenis lain, ukuran thumbnail tidak menjawab pertanyaan apa pun -
-     yang dikenali di sana judulnya, dan judul tidak punya ukuran. */
+  /* CIP GAMBAR ITU PINTU, BUKAN SARINGAN.
+
+     Dulu mengetuknya menyaring di tempat dan menggambar petak gambar - persis
+     seperti di Gallery, cuma tanpa album, tanpa kamera, tanpa unggahan, tanpa
+     saringan sumber. Dua tempat menggambar hal yang sama, dan yang di sini
+     selalu yang lebih miskin.
+
+     Alasannya berakar lebih dalam daripada duplikasi: teks bisa dicari karena
+     kata-katanya memang isinya, gambar tidak. Melawan itu butuh HALAMAN, bukan
+     cip. */
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(250);
   await hal.click('#saring-baris [data-jenis="tautan"]');
   await hal.waitForTimeout(350);
-  cek('pilihan ukuran tidak muncul untuk jenis selain gambar',
-      await hal.locator('#tampil-baris').evaluate((n) => n.classList.contains('sembunyi')));
+  cek('cip lain tetap menyaring di tempat, tidak pindah layar',
+      (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-utama');
 
-  await hal.click('#saring-baris [data-jenis="gambar"]');
-  await hal.waitForTimeout(400);
-  cek('pilihan ukuran muncul begitu yang tampil gambar',
-      !(await hal.locator('#tampil-baris').evaluate((n) => n.classList.contains('sembunyi'))));
-  cek('empat ukuran tersedia',
-      (await hal.locator('#tampil-baris .tampil-tbl').count()) === 4);
-  /* Bawaannya petak KECIL: pertanyaan tersering di sini bukan "yang mana yang
-     ini" tapi "ada apa saja" - dan itu dijawab dengan sebanyak mungkin masuk
-     satu layar. */
-  cek('bawaannya petak kecil',
-      (await hal.locator('#hasil-depan .petak.kecil').count()) === 1);
+  /* Bentuknya sudah memberitahu sebelum diketuk: garis putus-putus di aplikasi
+     ini SELALU berarti "jalan pintas, bukan keadaan" - sama dengan Reset dan
+     "+ Folder". */
+  cek('cip Gambar bergaris putus-putus, seperti jalan pintas yang lain',
+      (await hal.evaluate(() => {
+        const b = document.querySelector('#saring-cip [data-jenis="gambar"]');
+        return b ? getComputedStyle(b).borderStyle : '';
+      })) === 'dashed');
 
-  await hal.click('[data-gaya="besar"]');
-  await hal.waitForTimeout(350);
-  cek('memilih besar mengganti petaknya', (await hal.locator('#hasil-depan .petak.besar').count()) === 1);
+  await hal.click('#saring-cip [data-jenis="gambar"]');
+  await hal.waitForTimeout(600);
+  cek('mengetuk cip Gambar membuka layar Gallery',
+      (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-galeri');
 
-  /* Daftar = baris biasa, bukan petak: kadang yang dicari justru judulnya. */
-  await hal.click('[data-gaya="daftar"]');
-  await hal.waitForTimeout(350);
-  cek('daftar kembali jadi baris, bukan petak',
-      (await hal.locator('#hasil-depan .petak').count()) === 0 &&
-      (await hal.locator('#hasil-depan .kartu').count()) >= 1);
+  /* Dan membawa serta kata yang barusan diketik - kalau tidak, pintunya
+     membuang pekerjaan yang baru saja kamu lakukan. */
+  cek('dan membawa serta ketikan pencariannya',
+      (await hal.inputValue('#galeri-cari')) === (await hal.inputValue('#kotak')),
+      (await hal.inputValue('#galeri-cari')) + ' vs ' + (await hal.inputValue('#kotak')));
 
-  /* Kebiasaan menetap di satu ukuran - memilihnya lagi tiap kali membuka
-     aplikasi adalah keputusan berulang tanpa guna. */
-  const tersimpan = await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => s.gayaGambar));
-  cek('ukuran yang dipilih diingat untuk pembukaan berikutnya',
-      tersimpan === 'daftar', String(tersimpan));
+  /* Tombol Kembali HP pulang ke Drop, dan ketikannya masih utuh di sana. */
+  await hal.goBack();
+  await hal.waitForTimeout(500);
+  cek('Kembali pulang ke Drop dengan ketikannya utuh',
+      (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-utama');
+
+  /* Petaknya tinggal SATU, di layar yang memang mengurus gambar. Dua tempat
+     yang menggambar petak yang sama berarti perbaikan di satu tempat diam-diam
+     tidak sampai ke tempat lain. */
+  cek('tidak ada lagi petak gambar di hasil layar Drop',
+      (await hal.locator('#hasil-depan .petak').count()) === 0);
+  cek('dan baris ukuran petaknya ikut dibuang dari layar Drop',
+      (await hal.locator('#tampil-baris').count()) === 0);
 
   await hal.evaluate(() => TAlur.tutupHasilDepanUji());
   await hal.waitForTimeout(200);
@@ -2355,19 +2368,23 @@ console.log('\nTo Do dua bagian, timestamp di Note, dan gambar yang membesar');
   await hal.fill('#kotak', 'Moodboard uji besar');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(400);
-  /* Bawaannya teks, jadi gambar dicari dengan sengaja - lewat cip Gambar.
-     Dan di sana yang dipakai daftar, bukan petak, supaya kartunya utuh. */
-  await hal.click('#saring-baris [data-jenis="gambar"]');
-  await hal.waitForTimeout(300);
-  await hal.click('#tampil-baris [data-gaya="daftar"]');
+  /* Cip Gambar sekarang PINTU ke Gallery, jadi kartu bergambar di layar Drop
+     diuji lewat jalur yang memang masih menggambarnya: tampilan Daftar di
+     Gallery, tempat kartunya utuh berikut gambarnya. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(400);
+  await hal.fill('#galeri-cari', 'Moodboard uji besar');
+  await hal.dispatchEvent('#galeri-cari', 'input');
+  await hal.waitForTimeout(400);
+  await hal.click('#galeri-tampil [data-ggaya="daftar"]');
   await hal.waitForTimeout(350);
   cek('gambarnya tergambar di kartunya',
-      (await hal.locator('#hasil-depan img.kartu-gambar').count()) >= 1);
-  await hal.click('#hasil-depan img.kartu-gambar');
+      (await hal.locator('#galeri-isi img.kartu-gambar').count()) >= 1);
+  await hal.click('#galeri-isi img.kartu-gambar');
   await hal.waitForTimeout(350);
   cek('menyentuh gambarnya membuka pratinjau, bukan layar tulis',
       !(await hal.locator('#lihat').evaluate((n) => n.classList.contains('sembunyi'))) &&
-      await hal.locator('#l-utama').isVisible());
+      await hal.locator('#l-galeri').isVisible());
   /* Menutupnya cukup dengan menyentuh di mana saja - satu tombol silang di
      layar yang cuma berisi satu gambar adalah sasaran yang harus dicari untuk
      sesuatu yang sudah jelas. */
@@ -2379,12 +2396,16 @@ console.log('\nTo Do dua bagian, timestamp di Note, dan gambar yang membesar');
   /* Sisa kartunya tetap berlaku seperti biasa: menyentuh judulnya membuka
      rinciannya DI TEMPAT, bukan memindahkan layar - pindah layar itu mahal
      saat sedang memindai, karena posisi gulirnya hilang. */
-  await hal.click('#hasil-depan .kartu-judul');
+  await hal.click('#galeri-isi .kartu-judul');
   await hal.waitForTimeout(350);
   cek('menyentuh judulnya membuka rinciannya di tempat, bukan pratinjau',
-      (await hal.locator('#hasil-depan .kartu.terbuka').count()) === 1 &&
+      (await hal.locator('#galeri-isi .kartu.terbuka').count()) === 1 &&
       await hal.locator('#lihat').evaluate((n) => n.classList.contains('sembunyi')));
-  cek('dan layarnya tidak ke mana-mana', await hal.locator('#l-utama').isVisible());
+  cek('dan layarnya tidak ke mana-mana', await hal.locator('#l-galeri').isVisible());
+  await hal.fill('#galeri-cari', '');
+  await hal.dispatchEvent('#galeri-cari', 'input');
+  await hal.click('#galeri-tampil [data-ggaya="sedang"]');
+  await hal.waitForTimeout(300);
   await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.fill('#kotak', '');
   await hal.waitForTimeout(200);
