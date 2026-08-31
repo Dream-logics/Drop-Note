@@ -134,6 +134,22 @@
       'The folder is empty, so nothing goes with it.',
     'rak': 'shelves',
 
+    /* --- layar Gallery --- */
+    /* "Gallery" TIDAK diterjemahkan: dia nama pintu, sama seperti Drop, Note,
+       To Do, dan Storage - nama tempat yang berganti bahasa berarti jari harus
+       belajar ulang. Yang di dalamnya kalimat layar biasa. */
+    'Cari gambar…': 'Search images…',
+    'Semua album': 'All folders',
+    'Belum beralbum': 'No folder yet',
+    'Ambil foto': 'Take a photo',
+    'Unggah gambar': 'Upload images',
+    'Kamera': 'Camera',
+    'Unggah': 'Upload',
+    'Belum ada gambar dari sini.': 'Nothing from here yet.',
+    'Tidak ada gambar yang cocok.': 'No image matches.',
+    'Memasukkan…': 'Adding…',
+    'album': 'folders',
+
     /* --- layar tulis --- */
     'Judul': 'Title',
     'Tulis di sini. Boleh sepuluh kata hari ini, sepuluh lagi besok.':
@@ -385,6 +401,8 @@
     [/^(\d+) dipilih$/, '$1 selected'],
     [/^(\d+) catatan · (\d+) folder dipilih$/, '$1 notes · $2 folders selected'],
     [/^(\d+) catatan dipilih$/, '$1 notes selected'],
+    [/^(\d+) gambar dipilih$/, '$1 images selected'],
+    [/^(\d+) gambar · (\d+) folder dipilih$/, '$1 images · $2 folders selected'],
     [/^(\d+) folder dipilih$/, '$1 folders selected'],
     [/^(\d+) diarsipkan$/, '$1 archived'],
     [/^(\d+) label$/, '$1 labels'],
@@ -409,6 +427,12 @@
     [/^Pindahkan (\d+) catatan ke mana\?$/, 'Move $1 notes where?'],
     [/^Folder “(.+)” dibuat$/, 'Folder “$1” created'],
     [/^Folder “(.+)” dihapus$/, 'Folder “$1” deleted'],
+    [/^(\d+) gambar di dalamnya TIDAK ikut terhapus — mereka keluar ke “Belum beralbum”\.$/,
+     'The $1 images inside are NOT deleted — they move out to “No folder yet”.'],
+    [/^Memasukkan (\d+) gambar…$/, 'Adding $1 images…'],
+    [/^(\d+) gambar masuk$/, '$1 images added'],
+    [/^1 album$/, '1 folder'],
+    [/^(\d+) album$/, '$1 folders'],
     [/^Dibuat di dalam “(.+)”\. Cukup nama pendeknya\.$/,
      'Created inside “$1”. Just the short name is enough.'],
     [/^Folder “(.+)” belum ada$/, 'There is no folder “$1”'],
@@ -448,6 +472,8 @@
      separuh Inggris di satu baris. Yang dicocokkan di sini seluruh isi
      elemennya sekaligus, tag dan semuanya. */
   var BLOK_EN = {
+    'Belum ada gambar.<br>Potret sekarang, atau unggah dari galeri HP-mu.<br>Yang kamu drop juga mendarat di sini sendiri.':
+      'No images yet.<br>Take one now, or upload from your phone gallery.<br>Whatever you drop lands here on its own.',
     '<b>Hemat</b> memberi judul dan kata kunci pada catatan. <b>Penuh</b> juga membaca isi foto dan PDF — KTP, kontrak, struk jadi bisa dicari lewat isinya. Keduanya berjalan di belakang layar dan boleh gagal diam-diam.':
       '<b>Light</b> gives each note a title and keywords. <b>Full</b> also reads what is inside photos and PDFs — IDs, contracts, receipts become searchable by their contents. Both run in the background and are allowed to fail quietly.',
 

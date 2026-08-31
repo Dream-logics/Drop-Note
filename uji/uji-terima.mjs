@@ -727,7 +727,12 @@ console.log('\ntata letak: sedekat mungkin ke jempol');
      bukan untuk menunjuk tombol. Barisnya cuma tiga dan urutannya tidak pernah
      berubah, jadi tidak ada yang perlu dituntun; yang tersisa cuma satu blok
      pekat yang berteriak tiap layar dibuka. */
-  cek('tidak ada tombol yang beralas warna', !/tbl utama/.test(html));
+  /* Yang dijaga BARIS TOMBOL layar Drop (class="tbl"), bukan tombol bulat mana
+     pun di aplikasi: tombol bulat "tulis baru" di Note sudah beralas aksen
+     sejak awal, dan kameranya di Gallery memang tindakan layar itu. Pola yang
+     terlalu longgar akan menangkap keduanya dan melarang yang tidak dilarang. */
+  cek('tidak ada tombol beralas warna di baris tombol Drop',
+      !/class="tbl utama/.test(html));
 
   /* Dibaca dari KANAN. Dipakai satu tangan sambil mengerjakan hal lain, dan
      jempol kanan bertumpu di sudut kanan bawah - makin ke kiri makin jauh
@@ -1081,25 +1086,32 @@ console.log('\nlabel di layar depan: hasil di tempat, bukan pindah layar');
       await hal.locator('#petak-hasil-depan').evaluate((n) => n.classList.contains('sembunyi')));
 }
 
-console.log('\ntiga pintu di kepala, dan layar Note');
+console.log('\nlima pintu di kepala, dan layar Note');
 {
   const html = fs.readFileSync(path.join(AKAR, 'index.html'), 'utf8');
-  /* Digambar dari satu tempat, bukan disalin tiga kali: baris yang disalin
-     akan berbeda-beda begitu salah satunya disunting. */
+  /* Digambar dari satu tempat, bukan disalin di tiap layar: baris yang disalin
+     akan berbeda-beda begitu salah satunya disunting. Jumlahnya mengikuti
+     jumlah layar berpintu, jadi yang dijaga "tiap layar berpintu punya satu
+     wadah kosong" - bukan angka tetap yang harus disunting tiap ada pintu
+     baru. */
+  const wadahTab = (html.match(/class="tab-baris" data-tab></g) || []).length;
   cek('baris tabnya wadah kosong di HTML, diisi dari alur.js',
-      (html.match(/class="tab-baris" data-tab></g) || []).length === 4);
+      wadahTab === 5, String(wadahTab));
 
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(250);
   const tab = await hal.locator('#l-utama [data-tab] .tab').allTextContents();
-  /* EMPAT PINTU, dan urutannya menceritakan alur harinya: menjatuhkan,
-     menulis, mengerjakan, menyimpan. "Storage" bukan "Note" karena layar itu
+  /* LIMA PINTU, dan urutannya menceritakan alur harinya: menjatuhkan, menulis,
+     mengerjakan, menyimpan, melihat. "Storage" bukan "Note" karena layar itu
      memang gudang - dia memperlihatkan semua yang pernah jatuh, tersusun di
      raknya; Note yang ruang menulisnya. Menamai keduanya sama membuat yang mau
-     menulis mendarat di gudang lalu mengira aplikasinya tidak bisa menulis. */
-  cek('empat pintu: Drop, Note, To Do, Storage', tab.length === 4 &&
+     menulis mendarat di gudang lalu mengira aplikasinya tidak bisa menulis.
+     Gallery paling kanan karena dia yang paling baru dan paling khusus - satu
+     jenis benda saja. */
+  cek('lima pintu: Drop, Note, To Do, Storage, Gallery', tab.length === 5 &&
       /^Drop/.test(tab[0]) && /^Note/.test(tab[1]) &&
-      /^To Do/.test(tab[2]) && /^Storage/.test(tab[3]), tab.join('|'));
+      /^To Do/.test(tab[2]) && /^Storage/.test(tab[3]) &&
+      /^Gallery/.test(tab[4]), tab.join('|'));
   cek('yang sedang dibuka ditandai',
       (await hal.locator('#l-utama [data-tab] .tab.nyala').textContent()).indexOf('Drop') === 0);
 
@@ -4100,9 +4112,9 @@ console.log('\nbahasa: Inggris bawaannya, dan tidak ada kalimat yang terlewat');
   /* NAMA PINTU TIDAK IKUT DITERJEMAHKAN. Itu nama tempat, bukan kalimat - dan
      nama tempat yang berganti bahasa membuat jarimu harus belajar ulang. */
   const pintu = await halEn.locator('#l-utama [data-tab] .tab').allInnerTexts();
-  cek('nama pintu tetap Drop, Note, To Do, Storage',
+  cek('nama pintu tetap Drop, Note, To Do, Storage, Gallery',
       JSON.stringify(pintu.map((x) => x.trim())) ===
-        JSON.stringify(['Drop', 'Note', 'To Do', 'Storage']),
+        JSON.stringify(['Drop', 'Note', 'To Do', 'Storage', 'Gallery']),
       JSON.stringify(pintu));
 
   /* Kalimat layar - di HTML maupun yang digambar dari JS - benar-benar
@@ -4225,7 +4237,7 @@ console.log('\nbahasa: Inggris bawaannya, dan tidak ada kalimat yang terlewat');
     return out;
   });
   const sisa = [];
-  for (const l of ['l-utama', 'l-tulis', 'l-tugas', 'l-note', 'l-setelan']) {
+  for (const l of ['l-utama', 'l-tulis', 'l-tugas', 'l-note', 'l-galeri', 'l-setelan']) {
     await halEn.evaluate((x) => {
       if (x === 'l-setelan') TAlur.gambarSetelan();
       if (x === 'l-tugas') TTugas.gambar();
@@ -4258,7 +4270,7 @@ console.log('\nbahasa: Inggris bawaannya, dan tidak ada kalimat yang terlewat');
   cek('dan nama pintunya tetap sama di kedua bahasa',
       JSON.stringify((await halEn.locator('#l-utama [data-tab] .tab').allInnerTexts())
         .map((x) => x.trim())) ===
-        JSON.stringify(['Drop', 'Note', 'To Do', 'Storage']));
+        JSON.stringify(['Drop', 'Note', 'To Do', 'Storage', 'Gallery']));
   cek('tidak ada galat JavaScript di jalur bahasa', galatEn.length === 0, galatEn.join(' | '));
   await halEn.close();
 }
@@ -4522,6 +4534,201 @@ console.log('\njari sungguhan: tekan lama di layar sentuh, sampai foldernya bena
 
   await halJ.close();
   await konteksJari.close();
+}
+
+console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
+{
+  /* Dua puluh ribu foto di galeri HP, ditambah yang tercecer di WhatsApp.
+     Tiga sampai lima jepretan sehari terdengar sedikit; lima tahun kemudian
+     tidak ada satu pun yang bisa ditemukan lagi. */
+  const PNG2 = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGP8z8Dw'
+             + 'nwEJMKEL0FIQAG3+AwOfLbXbAAAAAElFTkSuQmCC';
+  const binPng = Buffer.from(PNG2, 'base64');
+
+  await hal.evaluate(async (b64) => {
+    for (let i = 0; i < 4; i++) {
+      const bin = atob(b64); const arr = new Uint8Array(bin.length);
+      for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j);
+      const blob = new Blob([arr], { type: 'image/png' });
+      await TSimpan.taruhBerkas('bgal' + i, blob, 'gal' + i + '.png', 'image/png');
+      await TSimpan.taruh({ id: 'gal' + i, jenis: 'gambar', judul: 'galuji ' + i, isi: '',
+        kategori: '', folder: '', album: '', sumber: i < 2 ? 'kamera' : '', thumb: '',
+        berkasId: 'bgal' + i, namaBerkas: 'gal' + i + '.png', tipeBerkas: 'image/png',
+        ukuran: blob.size, tag: [], label: [], elemen: [], daftar: [],
+        dibuat: Date.now() - i * 1000, diubah: Date.now() - i * 1000,
+        dipakai: 0, diLabeliAI: true, diBacaAI: true });
+    }
+    await TSimpan.setel('folderGaleri', '[]');
+  }, PNG2);
+  await hal.reload();
+  await hal.waitForFunction(() => window.TAlur);
+  await hal.waitForTimeout(600);
+
+  const pintu = (await hal.locator('#l-utama [data-tab] .tab').allInnerTexts())
+    .map((x) => x.trim());
+  cek('pintunya lima, dan yang kelima Gallery',
+      JSON.stringify(pintu) ===
+      JSON.stringify(['Drop', 'Note', 'To Do', 'Storage', 'Gallery']),
+      JSON.stringify(pintu));
+
+  /* LIMA PINTU BERARTI IKONNYA PERGI DI HP. Empat masih muat bersama ikonnya
+     di 412px; yang kelima memotong "Storage" jadi "Stor…" - dan pintu bernama
+     "Stor…" tidak memberitahu apa pun. Yang mengalah ikonnya, bukan namanya. */
+  cek('lima pintu tetap sebaris tanpa satu nama pun terpotong',
+      await hal.evaluate(() => {
+        const t = [...document.querySelectorAll('#l-utama [data-tab] .tab')];
+        const baris = new Set(t.map((x) => Math.round(x.getBoundingClientRect().top)));
+        return baris.size === 1 && t.every((x) => x.scrollWidth <= x.clientWidth + 1);
+      }) === true);
+
+  await hal.click('#l-utama [data-tab-ke="l-galeri"]');
+  await hal.waitForTimeout(500);
+  cek('pintunya membuka layar Gallery',
+      (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-galeri');
+
+  /* SEBELUM ADA SATU ALBUM PUN, GAMBARNYA LANGSUNG TERLIHAT. Aturan "di akar
+     yang tampil folder saja" ada supaya isinya tidak terhitung dua kali - dan
+     itu cuma berlaku kalau memang ada album untuk membaginya. */
+  cek('tanpa album, gambarnya langsung terlihat di akar',
+      (await hal.locator('#galeri-isi .petak-satu').count()) >= 4,
+      String(await hal.locator('#galeri-isi .petak-satu').count()));
+
+  /* Saringannya SUMBER, bukan jenis: di layar ini semuanya gambar, jadi
+     menyaring jenis tidak memisahkan apa pun. */
+  await hal.click('#galeri-saring [data-gsaring="kamera"]');
+  await hal.waitForTimeout(350);
+  const dariKamera = await hal.locator('#galeri-isi .petak-satu').count();
+  await hal.click('#galeri-saring [data-gsaring="drop"]');
+  await hal.waitForTimeout(350);
+  const dariDrop = await hal.locator('#galeri-isi .petak-satu').count();
+  cek('saringan sumber memisahkan kamera dari yang masuk lewat Drop',
+      dariKamera === 2 && dariDrop >= 2, dariKamera + ' vs ' + dariDrop);
+  await hal.click('#galeri-saring [data-gsaring="*semua"]');
+  await hal.waitForTimeout(300);
+
+  /* Empat tampilan, dan yang dipilih ikut ke pembukaan berikutnya - kebiasaan
+     orang menetap di satu ukuran. */
+  cek('empat pilihan tampilan ditawarkan',
+      (await hal.locator('#galeri-tampil .tampil-tbl').count()) === 4);
+  await hal.click('#galeri-tampil [data-ggaya="besar"]');
+  await hal.waitForTimeout(300);
+  cek('memilih petak besar benar-benar mengganti petaknya',
+      (await hal.evaluate(() =>
+        document.querySelector('#galeri-isi .petak').className)) === 'petak besar');
+  await hal.click('#galeri-tampil [data-ggaya="daftar"]');
+  await hal.waitForTimeout(300);
+  cek('dan Daftar menggantinya jadi baris, bukan petak',
+      (await hal.locator('#galeri-isi .petak').count()) === 0 &&
+      (await hal.locator('#galeri-isi .kartu').count()) >= 4);
+  cek('pilihannya ikut tersimpan',
+      (await hal.evaluate(() => TSimpan.setelan('gayaGaleri'))) === 'daftar');
+  await hal.click('#galeri-tampil [data-ggaya="sedang"]');
+  await hal.waitForTimeout(300);
+
+  /* ALBUMNYA DIBUAT TANGAN, aturan yang sama persis dengan folder Note - yang
+     sudah dipelajari jari di satu layar tidak boleh harus dipelajari ulang di
+     layar sebelahnya. */
+  const albumBaruUji = async (nama) => {
+    await hal.click('#b-galeri-folder');
+    await hal.waitForSelector('#tanya-isi:not(.sembunyi)');
+    const ket = await hal.innerText('#tanya-ket');
+    await hal.fill('#tanya-isi', nama);
+    await hal.click('#b-tanya-ya');
+    await hal.waitForTimeout(450);
+    return ket;
+  };
+  await albumBaruUji('Rumahuji');
+  const ketDalamGal = await albumBaruUji('Dapuruji');
+  cek('di dalam album, pertanyaannya menyebut induknya',
+      ketDalamGal.indexOf('Rumahuji') >= 0, ketDalamGal);
+  cek('dan awalannya dipasang aplikasi, bukan diketik',
+      (await hal.evaluate(() => TSimpan.setelan('folderGaleri')))
+        .indexOf('Rumahuji Dapuruji') >= 0);
+  cek('jejaknya menunjukkan jalurnya',
+      (await hal.innerText('#galeri-alamat')).replace(/\s+/g, ' ')
+        .indexOf('Rumahuji / Dapuruji') >= 0,
+      await hal.innerText('#galeri-alamat'));
+
+  /* UNGGAHAN MASUK LANGSUNG JADI ENTRI di album yang sedang dibuka - niatnya
+     sudah jelas, jadi menagih satu ketukan "Drop" lagi sesudahnya adalah
+     menagih jawaban yang sudah diberikan. */
+  await hal.setInputFiles('#galeri-pilih-unggah', [
+    { name: 'unggahuji.png', mimeType: 'image/png', buffer: binPng }
+  ]);
+  await hal.waitForTimeout(2200);
+  const yangDiunggah = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.namaBerkas === 'unggahuji.png')
+    .map((e) => ({ album: e.album, sumber: e.sumber, jenis: e.jenis }))[0]);
+  cek('unggahan mendarat di album yang sedang dibuka, bukan di akar',
+      !!yangDiunggah && yangDiunggah.album === 'Rumahuji Dapuruji' &&
+      yangDiunggah.sumber === 'unggah' && yangDiunggah.jenis === 'gambar',
+      JSON.stringify(yangDiunggah));
+
+  /* PETAKNYA SENDIRI SEBUAH TOMBOL, dan itu jebakan yang sudah pernah
+     mematikan tekan lama: penjaga "jangan menahan di atas tombol" menolaknya
+     mentah-mentah. Yang ditolak seharusnya cuma tombol DI DALAM kartu. */
+  await hal.locator('#galeri-isi .petak-satu').first().dispatchEvent('pointerdown');
+  await hal.waitForTimeout(700);
+  cek('menahan petak gambar memulai memilih, walau petaknya sendiri tombol',
+      (await hal.locator('#galeri-isi .petak-satu.dipilih').count()) === 1,
+      await hal.innerText('#pilih-jumlah'));
+  cek('dan bilahnya menyebut gambar, bukan catatan',
+      (await hal.innerText('#pilih-jumlah')).indexOf('gambar') >= 0,
+      await hal.innerText('#pilih-jumlah'));
+  /* Doknya melayang di sudut yang sama dengan bilah pilih: kalau dia tidak
+     pergi, tombol kameranya menutupi Batal dan satu-satunya jalan keluar dari
+     mode pilih adalah memotret. */
+  cek('selama memilih, dok kamera pergi supaya Batal bisa ditekan',
+      await hal.locator('#l-galeri .galeri-dok').isHidden());
+  await hal.click('#b-pilih-batal');
+  await hal.waitForTimeout(250);
+
+  /* Yang ditawarkan dialog pindah HARUS album layar ini, bukan folder Note. */
+  await hal.locator('#galeri-isi .petak-satu').first().dispatchEvent('pointerdown');
+  await hal.waitForTimeout(700);
+  await hal.click('#b-pilih-pindah');
+  await hal.waitForSelector('#tanya-pilih:not(.sembunyi)');
+  const tawarGal = (await hal.locator('#tanya-pilih [data-pilih]').allInnerTexts())
+    .map((x) => x.trim());
+  cek('yang ditawarkan album Gallery, bukan folder Note',
+      tawarGal.every((x) => /^Rumahuji/.test(x)) && tawarGal.length >= 1,
+      JSON.stringify(tawarGal));
+  await hal.click('#b-tanya-batal');
+  await hal.waitForTimeout(150);
+  await hal.click('#b-pilih-batal');
+  await hal.waitForTimeout(200);
+
+  /* GAMBAR YANG KAMU DROP MENDARAT DI SINI SENDIRI. Tidak ada satu keputusan
+     pun yang ditagih di jalur masuk - aturan nomor satu tetap utuh. */
+  const sblmDrop = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.jenis === 'gambar' && !e.pensiun).length);
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(300);
+  await hal.setInputFiles('#pilih-gambar', [
+    { name: 'ssuji.png', mimeType: 'image/png', buffer: binPng }
+  ]);
+  await hal.waitForTimeout(1200);
+  await hal.fill('#kotak', 'tangkapan layar uji');
+  await hal.click('#b-drop');
+  await hal.waitForTimeout(1200);
+  const ssdhDrop = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.jenis === 'gambar' && !e.pensiun).length);
+  cek('gambar yang di-drop ikut masuk Gallery tanpa satu keputusan pun',
+      ssdhDrop === sblmDrop + 1, sblmDrop + ' -> ' + ssdhDrop);
+
+  /* Kolomnya ikut dicadangkan, DI EKOR - baris lama membaca nilainya menurut
+     urutan, jadi menyisipkan di tengah menggeser seluruh cadangan yang ada. */
+  const kolomGal = await hal.evaluate(() => TAwan.KOLOM);
+  cek('album dan sumber ikut dicadangkan, kolomnya di ekor',
+      kolomGal.indexOf('album') >= kolomGal.length - 2 &&
+      kolomGal.indexOf('sumber') >= kolomGal.length - 2,
+      JSON.stringify(kolomGal.slice(-4)));
+
+  await hal.evaluate(() => Promise.all(TAlur.semuaEntri()
+    .filter((e) => /^gal\d|unggahuji|ssuji/.test(e.id) || /gal\d|unggahuji|ssuji/.test(e.namaBerkas || ''))
+    .map((e) => { e.pensiun = true; return TSimpan.taruh(e); })));
+  await hal.evaluate(() => TAlur.muatUlangUji());
+  await hal.waitForTimeout(300);
 }
 
 console.log('\nnama cuma kulit');

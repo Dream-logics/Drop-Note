@@ -320,6 +320,60 @@
   <div class="tumbuh"></div>
 </section>
 
+<!-- ===================== GALLERY =====================
+     Pintu kelima, untuk timbunan yang paling besar dan paling tidak
+     tertangani: foto. Tiga sampai lima jepretan sehari terdengar sedikit;
+     dua puluh ribu kemudian tidak ada satu pun yang bisa ditemukan lagi.
+
+     Bentuknya menyalin layar Note - jejak folder, kotak cari, "+ Folder" -
+     dan itu disengaja: yang sudah dipelajari jarimu di satu layar tidak boleh
+     harus dipelajari ulang di layar sebelahnya. Yang ditambahkan cuma dua
+     yang memang cuma ada di sini: baris saringan + tampilan, dan dua tombol
+     bulat untuk memasukkan gambar. -->
+<section class="layar" id="l-galeri">
+  <header class="atas">
+    <div class="merek" data-merek>Cortex Space</div>
+    <div class="atas-kanan">
+      <button class="ikon-btn" data-ke-setelan aria-label="Setelan">
+        <svg viewBox="0 0 24 24" class="ik"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+  <div class="tab-baris" data-tab></div>
+
+  <div class="tulis-kepala">
+    <div class="note-alamat" id="galeri-alamat"></div>
+    <button class="folder-baru" id="b-galeri-folder" aria-label="Folder baru">+ Folder</button>
+  </div>
+  <div class="note-cari-baris">
+    <input id="galeri-cari" class="cari-input" placeholder="Cari gambar&#8230;" autocomplete="off">
+    <button class="pilih-mulai" id="b-galeri-pilih">Pilih</button>
+  </div>
+
+  <!-- SATU BARIS untuk dua hal, saringan di kiri dan tampilan di kanan.
+       Dua baris terpisah mendorong gambar pertama ke bawah layar - dan gambar
+       pertama itu yang dicari. -->
+  <div class="galeri-baris">
+    <div class="galeri-saring" id="galeri-saring"></div>
+    <div class="galeri-tampil" id="galeri-tampil"></div>
+  </div>
+
+  <div id="galeri-isi"></div>
+  <div class="tumbuh"></div>
+
+  <!-- Dibaca dari KANAN: jempol kanan bertumpu di sudut kanan bawah, jadi
+       yang paling sering ditekan duduk paling kanan. Memotret lebih sering
+       daripada mengunggah yang sudah ada. -->
+  <div class="galeri-dok">
+    <button class="galeri-tbl" id="b-galeri-unggah" aria-label="Unggah gambar">
+      <svg viewBox="0 0 24 24" class="ik"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+    </button>
+    <button class="galeri-tbl utama" id="b-galeri-kamera" aria-label="Ambil foto">
+      <svg viewBox="0 0 24 24" class="ik"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    </button>
+  </div>
+</section>
+
 <!-- ===================== LAYAR CATAT (memo pad) ===================== -->
 <!-- LAYAR NOTE: RUANG MENULIS, bukan hasil saringan Drop.
      Ini pintu keempat, dan dia ada karena satu penemuan: menulis panjang -
@@ -495,6 +549,13 @@
      disimpan lokal, dicadangkan ke Drive belakangan. -->
 <input type="file" id="pilih-kamera" accept="image/*" capture="environment" hidden>
 <input type="file" id="pilih-berkas" hidden>
+<!-- Milik layar Gallery, terpisah dari yang di atas: yang di atas menaruh
+     gambarnya di kotak Drop sebagai lampiran, yang ini menyimpannya langsung
+     jadi entri di album yang sedang dibuka. Satu isian untuk dua arti akan
+     salah di salah satunya. multiple: mengunggah dua puluh foto satu-satu
+     adalah dua puluh keputusan untuk satu niat. -->
+<input type="file" id="galeri-pilih-kamera" accept="image/*" capture="environment" hidden>
+<input type="file" id="galeri-pilih-unggah" accept="image/*" multiple hidden>
 
 <script src="bawaan.js"></script>
 <script src="bahasa.js"></script>
