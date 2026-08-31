@@ -204,7 +204,60 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     tempat kejadian selesai, jenis benda yang dipanggil lagi
                     enam bulan kemudian. Divisinya IKUT didaftarkan sebagai
                     album: susunan di sini dibaca dari nama, jadi tanpa baris
-                    "Cons" akarnya rata dan pembagiannya tidak pernah kelihatan
+                    "Cons" akarnya rata dan pembagiannya tidak pernah kelihatan.
+                    DRIVER ('driver' di entri, 'driverLengket' di setelan) -
+                    yang diketik waktu memotret BUKAN ALAMAT, TAPI NIAT. Dua
+                    tiga kata: "interior mesjid", "sofa unik minimalis". Satu
+                    foto tidak punya satu isi, dia punya isi MENURUT drivernya:
+                    foto masjid yang sama dengan driver "karpet mesjid" jadi
+                    barang lain sama sekali, dan foto QR menu di resto itu FNB
+                    kalau yang dipikirkan restonya, Apps Dev kalau yang
+                    dipikirkan produknya. Bendanya sama; sudut pandangnya
+                    milik pemakainya, dan CUMA DIA yang tahu - itu sebabnya AI
+                    tidak pernah menebaknya dari gambarnya (yang dia lihat di
+                    foto masjid "beberapa orang sholat": benar, dan meleset
+                    total). Dari driver turun semuanya: judul, caption, tag,
+                    folder. Disimpan MENTAH dan dinilai 6 di pencarian - itu
+                    satu-satunya teks di entri yang lahir dari kepalanya.
+                    Ditanya SEKALI di jepretan pertama lalu mewaris bersama
+                    albumnya; "Ganti" menanyakannya LAGI (menekan Ganti berarti
+                    konteksnya berpindah, bukan albumnya yang salah).
+                    Driver yang datang belakangan memicu pelabelan ULANG.
+public/bawaan.js    (lanjutan) GERBONG ('gerbongAwal', disunting di Setelan) -
+                    rak untuk gambar, SUMBUNYA BEDA dengan label rak. Label rak
+                    menjawab SIAPA (proyek, divisi, perusahaan) dan siapa itu
+                    punya tanggal selesai; gerbong menjawab APA, dan apa tidak
+                    pernah selesai - satu foto sofa jadi referensi untuk klien
+                    mana pun bertahun sesudah proyeknya ditutup. Bertingkat
+                    lewat awalan nama. Anaknya dicocokkan lewat NAMA PENDEKNYA
+                    ("FNB Menu" tidak punya kata sesudah '=', jadi tanpa itu
+                    driver "menu murah enak" tidak pernah menyentuhnya).
+                    AI boleh MENGUSULKAN gerbong baru tapi TIDAK PERNAH
+                    membuatnya sendiri - itu satu-satunya yang menahan daftar
+                    ini supaya tidak melar; yang tumbuh bebas cuma anaknya.
+                    Quote ada di situ bukan tempelan: yang menginspirasi di
+                    tengah jalan tidak punya proyek dan tidak akan pernah
+                    punya, dan keberadaannya yang bikin daftar ini daftar
+                    MILIKNYA, bukan daftar bisnis.
+                    USUL FOLDER DISARING DRIVER, bukan didaftar semua.
+                    Menawarkan FnB dan Konstruksi untuk foto interior masjid
+                    bukan cuma mubazir - itu bikin dia ragu apakah aplikasinya
+                    paham atau cuma menumpahkan daftar. Album lama ikut CUMA
+                    kalau namanya nyambung; sisanya di balik "Semua folder…"
+public/pelabel.js   (lanjutan) PUSTAKA TAG: yang baru MENUNGGU di 'tagUsulan',
+                    tidak langsung masuk 'hashtag'. Hidupnya berputar di
+                    lingkaran terbatas, jadi tagnya SEHARUSNYA konvergen -
+                    yang merusak sifat itu bukan satu tag yang salah, tapi tag
+                    yang masuk pustaka tanpa pernah dilihat (sekali "kursi"
+                    terdaftar di sebelah "sofa", AI memakai keduanya
+                    bergantian selamanya). Bilahnya di Gallery, semuanya sudah
+                    tercentang: yang ditawarkan PENOLAKAN, bukan pemilihan.
+                    Yang dicabut ikut DILEPAS dari entrinya - kalau tidak, dia
+                    kembali jadi usulan besok lewat entri yang sama.
+                    TAG_BENTUK sekarang ikut menolak foto/gambar/image/
+                    screenshot/kamera: 100% foto adalah foto, jadi tag itu
+                    tidak memisahkan satu pun dari dua puluh ribu saudaranya -
+                    sama gunanya dengan tag "manusia" pada seseorang
 public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
                     ulang, langkah, catatan, penanda BELUM DIBACA.
                     SATU daftar, tidak dibagi bagian "Berulang" lagi - Berulang
@@ -392,7 +445,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (666 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (689 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

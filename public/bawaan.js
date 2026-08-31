@@ -65,6 +65,40 @@
       'Various = lain, umum'
     ],
 
+    /* GERBONG: rak untuk gambar, dan sumbunya BEDA dengan label rak di atas.
+       Label rak menjawab SIAPA - proyek, divisi, perusahaan - dan siapa itu
+       punya tanggal selesai. Gerbong menjawab APA, dan apa tidak pernah
+       selesai: satu foto sofa jadi referensi untuk klien mana pun, bertahun
+       sesudah proyek yang melahirkannya ditutup.
+
+       Yang menentukan sebuah gambar masuk gerbong mana BUKAN gambarnya, tapi
+       DRIVER yang kamu ketik waktu memotretnya. Foto QR menu di sebuah resto
+       itu FNB kalau yang kamu pikirkan restonya, dan Apps Dev kalau yang kamu
+       pikirkan produknya. Bendanya sama; sudut pandangnya milikmu.
+
+       Bertingkat lewat awalan nama, sama persis dengan folder Note dan album
+       Gallery - tidak ada mekanik baru yang harus dipelajari.
+
+       AI boleh MENGUSULKAN gerbong baru, tapi tidak pernah membuatnya sendiri.
+       Itu satu-satunya yang menahan daftar ini supaya tidak melar tanpa batas:
+       yang tumbuh bebas cuma anaknya, atapnya tetap keputusanmu.
+
+       Quote ada di sini bukan sebagai tempelan. Yang menginspirasi di tengah
+       jalan tidak punya proyek dan tidak akan pernah punya, tapi dia tetap
+       butuh rumah kalau tidak mau tenggelam - dan keberadaannya yang bikin
+       daftar ini daftar MILIKMU, bukan daftar bisnis.
+       Sama seperti dua daftar di atas, ini cuma NILAI AWAL. */
+    gerbongAwal: [
+      'FNB = makanan, minuman, kuliner, cafe, kopi, resto, catering, booth, menu',
+      'FNB Menu',
+      'FNB Promo',
+      'Interior = interior, furnishing, dekorasi, furniture, sofa, lighting, lampu',
+      'Construction = construction, konstruksi, bangunan, material, struktur, granit, keramik',
+      'Real Estate = properti, kost, ruko, villa, hotel, guesthouse, kontrakan, warehouse, gudang',
+      'Apps Dev = aplikasi, apps, digital, sistem, software, qr, website',
+      'Quote = quote, kutipan, inspirasi, renungan'
+    ],
+
     /* Alamat proxy AI milik PEMBUAT aplikasi (Apps Script /exec).
        Kunci Gemini tinggal di sana, tidak pernah di perangkat siapa pun.
        Pemakai tidak membawa kunci, tidak membeli kunci, tidak tahu ada kunci -

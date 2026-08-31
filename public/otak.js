@@ -829,6 +829,80 @@
     });
   }
 
+  /* MENCOCOKKAN DRIVER DENGAN GERBONG.
+
+     Driver itu dua-tiga kata yang kamu ketik waktu memotret - "interior
+     mesjid", "sofa unik minimalis", "menu murah enak". Dari situ dicari
+     gerbong mana yang paling mungkin jadi rumahnya.
+
+     DIKERJAKAN DI SINI, BUKAN DI AI, dan itu bukan penghematan. Ini berdiri
+     di jalur yang harus menjawab seketika: kamu baru saja memotret, layarnya
+     menunggu, dan sinyal di lapangan sering tidak ada sama sekali. Usulan yang
+     datang tiga detik kemudian - atau tidak datang - sama saja dengan tidak
+     ada usulan. AI tetap mengerjakan judul, caption, dan tag di belakang;
+     yang tidak boleh menunggu cuma alamatnya.
+
+     Skornya sengaja tumpul: satu istilah yang cocok itu satu poin, dan yang
+     cocok UTUH sebagai kata dihitung lebih tinggi daripada yang cuma
+     tersangkut di tengah kata lain ("kopi" di dalam "kopiah"). Yang lebih
+     rumit dari ini tidak bisa dijelaskan lagi ke pemakainya waktu usulannya
+     terasa aneh - dan usulan yang tidak bisa dijelaskan bikin orang berhenti
+     mempercayainya.
+
+     Yang dikembalikan DAFTAR, bukan satu jawaban: satu foto bisa punya
+     puluhan sudut pandang, jadi menetapkan sendiri satu gerbong berarti
+     merampas bagian yang justru cuma dia yang tahu. */
+  function cocokGerbong(driver, daftar, maks) {
+    var k = normal(driver);
+    if (!k) return [];
+    var kata = k.split(' ').filter(Boolean);
+    var pohon = pohonLabel(daftar || []);
+    var nilai = pohon.map(function (g) {
+      var n = 0;
+      /* EKORNYA IKUT DIHITUNG, dan tanpa ini seluruh tingkat kedua mati.
+         "FNB Menu" tidak punya kata sesudah '=' - namanya sendiri yang jadi
+         satu-satunya istilahnya - jadi driver "menu murah enak" tidak akan
+         pernah menyentuhnya, padahal itu persis rumahnya. Yang dicocokkan
+         harus nama pendeknya: di dalam FNB, anaknya bernama "Menu". */
+      var istilah = (g.istilah || []).slice();
+      if (g.induk && istilah.indexOf(normal(g.ekor)) < 0) istilah.push(normal(g.ekor));
+      istilah.forEach(function (t) {
+        if (!t) return;
+        if ((' ' + k + ' ').indexOf(' ' + t + ' ') >= 0) { n += 3; return; }
+        /* Sepenggal cuma dihitung dari empat huruf ke atas - "map" atau "ps"
+           sebagai penggalan akan tersangkut di hampir semua kalimat. */
+        if (t.length >= 4 && k.indexOf(t) >= 0) { n += 1; return; }
+        if (t.length >= 4 && kata.some(function (w) {
+          return w.length >= 4 && (t.indexOf(w) === 0 || w.indexOf(t) === 0);
+        })) n += 1;
+      });
+      /* Anak MEWARISI kecocokan induknya, setengah nilai. "FNB Menu" pantas
+         ikut tampil untuk driver yang jelas-jelas soal makanan walau kata
+         "menu" sendiri tidak disebut - tapi tidak boleh mengalahkan induknya,
+         yang lebih aman kalau tebakannya meleset. */
+      if (g.induk) {
+        var ind = pohon.filter(function (x) { return x.nama === g.induk; })[0];
+        if (ind && n === 0) {
+          var ni = 0;
+          (ind.istilah || []).forEach(function (t) {
+            if ((' ' + k + ' ').indexOf(' ' + t + ' ') >= 0) ni += 3;
+            else if (t.length >= 4 && k.indexOf(t) >= 0) ni += 1;
+          });
+          n = ni ? 1 : 0;
+        }
+      }
+      return { nama: g.nama, nilai: n };
+    }).filter(function (x) { return x.nilai > 0; });
+    nilai.sort(function (a, b) {
+      if (b.nilai !== a.nilai) return b.nilai - a.nilai;
+      /* Seri dimenangkan yang PALING KHUSUS: "FNB Menu" mengalahkan "FNB".
+         Yang lebih dalam lebih banyak memberitahu, dan yang lebih dangkal
+         tetap ikut tampil di bawahnya sebagai jalan mundur. */
+      return b.nama.length - a.nama.length;
+    });
+    return nilai.slice(0, maks || 3).map(function (x) { return x.nama; });
+  }
+
   /* ===================== PENCARIAN =====================
      Berjalan di atas salinan lokal. Tidak ada jaringan, tidak ada AI, tidak
      ada tunggu. Ini bagian yang paling sering dipakai, jadi paling murah. */
@@ -883,6 +957,12 @@
          yang berbeda. */
       if (normal(e.folder).indexOf(w) >= 0) n += 4;
       if (normal(e.album).indexOf(w) >= 0) n += 4;
+    /* DRIVER ITU KALIMATMU SENDIRI, jadi dia dinilai setinggi judul. Enam
+       bulan lagi yang paling pasti kamu ingat bukan judul atau caption
+       karangan AI, tapi dua-tiga kata yang kamu ketik sendiri waktu
+       mengangkat kamera - dan itu satu-satunya teks di entri ini yang
+       benar-benar lahir dari kepalamu. */
+    if (normal(e.driver).indexOf(w) >= 0) n += 6;
       /* Isi dan elemen entri rahasia sudah berupa sandi - mencocokkannya
          cuma menghasilkan kecocokan palsu. Judul, tag, dan labelnya tetap
          terbuka, dan itu memang yang membuatnya masih bisa DITEMUKAN. */
@@ -930,6 +1010,7 @@
     buangSerpihan: buangSerpihan,
     uraiLabel: uraiLabel, tulisLabel: tulisLabel, cocokLabel: cocokLabel,
     pohonLabel: pohonLabel, lengkapiRuang: lengkapiRuang, bacaRuang: bacaRuang,
+    cocokGerbong: cocokGerbong,
     jenisNomorTelepon: jenisNomorTelepon,
     normal: normal, jarak: jarak, waktuPendek: waktuPendek,
     tanggalIndo: tanggalIndo, waktuRingkas: waktuRingkas,
