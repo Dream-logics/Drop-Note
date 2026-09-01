@@ -1565,7 +1565,7 @@ console.log('\npohon board: daftar tertutup, dan AI cuma memilih');
      boleh tumbuh cuma sub board, dan katanya pun dari daftar tertutup. */
   cek('AI dilarang mengarang main board baru, terang-terangan',
       /jangan mengarang nama main board baru/.test(arahan) &&
-      /jangan mengarang nama main board baru/.test(gambar));
+      /jangan mengarang nama board maupun akhiran baru/.test(gambar));
   /* Board kosong itu jawaban yang sah. Tanpa jalan keluar ini, model dipaksa
      memilih, dan yang dipilih pasti yang paling mirip - foto masjid masuk
      "Interior Bedroom". */
@@ -2842,6 +2842,8 @@ console.log('\nTo Do dua bagian, timestamp di Note, dan gambar yang membesar');
   cek('dan layarnya tidak ke mana-mana', await hal.locator('#l-galeri').isVisible());
   await hal.fill('#galeri-cari', '');
   await hal.dispatchEvent('#galeri-cari', 'input');
+  await hal.click('#galeri-saring [data-gkepala="*view"]');
+  await hal.waitForTimeout(250);
   await hal.click('#galeri-tampil [data-ggaya="sedang"]');
   await hal.waitForTimeout(300);
   await hal.click('#galeri-saring [data-gkepala="*home"]');
@@ -5117,9 +5119,13 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
   await hal.waitForTimeout(700);
   await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
   await hal.waitForTimeout(400);
-  cek('akarnya dibagi dua, dengan kepala "Main Interest"',
-      (await hal.locator('#galeri-isi .galeri-bagian').count()) === 2 &&
-      /main interest/i.test(await hal.innerText('#galeri-isi .galeri-bagian')),
+  /* AKARNYA BARIS YANG BISA DIKETUK, bukan kepala bagian yang menggelar
+     seluruh interest sekaligus. Tujuh kepala dengan sepuluh interest di bawah
+     masing-masing adalah lima layar HP yang harus digulir sebelum sampai ke
+     baris terakhir - dan yang dicari mata di layar pertama cuma "bidang mana". */
+  cek('yang tampil di akar barisnya sendiri, dan cuma satu garis pemisah',
+      (await hal.locator('#galeri-isi .galeri-bagian').count()) === 1 &&
+      (await hal.locator('#galeri-isi .galeri-bagian.pisah').count()) === 1,
       await hal.innerText('#galeri-isi'));
   /* TIDAK ADA LAGI "Belum berboard" DI SEBELAHNYA. Dua baris yang mengucapkan
      pertanyaan yang sama persis - "yang tidak punya rumah" - dan yang pertama
@@ -5220,21 +5226,14 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
       await hal.locator('#galeri-tampil').isHidden());
   await hal.click('#galeri-saring [data-gkepala="*view"]');
   await hal.waitForTimeout(300);
-  cek('mengetuknya membuka pilihan tampilan dan saringan sumbernya',
+  /* SATU BARIS, DAN CUMA UKURAN PETAK. Saringan sumber sudah dibuang:
+     "Kamera / Unggah / Drop" memisahkan tumpukan menurut CARA BARANGNYA MASUK,
+     dan itu bukan pertanyaan yang pernah dibawa mata ke layar ini. */
+  cek('mengetuknya membuka satu baris ukuran petak, tanpa saringan sumber',
       (await hal.locator('#galeri-tampil').isVisible()) &&
+      (await hal.locator('#galeri-tampil .view-baris').count()) === 1 &&
       (await hal.locator('#galeri-tampil .tampil-tbl').count()) === 4 &&
-      (await hal.locator('#galeri-tampil [data-gsaring]').count()) >= 2);
-
-  await hal.click('#galeri-tampil [data-gsaring="kamera"]');
-  await hal.waitForTimeout(350);
-  const dariKamera = await hal.locator('#galeri-isi .petak-satu').count();
-  await hal.click('#galeri-tampil [data-gsaring="drop"]');
-  await hal.waitForTimeout(350);
-  const dariDrop = await hal.locator('#galeri-isi .petak-satu').count();
-  cek('saringan sumber memisahkan kamera dari yang masuk lewat Drop',
-      dariKamera === 2 && dariDrop >= 2, dariKamera + ' vs ' + dariDrop);
-  await hal.click('#galeri-tampil [data-gsaring="*semua"]');
-  await hal.waitForTimeout(300);
+      (await hal.locator('#galeri-tampil [data-gsaring]').count()) === 0);
 
   /* Empat tampilan, dan yang dipilih ikut ke pembukaan berikutnya - kebiasaan
      orang menetap di satu ukuran. */
@@ -5243,6 +5242,13 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
   cek('memilih petak besar benar-benar mengganti petaknya',
       (await hal.evaluate(() =>
         document.querySelector('#galeri-isi .petak').className)) === 'petak besar');
+  /* MENCIUT BEGITU DIJAWAB. Pertanyaannya cuma satu, dan menu yang tetap
+     terbuka sesudahnya mendorong gambarnya turun justru waktu kamu baru
+     selesai mengatur cara melihatnya. */
+  cek('dan menunya menciut sendiri sesudah dipilih',
+      await hal.locator('#galeri-tampil').isHidden());
+  await hal.click('#galeri-saring [data-gkepala="*view"]');
+  await hal.waitForTimeout(250);
   await hal.click('#galeri-tampil [data-ggaya="daftar"]');
   await hal.waitForTimeout(300);
   cek('dan Daftar menggantinya jadi baris, bukan petak',
@@ -5250,6 +5256,8 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
       (await hal.locator('#galeri-isi .kartu').count()) >= 4);
   cek('pilihannya ikut tersimpan',
       (await hal.evaluate(() => TSimpan.setelan('gayaGaleri'))) === 'daftar');
+  await hal.click('#galeri-saring [data-gkepala="*view"]');
+  await hal.waitForTimeout(250);
   await hal.click('#galeri-tampil [data-ggaya="sedang"]');
   await hal.waitForTimeout(300);
 
@@ -5268,6 +5276,81 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
      pernah dilihat utuh persis yang mau dihindari. */
   cek('tidak ada lagi "+ Folder" di Gallery — pohonnya dikurasi di Setelan',
       (await hal.locator('#b-galeri-folder').count()) === 0);
+
+  /* ===== ANGKANYA GAMBAR, DAN DIA MENGHITUNG SAMPAI KE DALAM =====
+     Dulu barisnya membawa dua angka: "10 album" dan isi langsungnya. Yang
+     dibaca mata cuma yang pertama, dan yang pertama menjawab pertanyaan yang
+     tidak pernah ditanyakan - kamu tidak mencari album, kamu mencari foto.
+     Akibatnya baris bertulis "10 album" diketuk lalu isinya nol, dan angka
+     yang menipu sekali saja berhenti dipercaya selamanya. */
+  await hal.evaluate(async () => {
+    await TSimpan.setel('board', JSON.stringify(
+      ['Business', 'Business Bidanguji', 'Business Bidanguji Kamaruji']));
+    const bin = atob('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGP8z8Dw'
+                   + 'nwEJMKEL0FIQAG3+AwOfLbXbAAAAAElFTkSuQmCC');
+    const arr = new Uint8Array(bin.length);
+    for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j);
+    const blob = new Blob([arr], { type: 'image/png' });
+    for (const [id, album] of [['ghit1', 'Business Bidanguji Kamaruji'],
+                               ['ghit2', 'Business Bidanguji Kamaruji'],
+                               ['ghit3', 'Business Bidanguji']]) {
+      await TSimpan.taruhBerkas('b' + id, blob, id + '.png', 'image/png');
+      await TSimpan.taruh({ id: id, jenis: 'gambar', judul: id, isi: '',
+        kategori: '', folder: '', album: album, sumber: 'kamera', driver: '', thumb: '',
+        berkasId: 'b' + id, namaBerkas: id + '.png', tipeBerkas: 'image/png',
+        ukuran: blob.size, label: [], elemen: [], daftar: [],
+        dibuat: Date.now(), diubah: Date.now(), dipakai: 0, diLabeliAI: true, diBacaAI: true });
+    }
+  });
+  await hal.reload();
+  await hal.waitForFunction(() => window.TAlur);
+  await pasangAI();
+  await hal.waitForTimeout(700);
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(400);
+  const angkaAkar = await hal.innerText('#galeri-isi [data-galeri-folder="Business"]');
+  cek('akarnya menghitung SELURUH gambar di bawahnya, bukan jumlah interest-nya',
+      /\b3\b/.test(angkaAkar) && !/album/.test(angkaAkar), angkaAkar);
+  await hal.click('#galeri-isi [data-galeri-folder="Business"]');
+  await hal.waitForTimeout(350);
+  cek('mengetuk akarnya membuka interest di dalamnya, bukan fotonya',
+      (await hal.locator('#galeri-isi [data-galeri-folder="Business Bidanguji"]').count()) === 1 &&
+      (await hal.locator('#galeri-isi .petak-satu').count()) === 0);
+  cek('dan interest-nya juga menghitung sampai ke sub-nya',
+      /\b3\b/.test(await hal.innerText('#galeri-isi [data-galeri-folder="Business Bidanguji"]')),
+      await hal.innerText('#galeri-isi [data-galeri-folder="Business Bidanguji"]'));
+
+  /* ===== TIAP INTEREST SELALU PUNYA "VARIOUS", WALAU KOSONG =====
+     Yang membuka "Business Hampers" dan cuma melihat "Isi Hamper" tidak punya
+     satu tempat pun untuk hamper yang bukan isinya - jadi dia menaruhnya di
+     interest itu sendiri, dan interest yang menampung foto lepas di samping
+     sub-nya persis timbunan yang dilawan aplikasi ini. */
+  await hal.click('#galeri-isi [data-galeri-folder="Business Bidanguji"]');
+  await hal.waitForTimeout(350);
+  cek('tiap interest dapat ruang tunggunya sendiri, walau belum ada isinya',
+      (await hal.locator('#galeri-isi [data-galeri-folder="Business Bidanguji Various"]').count()) === 1,
+      await hal.innerText('#galeri-isi'));
+  /* TAPI VIRTUAL, bukan ditanam ke pohonmu: sebelas baris "Various" yang lahir
+     sendiri di Setelan adalah pohon yang menumbuhi dirinya di belakangmu, dan
+     pohon begitu berhenti terasa milikmu. */
+  cek('tapi barisnya belum ditanam ke pohonmu sampai ada yang mendarat di situ',
+      (await hal.evaluate(() => JSON.parse(TAlur.setelanUji().board)))
+        .indexOf('Business Bidanguji Various') < 0);
+  /* AKAR DAN RUANG TUNGGU TIDAK IKUT DAPAT: akar itu tulang punggung, dan
+     ruangan di dalam ruang tunggu membatalkan gunanya ruang tunggu. */
+  cek('akarnya sendiri tidak ikut ditumbuhi Various',
+      (await hal.evaluate(() => TAlur.albumTampakUji())).indexOf('Business Various') < 0);
+  /* Foto langsung di interest tetap terlihat di sana - foto yang tidak punya
+     baris untuk ditampilkan sama saja dengan foto yang hilang. */
+  cek('dan foto yang memang di interest itu tetap kelihatan di bawahnya',
+      (await hal.locator('#galeri-isi .petak-satu').count()) === 1);
+
+  await hal.evaluate(async () => {
+    for (const id of ['ghit1', 'ghit2', 'ghit3']) {
+      const e = TAlur.semuaEntri().filter((x) => x.id === id)[0];
+      if (e) { e.pensiun = true; await TSimpan.taruh(e); }
+    }
+  });
   /* Pohonnya dibaca sekali waktu halaman dimuat, jadi menulisnya ke basis data
      saja tidak cukup - halamannya harus benar-benar dimuat ulang, persis
      seperti yang terjadi di HP sesudah menyuntingnya di Setelan. */
@@ -5978,7 +6061,7 @@ console.log('\ntag sudah dibuang seluruhnya, bukan cuma disembunyikan');
   cek('tidak ada satu pun permintaan tag atau hashtag yang tersisa di arahan',
       !/hashtag/i.test(baca) && !/"tag"/.test(baca) && !/\btag:/.test(baca), baca.slice(0, 200));
   cek('yang diminta deskripsi, dan isinya ditentukan',
-      /MAKSIMAL 2 kalimat/.test(gambar) && /nama objeknya, gayanya,/.test(gambar));
+      /MAKSIMAL 2 kalimat/.test(gambar) && /TULIS YANG MEMBEDAKAN/.test(gambar));
   /* Deskripsinya kontekstual: yang menentukan isinya DRIVER, bukan yang paling
      menonjol di gambar. Foto masjid dengan driver "interior mesjid" harus
      menghasilkan kalimat tentang elemen interiornya. */
@@ -6096,10 +6179,23 @@ console.log('\narahan gambar: pendek, kontekstual, bahasamu');
      dibaca, dan yang berhenti dibaca sama saja dengan tidak ada. */
   cek('deskripsinya maksimal 2 kalimat dengan isi yang ditentukan',
       /MAKSIMAL 2 kalimat/.test(arahanGbr) &&
-      /nama objeknya, gayanya,/.test(arahanGbr) &&
-      /bentuknya, fungsinya/.test(arahanGbr), arahanGbr);
-  cek('dan mengulang dilarang terang-terangan',
-      /JANGAN MENGULANG/.test(arahanGbr));
+      /TULIS YANG MEMBEDAKAN/.test(arahanGbr) &&
+      /warna, bahan, merek/.test(arahanGbr), arahanGbr);
+  /* ===== FUNGSI GENERIK ITU BUKAN DESKRIPSI =====
+     "pulpen untuk mencatat", "air untuk minum", "ini adalah foto…" - semua itu
+     sudah diketahui siapa pun yang membaca namanya, jadi kalimatnya habis tanpa
+     memberi satu pun pintu masuk baru. Satu gambar sudah seribu kata; yang
+     dibutuhkan deskripsi cuma kata yang MEMANGGIL gambar itu kembali, dan
+     fungsi generik tidak memanggil apa pun karena dia berlaku untuk semua
+     benda sejenis. */
+  cek('fungsi generik bendanya dilarang terang-terangan',
+      /DILARANG menyebut fungsi umum bendanya/.test(arahanGbr) &&
+      /ini adalah foto/.test(arahanGbr), arahanGbr);
+  /* DUA KALIMAT ITU BATAS ATAS, BUKAN SASARAN: kalau tidak ada yang
+     membedakan, satu kalimat yang jujur lebih baik daripada dua yang berputar. */
+  cek('dan kalimat kedua tidak boleh diisi sekadar memenuhi jatah',
+      /cukup SATU kalimat/.test(arahanGbr) &&
+      /memenuhi jatah/.test(arahanGbr));
   /* DITEGAKKAN KODENYA, bukan cuma diminta: permintaan bukan jaminan, dan yang
      bocor di sini tidak pernah kelihatan sebagai galat - cuma sebagai kartu
      yang makin lama makin panjang. */
@@ -6144,7 +6240,7 @@ console.log('\narahan gambar: pendek, kontekstual, bahasamu');
      ruangan yang sama. */
   cek('pohonnya ikut dikirim, dan disebut tertutup',
       /Interior Bedroom/.test(arahanGbr) && /TERTUTUP/.test(arahanGbr) &&
-      /jangan mengarang nama main board baru/.test(arahanGbr), arahanGbr);
+      /jangan mengarang nama board maupun akhiran baru/.test(arahanGbr), arahanGbr);
   cek('jawabannya wajib turun sampai sub interest',
       /HARUS SUB INTEREST/.test(arahanGbr) && !/cukup main board/.test(arahanGbr),
       arahanGbr);

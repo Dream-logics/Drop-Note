@@ -160,7 +160,6 @@
     'Unggah gambar': 'Upload images',
     'Kamera': 'Camera',
     'Unggah': 'Upload',
-    'Belum ada gambar dari sini.': 'Nothing from here yet.',
     'Tidak ada gambar yang cocok.': 'No image matches.',
     'Memasukkan…': 'Adding…',
     'album': 'folders',
