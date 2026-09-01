@@ -85,6 +85,10 @@
      sudah datang untuk yang lain. Itulah "galat pada klik pertama, hilang
      setelah dimuat ulang". Jadi yang kedua ikut menunggu yang pertama, bukan
      mengajukan permintaan sendiri. */
+  function clientId(setelan) {
+    return TBawaan.clientId || (setelan && setelan.clientId) || '';
+  }
+
   function ambilToken(setelan, diam) {
     if (token && Date.now() < tokenSampai - 60000) return Promise.resolve(token);
     /* PERMINTAAN YANG DIMINTA JARI TIDAK PERNAH IKUT ANTRE DI BELAKANG YANG
@@ -108,7 +112,21 @@
       mintaDiamJalan = false;
     }
     if (mintaJalan) return mintaJalan;
-    var id = (setelan && setelan.clientId) || TBawaan.clientId;
+    /* YANG DITANAM PEMBUATNYA MENANG, dan urutan ini bukan selera.
+       Dulu yang tersimpan di perangkat yang menang, dan itu jebakan yang tidak
+       punya jalan keluar: Client ID yang pernah ditempel sekali waktu masih
+       uji coba akan terus dikirim ke Google SELAMANYA - sementara isian untuk
+       mengubahnya cuma digambar kalau bawaan.js masih kosong, jadi begitu
+       pembuatnya menanam miliknya, isian itu hilang dari layar dan nilai basi
+       tadi jadi tidak terlihat DAN tidak bisa dihapus.
+       Yang kembali dari Google: "Error 401: invalid_client - no registered
+       origin", di jendela penyamaran tidak pernah muncul karena di sana tidak
+       ada yang tersimpan. Yang kelihatan seperti "peramban ini bermasalah"
+       sebenarnya "aplikasi ini mengirim Client ID yang salah, dan cuma di
+       peramban yang pernah kamu pakai".
+       Yang tersimpan tetap dipakai kalau bawaan.js memang kosong - itu memang
+       gunanya, untuk yang memasang sendiri. */
+    var id = clientId(setelan);
     if (!id) return Promise.reject(new Error('Client ID Google belum diisi'));
 
     mintaJalan = mintaTokenBaru(id, diam);
@@ -162,7 +180,7 @@
      Boleh gagal total dan diam: belum pernah mengizinkan Google itu keadaan
      yang sah, bukan kerusakan. */
   function hangatkan(setelan) {
-    if (token || !((setelan && setelan.clientId) || TBawaan.clientId)) return Promise.resolve(false);
+    if (token || !clientId(setelan)) return Promise.resolve(false);
     return ambilToken(setelan, true).then(function () { return true; },
                                           function () { return false; });
   }
@@ -568,6 +586,7 @@
 
   global.TAwan = {
     masuk: masuk, keluar: keluar, punyaToken: punyaToken, ambilToken: ambilToken,
+    clientIdUji: clientId,
     hangatkan: hangatkan,
     siapa: siapa,
     siapkanRumah: siapkanRumah,

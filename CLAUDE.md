@@ -130,6 +130,22 @@ terpikir, dan itu membatalkan seluruh gunanya.
    Satu-satunya yang diminta darinya: kunci Gemini, dan itu pun boleh dilewati.
    **Client ID Google tidak pernah ditanyakan ke pemakai** — itu ditanam sekali
    di `bawaan.js` oleh pembuatnya, dan isiannya cuma muncul kalau masih kosong.
+   **YANG DITANAM PEMBUATNYA MENANG ATAS YANG TERSIMPAN DI PERANGKAT**
+   (`clientId()` di awan.js), dan urutan itu bukan selera. Dulu terbalik, dan
+   itu jebakan yang tidak punya jalan keluar: Client ID yang pernah ditempel
+   sekali waktu masih uji coba terus dikirim ke Google SELAMANYA — sementara
+   isian untuk mengubahnya cuma digambar kalau `bawaan.js` masih kosong, jadi
+   begitu pembuatnya menanam miliknya, nilai basi tadi tidak terlihat DAN tidak
+   bisa dihapus. Yang kembali dari Google: *"Error 401: invalid_client — no
+   registered origin"*, dan di jendela penyamaran tidak pernah muncul karena di
+   sana tidak ada yang tersimpan — jadi yang kelihatan seperti "peramban ini
+   bermasalah" sebenarnya "aplikasi ini mengirim Client ID yang salah, dan cuma
+   di peramban yang pernah dipakai". Yang basi sekarang DIBUANG waktu memuat,
+   bukan cuma dikalahkan.
+   Setelan menuliskan ASAL HALAMAN dan CLIENT ID YANG DIKIRIM waktu belum
+   tersambung: penolakan Google tidak pernah menyebut client mana yang
+   ditolaknya, jadi selama dua nilai itu tidak kelihatan, satu-satunya cara
+   mengetahuinya adalah menebak.
    Kalau pemasangan sampai meminta sesuatu yang berbau konfigurasi teknis,
    pemasangannya sudah gagal sebelum dimulai.
 8. **Nama aplikasi cuma di `bawaan.js`.** Jangan pernah menuliskannya di berkas
@@ -912,7 +928,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (840 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (843 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

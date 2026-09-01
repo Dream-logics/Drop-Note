@@ -5077,6 +5077,14 @@
          memotongnya jadi potongan yang tidak satu pun punya terjemahannya. */
       tersambung ? '' : '<div class="set-ket">Asal halaman ini:</div>',
       tersambung ? '' : '<div class="set-ket asal"><b data-asli>' + H(global.location.origin) + '</b></div>',
+      /* CLIENT ID YANG BENAR-BENAR DIKIRIM, bukan yang seharusnya. Dia bukan
+         rahasia - dia memang terbaca di semua aplikasi browser. Yang membuatnya
+         layak ditulis di sini: "no registered origin" dari Google tidak pernah
+         menyebut client mana yang ditolaknya, jadi selama nilai ini tidak
+         kelihatan, satu-satunya cara mengetahuinya adalah menebak. */
+      tersambung ? '' : '<div class="set-ket">Client ID yang dikirim:</div>',
+      tersambung ? '' : '<div class="set-ket asal"><b data-asli>' +
+        H(TAwan.clientIdUji(s) || '(belum ada)') + '</b></div>',
       tersambung ? '' : '<div class="set-ket">Baris itu harus terdaftar di Google Cloud Console sebagai Authorized JavaScript origin — persis begitu, tanpa jalur dan tanpa garis miring di ujungnya.</div>',
       '<button class="set-tbl' + (tersambung ? '' : ' emas') + '" id="b-hubungkan">' +
         (tersambung ? 'Sambungkan ulang Google' : 'Hubungkan Google') + '</button>',
@@ -6648,6 +6656,17 @@
 
     TSimpan.semuaSetelan().then(function (s) {
       setelanSaat = s || {};
+      /* CLIENT ID BASI DIBUANG, bukan cuma dikalahkan. Begitu pembuatnya
+         menanam miliknya di bawaan.js, isian di Setelan berhenti digambar -
+         jadi nilai yang pernah ditempel waktu masih uji coba tinggal di sana
+         tanpa bisa dilihat maupun dihapus, dan ikut ke tiap cadangan. Diabaikan
+         saja tidak cukup: dia akan menunggu sampai suatu hari bawaan.js kosong
+         lagi, lalu menjebak lagi. */
+      if (TBawaan.clientId && setelanSaat.clientId &&
+          setelanSaat.clientId !== TBawaan.clientId) {
+        setelanSaat.clientId = '';
+        TSimpan.setel('clientId', '');
+      }
       /* Ukuran petak yang dipilih ikut dibawa ke pembukaan berikutnya:
          kebiasaan orang menetap di satu ukuran, dan memilihnya lagi tiap kali
          adalah keputusan berulang tanpa guna. */
