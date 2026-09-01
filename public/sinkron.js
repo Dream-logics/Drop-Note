@@ -35,6 +35,14 @@
   var jalan = false;
   var menarik = false;
 
+  /* Penjaga "belum pernah tersambung" TIDAK ditaruh di sini, dan itu disengaja.
+     Sempat dicoba - nyala() menuntut sheetId - dan akibatnya perangkat KEDUA
+     tidak pernah bisa menyusul: rumahnya sudah ada di Drive, tapi perangkat itu
+     belum punya sheetId, jadi sinkronnya tidak pernah jalan untuk mengambilnya.
+     Yang benar satu penjaga di ambilToken(): permintaan diam-diam gagal
+     seketika kalau perangkat ini belum pernah tersambung, jadi tidak ada
+     jendela Google yang terbuka sendiri - sementara begitu tokennya ada,
+     seluruh jalur ini jalan apa adanya. */
   function nyala(s) {
     return !!(s && s.cadanganNyala && (TBawaan.clientId || s.clientId));
   }

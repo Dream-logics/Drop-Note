@@ -156,6 +156,19 @@ terpikir, dan itu membatalkan seluruh gunanya.
    pemilih akun muncul bukan karena izinnya kurang tapi karena Google tidak
    tahu akun mana yang dimaksud. `akunEmail` disimpan waktu tersambung, dan itu
    satu-satunya gunanya.
+   **TIDAK ADA PEKERJAAN LATAR YANG BOLEH MEMBUKA JENDELA GOOGLE.** Penjaganya
+   SATU, di `ambilToken()`: permintaan diam-diam GAGAL SEKETIKA kalau perangkat
+   ini belum pernah tersambung. Ditaruh di situ, bukan di tiap pemanggil, karena
+   pemanggilnya banyak dan semuanya berjalan sendiri — penghangat, cadangan,
+   tarikan sinkron, pelabelan AI sesudah tiap drop — dan satu yang lupa bukan
+   galat, tapi layar pilih akun di tengah pekerjaan. `prompt: ''` BUKAN jaminan
+   tanpa layar: kalau izinnya belum pernah diberikan, Google tetap membuka
+   pemilih akun.
+   Akibatnya yang harus disebut: **perangkat baru DIAM sampai kamu menekan
+   Hubungkan sekali** — OAuth memang menuntut satu sentuhan per peramban.
+   Sesudah itu dia mengisi dirinya sendiri sampai penuh, tanpa satu tombol lagi.
+   Uji terimanya dulu menuntut "terisi sendiri tanpa satu tombol pun", dan itu
+   tidak bisa ada bersama aturan di atas; yang menang keluhan lapangan.
    Kalau pemasangan sampai meminta sesuatu yang berbau konfigurasi teknis,
    pemasangannya sudah gagal sebelum dimulai.
 8. **Nama aplikasi cuma di `bawaan.js`.** Jangan pernah menuliskannya di berkas
@@ -938,7 +951,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (848 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (851 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
