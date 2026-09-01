@@ -317,6 +317,8 @@
     'Hapus': 'Delete',
     'Main board baru': 'New main board',
     'Akhiran': 'Suffixes',
+    'kamu yang menentukan': 'defined by you',
+    'kalau tidak ada yang cocok': 'when nothing else fits',
     'Kosakata yang boleh dipakai AI membuat sub board':
       'The vocabulary the AI may use to make a sub board',
     'Kosong — AI tidak akan membuat sub board, cuma memilih yang sudah ada.':

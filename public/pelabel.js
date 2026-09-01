@@ -258,6 +258,8 @@
       akhir ? '   Dua daftar itu TERTUTUP: jangan mengarang nama main board baru, jangan mengarang'
             : '',
       akhir ? '   akhiran baru. Kalau akhirannya pun tidak pas, cukup main board-nya saja.' : '',
+      '   Kalau tidak ada satu pun main board yang cocok, jawab "' + (TBawaan.boardLain || '') +
+        '" — itu jawaban yang benar, bukan kegagalan.',
       '',
       'Selain itu, label: 4 sampai 8 kata kunci huruf kecil yang TIDAK dilihat pemakainya -',
       'tugasnya cuma membuat pencarian ketemu. Sertakan sebutan yang mungkin dia pakai saat',
@@ -420,7 +422,10 @@
       'Contoh: main board "Daily Life" tanpa sub yang cocok -> "Daily Life Inspiration".',
       'DUA DAFTAR DI ATAS TERTUTUP: jangan mengarang nama main board baru, jangan mengarang',
       'akhiran baru. Kalau akhiran pun tidak ada yang pas, cukup main board-nya saja; itu',
-      'jawaban yang sah. Kalau tetap tidak ada yang cocok, kosongkan.',
+      'jawaban yang sah.',
+      'Kalau tidak ada satu pun main board yang cocok — gambarnya memang di luar semua bidang',
+      'di daftar itu — jawab "' + (TBawaan.boardLain || '') + '". Itu jawaban yang benar, bukan',
+      'kegagalan; jangan memaksakan bidang yang paling mirip.',
       '',
       'BAHASA JAWABAN MENGIKUTI BAHASA KEYWORDS.',
       '',
@@ -533,6 +538,10 @@
     var pilihM = '', pilihA = '';
     mains.forEach(function (m) {
       if (!sah(m)) return;
+      /* Ruangan di dalam ruang tunggu membatalkan gunanya ruang tunggu:
+         "Other and Various Inspiration" tidak memberitahu apa pun yang tidak
+         sudah diberitahu namanya sendiri. */
+      if (TOtak.normal(m) === TOtak.normal(TBawaan.boardLain || '')) return;
       var vm = TOtak.normal(m);
       if (n.indexOf(vm + ' ') !== 0) return;
       var sisa = n.slice(vm.length + 1);
@@ -586,6 +595,20 @@
     var akhiran = daftarAkhiran(setelan);
     var sebut = TOtak.bacaBoardDariDriver(e.driver, punya, akhiran);
     var pilih = pilihBoard(jawab, punya, akhiran, sebut.main || '');
+    /* TIDAK ADA BIDANG YANG COCOK ITU JAWABAN, BUKAN KEGAGALAN. Foto antariksa
+       tidak punya rumah di daftar bidang usahanya, dan membiarkannya di "Belum
+       berboard" berarti menaruhnya di baris yang bunyinya seperti kesalahan -
+       baris yang makin lama makin dihindari sampai tidak pernah dibuka lagi.
+
+       Cuma kalau drivernya tidak menyebut bidangnya sendiri: kalau kamu sudah
+       bilang "Interior", jawabannya yang salah bukan alasan memindahkannya ke
+       ruang tunggu - yang benar membiarkannya di Interior. */
+    if (!pilih && !sebut.main && !sebut.sub) {
+      var lain = punya.filter(function (b) {
+        return TOtak.normal(b) === TOtak.normal(TBawaan.boardLain || '');
+      })[0];
+      if (lain) pilih = lain;
+    }
     if (!pilih) return Promise.resolve();
     e.album = pilih;
     return punya.indexOf(pilih) >= 0 ? Promise.resolve()

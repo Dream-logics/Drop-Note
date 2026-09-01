@@ -1536,3 +1536,18 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
   display:flex;align-items:center;justify-content:center;cursor:pointer;
 }
 .board-buang .ik{width:15px;height:15px}
+
+/* --- akar Gallery dibagi dua: bidang yang kamu tentukan, lalu ruang tunggu ---
+   Garisnya bukan hiasan. Tanpa dia "Other and Various" duduk di antara bidang
+   usahamu seperti salah satunya - padahal dia justru kebalikannya: tempat yang
+   isinya belum diputuskan. */
+.galeri-bagian{
+  display:flex;align-items:baseline;gap:8px;
+  padding:14px 14px 6px;
+}
+.galeri-bagian.pisah{
+  border-top:1px solid var(--l);margin-top:8px;padding-top:14px;
+}
+.galeri-bagian .bagian-nama{font-size:12.5px;font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--i)}
+.galeri-bagian .bagian-ket{font-size:11.5px;color:var(--m)}
