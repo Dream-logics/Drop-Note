@@ -146,6 +146,16 @@ terpikir, dan itu membatalkan seluruh gunanya.
    tersambung: penolakan Google tidak pernah menyebut client mana yang
    ditolaknya, jadi selama dua nilai itu tidak kelihatan, satu-satunya cara
    mengetahuinya adalah menebak.
+   **MEMILIH AKUN BUKAN RITUAL HARIAN.** Dua hal yang menjaganya, keduanya di
+   `awan.js`: (1) `hangatkan()` cuma berjalan kalau perangkat ini MEMANG PERNAH
+   tersambung (`pernahMasuk`: ada `sheetId` atau `akunEmail`) — penjaganya dulu
+   cuma "ada Client ID", padahal Client ID selalu ada, jadi tiap pembukaan
+   aplikasi memicu permintaan token dan Google menjawabnya dengan pemilih akun;
+   (2) `prompt: 'consent'` cuma untuk izin PERTAMA, sesudah itu `''` plus
+   `hint: akunEmail` — `'consent'` artinya "tampilkan SELALU", dan tanpa `hint`
+   pemilih akun muncul bukan karena izinnya kurang tapi karena Google tidak
+   tahu akun mana yang dimaksud. `akunEmail` disimpan waktu tersambung, dan itu
+   satu-satunya gunanya.
    Kalau pemasangan sampai meminta sesuatu yang berbau konfigurasi teknis,
    pemasangannya sudah gagal sebelum dimulai.
 8. **Nama aplikasi cuma di `bawaan.js`.** Jangan pernah menuliskannya di berkas
@@ -928,7 +938,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (843 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (848 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
