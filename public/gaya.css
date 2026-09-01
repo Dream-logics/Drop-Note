@@ -1270,6 +1270,32 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
              text-overflow:ellipsis;white-space:nowrap}
 .folder-anak{font-size:11px;color:var(--m)}
 .folder-hitung{font-size:12px;color:var(--m);min-width:16px;text-align:right}
+
+/* ===== LACI: sub folder yang bisa diintip tanpa dimasuki =====
+   Barisnya tetap satu baris folder biasa - yang ditambahkan cuma panah yang
+   berputar dan tombol masuk di ujung kanan. Dua sasaran di satu baris, dan
+   keduanya 40px: yang kiri mengintip, yang kanan benar-benar pindah. */
+.laci{position:relative}
+.laci .laci-kepala{padding-right:42px}
+.laci-panah{transition:transform .15s ease;flex:none}
+.laci.buka .laci-panah{transform:rotate(90deg)}
+.laci-masuk{
+  position:absolute;top:0;right:0;width:40px;height:40px;display:flex;
+  align-items:center;justify-content:center;background:none;border:0;
+  color:var(--m);cursor:pointer;
+}
+.laci-masuk .ik{width:16px;height:16px}
+/* Isinya menjorok sedikit supaya terbaca "milik baris di atasnya", bukan
+   tumpukan baru yang sederajat. */
+.laci-isi{padding:8px 0 12px 10px}
+.laci-kosong{padding:10px 2px 14px;font-size:12.5px;color:var(--m)}
+.laci-kepala-baris{display:flex;justify-content:flex-end;padding:4px 0 6px}
+/* Bergaris putus-putus: di aplikasi ini kosakata itu sudah berarti "jalan
+   pintas, bukan keadaan" - sama dengan Reset dan cip kamera. */
+.laci-semua{
+  min-height:32px;padding:0 12px;border:1px dashed var(--l);border-radius:999px;
+  background:none;color:var(--m);font-size:12.5px;cursor:pointer;
+}
 /* Ruang untuk tombol bulat DAN bilah pilih yang melayang di atasnya. */
 #tulis-isi{padding-bottom:96px}
 

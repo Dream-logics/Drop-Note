@@ -2507,6 +2507,11 @@
   }
   var albumDaftar = [];
   var galeriFolder = null;      /* album yang sedang dibuka; null = daftar album */
+  /* Laci mana yang terbuka. KEADAAN, bukan setelan: dia tidak ikut disimpan,
+     karena "sekarang perlihatkan isinya" bukan "mulai sekarang selalu begitu".
+     Berkunci nama board, jadi membuka board lain lalu kembali menemukan
+     lacinya masih seperti kamu tinggalkan. */
+  var galeriLaci = {};
   var gayaGaleri = 'sedang';
   /* "All" menembus board: yang tampil semua gambarnya, bukan daftar boardnya.
      Keadaan, bukan setelan - dia tidak ikut disimpan, karena yang kamu minta
@@ -2936,6 +2941,87 @@
       bawah.map(albumHtml).join('');
   }
 
+  /* SATU TEMPAT YANG MENGGAMBAR PETAK, dipakai dua jalur: isi album yang
+     sedang dibuka, dan isi tiap laci accordion. Dua tempat yang menggambar
+     petak yang sama berarti perbaikan di satu tempat tidak sampai ke yang
+     lain, dan yang kedua selalu jadi yang lebih miskin. */
+  function petakHtml(daftar) {
+    if (!daftar.length) return '';
+    /* Daftar dipakai kalau kamu memang memilihnya - nama berkas dan tanggalnya
+       ikut terbaca, dan itu yang menolong waktu rupanya sudah tidak cukup. */
+    if (gayaGaleri === 'daftar') {
+      return daftar.slice(0, 300).map(function (e) {
+        return kartuHtml(e, { jamPenuh: true });
+      }).join('');
+    }
+    return '<div class="petak ' + gayaGaleri + '">' + daftar.slice(0, 300).map(function (e) {
+      var gbr = e.thumb
+        ? '<img src="' + H(e.thumb) + '" alt="">'
+        : (e.berkasId ? '<img data-berkas="' + H(e.berkasId) + '" alt="">'
+                      : '<span class="petak-kosong"></span>');
+      return '<button class="petak-satu kartu" data-id="' + H(e.id) + '" data-buka="' + H(e.id) + '">' +
+             gbr + '<span class="petak-nama">' +
+             H(e.judul || e.namaBerkas || '(tanpa judul)') + '</span></button>';
+    }).join('') + '</div>';
+  }
+
+  /* Seluruh gambar di dalam satu baris, keturunannya sekalian - jumlahnya sama
+     dengan angka yang tertulis di barisnya. Angka yang tidak cocok dengan isi
+     lacinya lebih buruk daripada tidak berangka. */
+  function isiDalam(nama, semuaA) {
+    var v = TOtak.normal(nama);
+    var keluar = [];
+    semuaA.forEach(function (f) {
+      var u = TOtak.normal(f.nama);
+      if (f.nama === nama || u.indexOf(v + ' ') === 0) keluar = keluar.concat(f.isi);
+    });
+    return keluar.sort(function (a, b) { return (b.dibuat || 0) - (a.dibuat || 0); });
+  }
+
+  /* ===================== LACI: SUB FOLDER YANG BISA DIINTIP =====================
+     Di dalam sebuah board, sub-nya digambar sebagai LACI - namanya, angkanya,
+     dan gambarnya tepat di bawahnya begitu dibuka. Sebelumnya barisnya cuma
+     nama dan angka, dan satu-satunya cara melihat isinya adalah masuk ke
+     dalamnya lalu keluar lagi: tiga ketukan untuk satu pertanyaan yang jawabnya
+     "oh, bukan yang ini".
+
+     Tiap laci berdiri sendiri - membuka yang satu tidak menutup yang lain,
+     karena yang sering terjadi adalah membandingkan dua laci, bukan membaca
+     satu per satu. Buka/tutup semua ada di kepalanya untuk yang sebaliknya:
+     sekali lihat seluruh isi board, atau merapikan kembali jadi daftar. */
+  function laciHtml(f, semuaA) {
+    var buka = !!galeriLaci[f.nama];
+    var isi = buka ? isiDalam(f.nama, semuaA) : [];
+    return '<div class="laci' + (buka ? ' buka' : '') + '">' +
+      /* DUA PENANDA DI SATU BARIS, dan itu disengaja: 'data-laci' untuk ketukan
+         biasa (mengintip isinya), 'data-galeri-folder' supaya TEKAN LAMA tetap
+         menandainya untuk dibuang/gabung/pindah - kebiasaan yang sama dengan
+         baris folder di layar lain. Yang mengintip dibaca duluan, dan waktu
+         sedang memilih dia sengaja dilewati. */
+      '<button class="folder-baris laci-kepala" data-laci="' + H(f.nama) + '"' +
+        ' data-galeri-folder="' + H(f.nama) + '">' +
+        '<svg viewBox="0 0 24 24" class="ik laci-panah"><path d="M9 6l6 6-6 6"/></svg>' +
+        '<span class="folder-nama" data-asli>' + H(namaPendek(f.nama, f.induk)) + '</span>' +
+        '<span class="folder-hitung">' + (f.total === undefined ? f.isi.length : f.total) + '</span>' +
+      '</button>' +
+      '<button class="laci-masuk" data-galeri-folder="' + H(f.nama) + '" aria-label="Buka folder">' +
+        '<svg viewBox="0 0 24 24" class="ik"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>' +
+      '</button>' +
+      (buka ? '<div class="laci-isi">' +
+        (isi.length ? petakHtml(isi) : '<div class="laci-kosong">Belum ada gambar di sini.</div>') +
+      '</div>' : '') +
+    '</div>';
+  }
+
+  function laciSemuaHtml(anak, semuaA) {
+    if (!anak.length) return '';
+    var adaBuka = anak.some(function (f) { return galeriLaci[f.nama]; });
+    return '<div class="laci-kepala-baris">' +
+      '<button class="laci-semua" data-laci-semua="' + (adaBuka ? 'tutup' : 'buka') + '">' +
+        (adaBuka ? 'Tutup semua' : 'Buka semua') + '</button></div>' +
+      anak.map(function (f) { return laciHtml(f, semuaA); }).join('');
+  }
+
   function gambarGaleri() {
     var wadah = $('#galeri-isi');
     if (!wadah) return;
@@ -2976,7 +3062,7 @@
                (!adalahAkar(f.nama) || f.anak || f.total);
       });
       if (!galeriFolder && !albumAsli.length) anak = [];
-      albumHtml2 = galeriFolder ? anak.map(albumHtml).join('') : akarBerbagian(semuaA);
+      albumHtml2 = galeriFolder ? laciSemuaHtml(anak, semuaA) : akarBerbagian(semuaA);
       if (!galeriFolder && albumAsli.length) tampil = [];
     }
 
@@ -2988,20 +3074,7 @@
       return;
     }
 
-    /* Daftar dipakai kalau kamu memang memilihnya - nama berkas dan tanggalnya
-       ikut terbaca, dan itu yang menolong waktu rupanya sudah tidak cukup. */
-    var isiHtml = !tampil.length ? ''
-      : gayaGaleri === 'daftar'
-      ? tampil.slice(0, 300).map(function (e) { return kartuHtml(e, { jamPenuh: true }); }).join('')
-      : '<div class="petak ' + gayaGaleri + '">' + tampil.slice(0, 300).map(function (e) {
-          var gbr = e.thumb
-            ? '<img src="' + H(e.thumb) + '" alt="">'
-            : (e.berkasId ? '<img data-berkas="' + H(e.berkasId) + '" alt="">'
-                          : '<span class="petak-kosong"></span>');
-          return '<button class="petak-satu kartu" data-id="' + H(e.id) + '" data-buka="' + H(e.id) + '">' +
-                 gbr + '<span class="petak-nama">' +
-                 H(e.judul || e.namaBerkas || '(tanpa judul)') + '</span></button>';
-        }).join('') + '</div>';
+    var isiHtml = petakHtml(tampil);
 
     wadah.innerHTML = albumHtml2 + isiHtml;
     pasangGambarKartu(wadah);
@@ -6028,6 +6101,7 @@
            ini", tapi "aku mau mulai dari nol lagi". */
         galeriFolder = null; galeriRata = false;
         viewTutup = true;
+        galeriLaci = {};
         $('#galeri-cari').value = '';
         batalPilih();
         gambarGaleri();
@@ -6055,6 +6129,27 @@
       gambarGaleri();
     });
     $('#galeri-isi').addEventListener('click', function (ev) {
+      /* Dibaca DULUAN: keduanya duduk di dalam baris yang sama, dan yang
+         MENGINTIP tidak boleh kalah oleh yang memindahkan layar. */
+      var semua = ev.target.closest('[data-laci-semua]');
+      if (semua) {
+        var buka = semua.getAttribute('data-laci-semua') === 'buka';
+        galeriLaci = {};
+        if (buka) {
+          folderGaleriPohon().forEach(function (x) {
+            if (x.induk === galeriFolder) galeriLaci[x.nama] = true;
+          });
+        }
+        gambarGaleri();
+        return;
+      }
+      var laci = ev.target.closest('[data-laci]');
+      if (laci && !(pilihNyala || jumlahPilih() || jumlahFolderPilih())) {
+        var nm = laci.getAttribute('data-laci');
+        if (galeriLaci[nm]) delete galeriLaci[nm]; else galeriLaci[nm] = true;
+        gambarGaleri();
+        return;
+      }
       var f = ev.target.closest('[data-galeri-folder]');
       if (f) {
         if (pilihNyala || jumlahPilih() || jumlahFolderPilih()) {

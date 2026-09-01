@@ -183,7 +183,20 @@ public/bahasa.js    LAPISAN bahasa, bukan pengganti. Teks tetap ditulis
                     gagal di sana.
 public/gaya.css     gaya; SATU tema putih, tidak mengikuti setelan HP
 public/simpan.js    IndexedDB — entri, berkas (blob), setelan, cadangan
-public/otak.js      PENCARIANNYA menilai judul 6, driver 6, label 5,
+public/otak.js      PENCARIANNYA "DAN", BUKAN "ATAU", DAN TANPA PELONGGARAN.
+                    Semua kata harus ketemu; urutannya tidak diikat. Dulu ada
+                    jaring pengaman: kalau tidak ada satu pun entri yang memuat
+                    semua katanya, syaratnya turun jadi "salah satu" supaya
+                    layarnya tidak kosong. Di lapangan hasilnya kebalikannya -
+                    "cangkir kopi" mengembalikan 2 hasil yang benar, "cangkir
+                    kopi hitam" mengembalikan 40 dan tidak satu pun benar:
+                    laptop naik karena "hitam", kamar tidur karena "kopi".
+                    Makin lengkap yang diketik makin buruk hasilnya, dan sekali
+                    itu terlihat orangnya berhenti mengetik kata ketiga
+                    selamanya - padahal kata ketiga yang paling menyempitkan.
+                    Layar kosong itu jawaban jujur; 40 hasil salah itu
+                    pekerjaan baru.
+                    Menilai judul 6, driver 6, label 5,
                     DESKRIPSI GAMBAR 5, elemen/kategori/folder/board 4, badan
                     catatan teks 3, nama berkas 3.
                     Deskripsi gambar dinilai 5 karena dia MENGGANTIKAN tag,
@@ -258,6 +271,23 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     All MENEMBUS board: yang tampil semua gambarnya, karena
                     kadang yang kamu cari cuma "yang tadi" dan yang tadi tidak
                     punya alamat di kepalamu; dia keadaan, tidak ikut disimpan.
+                    DI DALAM BOARD, SUB-NYA DIGAMBAR SEBAGAI LACI: nama, angka,
+                    dan gambarnya tepat di bawahnya begitu dibuka (laciHtml).
+                    Sebelumnya barisnya cuma nama dan angka, dan satu-satunya
+                    cara melihat isinya adalah masuk lalu keluar lagi - tiga
+                    ketukan untuk pertanyaan yang jawabnya "oh, bukan yang ini".
+                    Tiap laci berdiri sendiri; membuka yang satu tidak menutup
+                    yang lain, karena yang sering terjadi membandingkan dua laci.
+                    DUA SASARAN DI SATU BARIS, keduanya 40px: barisnya
+                    mengintip ('data-laci'), panah di ujung kanan
+                    ('laci-masuk') benar-benar pindah. Barisnya tetap membawa
+                    'data-galeri-folder' supaya TEKAN LAMA masih menandainya
+                    untuk dibuang/gabung/pindah - yang mengintip dibaca duluan
+                    dan sengaja dilewati selama memilih. Isinya SELURUH gambar
+                    di subtree, jadi sama dengan angka di barisnya; angka yang
+                    tidak cocok dengan isi lacinya lebih buruk daripada tidak
+                    berangka. Buka/tutup semua di kepalanya. Lacinya KEADAAN,
+                    tidak ikut disimpan, dan ditutup Home.
                     View menu turun berisi SATU BARIS saja: ukuran petak
                     (bawaan 'sedang'), dan barisnya MENCIUT begitu dipilih -
                     menu yang tetap terbuka mendorong gambarnya turun justru
@@ -859,7 +889,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (824 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (834 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
