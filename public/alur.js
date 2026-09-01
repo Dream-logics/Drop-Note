@@ -124,6 +124,13 @@
          gambar - dan satu gambar yang menumpang daftar folder Note akan
          memunculkan album kosong di layar yang tidak ada urusannya. */
       album: '',
+      /* BATAS, bukan alamat: diisi kalau kamu memotret sambil BERDIRI di dalam
+         wadah (akar atau interest). Bidangnya sudah kamu jawab, kamarnya belum
+         - jadi AI wajib menjawab di dalam baris ini, dan kalau dia tidak
+         menemukan kamarnya, ruang tunggu bidang inilah jawabannya. Beda dengan
+         'albumManual' yang benar-benar mengunci: itu cuma dipasang kalau yang
+         kamu masuki DAUN, dan daun berarti kamu memang sudah menyebut kamarnya. */
+      albumInduk: '',
       /* Dari mana gambarnya masuk: 'kamera', 'unggah', atau kosong = lewat
          Drop. Dipakai saringan Gallery. Kosong pada entri lama, dan itu
          jawaban yang benar - semua yang sudah ada memang masuk lewat Drop. */
@@ -3015,12 +3022,24 @@
     });
     if (!daftar.length) return Promise.resolve(0);
     /* DUA SUMBER ALAMAT, DAN CUMA SATU YANG MANUSIA. Berdiri di dalam board
-       waktu memotret itu keputusan yang baru saja kamu ambil, jadi dia menang
-       dan dikunci ('albumManual'); AI tidak boleh memindahkannya nanti.
+       waktu memotret itu keputusan yang baru saja kamu ambil, jadi dia menang.
        Kalau kamu tidak sedang berdiri di mana-mana, alamatnya sengaja
        DIKOSONGKAN - bukan diwarisi dari jepretan sebelumnya. Yang memilih
        boardnya AI, dan dia memilih dengan melihat gambarnya sendiri plus
-       drivermu; mewariskan alamat lama justru menutup jawaban yang lebih baik. */
+       drivermu; mewariskan alamat lama justru menutup jawaban yang lebih baik.
+
+       TAPI BERDIRI DI WADAH BARU MENJAWAB SEPARUH, dan menguncinya di situ
+       adalah kekeliruan yang dilaporkan di lapangan: berdiri di "Business
+       Hampers" lalu memotret, fotonya mendarat di interest itu sendiri dan
+       menumpuk di pintu ruangan - walau "Isi Hamper" jelas-jelas ada di
+       dalamnya, dan walau "Business Hampers Various" sudah disiapkan. Sebabnya
+       kunci itu: taruhBoard() memulangkan diri di baris pertama kalau alamatnya
+       sudah manual, jadi AI tidak pernah ditanya sama sekali.
+
+       Aturannya jadi sama persis dengan bacaBoardDariDriver: yang DAUN (sub
+       interest) mengunci - kamu memang sudah menyebut kamarnya. Yang WADAH
+       (akar dan interest) cuma MEMBATASI: alamatnya dicatat di 'albumInduk',
+       dan AI wajib menjawab di dalamnya. */
     /* Boardnya cuma diwarisi kalau kamu memang SEDANG BERDIRI di dalamnya -
        dan berdiri berarti layar Gallery yang terbuka, bukan sekadar board
        yang terakhir kamu buka di sana. Memotret lewat jalan pintas di layar
@@ -3036,6 +3055,11 @@
     /* Drivernya yang mewaris, bukan alamatnya. Itu yang membuat sepuluh
        jepretan beruntun dibaca dari sudut pandang yang sama - bukan
        masing-masing menurut apa yang kebetulan paling menonjol di gambarnya. */
+    /* WADAH = akar, atau interest yang induknya akar. Aturan yang sama persis
+       dengan wadah() di bacaBoardDariDriver - satu definisi, dua tempat yang
+       memakainya, supaya tidak ada dua jawaban untuk satu pertanyaan. */
+    var diBukaWadah = !!diBuka &&
+      (adalahAkar(diBuka) || !indukBoard(diBuka) || adalahAkar(indukBoard(diBuka)));
     var driver = lengketHidup() ? driverLengket : '';
     var baru = [];
     pesan(daftar.length > 1 ? 'Memasukkan ' + daftar.length + ' gambar…' : 'Memasukkan…');
@@ -3055,7 +3079,11 @@
             e.tipeBerkas = blob.type || f.type || '';
             e.ukuran = blob.size || 0;
             e.album = diBuka;
-            e.albumManual = !!diBuka;
+            /* Wadah tidak mengunci - dia membatasi. Alamatnya tetap ditulis
+               supaya fotonya langsung kelihatan di tempat kamu berdiri; yang
+               tidak dipasang cuma kuncinya. */
+            e.albumManual = !!diBuka && !diBukaWadah;
+            e.albumInduk = diBukaWadah ? diBuka : '';
             e.sumber = sumber;
             /* DISIMPAN MENTAH, apa adanya. Enam bulan lagi yang paling pasti
                kamu ingat adalah kalimat yang kamu ketik sendiri - bukan judul

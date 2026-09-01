@@ -210,6 +210,16 @@ public/otak.js      PENCARIANNYA menilai judul 6, driver 6, label 5,
                     rak berhenti menjaring gambar sama sekali
 public/awan.js      Google Drive & Sheets langsung — folder dan spreadsheet
                     dibuat SENDIRI oleh aplikasi; cakupan cuma drive.file
+public/pelabel.js   SATU FOTO SATU PANGGILAN. antreLabel MELEWATI yang punya
+                    berkas terbaca (bisaDibaca) - itu bagiannya bacaBerkas.
+                    Tanpa saringan itu tiap foto berangkat DUA KALI: sekali
+                    lewat antreLabel tanpa gambarnya (cuma nama berkas +
+                    driver), sekali lagi lewat bacaBerkas yang benar-benar
+                    melihat gambarnya. Ongkosnya dua kali lipat, dan yang lebih
+                    buruk: keduanya menulis deskripsi lalu yang kedua
+                    DITEMPELKAN di bawah yang pertama (aturan "sudut pandang
+                    kedua"), jadi satu benda dijelaskan dua kali dengan kata
+                    yang beda-beda tipis.
 public/pelabel.js   satu-satunya bagian ber-AI: judul + deskripsi + elemen +
                     BOARD + OCR, plus OBROLAN (teks & gambar) untuk mode AI.
                     Lewat proxy milik PEMBUAT; kunci tidak pernah ada di
@@ -394,9 +404,18 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     dokumen. Yang kembali "Ruang Tamu Modern" untuk board
                     Bedroom. Jadi boardnya
                     tidak ditanya lagi, drivernya TETAP ditagih sekali per sesi.
-                    Alamat yang begitu DIKUNCI 'albumManual' - kalau tidak,
-                    pelabelan yang berjalan di belakang memindahkannya ke board
-                    pilihan AI, membatalkan jawaban yang barusan kamu berikan.
+                    YANG DIKUNCI CUMA KALAU YANG KAMU MASUKI DAUN. Berdiri di
+                    sub interest berarti kamu memang sudah menyebut kamarnya,
+                    jadi 'albumManual' dipasang dan AI tidak boleh
+                    memindahkannya. Berdiri di WADAH (akar atau interest) baru
+                    menjawab separuh, jadi yang dipasang 'albumInduk' - BATAS,
+                    bukan kunci: AI wajib menjawab di dalamnya, dan kalau dia
+                    berhenti di pintu ruangan jawabannya dinaikkan ke
+                    "<interest> Various". Dulu wadah pun dikunci, dan kuncinya
+                    memulangkan taruhBoard() di baris pertamanya - fotonya
+                    menumpuk di pintu ruangan walau kamarnya sudah ada, dan yang
+                    kelihatan seperti "AI salah memilih" sebenarnya "AI tidak
+                    pernah ditanya".
                     RUTE ARAHAN dipilih fotoReferensi(e), BUKAN ada-tidaknya
                     driver: kamera/unggah selalu arahan gambar (kamera tidak
                     pernah menghasilkan faktur), dan yang jatuh lewat Drop

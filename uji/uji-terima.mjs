@@ -1782,6 +1782,50 @@ console.log('\npohon boleh tumbuh, tapi katanya tertutup');
      "bidangnya ketemu, kamarnya tidak". */
   cek('tapi yang bidangnya memang tidak ketemu tetap ke ruang tunggu utama',
       (await taruh('antariksa', 'Gudang Rahasia')) === 'Other and Various');
+
+  /* ===== BERDIRI DI WADAH ITU BATAS, BUKAN KUNCI =====
+     Ini kekeliruan yang dilaporkan di lapangan, dan bentuknya persis kebalikan
+     dari yang kelihatan: fotonya mendarat di "Business Hampers" - pintu
+     ruangan - walau "Isi Hamper" ada dan "Business Hampers Various" sudah
+     disiapkan. Sebabnya bukan AI salah memilih; sebabnya AI TIDAK PERNAH
+     DITANYA. Berdiri di dalam board waktu memotret mengunci alamatnya
+     ('albumManual'), dan kunci itu memulangkan taruhBoard di baris pertamanya.
+
+     Sekarang aturannya sama persis dengan bacaBoardDariDriver: yang DAUN
+     mengunci, yang WADAH cuma membatasi lewat 'albumInduk'. */
+  const berdiri = (induk, jawab, driver) => hal.evaluate((x) => {
+    const e = { driver: x.driver || '', albumInduk: x.induk, album: x.induk };
+    return TSimpan.semuaSetelan()
+      .then((s) => TPelabel.taruhBoardUji(s, e, x.jawab))
+      .then(() => e.album || '');
+  }, { induk: induk, jawab: jawab, driver: driver || '' });
+
+  cek('berdiri di interest tidak mengunci — AI tetap disuruh turun ke sub-nya',
+      (await berdiri('Business Hampers', 'Business Hampers Isi Hamper')) ===
+      'Business Hampers Isi Hamper',
+      await berdiri('Business Hampers', 'Business Hampers Isi Hamper'));
+  cek('dan kalau AI berhenti di pintu ruangan, dia dinaikkan ke Various-nya',
+      (await berdiri('Business Hampers', 'Business Hampers')) === 'Business Hampers Various',
+      await berdiri('Business Hampers', 'Business Hampers'));
+  /* BIDANG YANG KAMU MASUKI TETAP MENGIKAT: kamu sudah menjawab separuh, dan
+     jawaban AI yang meleset bukan alasan membatalkannya. */
+  cek('jawaban AI di luar bidang yang kamu masuki ditolak, bukan diikuti',
+      (await berdiri('Business Hampers', 'Business Interior Bedroom')) ===
+      'Business Hampers Various');
+  /* AKAR TIDAK PERNAH MENAMPUNG GAMBAR - termasuk waktu dia jadi jawaban
+     terakhir. Menaikkannya jadi "Business Various" pun salah: akar tidak boleh
+     ditumbuhi, dan ruangan itu tidak menjawab apa pun. */
+  cek('berdiri di akar lalu AI tidak menemukan apa pun jatuh ke ruang tunggu',
+      (await berdiri('Business', 'Business')) === 'Other and Various',
+      await berdiri('Business', 'Business'));
+  /* TAPI YANG DAUN TETAP MENGUNCI: kamu memang sudah menyebut kamarnya. */
+  cek('sementara berdiri di sub interest tetap mengunci alamatnya',
+      await hal.evaluate(() => {
+        const e = { driver: '', album: 'Business Hampers Isi Hamper', albumManual: true };
+        return TSimpan.semuaSetelan()
+          .then((s) => TPelabel.taruhBoardUji(s, e, 'Business Interior Bedroom'))
+          .then(() => e.album === 'Business Hampers Isi Hamper');
+      }));
 }
 
 console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
