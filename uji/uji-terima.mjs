@@ -239,6 +239,31 @@ console.log('\npemasangan swalayan');
   cek('tapi yang sudah pernah tetap dihangatkan, supaya klik pertama tidak dingin',
       hangatLama === 1, String(hangatLama));
 
+  /* PENJAGANYA DI SATU TEMPAT, bukan di tiap pemanggil. Yang meminta token
+     diam-diam banyak dan semuanya berjalan sendiri: penghangat waktu aplikasi
+     dibuka, cadangan, tarikan sinkron, pelabelan AI sesudah tiap drop. Kalau
+     penjaganya ditulis di tiap pemanggil, satu hari nanti ada satu yang lupa -
+     dan yang bocor bukan galat, tapi layar pilih akun di tengah pekerjaan. */
+  const diamBaru = await hal.evaluate(async () => {
+    window.__mintaToken = 0;
+    TAwan.keluar();
+    let tolak = false;
+    await TAwan.ambilToken({ clientId: 'x.apps.googleusercontent.com' }, true)
+      .catch(() => { tolak = true; });
+    return { minta: window.__mintaToken, tolak: tolak };
+  });
+  cek('permintaan diam-diam tidak pernah mengetuk Google kalau belum pernah tersambung',
+      diamBaru.minta === 0 && diamBaru.tolak === true, JSON.stringify(diamBaru));
+  /* Tapi yang ditekan JARI tetap boleh - di situ memang jendelanya diminta. */
+  const jariBaru = await hal.evaluate(async () => {
+    window.__mintaToken = 0;
+    TAwan.keluar();
+    await TAwan.ambilToken({ clientId: 'x.apps.googleusercontent.com' }, false);
+    return window.__mintaToken;
+  });
+  cek('yang ditekan jari tetap boleh membuka jendelanya', jariBaru === 1,
+      String(jariBaru));
+
   /* PROMPT KOSONG artinya "jangan tampilkan apa pun kecuali memang harus";
      'consent' artinya "tampilkan SELALU". Yang kedua dulu dipakai tiap kali
      tombol Hubungkan ditekan, jadi memilih akun jadi ritual harian walau
@@ -6798,6 +6823,14 @@ console.log('\nsinkron empat perangkat');
   await hal2.reload();
   await hal2.waitForFunction(() => window.TAlur && window.TSinkron);
   await hal2.waitForTimeout(700);
+  /* SATU IZIN PER PERANGKAT, ditekan jari. Ini bukan kekurangan uji - OAuth
+     memang menuntut satu sentuhan di tiap peramban, dan latar belakang tidak
+     pernah boleh membukanya sendiri. Dulu uji ini membiarkan perangkat kedua
+     menyambung diam-diam, dan di lapangan yang terjadi persis kebalikan dari
+     yang dibayangkan: tiap kali aplikasinya dibuka lagi setelah ditinggal
+     sebentar, Google memunculkan layar pilih akun. */
+  await hal2.evaluate(() => TAwan.masuk(TAlur.setelanUji()));
+  await hal2.waitForTimeout(300);
 
   const dorong = (p) => p.evaluate(() => TSinkron.putaran(TAlur.setelanUji(), true));
   const tarik = (p) => p.evaluate(() => TAlur.tarikSinkronUji(true));
@@ -6958,16 +6991,33 @@ console.log('\nsinkron empat perangkat');
     TSimpan.setel('bahasa', 'id'), TSimpan.setel('dipasang', 1),
     TSimpan.setel('cadanganNyala', 1)
   ]));
-  /* Dimuat ulang, lalu DIDIAMKAN: tarikannya harus berangkat sendiri di
-     pembukaan. Kalau harus dipanggil dari uji, berarti di lapangan pun harus
-     ditekan sendiri - dan itu persis keadaan yang sedang diperbaiki. */
+  /* ===== SATU IZIN PER PERANGKAT, LALU DIAM SELAMANYA =====
+     Uji ini dulu menuntut perangkat baru mengisi dirinya TANPA satu tombol pun.
+     Itu tidak bisa ada bersama yang lain: mengisi diri butuh token, dan token
+     di peramban yang belum pernah mengizinkan cuma bisa didapat lewat layar
+     Google. Jadi yang terjadi di lapangan bukan "terisi sendiri", tapi "tiap
+     kali aplikasinya dibuka lagi setelah ditinggal sebentar, muncul layar
+     pilih akun" - untuk sesuatu yang tidak pernah diminta pemakainya.
+
+     Aturannya sekarang: LATAR BELAKANG TIDAK PERNAH MENGETUK PINTU GOOGLE.
+     Perangkat baru diam sampai kamu menekan Hubungkan sekali; sesudah itu dia
+     mengisi dirinya sendiri sampai penuh, tanpa satu tombol lagi. */
   await hal3.reload();
   await hal3.waitForFunction(() => window.TAlur && window.TSinkron);
   await hal3.waitForTimeout(3000);
-  cek('perangkat yang belum pernah dipakai terisi sendiri waktu dibuka',
+  cek('perangkat baru DIAM dulu — tidak memanggil Google sendiri',
+      (await hal3.evaluate(() => window.__mintaToken)) === 0 &&
+      !(await punya(hal3, 'Catatan dari perangkat dua')),
+      String(await hal3.evaluate(() => window.__mintaToken)));
+
+  await hal3.evaluate(() => TAwan.masuk(TAlur.setelanUji()));
+  await hal3.waitForTimeout(300);
+  await tarik(hal3);
+  await hal3.waitForTimeout(600);
+  cek('sesudah satu kali diizinkan, dia terisi sendiri sampai penuh',
       await punya(hal3, 'Catatan dari perangkat dua'),
       JSON.stringify(await hal3.evaluate(() => TAlur.semuaEntri().map((e) => e.judul))));
-  cek('lengkap dengan folder dan pohon boardnya, tanpa satu tombol pun ditekan',
+  cek('lengkap dengan folder dan pohon boardnya, tanpa satu tombol lagi',
       String(await setelanDi(hal3, 'folderNote')).indexOf('Duauji') >= 0 &&
       String(await setelanDi(hal3, 'board')).indexOf('Keduauji') >= 0,
       JSON.stringify([await setelanDi(hal3, 'folderNote'), await setelanDi(hal3, 'board')]));

@@ -98,6 +98,22 @@
 
   function ambilToken(setelan, diam) {
     if (token && Date.now() < tokenSampai - 60000) return Promise.resolve(token);
+    /* PERMINTAAN DIAM-DIAM TIDAK PERNAH MEMBUKA JENDELA. Ini penjaganya, dan
+       dia ditaruh di SINI - bukan di tiap pemanggil - supaya tidak ada satu pun
+       jalur latar yang bisa melewatinya. Pemanggilnya banyak dan berjalan
+       sendiri: penghangat waktu aplikasi dibuka, cadangan, tarikan sinkron,
+       pelabelan AI sesudah tiap drop.
+
+       Yang bikin ini perlu: 'prompt: kosong' BUKAN jaminan tanpa layar. Kalau
+       izinnya memang belum pernah diberikan, Google tetap membuka pemilih akun
+       - dan yang terbaca "baru pindah aplikasi sepuluh detik, balik lagi
+       disuruh login", padahal tidak ada yang meminta apa pun.
+
+       Belum pernah tersambung itu keadaan yang SAH: yang diam-diam gagal
+       seketika, dan aplikasinya jalan penuh tanpa Google. */
+    if (diam && !pernahMasuk(setelan)) {
+      return Promise.reject(new Error('Belum tersambung ke Google'));
+    }
     /* PERMINTAAN YANG DIMINTA JARI TIDAK PERNAH IKUT ANTRE DI BELAKANG YANG
        DIAM-DIAM. Dulu keduanya berbagi satu 'mintaJalan', jadi menekan
        "Hubungkan" selagi penghangat latar masih berjalan akan MENUNGGU
@@ -201,15 +217,6 @@
      yang sah, bukan kerusakan. */
   function hangatkan(setelan) {
     if (token || !clientId(setelan)) return Promise.resolve(false);
-    /* CUMA MENGHANGATKAN YANG MEMANG SUDAH PERNAH MENYALA. Dulu penjaganya
-       cuma "ada Client ID" - dan Client ID selalu ada, karena pembuatnya
-       menanamnya. Akibatnya di perangkat yang BELUM PERNAH mengizinkan, tiap
-       kali aplikasinya dibuka Google diminta token, dan Google menjawabnya
-       dengan pemilih akun. Memilih akun jadi ritual tiap membuka aplikasi,
-       untuk sesuatu yang tidak pernah diminta pemakainya.
-       Belum pernah mengizinkan itu keadaan yang SAH: tidak ada yang perlu
-       dihangatkan, karena tidak ada yang menyala. */
-    if (!pernahMasuk(setelan)) return Promise.resolve(false);
     return ambilToken(setelan, true).then(function () { return true; },
                                           function () { return false; });
   }
