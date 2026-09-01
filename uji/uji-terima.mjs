@@ -3323,24 +3323,25 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
   });
   cek('ikon AI duduk di ujung kiri kotak, seperti WhatsApp', diKiriKotak === 'ok', diKiriKotak);
 
-  /* EMPAT IKON WAKTU DIAM, TIGA WAKTU MENGETIK. Yang pergi selalu yang paling
+  /* LIMA IKON WAKTU DIAM, TIGA WAKTU MENGETIK. Yang pergi selalu yang paling
      tidak mungkin dipakai saat itu: orang yang sudah mengetik catatan tidak
-     sedang mau bertanya ke AI. */
+     sedang mau bertanya ke AI, dan tidak sedang mau memotret. */
   const ikonKotak = async () => hal.evaluate(() =>
-    ['#b-ai', '#b-lampir', '#b-tugas', '#b-drop']
+    ['#b-ai', '#b-lampir', '#b-tugas', '#b-kamera', '#b-drop']
       .filter((s) => document.querySelector(s).getBoundingClientRect().width > 0).length);
-  cek('empat ikon waktu kotaknya diam', (await ikonKotak()) === 4,
+  cek('lima ikon waktu kotaknya diam', (await ikonKotak()) === 5,
       String(await ikonKotak()));
   await hal.fill('#kotak', 'sesuatu');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(200);
-  cek('tinggal tiga begitu mulai mengetik, dan yang pergi ikon AI',
+  cek('tinggal tiga begitu mulai mengetik, dan yang pergi AI dan kamera',
       (await ikonKotak()) === 3 &&
-      (await hal.locator('#b-ai').isHidden()), String(await ikonKotak()));
+      (await hal.locator('#b-ai').isHidden()) &&
+      (await hal.locator('#b-kamera').isHidden()), String(await ikonKotak()));
   await hal.fill('#kotak', '');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(200);
-  cek('dan kembali empat begitu kotaknya kosong lagi', (await ikonKotak()) === 4);
+  cek('dan kembali lima begitu kotaknya kosong lagi', (await ikonKotak()) === 5);
 
   cek('sebelum dinyalakan, obrolannya tidak kelihatan sama sekali',
       await hal.locator('#petak-ai').isHidden());
@@ -3356,8 +3357,10 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
      dia tetap ada walau kotaknya sudah berisi. */
   cek('ikon AI tetap kelihatan, karena dia jalan pulangnya',
       await hal.locator('#b-ai').isVisible());
-  /* Todo ikut pergi: tugas tidak pernah lahir dari layar ini. */
+  /* Todo ikut pergi: tugas tidak pernah lahir dari layar ini. Kamera juga -
+     belum ada yang bisa dilampirkan ke pertanyaan yang belum dijawab. */
   cek('cip Todo turun panggung juga', await hal.locator('#b-tugas').isHidden());
+  cek('kamera ikut turun panggung di mode AI', await hal.locator('#b-kamera').isHidden());
   cek('tombolnya berganti jadi panah kirim',
       await hal.locator('#b-drop .ik.kirim').isVisible() &&
       await hal.locator('#b-drop .ik.turun').isHidden());
@@ -5016,22 +5019,89 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
   cek('gambar yang di-drop ikut masuk Gallery tanpa satu keputusan pun',
       ssdhDrop === sblmDrop + 1, sblmDrop + ' -> ' + ssdhDrop);
 
-  /* Kolomnya ikut dicadangkan, DI EKOR - baris lama membaca nilainya menurut
-     urutan, jadi menyisipkan di tengah menggeser seluruh cadangan yang ada. */
-  const kolomGal = await hal.evaluate(() => TAwan.KOLOM);
-  cek('album dan sumber ikut dicadangkan, kolomnya di ekor',
-      kolomGal.indexOf('album') >= kolomGal.length - 4 &&
-      kolomGal.indexOf('sumber') >= kolomGal.length - 4,
-      JSON.stringify(kolomGal.slice(-5)));
-  /* 'tag' SENGAJA DISISAKAN walau sudah tidak diisi apa pun: membuangnya
-     menggeser dua puluh kolom di belakangnya, dan seluruh cadangan yang sudah
-     terlanjur ada ikut bergeser diam-diam. Kolom kosong tidak merugikan siapa
-     pun; kolom yang bergeser merusak semuanya. */
-  cek('kolom tag lama tetap di tempatnya, supaya cadangan lama tidak bergeser',
-      kolomGal.indexOf('tag') === 20, String(kolomGal.indexOf('tag')));
+  /* IKON KAMERA DI LAYAR DROP: JALAN PINTAS, BUKAN PINTU KEDUA.
+     Yang dihemat perjalanan tiga ketukan - pindah pintu, buka dok, potret -
+     untuk hal yang paling sering dilakukan di aplikasi ini. Yang lahir dari
+     sini harus entri Gallery yang sama persis dengan yang lahir dari dok
+     kamera di sana: dua jalur masuk yang menghasilkan dua bentuk barang
+     adalah cara tercepat membuat satu tumpukan jadi dua tumpukan yang tidak
+     pernah bertemu. */
+  await hal.fill('#kotak', '');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(200);
+  cek('ikon kamera duduk di dalam kotaknya, di sebelah tombol Drop',
+      await hal.evaluate(() => {
+        const k = document.querySelector('#b-kamera');
+        if (!k || !k.closest('.kotak-bar')) return false;
+        const d = document.querySelector('#b-drop').getBoundingClientRect();
+        const a = k.getBoundingClientRect();
+        return a.right <= d.left + 2 && Math.abs(a.bottom - d.bottom) < 24;
+      }) === true);
+  /* Kamera dan klip berdiri bersebelahan, dan itu memang dua benda: klip
+     MELAMPIRKAN gambar pada catatan yang sedang diketik, kamera ini
+     MENYIMPANNYA langsung jadi entri Gallery. */
+  cek('dan dia paling kanan di antara ikon dalam kotaknya',
+      await hal.evaluate(() => {
+        const x = (s) => document.querySelector(s).getBoundingClientRect().right;
+        return x('#b-kamera') > x('#b-tugas') && x('#b-tugas') > x('#b-lampir');
+      }) === true);
+
+  const sblmKamera = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.jenis === 'gambar' && !e.pensiun).length);
+  await hal.setInputFiles('#galeri-pilih-kamera', [
+    { name: 'pintasuji.png', mimeType: 'image/png', buffer: binPng }
+  ]);
+  await hal.waitForTimeout(1500);
+  const dariPintas = await hal.evaluate(() => TAlur.semuaEntri()
+    .filter((e) => e.namaBerkas === 'pintasuji.png')[0]);
+  cek('memotret dari layar Drop langsung jadi entri Gallery, bukan lampiran',
+      !!dariPintas && dariPintas.jenis === 'gambar' && dariPintas.sumber === 'kamera' &&
+      (await hal.evaluate(() => TAlur.semuaEntri()
+        .filter((e) => e.jenis === 'gambar' && !e.pensiun).length)) === sblmKamera + 1,
+      JSON.stringify(dariPintas && { j: dariPintas.jenis, s: dariPintas.sumber }));
+  /* Kotak Drop tidak boleh ikut terisi: yang barusan kamu potret sudah punya
+     rumahnya sendiri, dan draf yang menggantung di kotak akan ikut tersimpan
+     lagi waktu kamu menekan Drop untuk hal yang sama sekali lain. */
+  cek('dan kotak Drop tidak ikut kebagian lampiran',
+      (await hal.inputValue('#kotak')) === '' &&
+      (await hal.locator('#tebakan').isHidden()));
+
+  /* SESINYA SATU, DI KEDUA LAYAR. Sudut pandang yang kamu ketik di Gallery
+     tadi ('nanas pickup') tetap berlaku di sini - jalan pintas ini memang
+     tombol yang sama, cuma berdiri di tempat lain. Kalau sesinya terpisah,
+     sepuluh jepretan beruntun yang kebetulan diambil dari dua layar berbeda
+     berangkat ke AI dengan dua sudut pandang, dan yang setengahnya salah. */
+  cek('sesi yang sedang berjalan ikut terbawa — tidak ditanya lagi',
+      (await hal.locator('#tanya').isHidden()) &&
+      dariPintas.driver === 'nanas pickup', JSON.stringify(dariPintas.driver));
+  /* ALAMATNYA DIKOSONGKAN, BUKAN DIWARISI DARI KUNJUNGAN TERAKHIR KE GALLERY.
+     Board yang tadi kebetulan terbuka di layar sebelah tidak menjawab "ke
+     mana" untuk foto yang diambil dari sini - dan salah alamat lebih buruk
+     daripada tanpa alamat, karena yang salah tidak pernah kamu curigai. */
+  cek('alamatnya menunggu AI, tidak diwarisi board yang tadi dibuka di Gallery',
+      dariPintas.album === '' && !dariPintas.albumManual,
+      JSON.stringify({ a: dariPintas.album, m: !!dariPintas.albumManual }));
+
+  /* "Ganti" tetap ditawarkan, dan di sini pun dia menanyakan SUDUT PANDANG -
+     bukan daftar board. */
+  cek('dan “Ganti” tetap ditawarkan, sama seperti di layar Gallery',
+      (await hal.locator('#pesan .pesan-aksi').count()) === 1);
+  await hal.click('#pesan .pesan-aksi');
+  await hal.waitForSelector('#tanya-isi:not(.sembunyi)');
+  cek('yang ditanya sudut pandangnya, bukan daftar board',
+      (await hal.innerText('#tanya-judul')).indexOf('lihat') >= 0,
+      await hal.innerText('#tanya-judul'));
+  await hal.fill('#tanya-isi', 'pintas uji');
+  await hal.click('#b-tanya-ya');
+  await hal.waitForTimeout(900);
+  cek('drivernya berganti, dan layarnya tidak ikut berpindah — ini jalan pintas, bukan pintu',
+      (await hal.evaluate(() => TAlur.semuaEntri()
+        .filter((e) => e.namaBerkas === 'pintasuji.png')[0].driver)) === 'pintas uji' &&
+      (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-utama');
 
   await hal.evaluate(() => Promise.all(TAlur.semuaEntri()
-    .filter((e) => /^gal\d|unggahuji|ssuji/.test(e.id) || /gal\d|unggahuji|ssuji/.test(e.namaBerkas || ''))
+    .filter((e) => /^gal\d|unggahuji|ssuji|pintasuji/.test(e.id) ||
+                   /gal\d|unggahuji|ssuji|pintasuji/.test(e.namaBerkas || ''))
     .map((e) => { e.pensiun = true; return TSimpan.taruh(e); })));
   await hal.evaluate(() => TAlur.muatUlangUji());
   await hal.waitForTimeout(300);
