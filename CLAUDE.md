@@ -89,11 +89,11 @@ terpikir, dan itu membatalkan seluruh gunanya.
    tingkat itu memang dibutuhkan (dan tambalan itu diam-diam mematikan
    `bacaBoardDariDriver`, karena nama yang diketik jari tidak cocok lagi).
    AKAR TIDAK BISA DIISI GAMBAR LANGSUNG dan TIDAK BISA DIHAPUS — dia tulang
-   punggung, bukan ruangan; kepalanya di Setelan dan di Gallery tidak bisa
-   diketuk untuk dibuka. Menjadikannya folder berarti menambah satu ketukan ke
-   tiap foto; memberinya silang berarti satu ketukan yang meleset melenyapkan
-   seluruh bidang beserta sub-nya, dan itu satu-satunya ketukan yang tidak
-   bisa dibatalkan.
+   punggung, bukan ruangan. Di Gallery barisnya BISA diketuk (yang muncul
+   interest-nya, bukan foto), di Setelan kepalanya tidak. Menjadikannya tempat
+   menaruh foto berarti menambah satu ketukan ke tiap foto; memberinya silang
+   berarti satu ketukan yang meleset melenyapkan seluruh bidang beserta
+   sub-nya, dan itu satu-satunya ketukan yang tidak bisa dibatalkan.
    **TAPI AKARNYA TETAP MILIK PEMAKAINYA:** bisa DITAMBAH ("+ Akar baru", di
    dasar menu Setelan) dan DINAMAI ULANG (pensil di kepalanya; anaknya ikut
    berganti nama, isinya tidak pindah ke mana-mana). Daftar bawaannya tebakan
@@ -234,8 +234,7 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     BOARD ('board' di setelan, bawaannya 'boardAwal'), dua
                     tingkat, bertingkat lewat
                     awalan nama, kolomnya 'album' - BUKAN menumpang 'folder'
-                    milik Note. Saringannya SUMBER ('sumber': kamera/unggah/
-                    kosong=drop), bukan jenis: di layar ini semuanya gambar.
+                    milik Note.
                     Kamera dan unggahan menyimpan LANGSUNG jadi entri di board
                     yang sedang dibuka, bukan jadi lampiran kotak Drop. Di akar
                     tampil board saja - KECUALI kalau belum ada satu pun,
@@ -249,10 +248,17 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     All MENEMBUS board: yang tampil semua gambarnya, karena
                     kadang yang kamu cari cuma "yang tadi" dan yang tadi tidak
                     punya alamat di kepalamu; dia keadaan, tidak ikut disimpan.
-                    View menu turun berisi ukuran petak (bawaan 'sedang') plus
-                    saringan SUMBER di bawah garis. Dulu di sini lima cip
-                    saringan plus empat tombol tampilan berjajar - sembilan
-                    benda di satu baris, di layar yang isinya justru gambar.
+                    View menu turun berisi SATU BARIS saja: ukuran petak
+                    (bawaan 'sedang'), dan barisnya MENCIUT begitu dipilih -
+                    menu yang tetap terbuka mendorong gambarnya turun justru
+                    waktu kamu baru selesai mengatur cara melihatnya.
+                    SARINGAN SUMBER SUDAH DIBUANG SELURUHNYA dan jangan
+                    dikembalikan: "Kamera / Unggah / Drop" memisahkan tumpukan
+                    menurut CARA BARANGNYA MASUK, dan itu bukan pertanyaan yang
+                    pernah dibawa mata ke layar ini - yang dicari "foto apa",
+                    bukan "lewat pintu mana". Yang benar-benar dipakai dari
+                    kelimanya cuma "Semua", dan itu sudah punya tombolnya sendiri
+                    di kepala.
                     TIDAK ADA LAGI baris "Belum berboard": dua baris yang
                     mengucapkan pertanyaan yang sama persis ("yang tidak punya
                     rumah"), dan yang pertama bunyinya seperti kesalahan. Yang
@@ -264,20 +270,44 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     punya baris untuk ditampilkan sama saja dengan foto yang
                     hilang. Berdiri di ruang tunggu TIDAK mengunci alamat -
                     dia tempat yang isinya belum diputuskan.
-                    AKAR GALLERY DIBAGI PER AKAR SISTEM (akarBerbagian): satu
-                    kepala bagian per akar yang isinya tidak kosong, interest-nya
-                    berjajar di bawahnya, lalu GARIS ('.pisah') dan ruang tunggu
-                    paling bawah. Tanpa garisnya
+                    DI AKAR YANG TAMPIL AKARNYA SAJA (akarBerbagian), sebagai
+                    BARIS YANG BISA DIKETUK - bukan kepala bagian yang menggelar
+                    seluruh interest sekaligus. Tujuh kepala dengan sepuluh
+                    interest di bawah masing-masing itu lima layar HP yang harus
+                    digulir sebelum sampai ke baris terakhir, dan yang dicari
+                    mata di layar pertama cuma "bidang mana". Ini TIDAK menambah
+                    ketukan di jalur masuk - yang bertambah cuma di jalur BACA,
+                    dan di situ satu ketukan menukar lima layar gulir. Akarnya
+                    tetap tidak menampung gambar langsung: yang muncul sesudah
+                    diketuk interest-nya, bukan foto. Lalu GARIS ('.pisah') dan
+                    ruang tunggu paling bawah; tanpa garisnya
                     keduanya terbaca sederajat, dan "Other and Various" duduk di
                     antara bidang usahamu seperti salah satunya - padahal dia
-                    kebalikannya. Kepala bagiannya TIDAK BISA DIKETUK dan TIDAK
-                    diterjemahkan: dia tulang punggung, dan namanya nama yang
-                    dipilih sistem, aturan yang sama dengan nama pintu.
-                    AKAR YANG KOSONG TIDAK DIGAMBAR SAMA SEKALI - tujuh kepala
+                    kebalikannya.
+                    AKAR YANG KOSONG TIDAK DIGAMBAR SAMA SEKALI - tujuh baris
                     yang enam di antaranya kosong bukan struktur, itu daftar
                     kosong yang harus digulir. Pohon lama yang belum berakar
-                    tetap digambar di bawah satu kepala "Main Interest / kamu
-                    yang menentukan": berlaku maju, bukan mundur.
+                    digambar sederajat dengan akarnya: berlaku maju, bukan mundur.
+                    ANGKA DI TIAP BARIS ITU JUMLAH GAMBAR, DAN DIA MENGHITUNG
+                    SAMPAI KE DALAM ('total' dari bangunPohon). Dulu barisnya
+                    membawa dua angka: "10 album" dan isi langsungnya. Yang
+                    dibaca mata cuma yang pertama, dan yang pertama menjawab
+                    pertanyaan yang tidak pernah ditanyakan - kamu tidak mencari
+                    album, kamu mencari foto. Akibatnya baris bertulis "10 album"
+                    diketuk lalu isinya nol, dan angka yang menipu sekali saja
+                    berhenti dipercaya selamanya.
+                    TIAP INTEREST SELALU PUNYA "<interest> Various", WALAU KOSONG
+                    (albumTampak). Yang membuka "Business Hampers" dan cuma
+                    melihat "Isi Hamper" tidak punya satu tempat pun untuk hamper
+                    yang bukan isinya - jadi dia menaruhnya di interest itu
+                    sendiri, dan interest yang menampung foto lepas di samping
+                    sub-nya persis timbunan yang dilawan aplikasi ini. Barisnya
+                    VIRTUAL, tidak ditanam ke setelan: sebelas baris "Various"
+                    yang lahir sendiri di Setelan adalah pohon yang menumbuhi
+                    dirinya di belakangmu, dan pohon begitu berhenti terasa
+                    milikmu. Jadi sungguhan begitu ada yang benar-benar mendarat
+                    di situ (pastikanAlbumAda, dipanggil jalur kamera dan pindah).
+                    Akar dan ruang tunggu TIDAK ikut dapat.
                     BOARDNYA BERURUT ABJAD, bukan terbanyak-dulu (bangunPohon
                     dapat penanda 'abjad'). Pohon board kamu tulis sendiri dan
                     jumlahnya tetap; urutan yang berubah mengikuti isinya
@@ -504,9 +534,17 @@ public/pelabel.js   (lanjutan) TIDAK ADA TAG SAMA SEKALI, dan itu keputusan
                     isinya masih menyuruh "sebutkan jenis dokumennya" dan
                     "jangan menafsirkan" - dua perintah yang bertabrakan
                     langsung dengan sudut pandang.
-                    DESKRIPSI MAKSIMAL 2 KALIMAT, dan isinya ditentukan: nama
-                    objek, gaya, kategori, bentuk, fungsi, satu hal unik yang
-                    benar-benar terlihat. Dua itu BATAS ATAS, bukan sasaran:
+                    DESKRIPSI MAKSIMAL 2 KALIMAT, dan isinya YANG MEMBEDAKAN
+                    benda ini dari benda sejenis: warna, bahan, merek, ukuran,
+                    kondisi, tulisan yang tertera, bentuk tak biasa, latarnya.
+                    FUNGSI GENERIK DILARANG TERANG-TERANGAN ("pulpen untuk
+                    mencatat", "mobil untuk transportasi", "ini adalah foto…") -
+                    semua itu sudah diketahui siapa pun yang membaca namanya,
+                    jadi kalimatnya habis tanpa memberi satu pun pintu masuk
+                    baru. Satu gambar sudah seribu kata; yang dibutuhkan
+                    deskripsi cuma kata yang MEMANGGIL gambar itu kembali, dan
+                    fungsi generik tidak memanggil apa pun karena dia berlaku
+                    untuk semua benda sejenis. Dua itu BATAS ATAS, bukan sasaran:
                     waktu diminta "2-3 kalimat" yang kembali lima, dan yang
                     ketiga sampai kelima cuma menulis ulang kalimat pertama
                     dengan kata lain. Deskripsi yang harus digulir berhenti
@@ -782,7 +820,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (806 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (814 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

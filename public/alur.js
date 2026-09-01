@@ -1840,7 +1840,6 @@
        pencarian menilai kolom tempat, jadi kata itu tetap menemukan isinya. */
     if (!kueri && labelDepan) kueri = String(labelDepan);
     galeriFolder = null;
-    galeriSaring = '*semua';
     var cari = $('#galeri-cari');
     if (cari) cari.value = kueri;
     keTab('l-galeri');
@@ -2105,8 +2104,27 @@
     var anak = {};
     nama.forEach(function (n) { if (induk[n]) anak[induk[n]] = (anak[induk[n]] || 0) + 1; });
 
+    /* TOTAL = ISINYA SENDIRI + SELURUH KETURUNANNYA. Angka yang cuma menghitung
+       isi langsung berbohong di tiap baris yang punya anak: "Business" tertulis
+       0 padahal di dalamnya ada lima ratus foto, dan yang terbaca bukan
+       "fotonya ada di sub" tapi "bidang ini kosong". Baris yang harus dibuka
+       dulu untuk tahu ada isinya atau tidak sama saja dengan tidak berangka. */
+    var total = {};
+    nama.forEach(function (n) {
+      var v = TOtak.normal(n);
+      var jml = 0;
+      nama.forEach(function (m) {
+        var u = TOtak.normal(m);
+        if (m === n || u.indexOf(v + ' ') === 0) jml += isi[m].length;
+      });
+      total[n] = jml;
+    });
+
     return nama.map(function (n) {
-      return { nama: n, isi: isi[n], induk: induk[n] || '', anak: anak[n] || 0 };
+      return {
+        nama: n, isi: isi[n], induk: induk[n] || '', anak: anak[n] || 0,
+        total: total[n]
+      };
     }).sort(function (a, b) {
       /* Yang belum bertempat selalu paling bawah: dia bukan tempat yang kamu
          pilih, dia sisa yang belum sempat ditaruh. */
@@ -2482,7 +2500,6 @@
   }
   var albumDaftar = [];
   var galeriFolder = null;      /* album yang sedang dibuka; null = daftar album */
-  var galeriSaring = '*semua';
   var gayaGaleri = 'sedang';
   /* "All" menembus board: yang tampil semua gambarnya, bukan daftar boardnya.
      Keadaan, bukan setelan - dia tidak ikut disimpan, karena yang kamu minta
@@ -2503,21 +2520,11 @@
   var fotoSesi = [];
   var FOTO_SESI_MAKS = 12;
 
-  /* Sumbernya, bukan jenisnya: di layar ini semuanya gambar, jadi menyaring
-     jenis tidak memisahkan apa pun. Yang benar-benar membedakan satu tumpukan
-     dari tumpukan lain adalah dari mana dia masuk - dan itu yang kamu ingat
-     waktu mencari ("tadi aku screenshot", "itu aku foto sendiri"). */
-  /* Saringan SUMBER, bukan jenis: di layar ini semuanya gambar. Sejak
-     kepalanya jadi tiga tombol, daftar ini pindah ke dalam menu View -
-     satu ketukan lebih dalam, dan itu memang setara dengan seberapa sering
-     dia dipakai. */
-  var GALERI_SARING = [
-    ['*semua', 'Semua'],
-    ['kamera', 'Kamera'],
-    ['unggah', 'Unggah'],
-    ['drop', 'Drop'],
-    ['*pin', 'Pin']
-  ];
+  /* SARINGAN SUMBER SUDAH DIBUANG SELURUHNYA, dan jangan dikembalikan.
+     "Kamera / Unggah / Drop" memisahkan tumpukan menurut CARA BARANGNYA MASUK,
+     dan itu bukan pertanyaan yang pernah dibawa mata ke layar ini - yang dicari
+     "foto apa", bukan "lewat pintu mana". Yang benar-benar dipakai dari
+     kelimanya cuma "Semua", dan itu sudah punya tombolnya sendiri di kepala. */
 
   /* ===================== KEPALA GALLERY: HOME - ALL - VIEW =====================
      Tiga tombol, dan ketiganya menjawab pertanyaan yang berbeda:
@@ -2673,15 +2680,55 @@
     });
   }
 
-  function folderGaleriPohon() {
-    return bangunPohon(albumDaftar, semuaGambar(), 'album', tanpaGaleri(), true);
+  /* TIAP INTEREST SELALU PUNYA "VARIOUS", walau kosong. Dulu baris ini baru
+     lahir waktu AI pertama kali membutuhkannya, dan itu keliru: yang membuka
+     "Business Hampers" dan cuma melihat "Isi Hamper" tidak punya satu tempat
+     pun untuk foto hamper yang bukan isinya - jadi dia menaruhnya di interest
+     itu sendiri, dan interest yang menampung foto lepas di samping sub-nya
+     persis timbunan yang dilawan aplikasi ini.
+
+     VIRTUAL, bukan ditanam ke pohonnya. Menanam sebelas baris "Various" ke
+     setelan berarti sebelas baris yang harus dihapus satu-satu kalau kamu
+     tidak mau - dan pohon yang menumbuhi dirinya sendiri di belakangmu
+     berhenti terasa milikmu. Barisnya jadi sungguhan begitu ada yang
+     benar-benar mendarat di situ (lihat pastikanAlbumAda). */
+  function albumTampak() {
+    var lain = TOtak.normal(TBawaan.boardLain || '');
+    var pakai = (daftarAkhiran().filter(function (x) {
+      return TOtak.normal(x) === 'various';
+    })[0]) || '';
+    var keluar = albumDaftar.slice();
+    if (!pakai) return keluar;
+    albumDaftar.forEach(function (n) {
+      /* Interest = yang induknya akar. Akar sendiri tidak dapat "Various":
+         dia tulang punggung, bukan ruangan. Ruang tunggu juga tidak - ruangan
+         di dalam ruang tunggu membatalkan gunanya ruang tunggu. */
+      if (adalahAkar(n) || TOtak.normal(n) === lain) return;
+      var ind = indukBoard(n);
+      if (ind && !adalahAkar(ind)) return;
+      var v = n + ' ' + pakai;
+      if (!keluar.some(function (m) { return TOtak.normal(m) === TOtak.normal(v); })) {
+        keluar.push(v);
+      }
+    });
+    return keluar;
   }
 
-  /* Kosong = masuk lewat Drop. Itu jawaban yang benar untuk entri lama: semua
-     yang sudah ada di aplikasi ini memang masuk lewat kotak Drop, jauh sebelum
-     layar ini ada. Menandainya "tidak diketahui" akan membuat saringan Drop
-     kosong di HP yang timbunannya justru paling banyak. */
-  function sumberGambar(e) { return e.sumber || 'drop'; }
+  /* Baris "Various" yang tadinya cuma digambar jadi SUNGGUHAN begitu ada yang
+     benar-benar mendarat di situ. Tanpa ini alamatnya menunjuk ke baris yang
+     tidak ada di pohonnya: dia hilang dari Setelan, tidak bisa dinamai ulang,
+     dan lenyap sama sekali kalau suatu hari akhiran "Various" kamu buang. */
+  function pastikanAlbumAda(nama) {
+    if (!nama || albumDaftar.some(function (n) {
+      return TOtak.normal(n) === TOtak.normal(nama);
+    })) return Promise.resolve();
+    albumDaftar.push(nama);
+    return simpanAlbum();
+  }
+
+  function folderGaleriPohon() {
+    return bangunPohon(albumTampak(), semuaGambar(), 'album', tanpaGaleri(), true);
+  }
 
   function daftarGambar() {
     var kotak = $('#galeri-cari');
@@ -2698,10 +2745,6 @@
         if (galeriFolder === tanpaGaleri()) return !e.album || e.album === galeriFolder;
         return (e.album || '') === galeriFolder;
       });
-    }
-    if (galeriSaring === '*pin') punya = punya.filter(function (e) { return e.pin; });
-    else if (galeriSaring !== '*semua') {
-      punya = punya.filter(function (e) { return sumberGambar(e) === galeriSaring; });
     }
     var hasil = kueri ? TOtak.cari(punya, kueri, '', '') : punya.slice();
     /* Tanpa kueri: yang paling BARU di atas. Galeri dibaca dari yang terakhir
@@ -2728,29 +2771,24 @@
     }).join('');
   }
 
-  /* Isi menu View: ukuran petak dulu - itu yang dicari waktu tombolnya
-     ditekan - lalu saringan sumber di bawah garis. */
+  /* SATU BARIS, DAN MENCIUT BEGITU DIPILIH. Dulu menu ini dua baris: ukuran
+     petak di atas, saringan sumber di bawah garis. Saringan sumbernya dibuang -
+     "Kamera / Unggah / Drop" memisahkan tumpukan menurut cara barangnya masuk,
+     dan itu bukan pertanyaan yang pernah dibawa mata ke layar ini; "Semua"
+     sudah punya tombolnya sendiri di kepala. Yang tersisa satu pertanyaan
+     ("sebesar apa petaknya"), jadi satu baris, dan barisnya pergi sesudah
+     dijawab - menu yang tetap terbuka mendorong gambarnya turun justru waktu
+     kamu baru selesai mengatur cara melihatnya. */
   function gambarTampilGaleri() {
     var w = $('#galeri-tampil');
     if (!w) return;
     w.classList.toggle('sembunyi', viewTutup);
     if (viewTutup) { w.innerHTML = ''; return; }
-    var punya = semuaGambar();
     w.innerHTML =
       '<div class="view-baris">' + GAYA_GAMBAR.map(function (g) {
         return '<button class="tampil-tbl' + (gayaGaleri === g[0] ? ' nyala' : '') +
                '" data-ggaya="' + g[0] + '" title="' + H(g[1]) + '" aria-label="' + H(g[1]) + '">' +
                '<svg viewBox="0 0 24 24" class="ik">' + g[2] + '</svg></button>';
-      }).join('') + '</div>' +
-      '<div class="view-baris view-saring">' + GALERI_SARING.map(function (g) {
-        var n = g[0] === '*semua' ? punya.length
-              : g[0] === '*pin' ? punya.filter(function (e) { return e.pin; }).length
-              : punya.filter(function (e) { return sumberGambar(e) === g[0]; }).length;
-        if (!n && g[0] !== '*semua' && galeriSaring !== g[0]) return '';
-        return '<button class="cip' + (galeriSaring === g[0] ? ' nyala' : '') +
-               '" data-gsaring="' + g[0] + '">' + H(g[1]) +
-               (n ? '<span class="cip-angka">' + (n > 999 ? '999+' : n) + '</span>' : '') +
-               '</button>';
       }).join('') + '</div>';
   }
 
@@ -2779,13 +2817,18 @@
       '<span class="note-jejak-kini">' + H(namaPendek(galeriFolder, naik)) + '</span>';
   }
 
+  /* SATU ANGKA, DAN ANGKANYA GAMBAR. Dulu barisnya membawa dua: "10 album" dan
+     isi langsungnya. Yang dibaca mata cuma yang pertama, dan yang pertama
+     menjawab pertanyaan yang tidak pernah ditanyakan - kamu tidak mencari
+     album, kamu mencari foto. Akibatnya baris bertulis "10 album" diketuk lalu
+     isinya nol, dan angka yang menipu sekali saja berhenti dipercaya
+     selamanya. */
   function albumHtml(f) {
-    var n = f.isi.length;
+    var n = f.total === undefined ? f.isi.length : f.total;
     return '<button class="folder-baris" data-galeri-folder="' + H(f.nama) + '">' +
       '<svg viewBox="0 0 24 24" class="ik"><path d="M4 6a2 2 0 0 1 2-2h3.5l2 2.5H18a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>' +
       '<span class="folder-nama" data-asli>' + H(namaPendek(f.nama, f.induk)) + '</span>' +
-      (f.anak ? '<span class="folder-anak">' + f.anak + ' album</span>' : '') +
-      (n || !f.anak ? '<span class="folder-hitung">' + n + '</span>' : '') +
+      '<span class="folder-hitung">' + n + '</span>' +
       '</button>';
   }
 
@@ -2844,45 +2887,43 @@
       }).join('') + '</div>';
   }
 
-  /* AKAR GALLERY DIBAGI PER AKAR, dan kepalanya bukan hiasan.
+  /* AKAR GALLERY: YANG TAMPIL AKARNYA SAJA, dan itu perubahan dari kepala
+     bagian yang dulu.
 
-     Sembilan interest sejajar sudah di batas yang bisa dipindai mata; di lima
-     belas dia dinding. Yang membedakannya dari daftar biasa: kepalanya TIDAK
-     BISA DIKETUK. Akar itu tulang punggung, bukan ruangan - menjadikannya
-     folder berarti menambah satu ketukan ke tiap foto, dan seluruh alasan
-     aplikasi ini ada adalah mengurangi ketukan, bukan menambahnya.
+     Kepala bagian menggelar seluruh interest sekaligus: tujuh kepala dengan
+     enam-sepuluh interest di bawah masing-masing adalah lima layar HP yang
+     harus digulir sebelum sampai ke baris terakhir - dan yang dicari mata di
+     layar pertama cuma "bidang mana", satu pertanyaan yang jawabannya tujuh
+     baris. Sekarang akarnya BISA DIKETUK, dan mengetuknya membuka interest di
+     dalamnya.
 
-     Yang kosong tidak digambar sama sekali. Tujuh kepala bagian yang enam di
-     antaranya kosong bukan struktur, itu daftar kosong yang harus digulir. */
+     Ini tidak menambah ketukan di jalur masuk - yang bertambah cuma di jalur
+     BACA, dan di jalur baca satu ketukan menukar lima layar gulir. Akarnya
+     tetap tidak menampung gambar langsung: yang muncul sesudah diketuk
+     interest-nya, bukan foto.
+
+     Yang kosong tidak digambar sama sekali. Tujuh baris yang enam di antaranya
+     kosong bukan struktur, itu daftar kosong yang harus digulir. */
   function akarBerbagian(semuaA) {
     var lain = TOtak.normal(TBawaan.boardLain || '');
     var bawah = semuaA.filter(function (f) {
       return !f.induk && (f.nama === TANPA_ALBUM || (lain && TOtak.normal(f.nama) === lain));
     });
 
-    var html = '';
-    boardAkarPakai().forEach(function (akar) {
-      var isi = semuaA.filter(function (f) { return f.induk === akar; });
-      /* Akar yang isinya sendiri tidak kosong tetap dapat barisnya - foto yang
-         tidak punya baris untuk ditampilkan sama saja dengan foto yang hilang. */
-      var diri = semuaA.filter(function (f) { return f.nama === akar && f.isi.length; });
-      if (!isi.length && !diri.length) return;
-      html += '<div class="galeri-bagian"><span class="bagian-nama" data-asli>' + H(akar) + '</span></div>' +
-              diri.map(albumHtml).join('') + isi.map(albumHtml).join('');
-    });
+    var akar = boardAkarPakai().map(function (a) {
+      return semuaA.filter(function (f) { return f.nama === a; })[0];
+    }).filter(function (f) { return f && (f.total || f.anak); });
 
-    /* Pohon lama yang belum punya akar tetap digambar apa adanya, di bawah satu
-       kepala - berlaku maju, bukan mundur. */
+    /* Pohon lama yang belum punya akar tetap digambar apa adanya, sederajat
+       dengan akarnya - berlaku maju, bukan mundur. */
     var yatim = semuaA.filter(function (f) {
       return !f.induk && !adalahAkar(f.nama) && bawah.indexOf(f) < 0;
     });
-    if (yatim.length) {
-      html += '<div class="galeri-bagian"><span class="bagian-nama" data-asli>Main Interest</span>' +
-              '<span class="bagian-ket">kamu yang menentukan</span></div>' +
-              yatim.map(albumHtml).join('');
-    }
 
+    var html = akar.concat(yatim).map(albumHtml).join('');
     if (!bawah.length) return html;
+    /* Garisnya bukan hiasan: tanpa dia ruang tunggu terbaca sederajat dengan
+       bidang usahamu, padahal dia kebalikannya. */
     return html +
       '<div class="galeri-bagian pisah"><span class="bagian-ket">kalau tidak ada yang cocok</span></div>' +
       bawah.map(albumHtml).join('');
@@ -2909,7 +2950,7 @@
        dan menjawabnya dengan daftar album adalah tidak menjawab. */
     var albumHtml2 = '';
     var tampil = daftar;
-    if (!kueri && !galeriRata && galeriSaring === '*semua') {
+    if (!kueri && !galeriRata) {
       var semuaA = folderGaleriPohon();
       var anak = galeriFolder
         ? semuaA.filter(function (f) { return f.induk === galeriFolder; })
@@ -2925,7 +2966,7 @@
          timbunan di baliknya - dinding yang harus diketuk tanpa satu alasan. */
       var albumAsli = anak.filter(function (f) {
         return f.nama !== TANPA_ALBUM && f.nama !== tanpaGaleri() &&
-               (!adalahAkar(f.nama) || f.anak || f.isi.length);
+               (!adalahAkar(f.nama) || f.anak || f.total);
       });
       if (!galeriFolder && !albumAsli.length) anak = [];
       albumHtml2 = galeriFolder ? anak.map(albumHtml).join('') : akarBerbagian(semuaA);
@@ -2935,9 +2976,7 @@
     if (!tampil.length && !albumHtml2) {
       wadah.innerHTML = '<div class="kosong">' + (kueri
         ? 'Tidak ada gambar yang cocok.'
-        : galeriSaring !== '*semua'
-          ? 'Belum ada gambar dari sini.'
-          : 'Belum ada gambar.<br>Potret sekarang, atau unggah dari galeri HP-mu.<br>Yang kamu drop juga mendarat di sini sendiri.') +
+        : 'Belum ada gambar.<br>Potret sekarang, atau unggah dari galeri HP-mu.<br>Yang kamu drop juga mendarat di sini sendiri.') +
         '</div>';
       return;
     }
@@ -3034,6 +3073,7 @@
         });
       });
     }, Promise.resolve())
+      .then(function () { return pastikanAlbumAda(diBuka); })
       .then(function () { return muatSemua(); })
       .then(function () {
         catatFotoSesi(baru);
@@ -3613,6 +3653,11 @@
       return TSimpan.taruh(e);
     })).then(function () {
       batalPilih();
+      /* Tujuannya bisa saja baris "Various" yang tadinya cuma digambar -
+         memindahkan ke sana harus menanamnya, kalau tidak alamatnya menunjuk ke
+         baris yang tidak ada di pohonnya. */
+      return diLayarGaleri() ? pastikanAlbumAda(tujuan) : null;
+    }).then(function () {
       return muatSemua();
     }).then(function () {
       segarkanTampilan();
@@ -5925,7 +5970,7 @@
            membereskan empat keadaan yang menyala butuh empat ketukan di empat
            tempat - dan yang paling sering terjadi bukan "aku mau melepas yang
            ini", tapi "aku mau mulai dari nol lagi". */
-        galeriFolder = null; galeriRata = false; galeriSaring = '*semua';
+        galeriFolder = null; galeriRata = false;
         viewTutup = true;
         $('#galeri-cari').value = '';
         batalPilih();
@@ -5944,15 +5989,13 @@
     });
     $('#galeri-tampil').addEventListener('click', function (ev) {
       var g = ev.target.closest('[data-ggaya]');
-      if (g) {
-        gayaGaleri = g.getAttribute('data-ggaya');
-        simpanSetelan('gayaGaleri', gayaGaleri);
-        gambarGaleri();
-        return;
-      }
-      var f = ev.target.closest('[data-gsaring]');
-      if (!f) return;
-      galeriSaring = f.getAttribute('data-gsaring');
+      if (!g) return;
+      gayaGaleri = g.getAttribute('data-ggaya');
+      simpanSetelan('gayaGaleri', gayaGaleri);
+      /* MENCIUT BEGITU DIJAWAB. Pertanyaannya cuma satu, dan menu yang tetap
+         terbuka sesudah dijawab mendorong gambarnya turun justru waktu kamu
+         baru selesai mengatur cara melihatnya. */
+      viewTutup = true;
       gambarGaleri();
     });
     $('#galeri-isi').addEventListener('click', function (ev) {
@@ -6518,6 +6561,7 @@
     /* Cuma untuk uji: setelan yang HIDUP di memori, bukan salinannya - menulis
        ke basis data saja tidak mengubah apa yang sedang dipakai layar. */
     setelanUji: function () { return setelanSaat; },
+    albumTampakUji: albumTampak,
     setelModeAIUji: setelModeAI,
     kirimAIUji: kirimAI,
     riwayatAIUji: function () { return riwayatAI; },
