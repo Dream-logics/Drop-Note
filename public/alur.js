@@ -2317,7 +2317,7 @@
         ? (diLayarTulis()
             ? isi.length + ' tulisan di dalamnya TIDAK ikut terhapus — mereka keluar ke “Belum berfolder”.'
             : diLayarGaleri()
-              ? isi.length + ' gambar di dalamnya TIDAK ikut terhapus — mereka keluar ke “Belum berboard”.'
+              ? isi.length + ' gambar di dalamnya TIDAK ikut terhapus — mereka keluar ke “' + tanpaGaleri() + '”.'
               : isi.length + ' catatan di dalamnya TIDAK ikut terhapus — mereka keluar ke “Belum berlabel”.')
         : 'Foldernya kosong, jadi tidak ada yang ikut hilang.',
       function () {
@@ -2371,7 +2371,26 @@
      ini langsung berada di sini, tanpa satu keputusan pun ditagih di jalur
      masuk - aturan nomor satu tetap utuh. */
 
+  /* JARING PENGAMAN, BUKAN BARIS SEHARI-HARI. Yang belum punya alamat tinggal
+     DI DALAM ruang tunggu - satu tempat, bukan dua yang mengucapkan hal yang
+     sama: "Belum berboard" dan "Other and Various" itu pertanyaan yang sama
+     persis, dan yang pertama bunyinya seperti kesalahan.
+
+     Namanya cuma muncul lagi kalau ruang tunggunya sendiri kamu hapus. Foto
+     yang tidak punya baris untuk ditampilkan sama saja dengan foto yang
+     hilang, jadi harus selalu ada satu tempat yang menampungnya - dan kalau
+     kamu membuang yang bagus, yang tersisa yang seadanya. */
   var TANPA_ALBUM = 'Belum berboard';
+
+  /* Ke mana gambar yang belum punya alamat dikumpulkan. Ruang tunggu kalau dia
+     masih ada di pohonmu; kalau kamu sudah menghapusnya, baris seadanya. */
+  function tanpaGaleri() {
+    var lain = TBawaan.boardLain || '';
+    var ada = lain && albumDaftar.some(function (n) {
+      return TOtak.normal(n) === TOtak.normal(lain);
+    });
+    return ada ? lain : TANPA_ALBUM;
+  }
   var albumDaftar = [];
   var galeriFolder = null;      /* album yang sedang dibuka; null = daftar album */
   var galeriSaring = '*semua';
@@ -2512,7 +2531,7 @@
   }
 
   function folderGaleriPohon() {
-    return bangunPohon(albumDaftar, semuaGambar(), 'album', TANPA_ALBUM, true);
+    return bangunPohon(albumDaftar, semuaGambar(), 'album', tanpaGaleri(), true);
   }
 
   /* Kosong = masuk lewat Drop. Itu jawaban yang benar untuk entri lama: semua
@@ -2530,7 +2549,11 @@
        sudah tahu kamu tidak perlu mencari. Aturan yang sama dengan layar Note. */
     if (!kueri && galeriFolder && !galeriRata) {
       punya = punya.filter(function (e) {
-        return galeriFolder === TANPA_ALBUM ? !e.album : (e.album || '') === galeriFolder;
+        /* Ruang tunggu menampung DUA-DUANYA: yang memang dialamatkan ke sana,
+           dan yang belum punya alamat sama sekali. Bedanya cuma di kolomnya;
+           di layar keduanya menjawab pertanyaan yang sama. */
+        if (galeriFolder === tanpaGaleri()) return !e.album || e.album === galeriFolder;
+        return (e.album || '') === galeriFolder;
       });
     }
     if (galeriSaring === '*pin') punya = punya.filter(function (e) { return e.pin; });
@@ -2740,7 +2763,12 @@
          Kalau belum, satu-satunya baris yang tampil adalah "Belum beralbum",
          dan satu baris yang menyembunyikan dua puluh ribu foto di baliknya
          adalah dinding yang harus diketuk tanpa satu alasan pun. */
-      var albumAsli = anak.filter(function (f) { return f.nama !== TANPA_ALBUM; });
+      /* Ruang tunggu tidak dihitung sebagai "album sungguhan": kalau dia
+         satu-satunya yang ada, satu baris tetap menyembunyikan seluruh
+         timbunan di baliknya - dinding yang harus diketuk tanpa satu alasan. */
+      var albumAsli = anak.filter(function (f) {
+        return f.nama !== TANPA_ALBUM && f.nama !== tanpaGaleri();
+      });
       if (!galeriFolder && !albumAsli.length) anak = [];
       albumHtml2 = galeriFolder ? anak.map(albumHtml).join('') : akarBerbagian(anak);
       if (!galeriFolder && albumAsli.length) tampil = [];
@@ -2802,7 +2830,11 @@
        Drop tidak menjawab "ke mana" sama sekali, jadi menjawabkannya dengan
        board sisa kunjungan kemarin adalah salah alamat yang tidak pernah kamu
        curigai. Di sini alamatnya dikosongkan, dan AI yang memilihnya. */
-    var diBuka = (diLayarGaleri() && galeriFolder && galeriFolder !== TANPA_ALBUM)
+    /* BERDIRI DI RUANG TUNGGU BUKAN MENJAWAB "KE MANA". Dia tempat yang isinya
+       belum diputuskan - mengunci foto baru ke sana berarti mematikan justru
+       pekerjaan yang bikin ruangan itu ada. */
+    var diBuka = (diLayarGaleri() && galeriFolder &&
+                  galeriFolder !== TANPA_ALBUM && galeriFolder !== tanpaGaleri())
       ? galeriFolder : '';
     /* Drivernya yang mewaris, bukan alamatnya. Itu yang membuat sepuluh
        jepretan beruntun dibaca dari sudut pandang yang sama - bukan
@@ -3374,6 +3406,9 @@
       return folderTulis().filter(function (f) { return f.nama !== TANPA_FOLDER; });
     }
     if (diLayarGaleri()) {
+      /* Ruang tunggu BOLEH jadi tujuan pindah - dia baris sungguhan di
+         pohonmu, dan kadang memang di situ tempatnya. Yang tidak boleh cuma
+         baris seadanya, yang bukan tempat mana pun. */
       return folderGaleriPohon().filter(function (f) { return f.nama !== TANPA_ALBUM; });
     }
     return folderNote().filter(function (f) { return f.nama !== TANPA_RAK; });

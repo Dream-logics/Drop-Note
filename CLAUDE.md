@@ -221,9 +221,20 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     saringan SUMBER di bawah garis. Dulu di sini lima cip
                     saringan plus empat tombol tampilan berjajar - sembilan
                     benda di satu baris, di layar yang isinya justru gambar.
+                    TIDAK ADA LAGI baris "Belum berboard": dua baris yang
+                    mengucapkan pertanyaan yang sama persis ("yang tidak punya
+                    rumah"), dan yang pertama bunyinya seperti kesalahan. Yang
+                    belum punya alamat tinggal DI DALAM ruang tunggu
+                    (tanpaGaleri() dipakai sebagai penampung bangunPohon), dan
+                    membukanya menampilkan keduanya - yang album-nya "Other and
+                    Various" dan yang album-nya kosong. Namanya cuma muncul lagi
+                    kalau ruang tunggunya sendiri kamu hapus: foto yang tidak
+                    punya baris untuk ditampilkan sama saja dengan foto yang
+                    hilang. Berdiri di ruang tunggu TIDAK mengunci alamat -
+                    dia tempat yang isinya belum diputuskan.
                     AKAR GALLERY DIBAGI DUA, dan garisnya bukan hiasan:
                     "Main Interest" (bidang yang kamu tentukan) di atas, ruang
-                    tunggu + "Belum berboard" di bawah garis. Tanpa garisnya
+                    tunggu di bawah garis. Tanpa garisnya
                     keduanya terbaca sederajat, dan "Other and Various" duduk di
                     antara bidang usahamu seperti salah satunya - padahal dia
                     kebalikannya. "Main Interest" TIDAK diterjemahkan: dia nama
@@ -689,7 +700,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (790 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (792 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

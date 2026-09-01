@@ -4997,6 +4997,50 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
       (await hal.locator('#galeri-isi .galeri-bagian').count()) === 2 &&
       /main interest/i.test(await hal.innerText('#galeri-isi .galeri-bagian')),
       await hal.innerText('#galeri-isi'));
+  /* TIDAK ADA LAGI "Belum berboard" DI SEBELAHNYA. Dua baris yang mengucapkan
+     pertanyaan yang sama persis - "yang tidak punya rumah" - dan yang pertama
+     bunyinya seperti kesalahan. Yang belum punya alamat sekarang tinggal DI
+     DALAM ruang tunggu; satu tempat, bukan dua. */
+  await hal.evaluate(async () => {
+    const bin = atob('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGP8z8Dw'
+                   + 'nwEJMKEL0FIQAG3+AwOfLbXbAAAAAElFTkSuQmCC');
+    const arr = new Uint8Array(bin.length);
+    for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j);
+    const blob = new Blob([arr], { type: 'image/png' });
+    await TSimpan.taruhBerkas('bnol', blob, 'tanpaboard.png', 'image/png');
+    await TSimpan.taruh({ id: 'gnol', jenis: 'gambar', judul: 'Tanpa board uji', isi: '',
+      kategori: '', folder: '', album: '', sumber: 'kamera', driver: '', thumb: '',
+      berkasId: 'bnol', namaBerkas: 'tanpaboard.png', tipeBerkas: 'image/png',
+      ukuran: blob.size, label: [], elemen: [], daftar: [],
+      dibuat: Date.now(), diubah: Date.now(), dipakai: 0, diLabeliAI: true, diBacaAI: true });
+    await TAlur.muatUlangUji();
+  });
+  await hal.waitForTimeout(400);
+  cek('tidak ada lagi baris “Belum berboard” di sebelah ruang tunggunya',
+      (await hal.locator('#galeri-isi [data-galeri-folder="Belum berboard"]').count()) === 0,
+      await hal.innerText('#galeri-isi'));
+  /* DAN GAMBARNYA TIDAK HILANG: yang belum punya alamat harus tetap punya satu
+     baris yang menampungnya - foto yang tidak punya tempat untuk ditampilkan
+     sama saja dengan foto yang hilang. */
+  await hal.click('#galeri-isi [data-galeri-folder="Other and Various"]');
+  await hal.waitForTimeout(400);
+  cek('yang belum punya alamat tinggal di dalam ruang tunggunya',
+      (await hal.locator('#galeri-isi .petak-satu').count()) >= 1,
+      await hal.innerText('#galeri-isi'));
+  await hal.click('#galeri-saring [data-gkepala="*home"]');
+  await hal.waitForTimeout(400);
+
+  /* Ruang tunggu tidak dihitung sebagai alamat yang KAMU pilih: memotret dari
+     dalamnya tidak mengunci apa pun, karena dia tempat yang isinya belum
+     diputuskan - menguncinya di situ mematikan justru pekerjaan yang bikin
+     ruangan itu ada. */
+  await hal.evaluate(async () => {
+    const e = TAlur.semuaEntri().filter((x) => x.id === 'gnol')[0];
+    if (e) { e.pensiun = true; await TSimpan.taruh(e); }
+    await TAlur.muatUlangUji();
+  });
+  await hal.waitForTimeout(300);
+
   /* Ruang tunggunya di BAWAH garis, bukan di antara bidang usahamu. */
   cek('dan ruang tunggunya duduk di bawah garisnya',
       await hal.evaluate(() => {
