@@ -141,6 +141,36 @@
       'Motivation Renungan'
     ],
 
+    /* ===================== AKHIRAN =====================
+       Satu-satunya kosakata yang boleh dipakai AI untuk MEMBUAT sub board.
+
+       Dulu daftar board tertutup rapat: AI memilih, tidak pernah menambah.
+       Itu separuh benar. Yang membuat taksonomi meleleh bukan PERTUMBUHAN,
+       tapi PENAMAAN BEBAS - tag mati karena mesin boleh mengarang kata: #sofa,
+       #kursi, #seating untuk satu benda. Kalau yang boleh dikarang cuma ADA
+       atau TIDAK ADA barisnya, dan katanya diambil dari daftar tertutup,
+       pertumbuhannya aman: dua foto kopi selalu mendarat di ruangan yang sama,
+       karena cuma ada satu kata yang mungkin dipakai.
+
+       Jadi AI cuma boleh menggabungkan dua potong yang SUDAH ADA: nama main
+       board yang kamu tulis, plus satu akhiran dari sini. "Daily Life" +
+       "Inspiration". Aplikasinya yang menuliskan barisnya, bukan modelnya -
+       satu nama yang tidak ada di dua daftar itu tidak akan pernah lahir.
+
+       Daftarnya BUKAN karangan: ini kata yang sudah ada di pohonnya sendiri.
+       "Inspiration" muncul di empat dari tujuh main board, "Apps" di lima.
+       Sumbunya memang sudah ada; ini cuma menamainya.
+
+       ONGKOSNYA HARUS DISEBUT: AI tidak akan pernah membuat "Interior
+       Terrace". Nama ruangan itu BENDA, dan begitu benda boleh dikarang kita
+       kembali ke #sofa lawan #kursi. Foto terrace mendarat di "Interior
+       Inspiration" - dan yang membereskannya Ubah nama & Gabung di Gallery,
+       bukan kelonggaran di sini.
+
+       Sama seperti pohonnya, ini cuma NILAI AWAL; disunting di Setelan. */
+    akhiranAwal: ['Inspiration', 'Concept', 'Material', 'Layout', 'Menu',
+                  'Promo', 'Pricing', 'Operational', 'Progress', 'Apps'],
+
     /* Alamat proxy AI milik PEMBUAT aplikasi (Apps Script /exec).
        Kunci Gemini tinggal di sana, tidak pernah di perangkat siapa pun.
        Pemakai tidak membawa kunci, tidak membeli kunci, tidak tahu ada kunci -

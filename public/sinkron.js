@@ -267,6 +267,8 @@
   var KUNCI_SINKRON = [
     'label',        /* label rak */
     'board',        /* pohon alamat gambar & catatan */
+    'boardAI',      /* baris pohon yang lahir dari akhiran, bukan dari jarimu */
+    'akhiran',      /* kosakata yang boleh dipakai AI membuat sub board */
     'folderNote',   /* folder layar Note */
     'namaElemen',
     'ekorJudul',

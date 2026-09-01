@@ -1513,6 +1513,13 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 .board-panel{border-top:1px dashed var(--l);padding:2px 0 8px}
 .board-baris.board-sub{padding-left:30px;min-height:40px}
 .board-baris.board-sub .board-nama{font-size:13.5px;font-weight:400;color:var(--m)}
+/* Titik untuk ruangan yang lahir dari akhiran, bukan dari jarimu. Bukan supaya
+   bisa dibedakan gunanya - isinya sama saja - tapi supaya sekali seminggu kamu
+   bisa melihat mana yang tumbuh tanpa kamu tulis. */
+.board-baris.board-sub.dariAI .board-nama::before{
+  content:"";display:inline-block;width:5px;height:5px;border-radius:50%;
+  background:var(--a);margin-right:7px;vertical-align:middle;opacity:.7;
+}
 /* Garis putus-putus: di aplikasi ini kosakata itu sudah berarti "jalan pintas,
    bukan keadaan" - sama dengan Reset dan cip Gambar. */
 .board-tambah{

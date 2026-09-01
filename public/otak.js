@@ -827,6 +827,91 @@
     });
   }
 
+  /* ===================== ALAMAT YANG KAMU SEBUT SENDIRI =====================
+     Kadang yang kamu ketik waktu memotret bukan cuma sudut pandang - dia
+     sekalian menyebut tempatnya. Dua keadaan, dan keduanya beda perlakuan:
+
+       ketik nama SUB board  -> langsung mendarat di situ. Tidak ada tebakan,
+                                tidak ada AI. Kamu sudah menjawab.
+       ketik nama MAIN board -> alamatnya baru separuh. Yang tinggal cuma
+                                "sub yang mana", dan itu bisa dilihat mesin
+                                dari gambarnya.
+
+     COCOKNYA HARUS TIDAK AMBIGU, dan itu bukan kehati-hatian berlebih. Sub
+     board yang dibuat dari akhiran bernama pendek "Menu" bisa ada di bawah dua
+     main board sekaligus; kalau nama pendek yang kembar ikut dicocokkan,
+     driver "menu murah enak" mendarat di "Daily Life Menu" - benar secara
+     huruf, salah total sebagai alamat. Yang kembar dibiarkan lewat, dan
+     keputusannya jatuh ke AI yang setidaknya melihat gambarnya.
+
+     AKHIRAN TELANJANG TIDAK PERNAH JADI ALAMAT, walau namanya kebetulan cuma
+     dipakai sekali. "Menu" itu NIAT, bukan tempat - tempatnya "Daily Life
+     Menu". Tanpa aturan ini driver "menu murah enak" mendarat di board mana
+     pun yang kebetulan berakhiran Menu, dan besok pindah begitu ada satu lagi.
+     Ruangan yang lahir dari akhiran cuma bisa disebut dengan nama penuhnya.
+
+     Nama PENUH selalu boleh: dia tidak pernah ambigu. */
+  function bacaBoardDariDriver(driver, daftar, akhiran) {
+    var k = ' ' + normal(driver) + ' ';
+    if (!normal(driver)) return {};
+    var punya = (daftar || []).filter(Boolean);
+    var induk = {};
+    punya.forEach(function (n) {
+      var terbaik = '';
+      punya.forEach(function (m) {
+        if (m === n) return;
+        if (normal(n).indexOf(normal(m) + ' ') !== 0) return;
+        if (normal(m).length > normal(terbaik).length) terbaik = m;
+      });
+      induk[n] = terbaik;
+    });
+
+    /* Nama pendek yang muncul lebih dari sekali tidak pernah dipakai
+       mencocokkan - dia tidak menunjuk satu tempat. */
+    var hitungPendek = {};
+    punya.forEach(function (n) {
+      if (!induk[n]) return;
+      var pendek = normal(String(n).slice(induk[n].length).trim());
+      if (pendek) hitungPendek[pendek] = (hitungPendek[pendek] || 0) + 1;
+    });
+    (akhiran || []).forEach(function (x) {
+      var v = normal(x);
+      if (v) hitungPendek[v] = 9;
+    });
+
+    function sebut(n) {
+      var penuh = normal(n);
+      if (penuh && k.indexOf(' ' + penuh + ' ') >= 0) return penuh.length;
+      if (!induk[n]) return 0;
+      var pendek = normal(String(n).slice(induk[n].length).trim());
+      if (!pendek || hitungPendek[pendek] > 1) return 0;
+      return k.indexOf(' ' + pendek + ' ') >= 0 ? pendek.length : 0;
+    }
+
+    var kenaSub = [], terbaikMain = '', nMain = 0;
+    punya.forEach(function (n) {
+      var skor = sebut(n);
+      if (!skor) return;
+      if (induk[n]) kenaSub.push(n);
+      else if (skor > nMain) { nMain = skor; terbaikMain = n; }
+    });
+
+    /* DUA SUB YANG SAMA-SAMA DISEBUT ITU AMBIGU, dan yang ambigu tidak boleh
+       diputuskan di sini. "bedroom lighting" menyebut dua ruangan sekaligus;
+       memilih yang namanya kebetulan lebih panjang bukan jawaban, itu undian.
+       Kalau keduanya satu induk, yang tersisa justru pertanyaan yang memang
+       bisa dijawab mesin: sub yang mana - dan dia melihat gambarnya. */
+    if (kenaSub.length === 1) return { sub: kenaSub[0], induk: induk[kenaSub[0]] };
+    if (kenaSub.length > 1) {
+      var satuInduk = induk[kenaSub[0]];
+      var seragam = kenaSub.every(function (n) { return induk[n] === satuInduk; });
+      if (seragam) return { main: satuInduk };
+      return {};
+    }
+    if (terbaikMain) return { main: terbaikMain };
+    return {};
+  }
+
   /* ===================== PENCARIAN =====================
      Berjalan di atas salinan lokal. Tidak ada jaringan, tidak ada AI, tidak
      ada tunggu. Ini bagian yang paling sering dipakai, jadi paling murah. */
@@ -945,6 +1030,7 @@
     samarkanPenanda: samarkanPenanda,
     buangSerpihan: buangSerpihan,
     uraiLabel: uraiLabel, tulisLabel: tulisLabel, cocokLabel: cocokLabel,
+    bacaBoardDariDriver: bacaBoardDariDriver,
     pohonLabel: pohonLabel, lengkapiRuang: lengkapiRuang, bacaRuang: bacaRuang,
     jenisNomorTelepon: jenisNomorTelepon,
     normal: normal, jarak: jarak, waktuPendek: waktuPendek,
