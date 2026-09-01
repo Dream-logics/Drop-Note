@@ -169,6 +169,22 @@ terpikir, dan itu membatalkan seluruh gunanya.
    Sesudah itu dia mengisi dirinya sendiri sampai penuh, tanpa satu tombol lagi.
    Uji terimanya dulu menuntut "terisi sendiri tanpa satu tombol pun", dan itu
    tidak bisa ada bersama aturan di atas; yang menang keluhan lapangan.
+   **TIDAK ADA GOOGLE SEBELUM LAYARNYA TERGAMBAR.** `requestAccessToken()` GIS
+   SELALU membuka jendela `accounts.google.com`; `prompt: ''` cuma membuatnya
+   menutup sendiri sesudah beberapa detik. Jadi satu saja permintaan token di
+   pembukaan berarti *"One moment please…"* mendahului layar aplikasinya — dan
+   aplikasi yang dipakai memotret sesuatu di jalan tidak boleh punya ruang
+   tunggu. Dua yang menjaganya: (1) **tokennya DISIMPAN** (`gToken`,
+   `gTokenSampai`, dimuat `TAwan.muatToken()` sebelum apa pun berangkat), jadi
+   di dalam satu jam pembukaan berikutnya tidak memanggil Google sama sekali;
+   (2) pelabelan, cadangan, dan tarikan sinkron **ditunda** `JEDA_AWAN_AWAL`
+   sesudah layarnya tergambar. `hangatkan()` DIBUANG — dia lahir karena
+   tokennya cuma di memori, dan yang tersisa darinya cuma satu jendela Google
+   di tiap pembukaan.
+   Menyimpan token itu memang melonggarkan aturan lama "tidak pernah ke disk",
+   dan itu disengaja: umurnya sejam, cakupannya cuma `drive.file` + surel, dan
+   dia tinggal di IndexedDB yang sama dengan seluruh catatannya — yang bisa
+   membacanya sudah memegang semuanya.
    Kalau pemasangan sampai meminta sesuatu yang berbau konfigurasi teknis,
    pemasangannya sudah gagal sebelum dimulai.
 8. **Nama aplikasi cuma di `bawaan.js`.** Jangan pernah menuliskannya di berkas
@@ -951,7 +967,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (851 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (853 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

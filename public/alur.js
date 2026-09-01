@@ -40,6 +40,10 @@
   var RIWAYAT_MAKS = 20;
 
   var PUTARAN_LABEL = 3 * 60 * 1000;
+  /* Jeda sebelum apa pun menyentuh Google di pembukaan. Cukup untuk layarnya
+     tergambar dan jempolnya sudah bisa mengetik; tidak cukup lama untuk terasa
+     sebagai "cadangannya tidak jalan". */
+  var JEDA_AWAN_AWAL = 1500;
 
   /* Momen paling murah untuk melabeli adalah tepat SESUDAH catatan jatuh:
      HP masih di tangan, sinyal masih menyala. Menunggu putaran 3 menit membuat
@@ -6665,6 +6669,9 @@
 
     TSimpan.semuaSetelan().then(function (s) {
       setelanSaat = s || {};
+      /* SEBELUM apa pun menyentuh Google: kalau tokennya masih hidup, seluruh
+         pembukaan ini tidak memanggil Google sama sekali. */
+      TAwan.muatToken(setelanSaat);
       /* CLIENT ID BASI DIBUANG, bukan cuma dikalahkan. Begitu pembuatnya
          menanam miliknya di bawaan.js, isian di Setelan berhenti digambar -
          jadi nilai yang pernah ditempel waktu masih uji coba tinggal di sana
@@ -6716,25 +6723,37 @@
         tampilkanLayar('l-mulai');
       }
 
-      /* Token Google dihangatkan di latar, sebelum ada yang diketuk. Tokennya
-         tidak pernah disimpan ke disk, jadi tiap kali halaman dimuat harganya
-         harus dibayar sekali - dan yang membayarnya jangan sampai klik pertama
-         pemakainya, karena galat di ketukan pertama terbaca sebagai aplikasi
-         rusak. Boleh gagal, dan gagalnya diam. */
-      TAwan.hangatkan(setelanSaat);
-
       /* Baris gudang tersering digambar sekali di awal - kotaknya masih kosong,
          dan justru itu keadaan yang dilayaninya. */
       gambarCipRuang();
       gambarCipSaring();
 
-      putaranLabel();
-      putaranCadangan();
-      /* Ditarik di pembukaan, dan dipaksa: ini satu-satunya saat kita benar
-         benar tahu perangkat lain mungkin sudah menulis sesuatu sejak terakhir
-         kali layar ini hidup. Penahan satu menit berlaku untuk pemicu
-         berikutnya, bukan untuk yang ini. */
-      tarikSinkron(true);
+      /* ===== TIDAK ADA GOOGLE SEBELUM LAYARNYA TERGAMBAR =====
+         Keempat pekerjaan di bawah ini menyentuh Google, dan dulu ketiganya
+         berangkat di baris yang sama dengan penggambaran layar - plus satu
+         penghangat token yang sekarang sudah tidak ada gunanya lagi.
+
+         requestAccessToken() GIS SELALU membuka jendela accounts.google.com;
+         'prompt: kosong' cuma membuatnya menutup sendiri sesudah beberapa
+         detik. Jadi selama satu saja dari mereka berangkat di pembukaan,
+         "One moment please..." dari Google mendahului layar aplikasinya - dan
+         aplikasi yang dipakai untuk memotret sesuatu di jalan tidak boleh punya
+         ruang tunggu.
+
+         Sekarang tokennya sudah tersimpan (lihat awan.js), jadi hampir selalu
+         tidak ada panggilan sama sekali. Penundaan ini jaring pengaman untuk
+         satu jam sekali waktu tokennya memang habis: yang tertunda cuma
+         cadangan, dan cadangan yang terlambat dua detik tidak menghilangkan
+         apa pun. */
+      setTimeout(function () {
+        putaranLabel();
+        putaranCadangan();
+        /* Ditarik di pembukaan, dan dipaksa: ini satu-satunya saat kita benar
+           benar tahu perangkat lain mungkin sudah menulis sesuatu sejak
+           terakhir kali layar ini hidup. Penahan satu menit berlaku untuk
+           pemicu berikutnya, bukan untuk yang ini. */
+        tarikSinkron(true);
+      }, JEDA_AWAN_AWAL);
       setInterval(putaranLabel, PUTARAN_LABEL);
     }).catch(function (err) {
       pesan('Penyimpanan tidak bisa dibuka: ' + err.message);

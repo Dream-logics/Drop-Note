@@ -38,7 +38,27 @@
   var UNGGAH = 'https://www.googleapis.com/upload/drive/v3/files';
   var SHEETS = 'https://sheets.googleapis.com/v4/spreadsheets';
 
-  var token = null;          /* hanya di memori - tidak pernah ditulis ke disk */
+  /* TOKENNYA DISIMPAN, dan itu perubahan yang disengaja.
+
+     Dulu dia cuma di memori, supaya tidak ada kunci yang tergeletak di
+     perangkat. Ongkosnya ternyata jauh lebih besar daripada yang dijaganya:
+     tiap kali halaman dimuat tokennya nol, jadi tiap pembukaan aplikasi
+     meminta yang baru - dan requestAccessToken() GIS SELALU membuka jendela
+     accounts.google.com. 'prompt: kosong' tidak membuatnya tak terlihat; dia
+     cuma menutup sendiri sesudah beberapa detik. Yang terlihat pemakainya:
+     "One moment please..." dari Google mendahului layar aplikasinya, tiap kali
+     dibuka. Aplikasi yang dipakai untuk memotret sesuatu di jalan tidak boleh
+     punya ruang tunggu.
+
+     Yang dijaga aturan lama itu juga kecil: token ini berumur satu jam, cuma
+     berlaku untuk drive.file (berkas yang dibuat aplikasi ini sendiri) dan
+     alamat surel. Dia tinggal di IndexedDB yang sama dengan seluruh catatannya
+     - siapa pun yang bisa membacanya sudah memegang semua isinya, jadi
+     tokennya tidak menambah apa pun yang belum hilang.
+
+     Dibuang begitu Google menolaknya (keluar()), jadi yang basi tidak pernah
+     dipakai dua kali. */
+  var token = null;
   var tokenSampai = 0;
   var klien = null;
   var muatGis = null;
@@ -171,6 +191,10 @@
           if (jawab && jawab.access_token) {
             token = jawab.access_token;
             tokenSampai = Date.now() + (Number(jawab.expires_in) || 3600) * 1000;
+            if (global.TSimpan) {
+              TSimpan.setel('gToken', token);
+              TSimpan.setel('gTokenSampai', tokenSampai);
+            }
             terima(token);
           } else {
             tolak(new Error((jawab && jawab.error) || 'Izin Google ditolak'));
@@ -202,24 +226,34 @@
   function keluar() {
     token = null;
     tokenSampai = 0;
+    if (global.TSimpan) {
+      TSimpan.setel('gToken', '');
+      TSimpan.setel('gTokenSampai', 0);
+    }
   }
 
-  /* Menghangatkan token di latar begitu aplikasinya terbuka, supaya klik
-     pertama tidak pernah jadi klik yang dingin.
-
-     Tokennya cuma hidup di memori - tidak pernah ditulis ke disk, dan itu
-     memang disengaja: token yang tersimpan di perangkat adalah kunci yang bisa
-     dipungut orang lain. Harganya, tiap kali halaman dimuat, tokennya nol.
-     Kalau yang membayar harga itu klik pertama pemakainya, aplikasinya terasa
-     rusak; kalau yang membayar latar belakang, tidak ada yang merasakannya.
-
-     Boleh gagal total dan diam: belum pernah mengizinkan Google itu keadaan
-     yang sah, bukan kerusakan. */
-  function hangatkan(setelan) {
-    if (token || !clientId(setelan)) return Promise.resolve(false);
-    return ambilToken(setelan, true).then(function () { return true; },
-                                          function () { return false; });
+  /* Dipanggil sekali waktu setelan selesai dimuat, SEBELUM apa pun menyentuh
+     Google. Kalau tokennya masih hidup, tidak ada satu pun panggilan ke Google
+     di pembukaan - dan itu seluruh gunanya. */
+  function muatToken(setelan) {
+    var t = setelan && setelan.gToken;
+    var sampai = Number((setelan && setelan.gTokenSampai) || 0);
+    /* Dua menit sisa dianggap habis: token yang mati di tengah permintaan
+       terbaca sebagai galat, bukan sebagai token yang perlu diperbarui. */
+    if (t && Date.now() < sampai - 120000) {
+      token = t;
+      tokenSampai = sampai;
+      return true;
+    }
+    return false;
   }
+
+  /* hangatkan() SUDAH DIBUANG, dan jangan dihidupkan lagi. Dia ada karena
+     tokennya cuma di memori, jadi tiap pembukaan harus membayar sekali - dan
+     yang membayarnya jangan sampai klik pertama pemakainya. Sekarang tokennya
+     tersimpan (muatToken), jadi tidak ada yang perlu dihangatkan; yang tersisa
+     dari dia cuma satu jendela accounts.google.com yang mendahului layar
+     aplikasinya tiap kali dibuka. */
 
   /* Email pemakainya dipakai untuk satu hal saja: ditunjukkan kembali
      kepadanya di layar Setelan, supaya jelas akun mana yang dipakai. Yang
@@ -622,8 +656,8 @@
 
   global.TAwan = {
     masuk: masuk, keluar: keluar, punyaToken: punyaToken, ambilToken: ambilToken,
+    muatToken: muatToken,
     clientIdUji: clientId,
-    hangatkan: hangatkan,
     siapa: siapa,
     siapkanRumah: siapkanRumah,
     tulisBaris: tulisBaris, bacaSemuaBaris: bacaSemuaBaris, hapusBaris: hapusBaris,
