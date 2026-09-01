@@ -5462,11 +5462,11 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
      isinya adalah masuk ke dalamnya lalu keluar lagi: tiga ketukan untuk satu
      pertanyaan yang jawabnya "oh, bukan yang ini". */
   cek('lacinya tertutup sampai diketuk',
-      (await hal.locator('#galeri-isi .laci.buka').count()) === 0);
+      (await hal.locator('#galeri-isi .laci-board.buka').count()) === 0);
   await hal.click('#galeri-isi [data-laci="Business Bidanguji"]');
   await hal.waitForTimeout(300);
   cek('mengetuk barisnya membuka lacinya di tempat, tanpa memindahkan layar',
-      (await hal.locator('#galeri-isi .laci.buka').count()) === 1 &&
+      (await hal.locator('#galeri-isi .laci-board.buka').count()) === 1 &&
       (await hal.locator('#galeri-isi .laci-isi .petak-satu').count()) === 3 &&
       (await hal.innerText('#galeri-alamat')).indexOf('Bidanguji') < 0,
       await hal.innerText('#galeri-alamat'));
@@ -5477,18 +5477,59 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
   await hal.click('#galeri-isi [data-laci="Business Bidanguji"]');
   await hal.waitForTimeout(300);
   cek('mengetuknya lagi menutupnya',
-      (await hal.locator('#galeri-isi .laci.buka').count()) === 0);
+      (await hal.locator('#galeri-isi .laci-board.buka').count()) === 0);
   /* Buka semua / tutup semua di kepalanya: sekali lihat seluruh isi board, atau
      merapikan kembali jadi daftar. */
   await hal.click('#galeri-isi [data-laci-semua="buka"]');
   await hal.waitForTimeout(300);
   cek('“Buka semua” membuka seluruh lacinya sekaligus',
-      (await hal.locator('#galeri-isi .laci.buka').count()) ===
-      (await hal.locator('#galeri-isi .laci').count()));
+      (await hal.locator('#galeri-isi .laci-board.buka').count()) ===
+      (await hal.locator('#galeri-isi .laci-board').count()));
   await hal.click('#galeri-isi [data-laci-semua="tutup"]');
   await hal.waitForTimeout(300);
   cek('dan tombolnya berganti jadi “Tutup semua” yang menutup semuanya',
-      (await hal.locator('#galeri-isi .laci.buka').count()) === 0);
+      (await hal.locator('#galeri-isi .laci-board.buka').count()) === 0);
+
+  /* ===== NAMA KELAS YANG BERTABRAKAN TIDAK PERNAH BERGALAT =====
+     'laci' sudah dipakai laci lampiran di dok Drop, dan gaya di sana memberi
+     kartu berbingkai plus max-height 46vh. Dia tidak melempar apa pun; dia cuma
+     diam-diam mewarisi gaya yang tidak dimaksud - baris folder jadi kartu
+     putih, dan laci yang isinya banyak terpotong separuh layar. */
+  cek('lacinya tidak mewarisi gaya laci lampiran dok Drop',
+      await hal.evaluate(() => {
+        const el = document.querySelector('#galeri-isi .laci-board');
+        if (!el) return false;
+        const g = getComputedStyle(el);
+        return g.maxHeight === 'none' && g.borderTopWidth === '0px';
+      }));
+  /* PANAHNYA DI TENGAH BARIS, bukan di atas laci - dipatok ke tinggi barisnya
+     sendiri, jadi dia tetap di tengah berapa pun tinggi barisnya. */
+  cek('panah masuknya duduk di tengah barisnya, bukan menempel di atas',
+      await hal.evaluate(() => {
+        const b = document.querySelector('#galeri-isi .laci-baris');
+        const p = b && b.querySelector('.laci-masuk');
+        if (!p) return false;
+        const rb = b.getBoundingClientRect(), rp = p.getBoundingClientRect();
+        return Math.abs((rp.top + rp.height / 2) - (rb.top + rb.height / 2)) < 2;
+      }));
+  /* GARIS DI BAWAH JUDUL CUMA KALAU ADA ISINYA. Garis yang memisahkan judul
+     dari ruang kosong tidak memisahkan apa pun - dia cuma coretan. */
+  const garis = await hal.evaluate(() => {
+    const tutup = document.querySelector('#galeri-isi .laci-board:not(.buka) .laci-kepala');
+    return tutup ? getComputedStyle(tutup).borderBottomWidth : 'x';
+  });
+  cek('laci yang tertutup tidak menggantungkan garis di bawah judulnya',
+      garis === '0px', garis);
+  await hal.click('#galeri-isi [data-laci="Business Bidanguji"]');
+  await hal.waitForTimeout(300);
+  const garis2 = await hal.evaluate(() => {
+    const buka = document.querySelector('#galeri-isi .laci-board.buka .laci-kepala');
+    return buka ? getComputedStyle(buka).borderBottomWidth : 'x';
+  });
+  cek('tapi begitu terbuka, garisnya muncul memisahkan judul dari gambarnya',
+      garis2 !== '0px' && garis2 !== 'x', garis2);
+  await hal.click('#galeri-isi [data-laci="Business Bidanguji"]');
+  await hal.waitForTimeout(300);
 
   /* ===== TIAP INTEREST SELALU PUNYA "VARIOUS", WALAU KOSONG =====
      Yang membuka "Business Hampers" dan cuma melihat "Isi Hamper" tidak punya
