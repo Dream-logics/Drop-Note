@@ -3239,6 +3239,14 @@
       });
   }
 
+  /* Satu jalur = yang satu di dalam yang lain, ke arah mana pun. "Business
+     Hampers" dan "Business Hampers Isi Hamper" sejalur; "Business Hampers" dan
+     "Business Interior" bertolak belakang. */
+  function seJalur(a, b) {
+    var x = TOtak.normal(a), y = TOtak.normal(b);
+    return x === y || x.indexOf(y + ' ') === 0 || y.indexOf(x + ' ') === 0;
+  }
+
   function taruhDriver(ids, driver) {
     var kena = semuaEntri.filter(function (e) { return ids.indexOf(e.id) >= 0; });
     /* KALAU YANG KAMU KETIK MENYEBUT SUB BOARD-NYA, itu bukan lagi sudut
@@ -3249,9 +3257,29 @@
        dan yang tersisa - "sub yang mana" - justru pertanyaan yang bisa dijawab
        mesin, karena dia melihat gambarnya. Penjaganya di pilihBoard: jawaban
        di luar main board itu ditolak. */
-    var sebut = TOtak.bacaBoardDariDriver(driver, albumDaftar, daftarAkhiran());
+    /* AKARNYA WAJIB IKUT. Tanpa daftar akar, bacaBoardDariDriver tidak tahu
+       "Business" itu akar - jadi "Business Hampers" terbaca sebagai SUB board,
+       bukan wadah, lalu dikunci albumManual di bawah. Akibatnya foto yang
+       drivernya cuma menyebut interest mendarat di pintu ruangan DAN terkunci
+       di situ: AI tidak pernah ditanya, dan tiga aturan penempatan tidak ada
+       satu pun yang dijalankan. Argumen yang kelupaan, bukan aturan yang
+       salah - dan itu sebabnya kekeliruannya tidak kelihatan dari mana pun
+       kecuali dari alamat yang mendarat. */
+    var sebut = TOtak.bacaBoardDariDriver(driver, albumDaftar, daftarAkhiran(),
+                                          akarSistem());
     return Promise.all(kena.map(function (e) {
       e.driver = driver;
+      /* YANG KAMU KETIK MENANG ATAS TEMPAT KAMU BERDIRI. Keduanya keputusanmu,
+         tapi tidak sama umurnya: drivernya baru saja kamu ketik, sementara
+         board yang terbuka bisa saja sisa kunjungan tadi pagi. Kalau
+         drivernya menyebut bidang LAIN, tempat berdirinya dilepas - bukan
+         diadu. Kalau drivernya diam, tempat berdirinya tetap berlaku. */
+      var bidang = sebut.sub || sebut.main || '';
+      if (bidang && e.albumInduk && !seJalur(e.albumInduk, bidang)) e.albumInduk = '';
+      if (bidang && e.albumManual && e.album && !seJalur(e.album, bidang)) {
+        e.album = '';
+        e.albumManual = false;
+      }
       if (sebut.sub && !e.albumManual) { e.album = sebut.sub; e.albumManual = true; }
       /* Dilabeli ULANG. Driver yang datang belakangan mengubah artinya, jadi
          judul, deskripsi, dan board yang terlanjur disusun tanpa dia sudah

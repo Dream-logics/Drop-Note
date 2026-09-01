@@ -1826,6 +1826,70 @@ console.log('\npohon boleh tumbuh, tapi katanya tertutup');
           .then((s) => TPelabel.taruhBoardUji(s, e, 'Business Interior Bedroom'))
           .then(() => e.album === 'Business Hampers Isi Hamper');
       }));
+
+  /* ===== YANG KAMU KETIK MENANG ATAS TEMPAT KAMU BERDIRI =====
+     Keduanya keputusanmu, tapi tidak sama umurnya: drivernya baru saja kamu
+     ketik - satu-satunya teks di entri ini yang lahir dari kepalamu - sementara
+     board yang kebetulan terbuka bisa saja sisa kunjungan tadi pagi. */
+  cek('driver menang waktu bertolak belakang dengan tempat kamu berdiri',
+      (await berdiri('Business Hampers', 'Business Interior Bedroom', 'interior mesjid')) ===
+      'Business Interior Bedroom',
+      await berdiri('Business Hampers', 'Business Interior Bedroom', 'interior mesjid'));
+  /* Kalau drivernya DIAM, tempat berdirinya tetap berlaku - dia satu-satunya
+     jawaban yang ada. */
+  cek('tapi kalau drivernya diam, tempat berdirinya tetap berlaku',
+      (await berdiri('Business Hampers', 'Business Interior Bedroom', '')) ===
+      'Business Hampers Various');
+}
+
+console.log('\ndriver yang datang belakangan: akarnya wajib ikut terbaca');
+{
+  /* ===== ARGUMEN YANG KELUPAAN, BUKAN ATURAN YANG SALAH =====
+     Ini kekeliruan yang dilaporkan di lapangan, dan bentuknya paling licin dari
+     semuanya: "klik kamera, tulis hampers" - fotonya mendarat di "Business
+     Hampers" DAN TERKUNCI di situ, jadi tiga aturan penempatan tidak ada satu
+     pun yang dijalankan.
+
+     Sebabnya bukan AI salah memilih dan bukan aturannya terlalu banyak:
+     taruhDriver memanggil bacaBoardDariDriver TANPA daftar akar. Tanpa daftar
+     itu dia tidak tahu "Business" akar, jadi "Business Hampers" terbaca sebagai
+     SUB board - alamat lengkap - lalu dikunci albumManual. */
+  const bacaDriver = (driver, pakaiAkar) => hal.evaluate((x) => TOtak.bacaBoardDariDriver(
+    x.driver, TBawaan.boardAwal, TBawaan.akhiranAwal,
+    x.pakaiAkar ? TBawaan.akarAwal : undefined), { driver: driver, pakaiAkar: pakaiAkar });
+
+  cek('tanpa daftar akar, interest terbaca sebagai sub board — dan itu mengunci',
+      (await bacaDriver('hampers', false)).sub === 'Business Hampers');
+  cek('dengan daftar akar, dia terbaca sebagai wadah — AI tetap ditanya',
+      (await bacaDriver('hampers', true)).main === 'Business Hampers' &&
+      !(await bacaDriver('hampers', true)).sub);
+
+  /* DAN JALUR ASLINYA IKUT DIUJI, bukan cuma fungsinya: yang bocor tadi bukan
+     bacaBoardDariDriver-nya, tapi satu pemanggil yang lupa argumennya. */
+  await hal.evaluate(() => TSimpan.setel('board', JSON.stringify(TBawaan.boardAwal)));
+  await hal.reload();
+  await hal.waitForFunction(() => window.TAlur);
+  await pasangAI();
+  await hal.waitForTimeout(700);
+  const alamatDriver = await hal.evaluate(async () => {
+    await TSimpan.taruh({ id: 'gdrv', jenis: 'gambar', judul: 'Kotak uji', isi: '',
+      kategori: '', folder: '', album: '', albumManual: false, albumInduk: '',
+      sumber: 'kamera', driver: '', thumb: '', berkasId: '', namaBerkas: 'foto.jpg',
+      tipeBerkas: 'image/jpeg', ukuran: 1024, label: [], elemen: [], daftar: [],
+      dibuat: Date.now(), diubah: Date.now(), dipakai: 0 });
+    await TAlur.muatUlangUji();
+    await TAlur.taruhDriverUji(['gdrv'], 'hampers');
+    const e = TAlur.semuaEntri().filter((x) => x.id === 'gdrv')[0];
+    return { album: e.album || '', kunci: !!e.albumManual };
+  });
+  cek('mengetik nama interest tidak mengunci fotonya di pintu ruangan',
+      alamatDriver.album === '' && alamatDriver.kunci === false,
+      JSON.stringify(alamatDriver));
+
+  await hal.evaluate(async () => {
+    const e = TAlur.semuaEntri().filter((x) => x.id === 'gdrv')[0];
+    if (e) { e.pensiun = true; await TSimpan.taruh(e); }
+  });
 }
 
 console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
