@@ -85,6 +85,13 @@
      sudah datang untuk yang lain. Itulah "galat pada klik pertama, hilang
      setelah dimuat ulang". Jadi yang kedua ikut menunggu yang pertama, bukan
      mengajukan permintaan sendiri. */
+  /* Sudah pernah benar-benar tersambung di perangkat ini? Yang menjawabnya
+     jejak yang cuma bisa ada kalau izinnya pernah diberikan - spreadsheet yang
+     dibuatkan aplikasinya, atau email yang cuma bisa dibaca dengan token. */
+  function pernahMasuk(setelan) {
+    return !!(setelan && (setelan.sheetId || setelan.akunEmail));
+  }
+
   function clientId(setelan) {
     return TBawaan.clientId || (setelan && setelan.clientId) || '';
   }
@@ -129,7 +136,8 @@
     var id = clientId(setelan);
     if (!id) return Promise.reject(new Error('Client ID Google belum diisi'));
 
-    mintaJalan = mintaTokenBaru(id, diam);
+    mintaJalan = mintaTokenBaru(id, diam, (setelan && setelan.akunEmail) || '',
+                                pernahMasuk(setelan));
     mintaDiamJalan = !!diam;
     /* Dilepas setelah selesai, sukses atau gagal - kalau tidak, satu kegagalan
        mengunci seluruh sisa hidup halaman ini. */
@@ -138,7 +146,7 @@
     return mintaJalan;
   }
 
-  function mintaTokenBaru(id, diam) {
+  function mintaTokenBaru(id, diam, petunjuk, pernah) {
     return siapkanKlien(id).then(function (k) {
       return new Promise(function (terima, tolak) {
         var selesai = false;
@@ -156,7 +164,19 @@
           selesai = true;
           tolak(new Error((e && e.type) || 'Masuk Google gagal'));
         };
-        k.requestAccessToken({ prompt: diam ? '' : 'consent' });
+        /* PROMPT KOSONG ARTINYA "jangan tampilkan apa pun kecuali memang
+           harus". 'consent' artinya "tampilkan SELALU" - dan dulu itu yang
+           dipakai tiap kali tombol Hubungkan ditekan, jadi memilih akun jadi
+           ritual harian walau izinnya sudah diberikan berbulan-bulan lalu.
+           Sekarang 'consent' cuma untuk pemberian izin PERTAMA; sesudah itu
+           kosong, dan Google sendiri yang memutuskan perlu bertanya atau tidak.
+
+           PETUNJUK AKUN ikut dikirim supaya pemilih akun tidak muncul cuma
+           karena Google tidak tahu akun mana yang dimaksud. Ini satu-satunya
+           gunanya email itu disimpan. */
+        var minta = { prompt: diam || pernah ? '' : 'consent' };
+        if (petunjuk) minta.hint = petunjuk;
+        k.requestAccessToken(minta);
         /* Jendela izin yang ditutup diam-diam tidak selalu memanggil callback. */
         setTimeout(function () { if (!selesai) tolak(new Error('Tidak ada jawaban dari Google')); }, diam ? 8000 : 120000);
       });
@@ -181,6 +201,15 @@
      yang sah, bukan kerusakan. */
   function hangatkan(setelan) {
     if (token || !clientId(setelan)) return Promise.resolve(false);
+    /* CUMA MENGHANGATKAN YANG MEMANG SUDAH PERNAH MENYALA. Dulu penjaganya
+       cuma "ada Client ID" - dan Client ID selalu ada, karena pembuatnya
+       menanamnya. Akibatnya di perangkat yang BELUM PERNAH mengizinkan, tiap
+       kali aplikasinya dibuka Google diminta token, dan Google menjawabnya
+       dengan pemilih akun. Memilih akun jadi ritual tiap membuka aplikasi,
+       untuk sesuatu yang tidak pernah diminta pemakainya.
+       Belum pernah mengizinkan itu keadaan yang SAH: tidak ada yang perlu
+       dihangatkan, karena tidak ada yang menyala. */
+    if (!pernahMasuk(setelan)) return Promise.resolve(false);
     return ambilToken(setelan, true).then(function () { return true; },
                                           function () { return false; });
   }

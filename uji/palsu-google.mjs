@@ -174,8 +174,13 @@ export const STUB_GIS = `
   window.__mintaToken = 0;
   window.google = { accounts: { oauth2: { initTokenClient(cfg) {
     return { _cfg: cfg, callback: null, error_callback: null,
-      requestAccessToken() {
+      requestAccessToken(minta) {
         window.__mintaToken++;
+        /* Dicatat apa adanya supaya uji bisa memeriksa DUA hal yang tidak
+           kelihatan dari hasilnya: prompt mana yang dipakai, dan apakah
+           petunjuk akunnya ikut. Keduanya yang menentukan pemilih akun muncul
+           atau tidak. */
+        window.__mintaTerakhir = minta || {};
         var k = this;
         setTimeout(function () {
           k.callback({ access_token: 'token-palsu', expires_in: 3600 });

@@ -217,6 +217,54 @@ console.log('\npemasangan swalayan');
   cek('dan yang basi benar-benar dibuang dari perangkat',
       (await hal.evaluate(() => TSimpan.setelan('clientId'))) === '',
       JSON.stringify(await hal.evaluate(() => TSimpan.setelan('clientId'))));
+  /* ===== MEMILIH AKUN BUKAN RITUAL HARIAN =====
+     hangatkan() dulu berjalan tiap kali aplikasi dibuka, dan penjaganya cuma
+     "ada Client ID" - padahal Client ID SELALU ada, karena pembuatnya
+     menanamnya. Di perangkat yang belum pernah mengizinkan, tiap pembukaan
+     jadi permintaan token, dan Google menjawabnya dengan pemilih akun. */
+  const hangatBaru = await hal.evaluate(async () => {
+    window.__mintaToken = 0;
+    TAwan.keluar();
+    await TAwan.hangatkan({ clientId: 'x.apps.googleusercontent.com' });
+    return window.__mintaToken;
+  });
+  cek('yang belum pernah tersambung tidak dimintai token waktu aplikasi dibuka',
+      hangatBaru === 0, String(hangatBaru));
+  const hangatLama = await hal.evaluate(async () => {
+    window.__mintaToken = 0;
+    TAwan.keluar();
+    await TAwan.hangatkan({ clientId: 'x.apps.googleusercontent.com', sheetId: 'sheet-uji' });
+    return window.__mintaToken;
+  });
+  cek('tapi yang sudah pernah tetap dihangatkan, supaya klik pertama tidak dingin',
+      hangatLama === 1, String(hangatLama));
+
+  /* PROMPT KOSONG artinya "jangan tampilkan apa pun kecuali memang harus";
+     'consent' artinya "tampilkan SELALU". Yang kedua dulu dipakai tiap kali
+     tombol Hubungkan ditekan, jadi memilih akun jadi ritual harian walau
+     izinnya sudah diberikan berbulan-bulan lalu. */
+  const izinPertama = await hal.evaluate(async () => {
+    TAwan.keluar();
+    await TAwan.ambilToken({ clientId: 'x.apps.googleusercontent.com' }, false);
+    return window.__mintaTerakhir;
+  });
+  cek('pemberian izin pertama memang menampilkan layar persetujuan',
+      izinPertama.prompt === 'consent', JSON.stringify(izinPertama));
+  const izinKedua = await hal.evaluate(async () => {
+    TAwan.keluar();
+    await TAwan.ambilToken({
+      clientId: 'x.apps.googleusercontent.com',
+      sheetId: 'sheet-uji', akunEmail: 'aku@contoh.com'
+    }, false);
+    return window.__mintaTerakhir;
+  });
+  cek('yang sudah pernah mengizinkan tidak disuruh menyetujui lagi',
+      izinKedua.prompt === '', JSON.stringify(izinKedua));
+  /* PETUNJUK AKUN: tanpa dia, pemilih akun muncul bukan karena izinnya kurang,
+     tapi karena Google tidak tahu akun mana yang dimaksud. */
+  cek('dan akunnya ikut disebut, supaya pemilih akun tidak muncul lagi',
+      izinKedua.hint === 'aku@contoh.com', JSON.stringify(izinKedua));
+
   /* Tapi yang tersimpan TETAP dipakai kalau bawaan.js memang kosong - itu
      memang gunanya, untuk yang memasang sendiri. */
   cek('kalau bawaan.js kosong, yang tersimpan tetap dipakai',

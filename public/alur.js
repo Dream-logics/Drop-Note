@@ -5397,6 +5397,15 @@
       ket.textContent = 'Membuka izin Google…';
       TAwan.masuk(setelanSaat).then(function () {
         ket.textContent = 'Menyiapkan folder dan spreadsheet…';
+        /* EMAILNYA DISIMPAN, dan itu bukan sekadar hiasan di layar: dia jadi
+           PETUNJUK AKUN untuk permintaan token berikutnya. Tanpa petunjuk,
+           Google memunculkan pemilih akun tiap kali - bukan karena izinnya
+           kurang, tapi karena dia tidak tahu akun mana yang dimaksud.
+           Boleh gagal diam: yang penting foldernya, bukan namanya. */
+        return TAwan.siapa(setelanSaat).then(function (email) {
+          return email ? simpanSetelan('akunEmail', email) : null;
+        }, function () { return null; });
+      }).then(function () {
         return TSinkron.rumah(setelanSaat);
       }).then(function () {
         return simpanSetelan('cadanganNyala', true);
