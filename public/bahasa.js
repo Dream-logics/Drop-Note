@@ -283,6 +283,9 @@
     'Hubungkan Google': 'Connect Google',
     'Sambungkan ulang Google': 'Reconnect Google',
     'Tersambung ke Drive-mu': 'Connected to your Drive',
+    'Asal halaman ini:': 'This page comes from:',
+    'Baris itu harus terdaftar di Google Cloud Console sebagai Authorized JavaScript origin — persis begitu, tanpa jalur dan tanpa garis miring di ujungnya.':
+      'That line must be registered in the Google Cloud Console as an Authorized JavaScript origin — exactly like that, no path and no trailing slash.',
     'Belum tersambung': 'Not connected',
     'Mati — catatanmu cuma ada di HP ini.': 'Off — your notes live only on this phone.',
     'Tanpa ini, catatanmu cuma ada di HP ini. Aplikasi membuat sendiri folder di Drive-mu — kamu tidak perlu menyiapkan apa pun.':

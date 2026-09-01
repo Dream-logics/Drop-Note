@@ -43,6 +43,7 @@
   var klien = null;
   var muatGis = null;
   var mintaJalan = null;     /* permintaan token yang sedang berlangsung */
+  var mintaDiamJalan = false; /* ...dan apakah dia yang diam-diam */
 
   /* ------------------------------------------------------------------ masuk */
 
@@ -86,14 +87,35 @@
      mengajukan permintaan sendiri. */
   function ambilToken(setelan, diam) {
     if (token && Date.now() < tokenSampai - 60000) return Promise.resolve(token);
+    /* PERMINTAAN YANG DIMINTA JARI TIDAK PERNAH IKUT ANTRE DI BELAKANG YANG
+       DIAM-DIAM. Dulu keduanya berbagi satu 'mintaJalan', jadi menekan
+       "Hubungkan" selagi penghangat latar masih berjalan akan MENUNGGU
+       penghangat itu - dan penghangat baru menyerah setelah 8 detik. Jendela
+       izin Google baru dibuka sesudahnya, delapan detik sesudah jarinya
+       menyentuh layar, dan di situ peramban sudah tidak menganggapnya
+       dilakukan oleh manusia: popupnya DIBLOKIR, diam-diam, dan yang terbaca
+       cuma "tetap tidak tersambung".
+
+       Kenapa ini tidak kelihatan di jendela penyamaran: di sana biasanya tidak
+       ada penghangat yang sedang berjalan waktu tombolnya ditekan, jadi
+       jendelanya terbuka di dalam sentuhan itu juga. Bedanya waktu, bukan
+       peramban. */
+    if (mintaJalan && diam) return mintaJalan;
+    if (!diam && mintaDiamJalan) {
+      /* Yang diam-diam dibiarkan selesai sendiri; yang penting jangan
+         ditunggu. */
+      mintaJalan = null;
+      mintaDiamJalan = false;
+    }
     if (mintaJalan) return mintaJalan;
     var id = (setelan && setelan.clientId) || TBawaan.clientId;
     if (!id) return Promise.reject(new Error('Client ID Google belum diisi'));
 
     mintaJalan = mintaTokenBaru(id, diam);
+    mintaDiamJalan = !!diam;
     /* Dilepas setelah selesai, sukses atau gagal - kalau tidak, satu kegagalan
        mengunci seluruh sisa hidup halaman ini. */
-    var lepas = function () { mintaJalan = null; };
+    var lepas = function () { mintaJalan = null; mintaDiamJalan = false; };
     mintaJalan.then(lepas, lepas);
     return mintaJalan;
   }
@@ -160,6 +182,13 @@
      sekali, dia selalu sudah - tidak ada satu pun layar yang muncul. Layar
      izin Google cuma keluar saat memang belum pernah diberikan. */
   function masuk(setelan) {
+    /* DITEKAN JARI, JADI JENDELANYA HARUS TERBUKA DI DALAM SENTUHAN ITU.
+       Mencoba diam-diam dulu memang menghindarkan satu layar izin yang tidak
+       perlu - tapi cuma kalau jawabannya datang seketika. Kalau penghangat
+       latar sedang berjalan, menunggunya berarti delapan detik, dan jendela
+       izin yang dibuka delapan detik sesudah sentuhan sudah bukan jendela yang
+       akan dibukakan peramban. */
+    if (mintaJalan && mintaDiamJalan) return ambilToken(setelan, false);
     return ambilToken(setelan, true).catch(function () {
       return ambilToken(setelan, false);
     });
