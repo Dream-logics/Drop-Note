@@ -413,16 +413,17 @@
       '',
       'Lalu pilih SATU board dari daftar ini, salin namanya PERSIS:',
       board || '(kosong)',
-      'Utamakan SUB board. Kalau keywords menyebut nama main board, jawabannya WAJIB di dalam',
-      'main board itu.',
+      'Daftarnya BERTINGKAT: akar (Business, Personal, …) > interest > sub interest.',
+      'JAWABANNYA HARUS SUB INTEREST — tingkat paling dalam. Jangan berhenti di akar, dan',
+      'jangan berhenti di interest: gambar yang ditaruh di pintu ruangan menumpuk di situ.',
+      'Kalau keywords menyebut nama interest, jawabannya WAJIB di dalam interest itu.',
       '',
-      'Kalau tidak ada sub board yang cocok, buat satu: nama main board-nya + SATU kata dari',
+      'Kalau tidak ada sub interest yang cocok, buat satu: nama interest-nya + SATU kata dari',
       'daftar akhiran ini, tidak boleh kata lain.',
       akhir || '(kosong)',
-      'Contoh: main board "Daily Life" tanpa sub yang cocok -> "Daily Life Inspiration".',
+      'Contoh: interest "Business Hampers" tanpa sub yang cocok -> "Business Hampers Inspiration".',
       'DUA DAFTAR DI ATAS TERTUTUP: jangan mengarang nama main board baru, jangan mengarang',
-      'akhiran baru. Kalau akhiran pun tidak ada yang pas, cukup main board-nya saja; itu',
-      'jawaban yang sah.',
+      'akhiran baru.',
       'Kalau tidak ada satu pun main board yang cocok — gambarnya memang di luar semua bidang',
       'di daftar itu — jawab "' + (TBawaan.boardLain || '') + '". Itu jawaban yang benar, bukan',
       'kegagalan; jangan memaksakan bidang yang paling mirip.',
@@ -466,6 +467,19 @@
      akan bocor persis di hari tersibuk, dan yang bocor di sini melahirkan
      ruangan hantu - nama yang menempel di entrinya tapi tidak ada barisnya di
      Setelan, jadi tidak pernah bisa dibuka. */
+  /* Akar bawaan DITAMBAH yang ditambah/dinamai sendiri di Setelan. Kalau yang
+     dibaca cuma daftar bawaan, akar buatan tangan tidak dikenali sebagai akar
+     di sini - dan akibatnya AI membuatkan "Ladang Inspiration" di dalam tulang
+     punggung, ruangan yang tidak menjawab apa pun. */
+  function daftarAkar(setelan) {
+    var tangan = [];
+    try {
+      var v = JSON.parse((setelan || {}).akarTangan || '[]');
+      if (Array.isArray(v)) tangan = v;
+    } catch (e) { tangan = []; }
+    return (TBawaan.akarAwal || []).concat(tangan);
+  }
+
   function daftarAkhiran(setelan) {
     var d = setelan && setelan.akhiran;
     if (d == null) return (TBawaan.akhiranAwal || []).slice();
@@ -499,7 +513,7 @@
      dibuang diam-diam - bukan disimpan apa adanya - karena alamat yang tidak
      ada barisnya lebih buruk daripada tanpa alamat: yang tanpa alamat masih
      kelihatan di "Belum berboard", yang salah nama hilang sama sekali. */
-  function pilihBoard(nama, daftar, akhiran, wajibInduk) {
+  function pilihBoard(nama, daftar, akhiran, wajibInduk, akarLuar) {
     var n = TOtak.normal(nama || '');
     if (!n) return '';
     var punya = (daftar || []).filter(Boolean);
@@ -527,14 +541,26 @@
     if (ekor.length === 1) return ekor[0];
 
     /* RUANGAN BARU: satu-satunya nama yang boleh lahir dari sini adalah
-       <main board yang sudah ada> + <akhiran yang sudah ada>. Model tidak
-       pernah mengarang kata; dia cuma menggabungkan dua potong yang sudah
-       tertulis, dan penggabungannya dikerjakan di sini - bukan di sana.
+       <interest yang sudah ada> + <akhiran yang sudah ada>. Model tidak pernah
+       mengarang kata; dia cuma menggabungkan dua potong yang sudah tertulis,
+       dan penggabungannya dikerjakan di sini - bukan di sana.
 
-       Tanpa ini, satu main board baru yang belum punya sub sama sekali akan
+       Tanpa ini, satu interest baru yang belum punya sub sama sekali akan
        menampung SEMUANYA, dan tumpukan yang dilawan aplikasi ini lahir lagi
-       di dalam ruangan yang baru saja dibuat untuk mencegahnya. */
-    var mains = punya.filter(function (b) { return !indukDari(b, punya); });
+       di dalam ruangan yang baru saja dibuat untuk mencegahnya.
+
+       INTEREST, BUKAN AKAR. Akar itu tulang punggung - "Business Inspiration"
+       adalah ruangan yang tidak menjawab apa pun, dan menaruhnya di situ sama
+       saja dengan tidak menaruhnya. */
+    var akarPunya = akarLuar || (TBawaan.akarAwal || []);
+    function adalahAkar(b) {
+      return akarPunya.some(function (a) { return TOtak.normal(a) === TOtak.normal(b); });
+    }
+    var mains = punya.filter(function (b) {
+      if (adalahAkar(b)) return false;
+      var ind = indukDari(b, punya);
+      return !ind || adalahAkar(ind);
+    });
     var pilihM = '', pilihA = '';
     mains.forEach(function (m) {
       if (!sah(m)) return;
@@ -593,8 +619,9 @@
     if (e.albumManual) return Promise.resolve();
     var punya = daftarBoard(setelan);
     var akhiran = daftarAkhiran(setelan);
-    var sebut = TOtak.bacaBoardDariDriver(e.driver, punya, akhiran);
-    var pilih = pilihBoard(jawab, punya, akhiran, sebut.main || '');
+    var akarAda = daftarAkar(setelan);
+    var sebut = TOtak.bacaBoardDariDriver(e.driver, punya, akhiran, akarAda);
+    var pilih = pilihBoard(jawab, punya, akhiran, sebut.main || '', akarAda);
     /* TIDAK ADA BIDANG YANG COCOK ITU JAWABAN, BUKAN KEGAGALAN. Foto antariksa
        tidak punya rumah di daftar bidang usahanya, dan membiarkannya di "Belum
        berboard" berarti menaruhnya di baris yang bunyinya seperti kesalahan -
@@ -603,6 +630,10 @@
        Cuma kalau drivernya tidak menyebut bidangnya sendiri: kalau kamu sudah
        bilang "Interior", jawabannya yang salah bukan alasan memindahkannya ke
        ruang tunggu - yang benar membiarkannya di Interior. */
+    /* KAMU SUDAH MENYEBUT BIDANGNYA - jawaban AI yang meleset bukan alasan
+       membuang alamat itu. Yang tersisa cuma "kamarnya yang mana", dan kalau
+       itu pun tidak terjawab, ruang tunggu bidang itulah jawabannya. */
+    if (!pilih && sebut.main) pilih = sebut.main;
     if (!pilih && !sebut.main && !sebut.sub) {
       var lain = punya.filter(function (b) {
         return TOtak.normal(b) === TOtak.normal(TBawaan.boardLain || '');
@@ -610,6 +641,32 @@
       if (lain) pilih = lain;
     }
     if (!pilih) return Promise.resolve();
+
+    /* JANGAN BERHENTI DI PINTU RUANGAN. Interest yang menampung foto lepas di
+       samping sub board-nya persis timbunan yang dilawan aplikasi ini - dan
+       itu keadaan yang paling sering terjadi, karena "cukup interest-nya saja"
+       selalu terasa jawaban yang aman buat model.
+
+       Jadi jawaban yang berhenti di interest DINAIKKAN satu tingkat ke dalam,
+       ke ruang tunggu milik interest itu sendiri. Dibuat waktu pertama
+       dibutuhkan, bukan disiapkan kosong di tiap interest. */
+    var akarPunya2 = akarAda;
+    var indukPilih = indukDari(pilih, punya);
+    var akarSendiri = akarPunya2.some(function (a) {
+      return TOtak.normal(a) === TOtak.normal(pilih);
+    });
+    var indukAkar = indukPilih && akarPunya2.some(function (a) {
+      return TOtak.normal(a) === TOtak.normal(indukPilih);
+    });
+    var interest = !akarSendiri && (!indukPilih || indukAkar);
+    var lainNama = TOtak.normal(TBawaan.boardLain || '');
+    if (interest && TOtak.normal(pilih) !== lainNama) {
+      var pakai = (akhiran || []).filter(function (x) {
+        return TOtak.normal(x) === 'various';
+      })[0];
+      if (pakai) pilih = pilih + ' ' + pakai;
+    }
+
     e.album = pilih;
     return punya.indexOf(pilih) >= 0 ? Promise.resolve()
                                      : tambahBoardBaru(setelan, pilih);
@@ -987,8 +1044,12 @@
     /* Cuma untuk uji: memperlihatkan board yang benar-benar lolos penjaganya,
        bukan menebaknya dari arahan yang dikirim. */
     daftarBoardUji: daftarBoard,
+    daftarAkarUji: daftarAkar,
     daftarAkhiranUji: daftarAkhiran,
     pilihBoardUji: pilihBoard,
+    /* Cuma untuk uji: seluruh rantainya sekaligus - memilih, menaikkan yang
+       berhenti di pintu ruangan, lalu menuliskan barisnya kalau memang baru. */
+    taruhBoardUji: taruhBoard,
     /* Cuma untuk uji: memperlihatkan panjang deskripsi yang benar-benar
        ditegakkan kodenya, bukan yang cuma diminta di arahan. */
     potongKalimatUji: potongKalimat

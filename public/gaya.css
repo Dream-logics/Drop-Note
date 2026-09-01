@@ -1494,6 +1494,30 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    sambil berdiri, dan silang yang meleset menghapus board yang salah. */
 .board-pohon{margin-top:11px;border:1px solid var(--l);border-radius:10px;overflow:hidden}
 .board-main + .board-main{border-top:1px solid var(--l)}
+/* Akarnya KEPALA BAGIAN, bukan baris yang bisa diketuk: dia tulang punggung,
+   bukan ruangan. Tanpa silang, tanpa panah - yang bisa dilakukan padanya cuma
+   mengisinya dan menamainya ulang. */
+.board-akar + .board-akar{border-top:2px solid var(--l)}
+.board-akar-kepala{
+  display:flex;align-items:center;gap:6px;
+  padding:12px 4px 6px 12px;font-size:11.5px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--m);background:var(--g);
+}
+.board-akar-kepala > span{flex:1;min-width:0}
+/* Sasarannya 40px walau ikonnya kecil: ini dipakai satu tangan, dan pensil
+   yang meleset di kepala akar berarti menamai ulang bidang yang salah. */
+.board-namai{
+  flex:none;width:40px;height:40px;margin:-8px 0;display:flex;align-items:center;
+  justify-content:center;background:none;border:0;color:var(--m);cursor:pointer;
+}
+.board-namai .ik{width:15px;height:15px}
+.board-akar-tambah{
+  width:calc(100% - 24px);margin:12px;min-height:40px;font-size:12.5px;
+}
+.board-akar .board-main{border-top:1px solid var(--l)}
+.board-akar .board-tambah.board-utama{
+  width:calc(100% - 24px);margin:8px 12px 12px;min-height:38px;font-size:12.5px;
+}
 .board-baris{display:flex;align-items:center;gap:8px;min-height:46px;padding:0 8px 0 10px}
 .board-main{position:relative}
 .board-kepala{
@@ -1550,4 +1574,8 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 }
 .galeri-bagian .bagian-nama{font-size:12.5px;font-weight:700;letter-spacing:.04em;
   text-transform:uppercase;color:var(--i)}
+/* Kepala akar TIDAK BISA DIKETUK, dan rupanya harus mengatakan itu: tanpa
+   ikon folder, tanpa angka, tanpa panah. Menjadikannya folder berarti menambah
+   satu ketukan ke tiap foto. */
+.galeri-bagian{cursor:default;user-select:none}
 .galeri-bagian .bagian-ket{font-size:11.5px;color:var(--m)}

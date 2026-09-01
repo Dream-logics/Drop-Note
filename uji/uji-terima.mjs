@@ -925,7 +925,7 @@ console.log('\nAI: kunci milik pembuat, pemakai tinggal pakai');
      bukan apa adanya: nama yang tidak ada barisnya di Setelan melahirkan
      ruangan hantu yang tidak pernah bisa dibuka. */
   cek('board dari layanan ikut tersimpan',
-      berlabel.album === 'Apps Dev Cortex', JSON.stringify(berlabel.album));
+      berlabel.album === 'Tools Apps Dev Cortex', JSON.stringify(berlabel.album));
 
   /* POHON BOARD IKUT BERANGKAT UTUH, dan itu bukan sekadar konteks: dialah
      daftar pilihannya. Yang tidak ada di daftar itu tidak boleh keluar dari
@@ -1522,13 +1522,20 @@ console.log('\npohon board: daftar tertutup, dan AI cuma memilih');
 {
   const awal = await hal.evaluate(() => TBawaan.boardAwal);
   cek('pohon awal ditanam di bawaan.js, bukan berserakan',
-      Array.isArray(awal) && awal.indexOf('FNB Menu Promo') >= 0, String(awal.length));
+      Array.isArray(awal) && awal.indexOf('Business FNB Menu Promo') >= 0, String(awal.length));
+  /* TIGA TINGKAT: akar - interest - sub interest. Akarnya dipasang sistem dan
+     tidak dipikirkan pemakainya; yang dia isi cuma dua tingkat di bawahnya. */
+  cek('akarnya dipasang sistem, bukan diketik pemakainya',
+      (await hal.evaluate(() => TBawaan.akarAwal)).indexOf('Business') >= 0 &&
+      (await hal.evaluate(() => TBawaan.akarAwal)).indexOf('Subject') >= 0,
+      JSON.stringify(await hal.evaluate(() => TBawaan.akarAwal)));
   /* Menu Promo dan Ide Promo memang DUA board, bukan satu yang kembar.
      Billboard menarik yang dipotret di jalan tidak punya menu sama sekali,
      tapi dia ide promo yang paling berharga. Menggabungkannya membuat yang
      satu tenggelam di dalam yang lain. */
   cek('menu promo dan ide promo berdiri sendiri-sendiri',
-      awal.indexOf('FNB Menu Promo') >= 0 && awal.indexOf('FNB Ide Promo') >= 0);
+      awal.indexOf('Business FNB Menu Promo') >= 0 &&
+      awal.indexOf('Business FNB Ide Promo') >= 0);
   /* Sub board WAJIB berawalan nama induknya: susunannya dibaca dari nama, dan
      satu baris yang lupa awalan naik ke akar sebagai main board yang tidak
      pernah dibuat siapa pun. */
@@ -1568,14 +1575,23 @@ console.log('\npohon board: daftar tertutup, dan AI cuma memilih');
      jalur gambar ruang tunggu, karena gambar selalu punya tempat. */
   cek('kalau tidak ada yang cocok, ada jalan keluarnya',
       /kembalikan board kosong/.test(arahan) && /Other and Various/.test(gambar));
-  cek('main board saja itu jawaban yang sah, bukan kegagalan',
-      /cukup main board/.test(arahan) && /cukup main board/.test(gambar));
-  /* TAPI BUKAN JAWABAN PERTAMA. Main board yang belum punya sub sama sekali
-     akan menampung SEMUANYA, dan timbunan yang dilawan aplikasi ini lahir lagi
-     di dalam ruangan yang baru dibuat untuk mencegahnya. */
-  cek('dan sebelum itu, AI disuruh membuat sub dari akhirannya dulu',
+  /* DI JALUR DOKUMEN main board saja masih jawaban yang sah: faktur dan KTP
+     memang tidak punya kamar, dan memaksanya masuk salah satu cuma menaruh
+     yang salah di tempat yang benar. */
+  cek('di jalur dokumen, main board saja itu jawaban yang sah',
+      /cukup main board/.test(arahan));
+  /* DI JALUR GAMBAR TIDAK. Interest yang menampung foto lepas di samping sub
+     board-nya persis timbunan yang dilawan aplikasi ini - dan gambar SELALU
+     punya kamar, karena akhirannya bisa membuatkannya. */
+  cek('tapi di jalur gambar jawabannya WAJIB sub interest',
+      /HARUS SUB INTEREST/.test(gambar) && !/cukup main board/.test(gambar),
+      gambar.slice(gambar.indexOf('Lalu pilih')).slice(0, 300));
+  /* DAN RUANG TUNGGU BUKAN JAWABAN PERTAMA. Interest yang belum punya sub sama
+     sekali akan menampung SEMUANYA, jadi membuat kamarnya dari akhiran harus
+     dicoba lebih dulu daripada membuang gambarnya ke ruang tunggu. */
+  cek('dan sebelum ruang tunggu, AI disuruh membuat sub dari akhirannya dulu',
       /gabungkan nama main board/.test(arahan) &&
-      gambar.indexOf('SATU kata dari') < gambar.indexOf('cukup main board'),
+      gambar.indexOf('SATU kata dari') < gambar.indexOf('Other and Various'),
       gambar.slice(gambar.indexOf('Lalu pilih')).slice(0, 300));
 
   /* DAN YANG MENEGAKKAN KODENYA, bukan arahannya. Aturan yang cuma diminta
@@ -1604,7 +1620,7 @@ console.log('\npohon board: daftar tertutup, dan AI cuma memilih');
      tanpa alamat sampai pemakainya kebetulan membuka Setelan. */
   const bawaan = await hal.evaluate(() => TPelabel.daftarBoardUji({}));
   cek('belum pernah disunting berarti pakai bawaan, bukan kosong',
-      bawaan.indexOf('Hospitality Red Doorz') >= 0, String(bawaan.length));
+      bawaan.indexOf('Business Hospitality Red Doorz') >= 0, String(bawaan.length));
 
   await hal.evaluate(() => TSimpan.setel('board', JSON.stringify(TBawaan.boardAwal)));
 }
@@ -1726,15 +1742,52 @@ console.log('\npohon boleh tumbuh, tapi katanya tertutup');
   cek('tapi AI tidak boleh membuat sub di dalamnya',
       (await hal.evaluate(() => TPelabel.pilihBoardUji(
         'Other and Various Inspiration', TBawaan.boardAwal, TBawaan.akhiranAwal))) === '');
-  cek('sementara main board lain tetap boleh tumbuh',
+  cek('sementara interest lain tetap boleh tumbuh',
       (await hal.evaluate(() => TPelabel.pilihBoardUji(
-        'Motivation Inspiration', TBawaan.boardAwal, TBawaan.akhiranAwal))) ===
-      'Motivation Inspiration');
+        'Personal Motivation Inspiration', TBawaan.boardAwal, TBawaan.akhiranAwal))) ===
+      'Personal Motivation Inspiration');
+  /* AKAR BUKAN INTEREST. "Business Inspiration" adalah ruangan yang tidak
+     menjawab apa pun - akar itu tulang punggung, bukan tempat menaruh gambar. */
+  cek('tapi akarnya sendiri tidak bisa ditumbuhi',
+      (await hal.evaluate(() => TPelabel.pilihBoardUji(
+        'Business Inspiration', TBawaan.boardAwal, TBawaan.akhiranAwal))) === '');
+
+  /* ===== JANGAN BERHENTI DI PINTU RUANGAN =====
+     Ini keadaan yang dilaporkan di lapangan: ketik "hampers", fotonya mendarat
+     di interest-nya, dan menumpuk di situ walau "Isi Hamper" jelas-jelas ada.
+     Interest yang menampung foto lepas di samping sub board-nya persis
+     timbunan yang dilawan aplikasi ini. */
+  const taruh = (driver, jawab) => hal.evaluate((x) => {
+    const e = { driver: x.driver };
+    return TSimpan.semuaSetelan()
+      .then((s) => TPelabel.taruhBoardUji(s, e, x.jawab))
+      .then(() => e.album || '');
+  }, { driver: driver, jawab: jawab });
+
+  await hal.evaluate(() => TSimpan.setel('board', JSON.stringify(TBawaan.boardAwal)));
+  cek('menyebut interest berarti AI wajib masuk ke dalamnya',
+      (await hal.evaluate(() => TOtak.bacaBoardDariDriver(
+        'hampers', TBawaan.boardAwal, TBawaan.akhiranAwal, TBawaan.akarAwal))).main ===
+      'Business Hampers');
+  cek('jawaban yang berhenti di interest dinaikkan ke ruang tunggunya sendiri',
+      (await taruh('hampers', 'Business Hampers')) === 'Business Hampers Various',
+      await taruh('hampers', 'Business Hampers'));
+  cek('yang menemukan sub-nya tidak diutak-atik',
+      (await taruh('hampers', 'Business Hampers Isi Hamper')) === 'Business Hampers Isi Hamper');
+  /* KAMU SUDAH MENYEBUT BIDANGNYA - jawaban AI yang meleset bukan alasan
+     membuang alamat itu ke ruang tunggu utama. */
+  cek('jawaban di luar bidang yang kamu sebut jatuh ke ruang tunggu BIDANG ITU',
+      (await taruh('hampers', 'Business Interior Bedroom')) === 'Business Hampers Various');
+  /* DUA TINGKAT RUANG TUNGGU: satu untuk "bidangnya tidak ketemu", satu untuk
+     "bidangnya ketemu, kamarnya tidak". */
+  cek('tapi yang bidangnya memang tidak ketemu tetap ke ruang tunggu utama',
+      (await taruh('antariksa', 'Gudang Rahasia')) === 'Other and Various');
 }
 
 console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
 {
-  await hal.evaluate(() => TSimpan.setel('board', JSON.stringify(['Interior', 'Interior Bedroom', 'FNB'])));
+  await hal.evaluate(() => TSimpan.setel('board', JSON.stringify(
+    ['Business', 'Business Interior', 'Business Interior Bedroom', 'Business FNB'])));
   await hal.reload();
   await hal.waitForFunction(() => window.TAlur);
   await pasangAI();
@@ -1745,6 +1798,15 @@ console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
   cek('pohonnya digambar sebagai baris, bukan textarea',
       (await hal.locator('#set-board .board-main').count()) === 2 &&
       (await hal.locator('#set-gerbong').count()) === 0);
+  /* AKARNYA KEPALA BAGIAN, BUKAN BARIS YANG BISA DIKETUK - dan tanpa silang:
+     dia tulang punggung, bukan isi. Yang dihapus selalu interest dan sub-nya. */
+  cek('akarnya kepala bagian, tanpa silang dan tanpa panah',
+      (await hal.locator('#set-board .board-akar-kepala').count()) === 1 &&
+      /* Gayanya menulisnya huruf besar semua; yang diperiksa namanya, bukan
+         cara CSS menggambarnya. */
+      (await hal.innerText('#set-board .board-akar-kepala')).trim().toLowerCase() === 'business' &&
+      (await hal.locator('#set-board [data-board-buang="Business"]').count()) === 0,
+      await hal.innerText('#set-board .board-akar-kepala'));
   /* DILIPAT, DAN ITU BUKAN KERAPIAN. Waktu semuanya tergelar, "+ Sub" milik
      satu board duduk berdempetan dengan puluhan baris milik board lain, dan
      "+ Main board" di kaki daftar cuma sejengkal dari "+ Sub" yang terakhir.
@@ -1755,12 +1817,14 @@ console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
       (await hal.locator('#set-board [data-board-sub]').count()) === 0);
   /* ABJAD, bukan urutan pembuatan: daftar yang urutannya cuma diketahui
      pembuatnya harus dibaca seluruhnya tiap kali. */
-  cek('main board berurut abjad',
+  /* Namanya ditulis PENDEK: di bawah kepala "BUSINESS", mengulang "Business"
+     di tiap baris memakan lebar yang justru dibutuhkan nama aslinya. */
+  cek('interest berurut abjad dan ditulis nama pendeknya',
       (await hal.locator('#set-board .board-kepala .board-nama').allInnerTexts())
         .map((x) => x.trim()).join(',') === 'FNB,Interior',
       JSON.stringify(await hal.locator('#set-board .board-kepala .board-nama').allInnerTexts()));
 
-  await hal.click('#set-board [data-board-buka="Interior"]');
+  await hal.click('#set-board [data-board-buka="Business Interior"]');
   await hal.waitForTimeout(300);
   cek('mengetuknya membuka isinya',
       (await hal.locator('#set-board .board-sub').count()) === 1);
@@ -1770,25 +1834,25 @@ console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
   /* "+ Sub" duduk DI DALAM panel yang terbuka, dengan nama induknya tertulis
      di tombolnya sendiri - jadi tidak ada satu keadaan pun di mana dia bisa
      tertukar dengan "+ Main board" di kaki daftar. */
-  cek('dan “+ Sub” duduk di dalamnya, menyebut induknya',
-      (await hal.innerText('#set-board [data-board-sub="Interior"]')).indexOf('Interior') >= 0,
-      await hal.innerText('#set-board [data-board-sub="Interior"]'));
+  cek('dan “+ Sub interest” duduk di dalamnya, menyebut induknya',
+      (await hal.innerText('#set-board [data-board-sub="Business Interior"]')).indexOf('Interior') >= 0,
+      await hal.innerText('#set-board [data-board-sub="Business Interior"]'));
   cek('jumlahnya dibacakan per tingkat',
-      /2 main board, 1 sub board/.test(await hal.innerText('#board-jumlah')),
+      /1 akar, 2 interest, 1 sub interest/.test(await hal.innerText('#board-jumlah')),
       await hal.innerText('#board-jumlah'));
 
   /* AWALANNYA DIPASANG APLIKASINYA, bukan dituntut dari jarinya. Menyuruh
      orang menebak sendiri bahwa namanya wajib diawali nama induknya berarti
      sub boardnya tidak pernah terbentuk: yang terjadi dia mengetik "Kitchen"
      dan itu mendarat di akar sebagai main board baru. */
-  await hal.click('#set-board [data-board-sub="Interior"]');
+  await hal.click('#set-board [data-board-sub="Business Interior"]');
   await hal.waitForTimeout(300);
   await hal.fill('#tanya-isi', 'Kitchen');
   await hal.click('#b-tanya-ya');
   await hal.waitForTimeout(500);
   const pohon = await hal.evaluate(() => JSON.parse(TAlur.setelanUji().board));
   cek('yang diketik cuma nama pendeknya; awalannya dipasang aplikasinya',
-      pohon.indexOf('Interior Kitchen') >= 0 && pohon.indexOf('Kitchen') < 0,
+      pohon.indexOf('Business Interior Kitchen') >= 0 && pohon.indexOf('Kitchen') < 0,
       JSON.stringify(pohon));
   /* Yang baru dibuat LANGSUNG TERLIHAT: panel induknya tetap terbuka. Sub
      board yang lahir di balik panel tertutup tidak bisa dibedakan dari sub
@@ -1798,19 +1862,23 @@ console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
       (await hal.locator('#set-board .board-sub .board-nama').allInnerTexts())
         .map((x) => x.trim()).join(',') === 'Bedroom,Kitchen');
 
-  await hal.click('#set-board [data-board-main]');
+  /* TIDAK ADA LAGI TOMBOL YANG MELAHIRKAN BARIS DI AKAR. Inilah kekeliruan
+     yang dilaporkan di lapangan: "+ Sub" dan "+ Main board" berjarak sejengkal
+     waktu daftarnya tergelar, dan sekali salah ketuk sub yang dimaksud lahir
+     sebagai main board. Sekarang tiap tombol tambah SELALU punya induk, dan
+     induknya tertulis di tombolnya sendiri. */
+  await hal.click('#set-board [data-board-interest="Business"]');
   await hal.waitForTimeout(300);
   await hal.fill('#tanya-isi', 'Construction');
   await hal.click('#b-tanya-ya');
   await hal.waitForTimeout(500);
-  cek('main board baru mendarat di akar',
-      (await hal.locator('#set-board .board-main').count()) === 3);
-  /* DAN DIA BENAR-BENAR DI AKAR, bukan sub yang kebetulan tergambar di baris
-     atas: inilah kekeliruan yang dilaporkan di lapangan, dan yang membedakan
-     keduanya cuma satu ketukan yang meleset. */
-  cek('dan dia memang main board, bukan sub yang tersesat',
+  cek('interest baru mendarat di dalam akarnya, bukan di akar pohon',
+      (await hal.locator('#set-board .board-main').count()) === 3 &&
       (await hal.evaluate(() => JSON.parse(TAlur.setelanUji().board)))
-        .indexOf('Construction') >= 0);
+        .indexOf('Business Construction') >= 0 &&
+      (await hal.evaluate(() => JSON.parse(TAlur.setelanUji().board)))
+        .indexOf('Construction') < 0,
+      JSON.stringify(await hal.evaluate(() => JSON.parse(TAlur.setelanUji().board))));
 
   /* MENGHAPUS MAIN BOARD IKUT MENGHAPUS ANAKNYA - kalau tidak, anaknya jadi
      yatim: dia naik ke akar dan tiba-tiba jadi main board bernama "Interior
@@ -1818,12 +1886,12 @@ console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
      aturan nomor empat tetap berlaku. */
   await hal.evaluate(() => TSimpan.taruh({
     id: 'gbrd', jenis: 'gambar', judul: 'kamar uji', isi: '', kategori: '',
-    album: 'Interior Bedroom', albumManual: true, sumber: 'kamera', driver: 'bedroom',
+    album: 'Business Interior Bedroom', albumManual: true, sumber: 'kamera', driver: 'bedroom',
     label: [], elemen: [], daftar: [], dibuat: Date.now(), diubah: Date.now(),
     dipakai: 0, diLabeliAI: true, diBacaAI: true
   }).then(() => TAlur.muatUlangUji()));
   await hal.waitForTimeout(300);
-  await hal.click('#set-board [data-board-buang="Interior"]');
+  await hal.click('#set-board [data-board-buang="Business Interior"]');
   await hal.waitForTimeout(300);
   cek('dikabarkan dulu berapa board dan berapa isinya',
       /3 board/.test(await hal.innerText('#tanya-ket')) &&
@@ -1832,9 +1900,11 @@ console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
   await hal.click('#b-tanya-ya');
   await hal.waitForTimeout(700);
   const sisa = await hal.evaluate(() => JSON.parse(TAlur.setelanUji().board));
-  cek('anaknya ikut terhapus, tidak naik jadi main board yatim',
-      sisa.indexOf('Interior') < 0 && sisa.indexOf('Interior Bedroom') < 0 &&
-      sisa.indexOf('Interior Kitchen') < 0, JSON.stringify(sisa));
+  cek('anaknya ikut terhapus, tidak naik jadi interest yatim',
+      sisa.indexOf('Business Interior') < 0 && sisa.indexOf('Business Interior Bedroom') < 0 &&
+      sisa.indexOf('Business Interior Kitchen') < 0, JSON.stringify(sisa));
+  /* AKARNYA TETAP BERDIRI: dia tulang punggung, dan yang dihapus isinya. */
+  cek('tapi akarnya tetap berdiri', sisa.indexOf('Business') >= 0, JSON.stringify(sisa));
   const lepas = await hal.evaluate(() => {
     const e = TAlur.semuaEntri().filter((x) => x.id === 'gbrd')[0];
     return e ? { album: e.album || '', manual: !!e.albumManual, hidup: !e.dihapus } : null;
@@ -1842,6 +1912,60 @@ console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
   cek('isinya tidak ikut terhapus — dia cuma keluar dari boardnya',
       lepas && lepas.hidup && lepas.album === '' && lepas.manual === false,
       JSON.stringify(lepas));
+
+  /* ===== AKARNYA TETAP MILIKMU =====
+     Daftar bawaannya tebakan tentang hidup orang lain: "Subject" tidak berarti
+     apa-apa buat yang sudah lulus, dan yang kerja di ladang butuh baris yang
+     tidak ada di daftar mana pun. Jadi akarnya bisa ditambah dan dinamai
+     ulang tangan — yang tidak ada cuma tombol hapusnya. */
+  await hal.click('#set-board [data-board-akar]');
+  await hal.waitForTimeout(300);
+  await hal.fill('#tanya-isi', 'Ladang');
+  await hal.click('#b-tanya-ya');
+  await hal.waitForTimeout(500);
+  const akarBaru = await hal.evaluate(() => JSON.parse(TAlur.setelanUji().board));
+  cek('akar baru bisa ditambah tangan, dan dia benar-benar di akar',
+      akarBaru.indexOf('Ladang') >= 0 &&
+      (await hal.locator('#set-board [data-board-interest="Ladang"]').count()) === 1,
+      JSON.stringify(akarBaru));
+
+  /* ANAKNYA IKUT BERGANTI NAMA. Tanpa itu anaknya yatim: interest yang
+     induknya sudah bernama lain naik ke akar dan berdiri sebagai akar yang
+     tidak pernah dibuat siapa pun. */
+  await hal.evaluate(() => TSimpan.setel('board', JSON.stringify(
+    ['Business', 'Business FNB', 'Business FNB Menu'])));
+  await hal.reload();
+  await pasangAI();
+  await hal.waitForTimeout(600);
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.waitForTimeout(300);
+  await hal.click('#set-board [data-board-namai="Business"]');
+  await hal.waitForTimeout(300);
+  await hal.fill('#tanya-isi', 'Usaha');
+  await hal.click('#b-tanya-ya');
+  await hal.waitForTimeout(800);
+  const setelahNamai = await hal.evaluate(() => JSON.parse(TAlur.setelanUji().board));
+  cek('akar bisa dinamai ulang, dan seluruh anaknya ikut',
+      setelahNamai.indexOf('Usaha') >= 0 &&
+      setelahNamai.indexOf('Usaha FNB') >= 0 &&
+      setelahNamai.indexOf('Usaha FNB Menu') >= 0 &&
+      setelahNamai.indexOf('Business') < 0,
+      JSON.stringify(setelahNamai));
+  /* DAN TIDAK ADA SILANG DI KEPALANYA: menghapus akar berarti seluruh bidang
+     beserta sub-nya lenyap dalam satu ketukan yang tidak bisa dibatalkan. */
+  cek('tapi tetap tidak ada tombol hapus di kepala akar',
+      (await hal.locator('#set-board .board-akar-kepala .board-buang').count()) === 0);
+  /* AKAR TANGAN BERLAKU SAMA PERSIS DENGAN AKAR BAWAAN — termasuk di sisi AI.
+     Kalau tidak, "Usaha Inspiration" lahir di dalam tulang punggung: ruangan
+     yang tidak menjawab apa pun, dan menaruh gambar di situ sama saja dengan
+     tidak menaruhnya. */
+  cek('akar yang kamu namai sendiri ikut tercatat sebagai akar',
+      (await hal.evaluate(() => TSimpan.semuaSetelan()
+        .then((s) => TPelabel.daftarAkarUji(s)))).indexOf('Usaha') >= 0);
+  cek('dan AI tetap tidak boleh menumbuhinya',
+      (await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TPelabel.pilihBoardUji(
+        'Usaha Inspiration', ['Usaha', 'Usaha FNB'], ['Inspiration'], '',
+        TPelabel.daftarAkarUji(s))))) === '');
 
   await hal.evaluate(() => {
     const e = TAlur.semuaEntri().filter((x) => x.id === 'gbrd')[0];
@@ -6021,8 +6145,9 @@ console.log('\narahan gambar: pendek, kontekstual, bahasamu');
   cek('pohonnya ikut dikirim, dan disebut tertutup',
       /Interior Bedroom/.test(arahanGbr) && /TERTUTUP/.test(arahanGbr) &&
       /jangan mengarang nama main board baru/.test(arahanGbr), arahanGbr);
-  cek('main board saja itu jawaban yang sah',
-      /cukup main board/.test(arahanGbr));
+  cek('jawabannya wajib turun sampai sub interest',
+      /HARUS SUB INTEREST/.test(arahanGbr) && !/cukup main board/.test(arahanGbr),
+      arahanGbr);
 
   /* ARAHAN DOKUMEN TETAP TERPISAH. Paragraf driver yang ditempelkan ke sana
      bertabrakan dengan perintahnya sendiri - "sebutkan jenis dokumennya",
