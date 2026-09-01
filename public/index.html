@@ -340,9 +340,12 @@
   </header>
   <div class="tab-baris" data-tab></div>
 
+  <!-- TIDAK ADA "+ Folder" di sini, dan itu bukan kelalaian: pohon board
+       dikurasi di SATU tempat, di Setelan. Dua pintu untuk menumbuhkan daftar
+       yang sama berarti daftarnya tumbuh tanpa ada yang melihat keseluruhannya
+       - dan pohon yang tidak pernah dilihat utuh persis yang mau dihindari. -->
   <div class="tulis-kepala">
     <div class="note-alamat" id="galeri-alamat"></div>
-    <button class="folder-baru" id="b-galeri-folder" aria-label="Folder baru">+ Folder</button>
   </div>
   <div class="note-cari-baris">
     <input id="galeri-cari" class="cari-input" placeholder="Cari gambar&#8230;" autocomplete="off">
@@ -356,12 +359,6 @@
     <div class="galeri-saring" id="galeri-saring"></div>
     <div class="galeri-tampil" id="galeri-tampil"></div>
   </div>
-
-  <!-- Tag baru dari AI menunggu di sini sampai dilihat sekali. Bilahnya TIDAK
-       menghalangi apa pun dan tidak pernah muncul di tengah memotret - dia
-       menunggu di layar, dan kamu yang mendatanginya. Menunda keputusan yang
-       memang boleh ditunda itu inti seluruh aplikasi ini. -->
-  <div class="galeri-usul sembunyi" id="galeri-usul"></div>
 
   <div id="galeri-isi"></div>
   <div class="tumbuh"></div>

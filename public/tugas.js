@@ -61,7 +61,7 @@
       jenis: 'tugas',
       judul: String(teks || '').trim().slice(0, 200),
       judulManual: true, isi: '', daftar: [],
-      kategori: '', label: [], tag: [], elemen: [],
+      kategori: '', label: [], elemen: [],
       berkasId: null, driveId: null, thumb: '',
       namaBerkas: '', tipeBerkas: '', ukuran: 0,
       dibuat: t, diubah: t, dipakai: 0,

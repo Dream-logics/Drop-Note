@@ -132,19 +132,18 @@
   /* ===================== label ===================== */
 
   /* Tiga langkah, dan urutannya yang penting: subjek dulu, baru elemen, baru
-     tag. Kalau tag diminta lebih dulu, model menebak dari kata yang kebetulan
-     ada di permukaan; kalau subjeknya sudah ditetapkan, tagnya menempel pada
-     maksud catatan.
+     board. Kalau alamatnya diminta lebih dulu, model memilih dari kata yang
+     kebetulan ada di permukaan; kalau subjeknya sudah ditetapkan, alamatnya
+     dipilih berdasarkan maksud catatan.
 
      ELEMEN adalah bagian yang paling menentukan di sini. Menemukan kartunya
      itu setengah pekerjaan; setengah lagi adalah menyalin satu baris dari
      dalamnya - dan itu justru dikerjakan saat orangnya paling buru-buru.
 
-     Daftar tag lama ikut dikirim supaya tag tidak beranak sendiri. Tanpa itu
-     "klien", "pelanggan", dan "customer" jadi tiga tag berbeda dalam sebulan,
-     dan tidak ada satu pun yang bisa diandalkan buat menyaring. */
-  function arahanLabel(tagLama, namaElemenLama) {
-    var daftar = (tagLama || []).slice(0, 150).join(', ');
+     Pohon board ikut dikirim UTUH, dan itu bukan sekadar konteks: dialah daftar
+     pilihannya. Yang tidak ada di daftar itu tidak boleh keluar dari sini. */
+  function arahanLabel(daftarBoard, namaElemenLama) {
+    var board = (daftarBoard || []).join(', ');
     var namaEl = (namaElemenLama || []).slice(0, 80).join(', ');
     return [
       'Kamu membantu seseorang menemukan kembali catatannya sendiri berbulan-bulan kemudian.',
@@ -155,7 +154,7 @@
          tanpa dibaca (mode Hemat), dan di situ satu-satunya isyarat yang ada
          memang cuma drivernya. */
       'Kalau sebuah entri punya baris DRIVER, itu dua-tiga kata yang diketik pemiliknya sendiri:',
-      'sudut pandangnya, bukan keterangan tambahan. Judul dan tag disusun DARI situ, dan',
+      'sudut pandangnya, bukan keterangan tambahan. Judul dan board dipilih DARI situ, dan',
       'bahasanya mengikuti bahasa driver itu.',
       '',
       'Untuk SETIAP entri, kerjakan tiga langkah berurutan:',
@@ -206,8 +205,8 @@
       '',
       '   c. JANGAN ADA KATA KEMBAR, termasuk yang kembar maknanya. "Uji coba dan pengecekan',
       '      versi editor" itu satu maksud yang ditulis dua kali - cukup "Uji coba versi',
-      '      editor". Judul panjang tidak menambah pintu masuk; yang menambah itu tag, dan',
-      '      tagnya sudah banyak.',
+      '      editor". Judul panjang tidak menambah pintu masuk; yang menambah itu',
+      '      deskripsinya, dan deskripsinya sudah menampung semuanya.',
       '',
       '   Yang TIDAK BOLEH: berpindah subjek. Kalau baris pertama bicara soal sandi wifi,',
       '   judulnya tetap soal sandi wifi - bukan soal kantornya, bukan soal jadwal gantinya.',
@@ -230,7 +229,7 @@
       '',
       '   NAMA ELEMEN MENYEBUT JENIS BENDANYA, TIDAK PERNAH PEMILIKNYA.',
       '   "No WhatsApp Bunda" SALAH - namanya "No WhatsApp", titik. Bunda sudah ada di judul',
-      '   dan di tag. Menempelkan nama orang, proyek, atau bank ke nama jenis membuat elemen',
+      '   dan di deskripsinya. Menempelkan nama orang, proyek, atau bank ke nama jenis membuat elemen',
       '   itu tidak akan pernah berkumpul dengan saudaranya: sebulan kemudian ada sepuluh nama',
       '   untuk satu benda, dan tidak satu pun bisa dipakai menyaring.',
       '   Begitu juga "Nomor Rekening BCA" -> "No Rekening", "Client ID Google" -> "Client ID".',
@@ -242,65 +241,16 @@
       '   Kalau memang tidak ada yang menonjol, kembalikan elemen kosong. Itu jawaban yang sah:',
       '   berarti catatan itu utuh sebagai catatan. JANGAN mengarang elemen supaya tidak kosong.',
       '',
-      '3. TAG. SEBANYAK YANG BENAR-BENAR ADA DI CATATANNYA, TIDAK LEBIH.',
-      '   Tidak ada jumlah minimum. Dua sampai tiga untuk catatan sebaris; enam paling banyak',
-      '   untuk yang memang panjang dan berkonteks. Delapan itu batas atas, bukan sasaran.',
+      '3. BOARD. SATU alamat, dipilih dari daftar di bawah - tidak pernah dikarang.',
       '',
-      '   TAG ITU RUANGAN, BUKAN JARING. Tag yang meleset dulu cuma pintu tambahan yang',
-      '   tidak terpakai; sekarang dia menentukan catatan itu MENDARAT DI FOLDER MANA. Satu',
-      '   tebakan yang salah tidak lagi gratis - dia menaruh barang di kamar yang salah.',
+      '   Daftarnya TERTUTUP. Kalau tidak ada yang cocok, kembalikan board kosong. Board kosong',
+      '   itu jawaban yang sah; board karangan tidak, karena barisnya memang tidak ada di',
+      '   aplikasinya - catatannya akan mendarat di ruangan yang tidak pernah bisa dibuka.',
       '',
-      '   TAG HARUS BISA DITUNJUK ASALNYA. Sebelum menulis satu tag, tanyakan pada dirimu:',
-      '   kata mana di catatan ini yang jadi alasannya? Kalau kamu tidak bisa menunjuknya,',
-      '   tag itu KARANGAN - jangan ditulis. Ini pengujian yang harus lolos untuk SETIAP tag,',
-      '   satu per satu, bukan untuk daftarnya secara keseluruhan.',
-      '',
-      '   Cuma ada DUA sumber yang sah:',
-      '',
-      '   SUMBER 1 - KATA YANG MEMANG TERTULIS di catatannya. Termasuk bentuk bakunya:',
-      '   catatan menulis "telpon", tagnya boleh "WhatsApp"; menulis "ide", tagnya boleh',
-      '   "Idea". Itu kata yang sama, ditulis dengan ejaan yang nanti dia pakai mencari.',
-      '',
-      '   SUMBER 2 - BENTUK YANG MENYEBUT DIRINYA SENDIRI. Ini BUKAN tafsiran, ini bacaan:',
-      '     08xx atau +628xx  -> WhatsApp        (bentuk nomornya memang begitu)',
-      '     021, 14000, 108   -> Telepon',
-      '     https://...       -> Link',
-      '     ada@ada.com       -> Email',
-      '   Bentuk yang tidak menyebut dirinya sendiri tidak masuk sumber ini. Deretan angka',
-      '   biasa bukan "harga", dan nama orang bukan "klien".',
-      '',
-      '   DI LUAR DUA SUMBER ITU, TIDAK ADA LAGI. Dua larangan di bawah cuma dua bentuk yang',
-      '   paling sering terpeleset:',
-      '',
-      '   a. JANGAN MENGARANG HUBUNGAN, SIFAT, ATAU KEADAAN. "Sandy 087575686578" itu sebuah',
-      '      nomor milik seseorang bernama Sandy. Titik. Kamu TIDAK tahu Sandy itu teman,',
-      '      keluarga, atau urusan pribadi - dia bisa saja salesman mobil yang menawarkan',
-      '      produk. Tag "teman", "pribadi", "penting", "mendesak", "rutin" hanya boleh ditulis',
-      '      kalau kata itu MEMANG ADA di catatannya.',
-      '',
-      '   b. JANGAN MEMAKAI KATA YANG MENYEBUT BENTUKNYA, BUKAN ISINYA: catatan, data, info,',
-      '      daftar, berkas, dokumen, nomor, teks, memo. Kata seperti itu cocok untuk hampir',
-      '      semua yang pernah disimpan, jadi sebagai ruangan dia tidak memisahkan apa pun -',
-      '      dan folder yang isinya seluruh timbunan sama saja dengan tidak ada folder.',
-      '',
-      '   Dan jangan menulis satu benda dengan tiga kata: "Telepon", "nomor", dan "seluler"',
-      '   itu satu hal. Pilih SATU, yang paling sering diketik orangnya waktu mencari.',
-      '',
-      '   CONTOH LENGKAP. Catatan: "Sandy 087575686578"',
-      '     BENAR : ["Sandy", "WhatsApp"]  - Sandy tertulis; 087x itu bentuk yang menyebut diri.',
-      '     SALAH : ["teman", "pribadi", "kontak", "seluler", "nomor", "catatan"]',
-      '             tidak satu pun bisa ditunjuk asalnya. Sandy bisa saja salesman mobil.',
-      '',
-      '   Kalau sebuah catatan cuma pantas dapat dua tag, beri dua. Dua tag yang bisa ditunjuk',
-      '   asalnya mengalahkan delapan yang setengahnya karangan.',
-      '',
-      '   Daftar di bawah adalah rak yang SUDAH ADA - bukan daftar tertutup, bukan pilihan terbatas.',
-      '   Kalau maknanya sama, pakai ulang dan salin PERSIS penulisannya, huruf besar-kecilnya sekalian.',
-      '   Yang disebut paling awal itu rak andalannya; dahulukan kalau memang cocok.',
-      '   Kalau tidak ada yang benar-benar cocok, BUAT TAG BARU tanpa ragu. Tag baru yang tepat',
-      '   jauh lebih berguna daripada tag lama yang meleset - memaksakan yang meleset justru',
-      '   merusak seluruh daftarnya.',
-      daftar ? '   Rak yang sudah ada: ' + daftar : '   Belum ada rak sama sekali; susun sendiri dari nol.',
+      '   Pilih SUB BOARD kalau ada yang benar-benar cocok; kalau tidak, cukup main board-nya.',
+      '   "Interior" saja lebih benar daripada memaksakan "Interior Bedroom" untuk foto masjid.',
+      '   Salin namanya PERSIS seperti tertulis, lengkap dengan nama induknya.',
+      board ? '   Board yang tersedia: ' + board : '   Belum ada board sama sekali; kembalikan kosong.',
       '',
       'Selain itu, label: 4 sampai 8 kata kunci huruf kecil yang TIDAK dilihat pemakainya -',
       'tugasnya cuma membuat pencarian ketemu. Sertakan sebutan yang mungkin dia pakai saat',
@@ -309,7 +259,7 @@
       'Bahasa Indonesia, kecuali istilah teknis yang memang lazim Inggris.',
       'Jawab HANYA JSON: {"hasil":[{"i":0,"judul":"...",' +
         '"elemen":[{"jenis":"tautan|kode|nomor|telepon|surel|alamat|berkas|nama|jadwal|harga|prompt|lainnya",' +
-        '"nilai":"...","nama":"..."}],"tag":["..."],"label":["..."]}]}'
+        '"nilai":"...","nama":"..."}],"board":"...","label":["..."]}]}'
     ].join('\n');
   }
 
@@ -325,7 +275,7 @@
            dari atas, dan sudut pandangnya harus sudah terpasang sebelum dia
            melihat apa yang tergambar. */
         e.driver ? 'DRIVER: ' + String(e.driver).slice(0, 60) : '',
-        e.album ? 'gerbong: ' + e.album : '',
+        e.album ? 'board: ' + e.album : '',
         e.namaBerkas ? 'berkas: ' + e.namaBerkas : '',
         isi ? 'isi: ' + isi : '',
         daftar ? 'daftar: ' + daftar : ''
@@ -357,11 +307,11 @@
     if (!antre.length) return Promise.resolve(0);
 
     var namaEl = daftarNamaElemen(setelan);
-    return tanya(setelan, [{ text: pesanan(antre) }], arahanLabel(daftarTag(setelan), namaEl))
+    var board = daftarBoard(setelan);
+    return tanya(setelan, [{ text: pesanan(antre) }], arahanLabel(board, namaEl))
       .then(function (jawab) {
         var hasil = (jawab && jawab.hasil) || [];
         if (!hasil.length) throw new Error('Jawaban AI kosong');
-        var tagBaru = [];
         var elBaru = [];
         var tulis = hasil.map(function (h) {
           var e = antre[h.i];
@@ -385,14 +335,17 @@
           (e.elemen || []).forEach(function (x) {
             if (x.nama && elBaru.indexOf(x.nama) < 0) elBaru.push(x.nama);
           });
-          e.tag = gabungTag(e.tag, (h.tag || []).slice(0, TAG_MAKS_BARU));
-          e.tag.forEach(function (t) { if (tagBaru.indexOf(t) < 0) tagBaru.push(t); });
+          /* Alamat yang KAMU tentukan tidak pernah ditimpa - sama persis dengan
+             judul manual. Yang diisi AI cuma yang masih kosong. */
+          if (!e.albumManual) {
+            var pilih = pilihBoard(h.board, board);
+            if (pilih) e.album = pilih;
+          }
           e.diLabeliAI = true;
           e.diubah = Date.now();
           return TSimpan.taruh(e);
         }).filter(Boolean);
         return Promise.all(tulis)
-          .then(function () { return catatTag(setelan, tagBaru); })
           .then(function () { return catatNamaElemen(setelan, elBaru); })
           .then(function () { return tulis.length; });
       });
@@ -411,188 +364,92 @@
      langsung bertabrakan dengan sudut pandang. Foto referensi bukan dokumen,
      jadi dia dapat arahannya sendiri.
 
-     SEPULUH TAG, DUA LAPIS, dan pembagian ini yang paling menentukan:
+     DUA HASIL SAJA: satu deskripsi dan satu board. Tidak ada tag.
 
-       lapis luas   Interior, Design, Furnishing  -> menaruhnya di KAMAR yang benar
-       lapis sempit Sofa, Grey, LED, Vanity       -> memisahkannya DI DALAM kamar
+     Hashtag sudah dicoba dan dibuang, dan alasannya bukan selera: tag buatan
+     mesin melar dan tidak pernah konvergen - sebulan kemudian ada #sofa,
+     #kursi, dan #seating untuk satu benda, dan pemiliknya tidak mengenali satu
+     pun waktu mencari. Kata yang tidak dia ingat bukan pintu masuk, cuma
+     hiasan di kartu. Deskripsi tidak punya penyakit itu: dia kalimat, jadi
+     dia konsisten dengan dirinya sendiri, dan tiap kata di dalamnya ikut
+     dicari.
 
-     Dulu kukira tag yang luas itu mubazir. Itu ukuran Google, bukan ukuran
-     gudang ini: di sana "interior" bersaing dengan satu miliar gambar, di sini
-     dengan tiga ribu, dan menyisakan satu dari sepuluh kamar itu justru
-     pekerjaan yang benar. Yang benar-benar kosong cuma tag yang berlaku untuk
-     SELURUH himpunannya - "foto" pada foto - karena dia tidak pernah bisa
-     menaikkan atau menurunkan peringkat siapa pun.
-
-     SATU TAG SATU KATA. Tanpa itu "kamar tidur" pecah jadi #kamar dan #tidur,
-     dan keduanya lumpuh sendirian.
-
-     "Seolah bersaing SEO global" sengaja dipasang walau gudangnya cuma puluhan
-     ribu: yang lolos di satu miliar pasti lolos di tiga ribu, dan menaikkan
-     standarnya tidak menambah ongkos sepeser pun. */
-  function arahanGambar(driver, tagLama) {
-    var daftar = (tagLama || []).slice(0, 60).join(', ');
+     ISINYA KONTEKSTUAL, dan yang menentukan konteks itu DRIVER - bukan yang
+     paling menonjol di gambar. Foto masjid dengan driver "interior mesjid"
+     harus menghasilkan kalimat tentang elemen interiornya; yang sama dengan
+     driver "karpet mesjid" menghasilkan kalimat tentang motif dan bahan
+     karpetnya. Bendanya satu, deskripsinya dua, dan keduanya benar. */
+  function arahanGambar(driver, daftarBoard) {
+    var board = (daftarBoard || []).join(', ');
     return [
       driver ? 'Keywords: ' + String(driver).slice(0, 60) : 'Tidak ada keywords; baca apa adanya.',
       '',
-      'Beri 1 kalimat padat untuk mendeskripsikan gambar ini, sebagai caption bagi orang yang',
-      'tidak melihatnya. Kalimat itu masuk database jadi elemen SEO yang menempatkan gambar di',
-      'daftar pertama. Tulis DARI SUDUT PANDANG keywords di atas, bukan dari yang paling',
-      'menonjol di gambar.',
-      '',
-      'Lalu 10 hashtag, SATU HASHTAG SATU KATA:',
-      '  5 luas   - bidang, ruang, gaya; yang menaruhnya di kamar yang benar',
-      '  5 sempit - benda, warna, bahan, ukuran; yang memisahkannya dari sesamanya',
+      'Tulis 2-3 kalimat yang mendeskripsikan gambar ini DARI SUDUT PANDANG keywords di atas,',
+      'bukan dari yang paling menonjol di gambar. Sebutkan: nama objeknya, gayanya, kategorinya,',
+      'bentuknya, fungsinya, dan satu hal unik yang benar-benar terlihat.',
+      'Kalimat itu satu-satunya kata kunci yang dipunyai gambar ini, jadi pakai sebutan yang',
+      'akan dia ketik lagi enam bulan kemudian - bukan bahasa katalog.',
       '',
       'Judul maksimal 8 kata, juga dari sudut pandang keywords.',
       '',
-      'BAHASA JAWABAN MENGIKUTI BAHASA KEYWORDS.',
-      'Jangan pakai kata yang benar untuk semua foto: foto, gambar, image, screenshot, kamera.',
-      daftar ? 'Kalau tagmu sudah ada di daftar ini, salin ejaannya persis: ' + daftar : '',
+      'Lalu pilih SATU board dari daftar ini, salin namanya PERSIS:',
+      board || '(kosong)',
+      'Sub board kalau ada yang benar-benar cocok, kalau tidak cukup main board-nya.',
+      'Daftar ini tertutup - jangan mengarang nama baru. Kalau tidak ada yang cocok, kosongkan.',
       '',
-      'Jawab HANYA JSON: {"judul":"...","teks":"...","tag":["..."],"label":["..."],',
+      'BAHASA JAWABAN MENGIKUTI BAHASA KEYWORDS.',
+      '',
+      'Jawab HANYA JSON: {"judul":"...","teks":"...","board":"...",',
       '"elemen":[{"jenis":"...","nilai":"...","nama":"..."}]}',
       'elemen: kode, nomor seri, atau nama merek yang TERBACA di gambar. Kosongkan kalau tidak ada.'
     ].filter(Boolean).join('\n');
   }
 
-  /* KATA YANG MENYEBUT BENTUKNYA, BUKAN ISINYA.
+  /* ===================== BOARD =====================
+     Satu-satunya alamat, dan daftarnya TERTUTUP.
 
-     "catatan", "data", "daftar", "berkas", "nomor" - semuanya cocok untuk
-     hampir apa pun yang pernah disimpan di sini, jadi sebagai penyaring dia
-     tidak memisahkan satu pun. Dan sejak tag ikut menentukan folder, satu tag
-     seperti ini menyeret sepertiga timbunan ke ruangan bernama "catatan".
+     AI memilih dari pohon yang ditulis pemakainya; dia tidak pernah menambah
+     barisnya. Itu satu-satunya yang menahan daftar ini supaya tidak melar -
+     dan daftar alamat yang melar persis sama gunanya dengan tidak punya
+     alamat: gudang dengan seribu ruangan tidak memisahkan apa pun.
 
-     Yang di baris kedua kata untuk GAMBAR, dan di situ dia bahkan lebih kosong.
-     Seratus persen foto adalah foto - dia tidak pernah punya kesempatan jadi
-     yang lain - jadi #foto tidak memisahkan satu pun dari dua puluh ribu
-     saudaranya. Sama gunanya dengan memberi tag "manusia" pada seseorang.
-
-     TAPI CUMA YANG SEPERTI ITU. Tag yang sekadar LUAS - Interior, Design,
-     Modern - tetap boleh, dan daftar ini tidak boleh melar ke sana. Itu ukuran
-     Google, bukan ukuran gudang ini: di sana "interior" bersaing dengan satu
-     miliar gambar, di sini dengan tiga ribu, dan menyisakan satu dari sepuluh
-     kamar itu justru pekerjaan yang benar. Yang ditolak cuma yang berlaku
-     untuk SELURUH himpunannya, karena dia tidak pernah bisa menaikkan atau
-     menurunkan peringkat siapa pun.
-
-     Ditegakkan di sini, bukan cuma diminta di arahan: aturan yang cuma diminta
-     akan bocor persis di hari tersibuk. */
-  var TAG_BENTUK = ['catatan', 'catat', 'data', 'info', 'informasi', 'daftar',
-                    'berkas', 'file', 'dokumen', 'teks', 'memo', 'nomor', 'nomer',
-                    'entri', 'entry', 'note', 'notes', 'umum', 'lainnya', 'lain',
-                    'foto', 'poto', 'photo', 'gambar', 'image', 'picture', 'pic',
-                    'img', 'screenshot', 'tangkapanlayar', 'kamera', 'camera',
-                    'jpg', 'jpeg', 'png'];
-
-  /* Huruf besarnya DIPERTAHANKAN. Tag ini dilihat pemakainya, dan
-     "#ShamiraWeb" lebih cepat dikenali daripada "#shamiraweb" - sementara
-     pencocokannya sendiri tetap tidak peduli huruf besar-kecil. */
-  /* HURUF APA PUN, BUKAN CUMA ABJAD LATIN. Dulu di sini ada [^A-Za-z0-9], dan
-     itu membuang seluruh tag yang tidak ditulis dengan alfabet Inggris - Rusia,
-     Arab, Jepang, bahkan huruf beraksen. Akibatnya diam: tagnya tidak ditolak
-     dengan pesan, dia cuma jadi string kosong lalu lenyap.
-
-     Dan itu melanggar janji yang paling dasar di sini: kata yang KAMU ketik
-     adalah milikmu. Dia masuk apa adanya, dalam bahasa apa pun, karena itu kata
-     yang akan kamu ketik lagi enam bulan kemudian. \p{L}\p{N} membaca seluruh
-     huruf dan angka Unicode; yang dibuang cuma spasi dan tanda baca. */
-  function bersihTag(t) {
-    var v = String(t || '').replace(/^#+/, '');
-    try { v = v.replace(/[^\p{L}\p{N}]+/gu, ''); }
-    catch (e) { v = v.replace(/[^A-Za-z0-9]+/g, ''); }
-    v = v.slice(0, 24);
-    if (TAG_BENTUK.indexOf(v.toLowerCase()) >= 0) return '';
-    return v;
+     Ditegakkan DI SINI, bukan cuma diminta di arahan. Aturan yang cuma diminta
+     akan bocor persis di hari tersibuk, dan yang bocor di sini melahirkan
+     ruangan hantu - nama yang menempel di entrinya tapi tidak ada barisnya di
+     Setelan, jadi tidak pernah bisa dibuka. */
+  function daftarBoard(setelan) {
+    var teks = setelan && setelan.board;
+    if (teks == null) return (TBawaan.boardAwal || []).slice();
+    try {
+      var d = typeof teks === 'string' ? JSON.parse(teks) : teks;
+      return Array.isArray(d) ? d.filter(Boolean) : [];
+    } catch (e) { return []; }
   }
 
-  function samaTag(a, b) { return String(a).toLowerCase() === String(b).toLowerCase(); }
-
-  function gabungTag(lama, tambahan) {
-    var gabung = (lama || []).slice();
-    (tambahan || []).map(bersihTag).filter(Boolean).forEach(function (t) {
-      if (!gabung.some(function (x) { return samaTag(x, t); })) gabung.push(t);
+  /* Jawaban AI dicocokkan ke baris yang BENAR-BENAR ADA. Yang tidak ketemu
+     dibuang diam-diam - bukan disimpan apa adanya - karena alamat yang tidak
+     ada barisnya lebih buruk daripada tanpa alamat: yang tanpa alamat masih
+     kelihatan di "Belum berboard", yang salah nama hilang sama sekali. */
+  function pilihBoard(nama, daftar) {
+    var n = TOtak.normal(nama || '');
+    if (!n) return '';
+    var ada = (daftar || []).filter(function (b) { return TOtak.normal(b) === n; })[0];
+    if (ada) return ada;
+    /* Model sesekali menjawab nama pendeknya saja ("Bedroom" untuk "Interior
+       Bedroom"). Itu jawaban yang benar dengan penulisan yang salah, jadi
+       diselamatkan - tapi cuma kalau cuma SATU baris yang berakhir begitu;
+       dua kandidat berarti tebakan, dan menebak alamat itu yang dihindari. */
+    var ekor = (daftar || []).filter(function (b) {
+      var v = TOtak.normal(b);
+      return v === n || v.slice(-(n.length + 1)) === ' ' + n;
     });
-    /* Batasnya lebar. Tag yang tepat tidak pernah jadi sampah - dia cuma
-       menambah satu pintu lagi menuju catatan yang sama. Yang perlu dibatasi
-       itu TAMPILANNYA, dan itu urusan kartu, bukan urusan penyimpanan. */
-    return gabung.slice(0, 30);
+    return ekor.length === 1 ? ekor[0] : '';
   }
 
-  /* Batas atas jumlah tag BARU per entri. Arahannya sudah meminta secukupnya,
-     tapi model yang kelebihan semangat tetap bisa mengirim lima belas - dan
-     yang kelima belas sudah pasti karangan, karena catatannya cuma tiga kata.
-     Yang disebut duluan yang dipertahankan: model menulis yang paling yakin
-     lebih dulu. */
-  var TAG_MAKS_BARU = 8;
+  function samaKata(a, b) { return String(a).toLowerCase() === String(b).toLowerCase(); }
 
-  /* Gambar dapat jatah lebih besar, dan itu bukan kelonggaran: dia butuh DUA
-     lapis penuh - lima yang menaruhnya di kamar yang benar, lima yang
-     memisahkannya di dalam kamar. Delapan berarti salah satu lapis dipotong,
-     dan yang dipotong selalu lapis sempitnya (model menulis yang umum lebih
-     dulu). */
-  var TAG_MAKS_GAMBAR = 10;
-
-  /* Kata drivermu, dipecah jadi tag satu-satu. Kata sambung yang terlalu
-     pendek dibuang - "di", "dan", "yg" tidak pernah jadi ruangan. */
-  function kataDriver(driver) {
-    var teks = String(driver || '');
-    var potong;
-    /* Dipisah di SPASI DAN TANDA BACA, bukan di daftar huruf yang diizinkan.
-       Daftar huruf selalu ketinggalan satu aksara - dan waktu ketinggalan,
-       yang hilang seluruh drivernya sekaligus, diam-diam. */
-    try { potong = teks.split(/[^\p{L}\p{N}]+/gu); }
-    catch (e) { potong = teks.split(/[^A-Za-z0-9\u00C0-\u024F]+/); }
-    return potong.filter(function (w) { return w.length >= 3; }).slice(0, 5);
-  }
-
-  /* Tag andalan disebut LEBIH DULU daripada yang pernah dipakai: itu rak yang
-     sudah dia putuskan sendiri, dan model membaca daftar dari depan. */
-  function daftarTag(setelan) {
-    var awal = setelan.tagFavorit != null ? setelan.tagFavorit : (TBawaan.tagAwal || []);
-    var keluar = (awal || []).slice();
-    (setelan.hashtag || []).forEach(function (t) {
-      if (!keluar.some(function (x) { return samaTag(x, t); })) keluar.push(t);
-    });
-    return keluar;
-  }
-
-  /* Daftar tag hidup di perangkat, bukan di Sheet. Kalau otoritasnya di Drive,
-     pelabelan ikut mati saat Drive belum tersambung - padahal AI harus tetap
-     bisa jalan sendiri. Sheet cuma cerminannya, dan cerminan boleh telat. */
-  /* TAG BARU MENUNGGU DI RUANG TUNGGU, TIDAK LANGSUNG MASUK PUSTAKA.
-
-     Alasannya satu kalimat: hidup orangnya berputar di lingkaran yang
-     terbatas, jadi tagnya SEHARUSNYA konvergen - itu-itu saja, dan makin lama
-     makin bisa diandalkan buat menyaring. Yang merusak sifat itu bukan tag
-     yang salah sesekali, tapi tag yang masuk pustaka tanpa pernah dilihat:
-     sekali "kursi" ikut terdaftar di sebelah "sofa", AI akan memakai keduanya
-     bergantian selamanya, dan tidak satu pun bisa dipercaya lagi.
-
-     Jadi tag baru menumpuk di tagUsulan sampai dilihat sekali. Yang sudah ada
-     di pustaka dipakai diam-diam - itu jalur yang normal, dan dia tidak
-     menagih apa pun.
-
-     Tagnya SUDAH menempel di entrinya sejak sekarang, jadi pencarian sudah
-     bisa memakainya hari ini juga. Yang ditunda cuma keanggotaannya di
-     pustaka - dan itu memang keputusan yang boleh menunggu. */
-  function catatTag(setelan, tag) {
-    var pustaka = daftarTag(setelan);
-    var usul = (setelan.tagUsulan || []).slice();
-    var berubah = false;
-    (tag || []).forEach(function (t) {
-      if (pustaka.some(function (x) { return samaTag(x, t); })) return;
-      if (usul.some(function (x) { return samaTag(x, t); })) return;
-      usul.push(t);
-      berubah = true;
-    });
-    if (!berubah) return Promise.resolve();
-    usul = usul.slice(-60);
-    setelan.tagUsulan = usul;
-    return TSimpan.setel('tagUsulan', usul);
-  }
-
-  /* Daftar nama elemen yang sudah dipakai - sama peran dengan daftar tag:
-     rak yang sudah ada, supaya AI memakai ulang alih-alih mengarang nama baru
+  /* Daftar nama elemen yang sudah dipakai - sama peran dengan pohon board:
+     nama yang sudah ada, supaya AI memakai ulang alih-alih mengarang nama baru
      untuk benda yang sama. Yang terbaru di belakang, jadi yang dipangkas kalau
      kepanjangan adalah yang paling lama tidak muncul. */
   function daftarNamaElemen(setelan) {
@@ -605,7 +462,7 @@
     (nama || []).forEach(function (n) {
       var t = String(n || '').trim();
       if (!t) return;
-      if (!lama.some(function (x) { return samaTag(x, t); })) { lama.push(t); berubah = true; }
+      if (!lama.some(function (x) { return samaKata(x, t); })) { lama.push(t); berubah = true; }
     });
     if (!berubah) return Promise.resolve();
     lama = lama.slice(-120);
@@ -622,8 +479,8 @@
 
   /* ===================== baca berkas (OCR) ===================== */
 
-  function arahanBaca(tagLama, namaElemenLama) {
-    var daftar = (tagLama || []).slice(0, 150).join(', ');
+  function arahanBaca(daftarBoard, namaElemenLama) {
+    var board = (daftarBoard || []).join(', ');
     var namaEl = (namaElemenLama || []).slice(0, 80).join(', ');
     return [
       'Kamu membaca satu dokumen atau foto milik seseorang, supaya dia bisa menemukannya lagi',
@@ -634,26 +491,18 @@
       '  dokumen ini - nomor KTP, nomor faktur, nominal, nama apotek, dosis obat. Persis apa adanya.',
       '  Beri "nama" pendek untuk tiap elemen. Kosongkan kalau memang tidak ada yang menonjol.',
       '  NAMA ELEMEN MENYEBUT JENIS BENDANYA, TIDAK PERNAH PEMILIKNYA: "No WhatsApp", bukan',
-      '  "No WhatsApp Bunda". Pemiliknya sudah ada di judul dan di tag.',
+      '  "No WhatsApp Bunda". Pemiliknya sudah ada di judul dan di deskripsinya.',
       namaEl ? '  Nama yang sudah dipakai - salin persis kalau maknanya sama: ' + namaEl : '',
-      '- tag: sebanyak yang benar-benar ada di dokumennya, tidak lebih. Dua sampai tiga untuk',
-      '  yang isinya sedikit, enam paling banyak untuk yang panjang. Tidak ada jumlah minimum.',
-      '  TIAP TAG HARUS BISA DITUNJUK ASALNYA: kata yang memang tertulis di dokumen itu, atau',
-      '  bentuk yang menyebut dirinya sendiri (08xx -> WhatsApp, https:// -> Link). Kalau kamu',
-      '  tidak bisa menunjuk asalnya, tag itu karangan - jangan ditulis.',
-      '  JANGAN mengarang hubungan atau sifat yang tidak tertulis, dan jangan memakai kata yang',
-      '  menyebut BENTUKNYA (catatan, data, info, daftar, berkas, dokumen, nomor) - kata seperti',
-      '  itu cocok untuk hampir semua yang pernah disimpan, jadi sebagai ruangan dia tidak',
-      '  memisahkan apa pun.',
-      '  Daftar di bawah rak yang sudah ada, bukan daftar tertutup: pakai ulang kalau maknanya sama',
-      '  (salin persis penulisannya), buat baru tanpa ragu kalau tidak ada yang cocok.',
-      daftar ? '  Rak yang sudah ada: ' + daftar : '  Belum ada rak sama sekali; susun sendiri dari nol.',
+      '- board: SATU alamat, dipilih dari daftar di bawah dan disalin PERSIS. Daftarnya',
+      '  TERTUTUP - kalau tidak ada yang cocok, kosongkan. Sub board kalau ada yang benar-benar',
+      '  cocok, kalau tidak cukup main board-nya.',
+      board ? '  Board yang tersedia: ' + board : '  Belum ada board sama sekali; kosongkan.',
       '- label: 5 sampai 12 kata kunci huruf kecil - jenis dokumen, nama orang/perusahaan,',
       '  tahun, nomor penting, dan sebutan sehari-hari yang mungkin dipakai mencarinya.',
       '- teks: ringkasan isi terpenting, maksimal 600 karakter. Tulis apa adanya, jangan menafsirkan.',
       'Bahasa Indonesia. Jawab HANYA JSON:',
       '{"judul":"...","elemen":[{"jenis":"...","nilai":"...","nama":"..."}],' +
-        '"tag":["..."],"label":["..."],"teks":"..."}'
+        '"board":"...","label":["..."],"teks":"..."}'
     ].join('\n');
   }
 
@@ -672,7 +521,7 @@
      Dulu yang memilih cuma drivernya, dan itu meninggalkan lubang yang
      mematikan seluruh perbaikan ini: satu foto yang lolos tanpa sempat
      ditanya sudut pandangnya jatuh ke pembaca dokumen, lalu dijawab dalam
-     bahasa Indonesia dengan tag yang disedot dari pustaka. */
+     bahasa Indonesia, dengan alamat yang dibaca dari teks yang tidak ada. */
   function fotoReferensi(e) {
     return !!(e && (e.driver || e.sumber === 'kamera' || e.sumber === 'unggah'));
   }
@@ -717,8 +566,8 @@
                Dulu yang memilih drivernya, dan itu meninggalkan satu lubang
                yang persis mematikan seluruh perbaikan ini: foto yang masuk
                tanpa sempat ditanya sudut pandangnya jatuh ke pembaca dokumen,
-               lalu dijawab dalam bahasa Indonesia dengan tag dari pustaka -
-               #AmaraLiving pada foto kamar tidur.
+               lalu dijawab dalam bahasa Indonesia sebagai dokumen - "Foto
+               Interior Ruang Tamu Modern" untuk foto kamar tidur.
 
                Yang benar: apa pun yang kamu POTRET atau UNGGAH sendiri adalah
                foto referensi, ada drivernya atau tidak. Kamera tidak pernah
@@ -731,8 +580,8 @@
               { text: e.driver ? 'Keywords: ' + e.driver
                     : (pakaiGambar ? 'Baca gambar ini.' : 'Baca dokumen ini.') }
             ], pakaiGambar
-                 ? arahanGambar(e.driver, daftarTag(setelan))
-                 : arahanBaca(daftarTag(setelan), daftarNamaElemen(setelan)));
+                 ? arahanGambar(e.driver, daftarBoard(setelan))
+                 : arahanBaca(daftarBoard(setelan), daftarNamaElemen(setelan)));
           }).then(function (h) {
             if (!h) throw new Error('Dokumen tidak terbaca');
             if (!e.judulManual && h.judul) {
@@ -740,14 +589,14 @@
             }
             e.label = gabungLabel(e.label, h.label);
             e.elemen = TOtak.gabungElemen(h.elemen, e.elemen, daftarNamaElemen(setelan));
-            /* KATA DRIVERMU JADI TAG DULUAN, dan ditegakkan KODENYA - bukan
-               diminta di arahan. Itu satu-satunya teks di entri ini yang lahir
-               dari kepalanya; kalau AI kebetulan tidak memakainya, kata yang
-               paling pasti dia ingat enam bulan lagi justru yang hilang.
-               Bahasa apa pun ikut apa adanya - Rusia sekalipun, itu tetap kata
-               yang akan dia ketik lagi. */
-            e.tag = gabungTag(e.tag, kataDriver(e.driver)
-              .concat((h.tag || []).slice(0, TAG_MAKS_GAMBAR)));
+            /* ALAMAT YANG KAMU TENTUKAN TIDAK PERNAH DITIMPA. Berdiri di dalam
+               board waktu memotret itu jawaban, bukan kebetulan - dan jawaban
+               yang barusan diberikan tidak boleh dibatalkan tebakan yang
+               datang tiga detik kemudian. Yang diisi AI cuma yang kosong. */
+            if (!e.albumManual) {
+              var pilih = pilihBoard(h.board, daftarBoard(setelan));
+              if (pilih) e.album = pilih;
+            }
             /* Teksnya ditaruh di isi, bukan di kolom baru: dengan begitu
                pencarian yang sudah ada langsung menemukannya, tanpa satu baris
                pun perubahan di otak.js. */
@@ -769,7 +618,6 @@
             e.diLabeliAI = true;
             e.diubah = Date.now();
             return TSimpan.taruh(e)
-              .then(function () { return catatTag(setelan, e.tag); })
               .then(function () {
                 return catatNamaElemen(setelan, (e.elemen || []).map(function (x) { return x.nama; }));
               })
@@ -937,7 +785,7 @@
   function coba(setelan) {
     var contoh = [{ jenis: 'tautan', kategori: '', isi: 'https://script.google.com/macros/s/AKfycbCONTOH/dev' }];
     return tanya(setelan, [{ text: pesanan(contoh) }],
-                 arahanLabel(daftarTag(setelan), daftarNamaElemen(setelan))).then(function (j) {
+                 arahanLabel(daftarBoard(setelan), daftarNamaElemen(setelan))).then(function (j) {
       if (!j || !j.hasil || !j.hasil.length) throw new Error('Tersambung, tapi jawabannya tidak dikenali');
       return j.hasil[0];
     });
@@ -948,20 +796,18 @@
     obrolTeks: obrolTeks, gambarAI: gambarAI, ARAHAN_OBROL: ARAHAN_OBROL,
     /* Cuma untuk uji: melihat arahan yang benar-benar dikirim, bukan menebak
        dari kodenya. */
-    arahanUji: function (setelan) { return arahanLabel(daftarTag(setelan), daftarNamaElemen(setelan)); },
+    arahanUji: function (setelan) { return arahanLabel(daftarBoard(setelan), daftarNamaElemen(setelan)); },
     /* Cuma untuk uji: melihat apa yang benar-benar MENINGGALKAN perangkat -
        drivernya ikut atau tidak, dan duduk di urutan yang mana. */
     pesananUji: pesanan,
-    /* Cuma untuk uji: arahan gambar yang benar-benar dikirim, dan kata driver
-       yang benar-benar jadi tag - bukan menebaknya dari kodenya. */
+    /* Cuma untuk uji: arahan gambar yang benar-benar dikirim - bukan menebaknya
+       dari kodenya. */
     arahanGambarUji: arahanGambar,
-    kataDriverUji: kataDriver,
     fotoReferensiUji: fotoReferensi,
     antreUji: function (semua) { return antreLabel(semua).map(function (e) { return e.id; }); },
-    /* Cuma untuk uji: memperlihatkan tag yang benar-benar lolos saringan
-       kodenya, bukan menebaknya dari arahan yang dikirim. */
-    saringTagUji: function (tag) {
-      return gabungTag([], (tag || []).slice(0, TAG_MAKS_BARU));
-    }
+    /* Cuma untuk uji: memperlihatkan board yang benar-benar lolos penjaganya,
+       bukan menebaknya dari arahan yang dikirim. */
+    daftarBoardUji: daftarBoard,
+    pilihBoardUji: pilihBoard
   };
 })(window);

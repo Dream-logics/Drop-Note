@@ -176,19 +176,6 @@
     });
   }
 
-  /* Daftar tag ikut naik ke tab sendiri, dan cuma kalau memang berubah -
-     kalau tidak, tiap putaran menulis ulang ratusan baris tanpa guna.
-     Gagal di sini tidak boleh menggagalkan cadangannya: tagnya cerminan,
-     catatannya yang tidak tergantikan. */
-  function cerminTag(setelan, sarang) {
-    var tag = setelan.hashtag || [];
-    var cap = tag.join(' ');
-    if (!tag.length || cap === setelan.hashtagTerkirim) return Promise.resolve();
-    return TAwan.tulisTag(setelan, sarang, tag)
-      .then(function () { return catat(setelan, 'hashtagTerkirim', cap); })
-      .catch(function () { /* diam - dicoba lagi putaran berikutnya */ });
-  }
-
   function putaran(setelan, paksa) {
     if (jalan || !nyala(setelan)) return Promise.resolve(0);
     if (!paksa && (Date.now() - (Number(setelan.cadanganDicoba) || 0)) < JEDA) {
@@ -225,11 +212,11 @@
           });
         }, Promise.resolve()).then(function () { return naik; });
       })
-      .then(function () { return cerminTag(setelan, sarang); })
       /* SETELAN IKUT NAIK DI SINI JUGA, bukan cuma waktu menarik. Perangkat
          yang cuma pernah mendorong - dan itu keadaan yang normal untuk HP yang
-         dipakai memotret seharian - tidak akan pernah mengirim daftar folder
-         dan gerbongnya, jadi perangkat lain menerima catatannya tanpa rak.
+         dipakai memotret seharian - tidak akan pernah mengirim pohon board
+         dan daftar foldernya, jadi perangkat lain menerima catatannya tanpa
+         alamat.
          gabungSetelan dua arah dan idempoten, jadi memanggilnya dari dua
          tempat aman. */
       .then(function () {
@@ -265,26 +252,22 @@
        satu perangkat selalu salah.
      - Tema dan bahasa: berganti sendiri tanpa diminta itu yang paling cepat
        bikin orang merasa kehilangan kendali.
-     - albumLengket / driverLengket: sesi itu KENYATAAN FISIK - kamu sedang
-       berdiri di masjid dengan HP di tangan. Menularkannya ke PC di kantor
-       berarti foto yang diunggah di sana mendarat di album survey yang tidak
-       ada hubungannya, dan salah alamat tidak pernah kamu curigai.
+     - driverLengket: sesi itu KENYATAAN FISIK - kamu sedang berdiri di masjid
+       dengan HP di tangan. Menularkannya ke PC di kantor berarti gambar yang
+       diunggah di sana berangkat ke AI dengan sudut pandang survey yang tidak
+       ada hubungannya, dan salah sudut pandang tidak pernah kamu curigai.
      - Kunci, token, id berkas Drive: milik perangkat dan akunnya sendiri.
 
      Menangnya per KUNCI, bukan per berkas. Kalau seluruh berkas yang menang,
-     menambah satu folder di HP menghapus gerbong yang baru kamu tulis di
+     menambah satu folder di HP menghapus board yang baru kamu tulis di
      laptop lima menit sebelumnya - dan dengan empat perangkat, kekalahan
      seperti itu terjadi tiap minggu. */
   var BERKAS_SETELAN = 'setelan.json';
 
   var KUNCI_SINKRON = [
     'label',        /* label rak */
-    'gerbong',      /* rak gambar */
+    'board',        /* pohon alamat gambar & catatan */
     'folderNote',   /* folder layar Note */
-    'folderGaleri', /* album Gallery */
-    'hashtag',      /* pustaka tag */
-    'tagUsulan',    /* tag yang masih menunggu dilihat */
-    'tagFavorit',
     'namaElemen',
     'ekorJudul',
     'obrolan'       /* riwayat obrolan AI */

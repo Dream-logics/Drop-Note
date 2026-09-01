@@ -75,8 +75,13 @@ terpikir, dan itu membatalkan seluruh gunanya.
    peringkat itu saluran keluar, **bukan pengganti rak**: yang tenggelam
    berhenti muncul, dan itu tidak sama dengan tersusun. Gudang yang isinya
    sepuluh ribu keping lepas tetap gudang berantakan walau yang basi sudah
-   diam. Karena itu label bukan hiasan — **label itu ruangan**, dan tiap
-   keping harus mendarat di salah satunya tanpa kamu memutuskan apa pun.
+   diam. Karena itu **board itu ruangan**, dan tiap keping harus mendarat di
+   salah satunya tanpa kamu memutuskan apa pun. Pohonnya TERTUTUP: AI memilih
+   dari situ, tidak pernah menambah barisnya — daftar alamat yang boleh
+   ditambah mesin melar sampai tidak ada dua foto yang tinggal di ruangan yang
+   sama, dan gudang dengan seribu ruangan sama saja dengan gudang tanpa
+   ruangan. Hashtag sudah dicoba dan **dibuang seluruhnya**; yang menggantikan
+   kata kunci adalah DESKRIPSI (lihat pelabel.js).
 5. **Layar depan kosong.**
 6. **Judul yang diketik sendiri tidak pernah ditimpa AI** (`judulManual`).
 7. **Swalayan.** Folder Drive dan spreadsheet dibuat aplikasi, bukan pemakainya.
@@ -101,8 +106,8 @@ public/index.html   kerangka semua layar (mulai, utama/Drop, tulis/Note,
                     dibayar tinggi baris; ikon tidak pernah dibuang dan nama
                     pintu tidak pernah dipotong
                     GAMBAR YANG DIKETUK membuka '#lihat' - preview, bukan
-                    lapisan hitam: ada namanya, sumber/tanggal/ukuran/album,
-                    tag, deskripsi AI (dipotong dua baris), dan tombol Tutup.
+                    lapisan hitam: ada namanya, sumber/tanggal/ukuran/board,
+                    driver, deskripsi AI (dipotong dua baris), tombol Tutup.
                     Empat jalan keluar dan semuanya wajib: tombol, ketuk latar,
                     Escape, dan tombol Kembali HP (satu langkah riwayat
                     didorong waktu membuka - tanpa itu Kembali meninggalkan
@@ -136,27 +141,46 @@ public/bahasa.js    LAPISAN bahasa, bukan pengganti. Teks tetap ditulis
                     gagal di sana.
 public/gaya.css     gaya; SATU tema putih, tidak mengikuti setelan HP
 public/simpan.js    IndexedDB — entri, berkas (blob), setelan, cadangan
-public/otak.js      PENCARIANNYA menilai judul, label, tag, elemen, kategori,
-                    isi, nama berkas, DAN nama tempat yang kamu namai sendiri
-                    ('folder' Note + 'album' Gallery). Yang terakhir gampang
-                    terlupa waktu menambah kolom tempat baru - dan akibatnya
-                    foto di album "Kopo Project" tidak ketemu waktu dicari
-                    "Kopo", padahal albumnya tertulis di layar.
+public/otak.js      PENCARIANNYA menilai judul 6, driver 6, label 5,
+                    DESKRIPSI GAMBAR 5, elemen/kategori/folder/board 4, badan
+                    catatan teks 3, nama berkas 3.
+                    Deskripsi gambar dinilai 5 karena dia MENGGANTIKAN tag,
+                    jadi dia mewarisi bobotnya - kalau dinilai 3 seperti badan
+                    catatan biasa, yang terjadi cuma menukar yang kuat dengan
+                    yang lemah. Cuma untuk gambar: di catatan teks, isi itu
+                    ratusan kata yang tidak dipilih untuk dicari.
+                    BOARD disimpan dengan NAMA PENUHNYA ("FNB Menu Promo"),
+                    jadi satu pencocokan substring menjaring main board dan sub
+                    board sekaligus. Nama tempat yang kamu namai sendiri
+                    ('folder' Note + 'album'/board) gampang terlupa waktu
+                    menambah kolom tempat baru - dan akibatnya foto di board
+                    "Kopo Project" tidak ketemu waktu dicari "Kopo", padahal
+                    boardnya tertulis di layar.
                     SEMUA yang menebak, tanpa AI: baca jenis, susun judul dari
                     alamat, bakukan istilah judul (Inggris dulu kalau bentrok:
                     Link bukan Tautan), betulkan kategori salah ketik, tarik
                     kata kunci, pisahkan elemen berpola, nilai hasil pencarian,
                     urai label rak (nama pendek + kata panjang sesudah '='),
                     susun gudang bertingkat dari namanya sendiri, lengkapi
-                    nama gudang sambil diketik, baca gudang dari teks drop
+                    nama gudang sambil diketik, baca gudang dari teks drop.
+                    cocokLabel membaca kategori DAN board: sejak tag dibuang,
+                    alamat gambar cuma tinggal boardnya, jadi tanpa itu label
+                    rak berhenti menjaring gambar sama sekali
 public/awan.js      Google Drive & Sheets langsung — folder dan spreadsheet
                     dibuat SENDIRI oleh aplikasi; cakupan cuma drive.file
-public/pelabel.js   satu-satunya bagian ber-AI: judul + elemen + tag + OCR,
-                    plus OBROLAN (teks & gambar) untuk mode AI.
+public/pelabel.js   satu-satunya bagian ber-AI: judul + deskripsi + elemen +
+                    BOARD + OCR, plus OBROLAN (teks & gambar) untuk mode AI.
                     Lewat proxy milik PEMBUAT; kunci tidak pernah ada di
-                    perangkat pemakai. Daftar tag lama DAN daftar nama elemen
-                    ikut dikirim supaya keduanya tidak beranak sendiri;
-                    nama elemen menyebut JENIS benda, tidak pernah pemiliknya.
+                    perangkat pemakai. POHON BOARD dikirim utuh sebagai daftar
+                    PILIHAN - bukan sekadar konteks; jawaban yang tidak ada di
+                    daftar dibuang pilihBoard(), bukan disimpan apa adanya.
+                    Alamat yang tidak ada barisnya lebih buruk daripada tanpa
+                    alamat: yang tanpa alamat masih kelihatan di "Belum
+                    berboard", yang salah nama hilang sama sekali. Daftar nama
+                    elemen ikut dikirim supaya tidak beranak sendiri; nama
+                    elemen menyebut JENIS benda, tidak pernah pemiliknya.
+                    'albumManual' MENGUNCI alamat yang kamu tentukan sendiri -
+                    AI cuma mengisi yang kosong, sama persis dengan judulManual
                     Obrolan menjawab teks biasa, BUKAN JSON seperti yang lain,
                     dan karakternya asisten pribadi (ARAHAN_OBROL): seimbang
                     dengan pertanyaannya, SATU rekomendasi bukan daftar pilihan
@@ -164,49 +188,53 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     untuk timbunan terbesar: foto. Isinya SEMUA entri
                     berjenis 'gambar' yang sudah ada, jadi tiap tangkapan layar
                     yang kamu drop mendarat di sini sendiri - tidak ada satu
-                    keputusan pun ditambahkan di jalur masuk. Albumnya daftar
-                    SENDIRI ('folderGaleri'), dibuat tangan, bertingkat lewat
+                    keputusan pun ditambahkan di jalur masuk. Ruangannya POHON
+                    BOARD ('board' di setelan, bawaannya 'boardAwal'), dua
+                    tingkat, bertingkat lewat
                     awalan nama, kolomnya 'album' - BUKAN menumpang 'folder'
                     milik Note. Saringannya SUMBER ('sumber': kamera/unggah/
                     kosong=drop), bukan jenis: di layar ini semuanya gambar.
-                    Kamera dan unggahan menyimpan LANGSUNG jadi entri di album
+                    Kamera dan unggahan menyimpan LANGSUNG jadi entri di board
                     yang sedang dibuka, bukan jadi lampiran kotak Drop. Di akar
-                    tampil album saja - KECUALI kalau belum ada satu album pun,
-                    karena satu baris "Belum beralbum" yang menyembunyikan dua
+                    tampil board saja - KECUALI kalau belum ada satu pun,
+                    karena satu baris "Belum berboard" yang menyembunyikan dua
                     puluh ribu foto adalah dinding tanpa alasan. Dok kameranya
                     PERGI selama memilih: dia duduk di sudut yang sama dengan
                     bilah pilih dan akan menutupi Batal.
-                    ALBUM LENGKET ('albumLengket' + 'albumLengketPada' di
-                    setelan). Di lapangan orang memotret BERUNTUN: sepuluh
-                    jepretan dalam lima menit, semuanya milik tempat yang sama.
-                    Jadi jepretan berikutnya MEWARISI tujuan yang sebelumnya
-                    dan yang ditawarkan cuma jalan keluarnya ("Ganti" di bilah
-                    tujuan) - mendiamkannya berarti menerima, nol ketukan untuk
-                    hal yang paling sering benar. Warisannya KEDALUWARSA SATU
-                    JAM, bergulir dari jepretan terakhir: satu foto jam sepuluh
-                    pagi dan satu foto jam empat sore itu dua kejadian, dan
-                    salah alamat lebih buruk daripada tanpa alamat - yang salah
-                    alamat tidak pernah kamu curigai. Urutannya: album yang
-                    SEDANG DIBUKA menang atas ingatan apa pun (dan di sana
-                    "Ganti" tidak ditawarkan), lalu ingatan sesi, lalu ditagih.
+                    TIDAK ADA "+ Folder" di layar ini. Pohonnya dikurasi di SATU
+                    tempat, di Setelan - dua pintu untuk menumbuhkan daftar yang
+                    sama berarti daftarnya tumbuh tanpa ada yang pernah melihat
+                    keseluruhannya, dan pohon yang tidak pernah dilihat utuh
+                    persis yang mau dihindari.
+                    SATU PERTANYAAN PER SESI, DAN ITU DRIVER. Dulu di sini ada
+                    dialog "masuk folder mana?" sesudah tiap jepretan; itu sudah
+                    dibuang. Ada DUA pertanyaan dan cuma satu yang bisa dijawab
+                    manusia: "kamu lihat apa?" (cuma kamu yang tahu) dan "masuk
+                    board mana?" (terjemahan dari jawaban pertama ke daftar yang
+                    sudah kamu tulis sendiri - mesin bisa, dan mesin melihat
+                    gambarnya). Jadi alamatnya DIBIARKAN KOSONG sampai AI
+                    memilihnya; menerkanya di jalur masuk berarti dua sistem
+                    memilih alamat, dan yang kedua selalu yang lebih miskin.
+                    SESI LENGKET ISINYA DRIVER, bukan album ('driverLengket' +
+                    'driverLengketPada'). Di lapangan orang memotret BERUNTUN:
+                    sepuluh jepretan dalam lima menit, semuanya satu sudut
+                    pandang. Jadi jepretan berikutnya MEWARISI drivernya dan
+                    yang ditawarkan cuma jalan keluarnya ("Ganti") -
+                    mendiamkannya berarti menerima, nol ketukan untuk hal yang
+                    paling sering benar. Warisannya KEDALUWARSA SATU JAM,
+                    bergulir dari jepretan terakhir: satu foto jam sepuluh pagi
+                    dan satu foto jam empat sore itu dua kejadian, dan salah
+                    sudut pandang lebih buruk daripada tanpa sudut pandang -
+                    yang salah tidak pernah kamu curigai.
                     Gambarnya SUDAH TERSIMPAN sebelum satu dialog pun muncul -
-                    dialog tujuan itu tawaran di belakang, bukan gerbang di
+                    dialog driver itu tawaran di belakang, bukan gerbang di
                     depan; aturan nomor satu tidak punya pengecualian, bahkan
                     untuk aturan yang bagus. Bilah sesi di atas dok kamera
-                    membacakan tujuan jepretan BERIKUTNYA (bilah tujuan
-                    membacakan yang SUDAH masuk); silangnya menutup sesi -
-                    "use last scene set up until it dropped".
-                    ALBUM BARU LEWAT SESI ITU DUA TINGKAT: induknya DIVISI,
-                    diambil dari label rak di Setelan (MAP, Cons, FnB Dev, …)
-                    karena itulah pembagian yang sudah dipakai kepalanya dan
-                    sudah dia ketik sekali; yang diketik cuma JENIS BENDANYA
-                    ("Granit", "Sofa", "Menu"), bukan tempat kejadiannya -
-                    tempat kejadian selesai, jenis benda yang dipanggil lagi
-                    enam bulan kemudian. Divisinya IKUT didaftarkan sebagai
-                    album: susunan di sini dibaca dari nama, jadi tanpa baris
-                    "Cons" akarnya rata dan pembagiannya tidak pernah kelihatan.
-                    DRIVER ('driver' di entri, 'driverLengket' di setelan) -
-                    yang diketik waktu memotret BUKAN ALAMAT, TAPI NIAT. Dua
+                    membacakan DRIVERNYA (alamat masih bisa dipindah kapan saja;
+                    sudut pandang yang basi tidak ketahuan); silangnya menutup
+                    sesi - "use last scene set up until it dropped".
+                    DRIVER ('driver' di entri) - yang diketik waktu memotret
+                    BUKAN ALAMAT, TAPI NIAT. Dua
                     tiga kata: "interior mesjid", "sofa unik minimalis". Satu
                     foto tidak punya satu isi, dia punya isi MENURUT drivernya:
                     foto masjid yang sama dengan driver "karpet mesjid" jadi
@@ -216,72 +244,72 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     milik pemakainya, dan CUMA DIA yang tahu - itu sebabnya AI
                     tidak pernah menebaknya dari gambarnya (yang dia lihat di
                     foto masjid "beberapa orang sholat": benar, dan meleset
-                    total). Dari driver turun semuanya: judul, caption, tag,
-                    folder. Disimpan MENTAH dan dinilai 6 di pencarian - itu
+                    total). Dari driver turun semuanya: judul, deskripsi, dan
+                    boardnya. Disimpan MENTAH dan dinilai 6 di pencarian - itu
                     satu-satunya teks di entri yang lahir dari kepalanya.
-                    Ditanya SEKALI di jepretan pertama lalu mewaris bersama
-                    albumnya; "Ganti" menanyakannya LAGI (menekan Ganti berarti
-                    konteksnya berpindah, bukan albumnya yang salah).
-                    BERDIRI DI DALAM ALBUM MENJAWAB "KE MANA", BUKAN "APA YANG
+                    Ditanya SEKALI di jepretan pertama lalu mewaris sesesi;
+                    "Ganti" menanyakannya LAGI (menekan Ganti berarti
+                    konteksnya berpindah, bukan alamatnya yang salah).
+                    BERDIRI DI DALAM BOARD MENJAWAB "KE MANA", BUKAN "APA YANG
                     KAMU LIHAT" - dua pertanyaan, dan menyamakannya adalah
                     kesalahan yang paling mahal di sini: dulu memotret dari
-                    dalam album melewati pertanyaan driver sama sekali, lalu
+                    dalam board melewati pertanyaan driver sama sekali, lalu
                     fotonya berangkat tanpa sudut pandang dan jatuh ke pembaca
-                    dokumen. Yang kembali "Ruang Tamu Modern" untuk album
-                    Bedroom, dengan #AmaraLiving dari pustaka. Jadi albumnya
+                    dokumen. Yang kembali "Ruang Tamu Modern" untuk board
+                    Bedroom. Jadi boardnya
                     tidak ditanya lagi, drivernya TETAP ditagih sekali per sesi.
+                    Alamat yang begitu DIKUNCI 'albumManual' - kalau tidak,
+                    pelabelan yang berjalan di belakang memindahkannya ke board
+                    pilihan AI, membatalkan jawaban yang barusan kamu berikan.
                     RUTE ARAHAN dipilih fotoReferensi(e), BUKAN ada-tidaknya
                     driver: kamera/unggah selalu arahan gambar (kamera tidak
                     pernah menghasilkan faktur), dan yang jatuh lewat Drop
                     tanpa driver tetap pembaca dokumen.
                     Driver yang datang belakangan memicu pelabelan ULANG.
-public/bawaan.js    (lanjutan) GERBONG ('gerbongAwal', disunting di Setelan) -
-                    rak untuk gambar, SUMBUNYA BEDA dengan label rak. Label rak
-                    menjawab SIAPA (proyek, divisi, perusahaan) dan siapa itu
-                    punya tanggal selesai; gerbong menjawab APA, dan apa tidak
-                    pernah selesai - satu foto sofa jadi referensi untuk klien
-                    mana pun bertahun sesudah proyeknya ditutup. Bertingkat
-                    lewat awalan nama. Anaknya dicocokkan lewat NAMA PENDEKNYA
-                    ("FNB Menu" tidak punya kata sesudah '=', jadi tanpa itu
-                    driver "menu murah enak" tidak pernah menyentuhnya).
-                    AI boleh MENGUSULKAN gerbong baru tapi TIDAK PERNAH
-                    membuatnya sendiri - itu satu-satunya yang menahan daftar
-                    ini supaya tidak melar; yang tumbuh bebas cuma anaknya.
-                    Quote ada di situ bukan tempelan: yang menginspirasi di
+public/bawaan.js    (lanjutan) POHON BOARD ('boardAwal', disunting lewat menu
+                    di Setelan) - SATU pohon, dua tingkat, dan dia satu-satunya
+                    alamat. Main board bidangnya, sub board urusannya di dalam
+                    bidang itu. Susunannya dibaca dari NAMA ("FNB Menu Promo"
+                    otomatis anak "FNB"), jadi tidak ada kolom induk yang bisa
+                    jadi yatim - tapi awalannya DIPASANG APLIKASINYA lewat
+                    "+ Sub", bukan dituntut dari jarinya. Menyuruh orang menebak
+                    sendiri bahwa namanya wajib diawali nama induknya berarti
+                    sub boardnya tidak pernah terbentuk: yang terjadi dia
+                    mengetik "Kitchen" dan itu mendarat di akar.
+                    DAFTARNYA TERTUTUP. AI memilih dari sini, tidak pernah
+                    menambah barisnya - dan itu KEBALIKAN aturan tag yang lama
+                    (daftar tag sengaja terbuka, karena tag yang meleset cuma
+                    pintu tambahan yang tidak terpakai). Alamat lain ceritanya.
+                    Kalau tidak ada sub yang cocok, jawabannya main board-nya
+                    saja; itu jawaban yang SAH, bukan kegagalan - "Interior"
+                    tanpa sub lebih benar daripada foto masjid yang dipaksa
+                    masuk "Interior Bedroom", dan ruangan yang belum
+                    terdefinisi (masjid, entrance, terrace) memang tinggal di
+                    situ sampai pemakainya membuatkan kamarnya.
+                    Menghapus main board IKUT menghapus anaknya - kalau tidak,
+                    anaknya naik ke akar dan jadi main board "FNB Menu Promo"
+                    yang tidak pernah dibuat siapa pun. Isinya TIDAK ikut
+                    terhapus; dia cuma keluar dari boardnya.
+                    KENAPA DUA PROMO: "FNB Menu Promo" itu menunya sendiri,
+                    "FNB Ide Promo" cara menjualnya - billboard menarik yang
+                    dipotret di jalan tidak punya menu sama sekali, tapi dia ide
+                    promo yang paling berharga. Dua benda, dua kamar.
+                    Motivation ada di situ bukan tempelan: yang menginspirasi di
                     tengah jalan tidak punya proyek dan tidak akan pernah
                     punya, dan keberadaannya yang bikin daftar ini daftar
                     MILIKNYA, bukan daftar bisnis.
-                    USUL FOLDER DISARING DRIVER, bukan didaftar semua.
-                    Menawarkan FnB dan Konstruksi untuk foto interior masjid
-                    bukan cuma mubazir - itu bikin dia ragu apakah aplikasinya
-                    paham atau cuma menumpahkan daftar. Album lama ikut CUMA
-                    kalau namanya nyambung; sisanya di balik "Semua folder…"
-public/pelabel.js   (lanjutan) PUSTAKA TAG: yang baru MENUNGGU di 'tagUsulan',
-                    tidak langsung masuk 'hashtag'. Hidupnya berputar di
-                    lingkaran terbatas, jadi tagnya SEHARUSNYA konvergen -
-                    yang merusak sifat itu bukan satu tag yang salah, tapi tag
-                    yang masuk pustaka tanpa pernah dilihat (sekali "kursi"
-                    terdaftar di sebelah "sofa", AI memakai keduanya
-                    bergantian selamanya). Bilahnya di Gallery, semuanya sudah
-                    tercentang: yang ditawarkan PENOLAKAN, bukan pemilihan.
-                    Yang dicabut ikut DILEPAS dari entrinya - kalau tidak, dia
-                    kembali jadi usulan besok lewat entri yang sama.
-                    TAG_BENTUK ikut menolak foto/gambar/image/screenshot/
-                    kamera: 100% foto adalah foto, jadi tag itu tidak
-                    memisahkan satu pun dari dua puluh ribu saudaranya - sama
-                    gunanya dengan tag "manusia" pada seseorang. TAPI CUMA YANG
-                    SEPERTI ITU: tag yang sekadar LUAS (Interior, Design,
-                    Modern) TETAP BOLEH, dan daftar ini tidak boleh melar ke
-                    sana. "Luas itu mubazir" adalah ukuran Google - di sana
-                    "interior" bersaing dengan satu miliar gambar, di sini
-                    dengan tiga ribu, dan menyisakan satu dari sepuluh kamar
-                    itu justru pekerjaan yang benar.
-                    bersihTag memakai \p{L}\p{N}, BUKAN [A-Za-z0-9]: yang ASCII
-                    membuang seluruh tag Rusia/Arab/Jepang secara diam-diam -
-                    tidak ditolak dengan pesan, cuma jadi string kosong lalu
-                    lenyap. Kata yang KAMU ketik milikmu, bahasa apa pun
-public/pelabel.js   (lanjutan) ARAHAN GAMBAR TERPISAH dan PENDEK (~950 karakter
-                    lawan ~9600 milik arahan label). Yang panjang bikin model
+public/pelabel.js   (lanjutan) TIDAK ADA TAG SAMA SEKALI, dan itu keputusan
+                    yang disengaja, bukan yang belum dikerjakan. Hashtag buatan
+                    mesin MELAR dan tidak pernah konvergen: sebulan kemudian ada
+                    #sofa, #kursi, dan #seating untuk satu benda, dan pemiliknya
+                    tidak mengenali satu pun waktu mencari. Kata yang tidak dia
+                    ingat bukan pintu masuk, cuma hiasan di kartu - dan hiasan
+                    yang menyaru sebagai pintu masuk lebih buruk daripada tidak
+                    ada. Kolom 'tag' masih ada di KOLOM cadangan tapi berhenti
+                    diisi: membuangnya menggeser dua puluh kolom di belakangnya
+                    dan seluruh cadangan lama ikut bergeser diam-diam.
+                    ARAHAN GAMBAR TERPISAH dan PENDEK (~1200 karakter
+                    lawan ~8000 milik arahan label). Yang panjang bikin model
                     kehilangan fokus, dan yang tenggelam justru drivernya -
                     dibuktikan di lapangan: prompt tiga kalimat buatan
                     pemakainya mengalahkan arahan dua ratus baris aplikasi ini
@@ -290,23 +318,19 @@ public/pelabel.js   (lanjutan) ARAHAN GAMBAR TERPISAH dan PENDEK (~950 karakter
                     isinya masih menyuruh "sebutkan jenis dokumennya" dan
                     "jangan menafsirkan" - dua perintah yang bertabrakan
                     langsung dengan sudut pandang.
-                    Yang memilih arahan BUKAN jenis berkasnya, tapi ADA/TIDAKNYA
-                    DRIVER: driver berarti foto referensi (arahan pendek);
-                    tanpa driver biasanya tangkapan layar faktur (pembaca
-                    dokumen yang teliti).
-                    SEPULUH TAG DUA LAPIS: 5 luas (menaruhnya di kamar yang
-                    benar) + 5 sempit (memisahkannya di dalam kamar). Satu tag
-                    tidak bisa mengerjakan keduanya, dan "sebanyak yang
-                    benar-benar ada" menghasilkan enam tag bubur. SATU TAG SATU
-                    KATA - tanpa itu "kamar tidur" pecah jadi #kamar dan #tidur
-                    yang keduanya lumpuh sendirian.
-                    KATA DRIVER JADI TAG LEWAT KODE (kataDriver), bukan lewat
-                    permintaan: itu satu-satunya teks yang lahir dari kepalanya,
-                    dan kalau AI kebetulan tidak memakainya, kata yang paling
-                    pasti dia ingat justru yang hilang.
-                    Pustaka tag menyeragamkan EJAAN saja, tidak pernah memasok
-                    konsep - waktu dia boleh memasok, yang keluar #dapur untuk
-                    foto kamar tidur
+                    DESKRIPSI 2-3 KALIMAT, dan isinya ditentukan: nama objek,
+                    gaya, kategori, bentuk, fungsi, satu hal unik yang benar-
+                    benar terlihat. Satu kalimat tidak muat enam. Ditulis DARI
+                    SUDUT PANDANG driver, bukan dari yang paling menonjol di
+                    gambar - foto masjid dengan driver "interior mesjid"
+                    menghasilkan kalimat tentang elemen interiornya; yang sama
+                    dengan "karpet mesjid" menghasilkan kalimat tentang motif
+                    karpetnya. Bendanya satu, deskripsinya dua, keduanya benar.
+                    Sebutannya harus kata yang akan dia ketik lagi enam bulan
+                    kemudian, bukan bahasa katalog - dia satu-satunya kata kunci
+                    yang dipunyai gambar ini.
+                    BAHASA JAWABAN MENGIKUTI BAHASA DRIVER. Kalau dia mengetik
+                    Inggris, jawabannya tidak boleh pulang Indonesia
 public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
                     ulang, langkah, catatan, penanda BELUM DIBACA.
                     SATU daftar, tidak dibagi bagian "Berulang" lagi - Berulang
@@ -331,7 +355,7 @@ public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
                     TIDAK pernah muncul di pencarian catatan, tidak dihitung
                     di "N tersimpan", dan tidak pernah dikirim ke AI
 public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
-                    dikunci, judul & tag tetap terbuka supaya masih bisa
+                    dikunci, judul & board tetap terbuka supaya masih bisa
                     ditemukan. Yang terkunci tidak pernah dikirim ke AI
 public/sinkron.js   SINKRON DUA ARAH lewat Drive; tidak pernah di jalur drop.
                     Dulu cadangan satu arah, dan itu benar selama ini cuma
@@ -351,15 +375,14 @@ public/sinkron.js   SINKRON DUA ARAH lewat Drive; tidak pernah di jalur drop.
                     dalam TSimpan.setel - satu corong, bukan belasan pemanggil,
                     dan dibaca SEGAR dari basis data karena salinan di memori
                     tidak pernah ikut berubah). Kalau seluruh berkas yang
-                    menang, menambah folder di HP menghapus gerbong yang baru
-                    ditulis di laptop. Yang ikut cuma ISI KEPALA (label,
-                    gerbong, folderNote, folderGaleri, hashtag, tagUsulan,
-                    tagFavorit, namaElemen, ekorJudul, obrolan).
+                    menang, menambah folder di HP menghapus board yang baru
+                    ditulis di laptop. Yang ikut cuma ISI KEPALA (label, board,
+                    folderNote, namaElemen, ekorJudul, obrolan).
                     YANG TIDAK PERNAH IKUT: tampilan (tema, bahasa, gayaGaleri
                     - berganti sendiri tanpa diminta itu kehilangan kendali)
-                    dan SESI (albumLengket/driverLengket - itu kenyataan fisik,
-                    kamu sedang berdiri di masjid; menularkannya ke PC bikin
-                    unggahan di kantor mendarat di album survey)
+                    dan SESI (driverLengket - itu kenyataan fisik, kamu sedang
+                    berdiri di masjid; menularkannya ke PC bikin unggahan di
+                    kantor berangkat dengan sudut pandang survey)
 public/awan.js      (lanjutan) cariAtauBuat PUNYA PENJAGA BALAPAN. Dua
                     perangkat yang pertama kali dibuka pada menit yang sama
                     sama-sama tidak menemukan apa pun lalu sama-sama membuat -
@@ -387,26 +410,20 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     folder justru supaya ada tempat menulis. Folder bisa dipilih
                     dan dihapus; isinya TIDAK ikut terhapus, cuma keluar folder.
                     MENGHAPUS RAK STORAGE MELEPAS ISINYA, bukan mengosongkan
-                    kategorinya saja dan bukan pula mencabut tagnya. Rak
-                    Storage lahir dari isinya, dan alamat satu catatan bukan
-                    cuma kolom kategori: begitu kategorinya kosong, alamatnya
-                    jatuh ke tag buatan AI - dan tag itu hampir selalu kata
-                    yang sama dengan nama raknya, jadi raknya lahir kembali
-                    seketika (pesannya lewat, foldernya tetap utuh). Tapi
-                    mencabut tagnya juga salah dua kali: tag itu kata kunci
-                    pencarian, dan tag yang TERSISA lantas jadi alamat - satu
-                    rak dihapus, dua rak baru lahir ("invoice", "brief") yang
-                    tidak pernah dibuat siapa pun. Penandanya sendiri yang
-                    dipakai: kolom 'rakLepas', dan selama dia menyala alamatnya
-                    "Belum berlabel" apa pun tagnya. Berakhir sendiri begitu
-                    kamu menaruhnya di rak lain (lihat taruhFolder). Ikut
-                    dicadangkan - kolomnya DI EKOR KOLOM, seperti semua kolom
-                    baru. Umpan uji untuk ini WAJIB bertag: catatan tanpa tag
-                    jatuh ke "Belum berlabel" dengan sendirinya, dan itu yang
-                    dulu menyembunyikan bugnya.
+                    kategorinya saja. Alamat satu catatan bukan cuma kolom
+                    kategori: begitu kategorinya kosong, alamatnya jatuh ke
+                    board pilihan AI - dan raknya lahir kembali seketika
+                    (pesannya lewat, foldernya tetap utuh). Penandanya sendiri
+                    yang dipakai: kolom 'rakLepas', dan selama dia menyala
+                    alamatnya "Belum berlabel" apa pun boardnya. Berakhir
+                    sendiri begitu kamu menaruhnya di rak lain (lihat
+                    taruhFolder). Ikut dicadangkan - kolomnya DI EKOR KOLOM,
+                    seperti semua kolom baru. Umpan uji untuk ini WAJIB
+                    berboard: catatan tanpa board jatuh ke "Belum berlabel"
+                    dengan sendirinya, dan itu yang dulu menyembunyikan bugnya.
                     Folder Note tidak kena aturan ini: dia punya daftarnya
-                    sendiri, dan tag catatan tidak ada urusannya dengan tempat
-                    yang kamu buat tangan.
+                    sendiri, dan board catatan tidak ada urusannya dengan
+                    tempat yang kamu buat tangan.
                     DI AKAR YANG TAMPIL FOLDER SAJA - isinya baru terlihat
                     sesudah foldernya dibuka; yang belum berfolder punya
                     barisnya sendiri. Folder tujuan pindah DIPILIH, tidak
@@ -532,7 +549,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (735 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (727 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

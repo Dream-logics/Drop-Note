@@ -279,9 +279,15 @@
   var KOLOM = ['id', 'jenis', 'judul', 'judulManual', 'isi', 'kategori', 'label',
                'daftar', 'berkasId', 'driveId', 'namaBerkas', 'tipeBerkas', 'ukuran',
                'dibuat', 'diubah', 'dipakai', 'diLabeliAI', 'pensiun', 'dihapus', 'riwayat',
+               /* 'tag' sudah tidak diisi apa pun lagi - hashtag buatan AI
+                  dibuang, deskripsi yang menggantikannya. Kolomnya SENGAJA
+                  disisakan: membuangnya menggeser dua puluh kolom di
+                  belakangnya, dan seluruh cadangan yang sudah terlanjur ada
+                  ikut bergeser diam-diam. Kolom kosong tidak merugikan siapa
+                  pun; kolom yang bergeser merusak semuanya. */
                'tag', 'elemen', 'rahasia', 'elemenTerkunci',
                'selesai', 'selesaiPada', 'penting', 'hariIni', 'tenggat', 'ulang',
-               'pin', 'rakLepas', 'album', 'sumber', 'driver'];
+               'pin', 'rakLepas', 'album', 'sumber', 'driver', 'albumManual'];
 
   /* Lewat 26 kolom, Sheets memakai dua huruf (AA, AB, ...). Menghitungnya
      dengan satu fromCharCode menghasilkan '[' dan seluruh cadangan gagal
@@ -296,11 +302,6 @@
     return s;
   }
   var HURUF_AKHIR = hurufKolom(KOLOM.length);   /* AD untuk 30 kolom - lewat Z, jadi hurufnya dihitung, bukan ditebak */
-
-  /* Tab kedua: kumpulan tag yang pernah dibuat AI. Gunanya supaya tag tidak
-     beranak - dan supaya kamu bisa melihat sendiri daftarnya tanpa membuka
-     aplikasinya. Sumber kebenarannya tetap di HP; ini cerminan. */
-  var TAB_TAG = 'hashtag';
 
   /* Menyiapkan folder + spreadsheet, lalu mengingat id-nya. Aman dipanggil
      berkali-kali: kalau sudah ada, dia cuma memakai yang lama. */
@@ -428,38 +429,6 @@
     });
   }
 
-  /* Menulis ulang seluruh daftar, bukan menambah satu per satu: daftarnya
-     ratusan baris, sekali tulis lebih murah daripada mencari selisihnya -
-     dan tidak ada yang bisa rusak setengah jalan. */
-  function tulisTag(setelan, s, tag) {
-    var isi = (tag || []).map(function (t) { return [t]; });
-    return siapkanTabTag(setelan, s).then(function () {
-      return panggil(setelan, SHEETS + '/' + s.sheetId + '/values/' +
-        rentang(TAB_TAG, 'A1', 'A') + ':clear', { method: 'POST' });
-    }).then(function () {
-      if (!isi.length) return true;
-      return panggil(setelan, SHEETS + '/' + s.sheetId + '/values/' +
-        rentang(TAB_TAG, 'A1', 'A' + isi.length) + '?valueInputOption=RAW', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ values: isi })
-      });
-    });
-  }
-
-  function siapkanTabTag(setelan, s) {
-    return panggil(setelan, SHEETS + '/' + s.sheetId + '?fields=sheets.properties.title')
-      .then(function (j) {
-        var ada = (j.sheets || []).some(function (x) { return x.properties.title === TAB_TAG; });
-        if (ada) return true;
-        return panggil(setelan, SHEETS + '/' + s.sheetId + ':batchUpdate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ requests: [{ addSheet: { properties: { title: TAB_TAG } } }] })
-        });
-      });
-  }
-
   function nomorTab(setelan, s) {
     return panggil(setelan, SHEETS + '/' + s.sheetId + '?fields=sheets.properties')
       .then(function (j) {
@@ -487,7 +456,7 @@
   }
 
   /* ------------------------------------------------ berkas teks di Drive
-     Untuk yang bukan entri: daftar folder, gerbong, pustaka tag. Semuanya itu
+     Untuk yang bukan entri: pohon board, daftar folder, nama elemen. Semuanya itu
      satu objek kecil yang dibaca utuh dan ditulis utuh, jadi memaksakannya
      masuk baris Sheet berarti satu tabel kedua yang bentuknya tidak cocok.
      Satu berkas JSON di folder yang sama jauh lebih jujur.
@@ -574,11 +543,10 @@
     siapkanRumah: siapkanRumah,
     tulisBaris: tulisBaris, bacaSemuaBaris: bacaSemuaBaris, hapusBaris: hapusBaris,
     unggahBerkas: unggahBerkas, unduhBerkas: unduhBerkas, hapusBerkas: hapusBerkas,
-    tulisTag: tulisTag,
     cariBerkas: cariBerkas, tulisJson: tulisJson, bacaJson: bacaJson,
     cariSemua: cariSemua, tertua: tertua,
     waktuBerkas: waktuBerkas,
-    KOLOM: KOLOM, TAB_TAG: TAB_TAG,
+    KOLOM: KOLOM,
     /* Cuma untuk uji: memanggil satu alamat Google lewat jalur yang sama
        dengan semua panggilan lain, supaya perlakuan 401-nya benar-benar diuji
        dan bukan ditebak dari kodenya. */

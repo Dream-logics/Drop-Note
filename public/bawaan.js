@@ -32,16 +32,6 @@
     modelObrol: 'gemini-3.5-flash',
     modelGambar: 'gemini-3.5-flash-image',
 
-    /* Tag yang pasti sering dipakai, ditanam sekali supaya AI punya rak yang
-       benar sejak catatan pertama - bukan setelah sebulan meraba-raba.
-       Ini cuma NILAI AWAL: begitu aplikasinya dipasang, daftarnya jadi milik
-       pemakainya dan disunting di Setelan. Mengubah baris ini tidak menyentuh
-       daftar yang sudah terlanjur ada di HP siapa pun. */
-    tagAwal: ['MAP', 'ProjectSpace', 'Ngoffee', 'AmaraLiving', 'Ultima',
-              'ShamiraWeb', 'ShamiraCreative', 'Resep', 'IdeBisnis',
-              'linkdev', 'linkexec', 'prompt', 'script', 'password',
-              'Akun', 'titip'],
-
     /* Label rak: barisan tetap di layar hasil, satu ketuk sama dengan menyaring.
        Isinya nama proyek, divisi, dan perusahaan - bukan jenis catatan - karena
        itulah yang benar-benar dipakai orangnya untuk memilah.
@@ -51,7 +41,8 @@
        sebagai label yang sama, dan itu ada untuk SATU keadaan: kata yang
        dipakai AI berbeda dari kata di kepala pemakainya ("PS" vs
        "ProjectSpace"). Bukan kamus sinonim.
-       Sama seperti tagAwal, ini cuma NILAI AWAL. */
+       Ini cuma NILAI AWAL: begitu aplikasinya dipasang, daftarnya jadi milik
+       pemakainya dan disunting di Setelan. */
     labelAwal: [
       'MAP',
       'Amara = amaraliving',
@@ -65,38 +56,89 @@
       'Various = lain, umum'
     ],
 
-    /* GERBONG: rak untuk gambar, dan sumbunya BEDA dengan label rak di atas.
-       Label rak menjawab SIAPA - proyek, divisi, perusahaan - dan siapa itu
-       punya tanggal selesai. Gerbong menjawab APA, dan apa tidak pernah
-       selesai: satu foto sofa jadi referensi untuk klien mana pun, bertahun
-       sesudah proyek yang melahirkannya ditutup.
+    /* ===================== BOARD =====================
+       SATU pohon, dan dia satu-satunya alamat di aplikasi ini. Dua tingkat:
+       main board (bidangnya) dan sub board (urusannya di dalam bidang itu).
+       Susunannya dibaca dari NAMA, sama seperti folder Note - "FNB Menu Promo"
+       otomatis jadi anak "FNB" - jadi tidak ada mekanik baru yang harus
+       dipelajari, dan tidak ada kolom induk yang bisa jadi yatim.
 
-       Yang menentukan sebuah gambar masuk gerbong mana BUKAN gambarnya, tapi
-       DRIVER yang kamu ketik waktu memotretnya. Foto QR menu di sebuah resto
-       itu FNB kalau yang kamu pikirkan restonya, dan Apps Dev kalau yang kamu
-       pikirkan produknya. Bendanya sama; sudut pandangnya milikmu.
+       INI DAFTAR TERTUTUP, dan itu justru gunanya. AI MEMILIH dari sini, tidak
+       pernah menambah barisnya sendiri. Daftar yang boleh ditambah mesin akan
+       melar sampai tidak ada dua foto yang tinggal di ruangan yang sama - dan
+       gudang dengan seribu ruangan sama saja dengan gudang tanpa ruangan.
+       Yang menambah cuma pemakainya, lewat menu di Setelan.
 
-       Bertingkat lewat awalan nama, sama persis dengan folder Note dan album
-       Gallery - tidak ada mekanik baru yang harus dipelajari.
+       Kalau tidak ada sub yang benar-benar cocok, jawabannya main board-nya
+       saja. Itu jawaban yang sah, bukan kegagalan: "Interior" tanpa sub lebih
+       benar daripada foto masjid yang dipaksa masuk "Interior Bedroom", dan
+       ruangan yang belum terdefinisi (masjid, entrance, terrace) memang
+       tinggal di situ sampai pemakainya memutuskan membuatkan kamarnya.
 
-       AI boleh MENGUSULKAN gerbong baru, tapi tidak pernah membuatnya sendiri.
-       Itu satu-satunya yang menahan daftar ini supaya tidak melar tanpa batas:
-       yang tumbuh bebas cuma anaknya, atapnya tetap keputusanmu.
+       Kenapa dua promo. "FNB Menu Promo" itu menunya sendiri; "FNB Ide Promo"
+       itu cara menjualnya - billboard menarik yang dipotret di jalan tidak
+       punya menu sama sekali, tapi dia ide promo yang paling berharga. Dua
+       benda, dua kamar; menggabungkannya membuat yang satu tenggelam.
 
-       Quote ada di sini bukan sebagai tempelan. Yang menginspirasi di tengah
-       jalan tidak punya proyek dan tidak akan pernah punya, tapi dia tetap
-       butuh rumah kalau tidak mau tenggelam - dan keberadaannya yang bikin
-       daftar ini daftar MILIKMU, bukan daftar bisnis.
-       Sama seperti dua daftar di atas, ini cuma NILAI AWAL. */
-    gerbongAwal: [
-      'FNB = makanan, minuman, kuliner, cafe, kopi, resto, catering, booth, menu',
-      'FNB Menu',
-      'FNB Promo',
-      'Interior = interior, furnishing, dekorasi, furniture, sofa, lighting, lampu',
-      'Construction = construction, konstruksi, bangunan, material, struktur, granit, keramik',
-      'Real Estate = properti, kost, ruko, villa, hotel, guesthouse, kontrakan, warehouse, gudang',
-      'Apps Dev = aplikasi, apps, digital, sistem, software, qr, website',
-      'Quote = quote, kutipan, inspirasi, renungan'
+       Ini cuma NILAI AWAL. Begitu aplikasinya dipasang, pohonnya jadi milik
+       pemakainya dan disunting di Setelan; mengubah baris ini tidak menyentuh
+       pohon yang sudah terlanjur ada di perangkat siapa pun. */
+    boardAwal: [
+      'FNB',
+      'FNB Concept',
+      'FNB Inspiration',
+      'FNB Menu Baru',
+      'FNB Menu Promo',
+      'FNB Ide Promo',
+      'FNB Operational',
+      'FNB Pricing',
+      'FNB Ngoffee',
+      'FNB Project Space',
+      'FNB Apps',
+
+      'Property',
+      'Property Inspiration',
+      'Property Facade',
+      'Property Layout',
+      'Property Sales Marketing',
+      'Property Amara Living',
+      'Property Lead Centre Apps',
+
+      'Interior',
+      'Interior Furnishing',
+      'Interior Living Room',
+      'Interior Kitchen',
+      'Interior Bedroom',
+      'Interior Lighting',
+      'Interior Accessories',
+      'Interior Apps',
+
+      'Construction',
+      'Construction Material',
+      'Construction Structure',
+      'Construction Inspiration',
+      'Construction Teknik',
+      'Construction Apps',
+
+      'Hospitality',
+      'Hospitality Hotel Inspiration',
+      'Hospitality Kost Inspiration',
+      'Hospitality Villa Inspiration',
+      'Hospitality Guest House Inspiration',
+      'Hospitality Kontrakan Inspiration',
+      'Hospitality Warehouse Inspiration',
+      'Hospitality Living Java',
+      'Hospitality Red Doorz',
+      'Hospitality Ultima Bdg',
+      'Hospitality Apps',
+
+      'Apps Dev',
+      'Apps Dev Cortex',
+      'Apps Dev Shamira Creative',
+
+      'Motivation',
+      'Motivation Quote',
+      'Motivation Renungan'
     ],
 
     /* Alamat proxy AI milik PEMBUAT aplikasi (Apps Script /exec).
