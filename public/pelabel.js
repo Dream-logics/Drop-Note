@@ -32,6 +32,10 @@
   var SEKALI = 12;               /* entri per panggilan label */
   var BACA_SEKALI = 2;           /* berkas per putaran - ini yang paling mahal */
   var BACA_MAKS = 5 * 1024 * 1024;
+  /* Di atas, bukan di dekat pemakainya: bisaDibaca() dipanggil antreLabel yang
+     berdiri jauh sebelum baris ini, dan var yang dibaca sebelum nilainya
+     terpasang adalah galat yang cuma muncul kalau urutan berkasnya berubah. */
+  var BISA_DIBACA = /^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/i;
   var jalan = false;
 
   function model(setelan) {
@@ -295,6 +299,15 @@
   /* Siapa yang boleh berangkat. Dipisah jadi fungsi sendiri karena ini
      satu-satunya tempat yang memutuskan apa yang meninggalkan perangkat -
      dan yang seperti itu pantas bisa diuji langsung. */
+  /* Satu definisi untuk dua antrean: yang dijawab "ya" di sini dikerjakan
+     bacaBerkas, dan CUMA bacaBerkas. Kalau syaratnya ditulis dua kali, satu
+     hari nanti keduanya berbeda dan entrinya jatuh di celah - tidak dikerjakan
+     siapa pun, atau dikerjakan dua-duanya. */
+  function bisaDibaca(e) {
+    return !!(e.berkasId || e.driveId) && BISA_DIBACA.test(e.tipeBerkas || '') &&
+           (e.ukuran || 0) <= BACA_MAKS;
+  }
+
   function antreLabel(semua) {
     return semua.filter(function (e) {
       /* JANJI YANG MENENTUKAN: yang ditandai rahasia tidak pernah berangkat.
@@ -307,6 +320,16 @@
          dia tulis. Langkah tugas tersimpan di kolom daftar, jadi tanpa
          saringan ini dia memang ikut terkirim. */
       if (e.jenis === 'tugas') return false;
+      /* YANG PUNYA BERKAS TERBACA DIKERJAKAN bacaBerkas SAJA, sekali. Tanpa
+         saringan ini tiap foto berangkat DUA KALI ke layanan: sekali lewat
+         sini - tanpa gambarnya, cuma dari nama berkas dan driver - dan sekali
+         lagi lewat bacaBerkas yang benar-benar melihat gambarnya. Ongkosnya dua
+         kali lipat, dan yang lebih buruk: keduanya menulis deskripsi, lalu
+         deskripsi kedua DITEMPELKAN di bawah yang pertama (aturan "sudut
+         pandang kedua"). Yang terbaca di kartu jadi satu benda yang dijelaskan
+         dua kali dengan kata yang beda-beda tipis - persis yang dilaporkan di
+         lapangan. */
+      if (bisaDibaca(e)) return false;
       return !e.diLabeliAI && !e.pensiun && !e.dihapus && (e.isi || e.namaBerkas || (e.daftar || []).length);
     }).slice(0, SEKALI);
   }
@@ -620,7 +643,15 @@
     var akhiran = daftarAkhiran(setelan);
     var akarAda = daftarAkar(setelan);
     var sebut = TOtak.bacaBoardDariDriver(e.driver, punya, akhiran, akarAda);
-    var pilih = pilihBoard(jawab, punya, akhiran, sebut.main || '', akarAda);
+    /* DUA CARA MENYEBUT BIDANG, DAN KEDUANYA MENGIKAT SAMA KUATNYA: mengetiknya
+       di driver, atau BERDIRI DI DALAMNYA waktu memotret ('albumInduk').
+       Berdiri di wadah menjawab separuh - yang tersisa "kamarnya yang mana",
+       dan itu justru pertanyaan yang bisa dijawab mesin karena dia melihat
+       gambarnya. Dulu berdiri di situ MENGUNCI alamatnya, dan kuncinya
+       memulangkan fungsi ini di baris pertama: fotonya menumpuk di pintu
+       ruangan walau kamarnya sudah ada. */
+    var wajib = e.albumInduk || sebut.main || '';
+    var pilih = pilihBoard(jawab, punya, akhiran, wajib, akarAda);
     /* TIDAK ADA BIDANG YANG COCOK ITU JAWABAN, BUKAN KEGAGALAN. Foto antariksa
        tidak punya rumah di daftar bidang usahanya, dan membiarkannya di "Belum
        berboard" berarti menaruhnya di baris yang bunyinya seperti kesalahan -
@@ -632,8 +663,8 @@
     /* KAMU SUDAH MENYEBUT BIDANGNYA - jawaban AI yang meleset bukan alasan
        membuang alamat itu. Yang tersisa cuma "kamarnya yang mana", dan kalau
        itu pun tidak terjawab, ruang tunggu bidang itulah jawabannya. */
-    if (!pilih && sebut.main) pilih = sebut.main;
-    if (!pilih && !sebut.main && !sebut.sub) {
+    if (!pilih && wajib) pilih = wajib;
+    if (!pilih && !wajib && !sebut.sub) {
       var lain = punya.filter(function (b) {
         return TOtak.normal(b) === TOtak.normal(TBawaan.boardLain || '');
       })[0];
@@ -657,8 +688,19 @@
     var indukAkar = indukPilih && akarPunya2.some(function (a) {
       return TOtak.normal(a) === TOtak.normal(indukPilih);
     });
-    var interest = !akarSendiri && (!indukPilih || indukAkar);
     var lainNama = TOtak.normal(TBawaan.boardLain || '');
+    /* AKAR TIDAK PERNAH MENAMPUNG GAMBAR, termasuk waktu dia jatuh ke sini
+       sebagai jawaban terakhir (berdiri di akar lalu AI tidak menemukan apa
+       pun). Menaikkannya jadi "<akar> Various" pun salah - akar tidak boleh
+       ditumbuhi, dan "Business Various" ruangan yang tidak menjawab apa pun.
+       Jadi yang benar ruang tunggu: dia memang belum punya bidang. */
+    if (akarSendiri && TOtak.normal(pilih) !== lainNama) {
+      var keLain = punya.filter(function (b) {
+        return TOtak.normal(b) === lainNama;
+      })[0];
+      if (keLain) pilih = keLain;
+    }
+    var interest = !akarSendiri && (!indukPilih || indukAkar);
     if (interest && TOtak.normal(pilih) !== lainNama) {
       var pakai = (akhiran || []).filter(function (x) {
         return TOtak.normal(x) === 'various';
@@ -755,8 +797,6 @@
     return !!(e && (e.driver || e.sumber === 'kamera' || e.sumber === 'unggah'));
   }
 
-  var BISA_DIBACA = /^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/i;
-
   function keBase64(blob) {
     return new Promise(function (terima, tolak) {
       var baca = new FileReader();
@@ -780,9 +820,7 @@
   function bacaBerkas(setelan, semua) {
     var antre = semua.filter(function (e) {
       if (e.rahasia) return false;
-      return !e.diBacaAI && !e.pensiun && !e.dihapus &&
-             (e.berkasId || e.driveId) && BISA_DIBACA.test(e.tipeBerkas || '') &&
-             (e.ukuran || 0) <= BACA_MAKS;
+      return !e.diBacaAI && !e.pensiun && !e.dihapus && bisaDibaca(e);
     }).slice(0, BACA_SEKALI);
     if (!antre.length) return Promise.resolve(0);
 

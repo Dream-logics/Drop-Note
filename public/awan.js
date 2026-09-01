@@ -287,7 +287,8 @@
                   pun; kolom yang bergeser merusak semuanya. */
                'tag', 'elemen', 'rahasia', 'elemenTerkunci',
                'selesai', 'selesaiPada', 'penting', 'hariIni', 'tenggat', 'ulang',
-               'pin', 'rakLepas', 'album', 'sumber', 'driver', 'albumManual'];
+               'pin', 'rakLepas', 'album', 'sumber', 'driver', 'albumManual',
+               'albumInduk'];
 
   /* Lewat 26 kolom, Sheets memakai dua huruf (AA, AB, ...). Menghitungnya
      dengan satu fromCharCode menghasilkan '[' dan seluruh cadangan gagal
