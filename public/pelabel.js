@@ -378,17 +378,27 @@
      paling menonjol di gambar. Foto masjid dengan driver "interior mesjid"
      harus menghasilkan kalimat tentang elemen interiornya; yang sama dengan
      driver "karpet mesjid" menghasilkan kalimat tentang motif dan bahan
-     karpetnya. Bendanya satu, deskripsinya dua, dan keduanya benar. */
+     karpetnya. Bendanya satu, deskripsinya dua, dan keduanya benar.
+
+     DUA KALIMAT, DAN ITU BATAS ATAS - bukan sasaran. Waktu diminta "2-3
+     kalimat", yang kembali lima: model mengisi jatahnya dengan menulis ulang
+     kalimat pertama memakai kata lain, dan yang ketiga sampai kelima tidak
+     menambah satu pun pintu masuk. Deskripsi yang harus digulir berhenti
+     dibaca, dan yang berhenti dibaca sama saja dengan tidak ada - jadi
+     larangan mengulang ditulis terang-terangan, dan panjangnya ditegakkan
+     KODENYA lewat potongKalimat(), bukan cuma diminta di arahan. */
   function arahanGambar(driver, daftarBoard) {
     var board = (daftarBoard || []).join(', ');
     return [
       driver ? 'Keywords: ' + String(driver).slice(0, 60) : 'Tidak ada keywords; baca apa adanya.',
       '',
-      'Tulis 2-3 kalimat yang mendeskripsikan gambar ini DARI SUDUT PANDANG keywords di atas,',
-      'bukan dari yang paling menonjol di gambar. Sebutkan: nama objeknya, gayanya, kategorinya,',
-      'bentuknya, fungsinya, dan satu hal unik yang benar-benar terlihat.',
+      'Tulis MAKSIMAL 2 kalimat yang mendeskripsikan gambar ini DARI SUDUT PANDANG keywords di',
+      'atas, bukan dari yang paling menonjol di gambar. Sebutkan: nama objeknya, gayanya,',
+      'kategorinya, bentuknya, fungsinya, dan satu hal unik yang benar-benar terlihat.',
       'Kalimat itu satu-satunya kata kunci yang dipunyai gambar ini, jadi pakai sebutan yang',
       'akan dia ketik lagi enam bulan kemudian - bukan bahasa katalog.',
+      'JANGAN MENGULANG: kalimat kedua tidak boleh menyebut ulang apa yang sudah ada di kalimat',
+      'pertama dengan kata lain. Satu kalimat yang padat lebih baik daripada dua yang berputar.',
       '',
       'Judul maksimal 8 kata, juga dari sudut pandang keywords.',
       '',
@@ -403,6 +413,25 @@
       '"elemen":[{"jenis":"...","nilai":"...","nama":"..."}]}',
       'elemen: kode, nomor seri, atau nama merek yang TERBACA di gambar. Kosongkan kalau tidak ada.'
     ].filter(Boolean).join('\n');
+  }
+
+  /* DUA KALIMAT, DITEGAKKAN KODENYA. Arahannya sudah meminta, tapi permintaan
+     bukan jaminan - dan yang bocor di sini tidak pernah kelihatan sebagai
+     galat, cuma sebagai kartu yang makin lama makin panjang.
+
+     Dipotong di UJUNG KALIMAT, bukan di jumlah karakter: kalimat yang putus di
+     tengah kata terbaca sebagai data rusak, dan itu lebih buruk daripada
+     kepanjangan. Kalau kalimat pertamanya sendiri sudah melewati batas, dia
+     dibiarkan utuh - memotongnya berarti membuang satu-satunya yang ada. */
+  var DESKRIPSI_MAKS = 400;
+
+  function potongKalimat(teks, maksKalimat) {
+    var v = String(teks || '').trim();
+    if (!v) return '';
+    var pecah = v.match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g) || [v];
+    var ambil = pecah.slice(0, maksKalimat || 2).join('').trim();
+    if (ambil.length <= DESKRIPSI_MAKS) return ambil;
+    return pecah[0].trim();
   }
 
   /* ===================== BOARD =====================
@@ -608,7 +637,11 @@
                daftar pintu masuk, dan pintu tidak pernah terlalu banyak. */
             if (h.teks) {
               var lamaIsi = String(e.isi || '').trim();
-              var baruIsi = String(h.teks).trim();
+              /* Cuma untuk foto referensi: deskripsi dua kalimat itu aturan
+                 arahan gambar. Yang lewat pembaca dokumen memang ringkasan isi
+                 dokumennya, dan memotongnya jadi dua kalimat membuang nomor
+                 faktur di kalimat ketiga. */
+              var baruIsi = fotoReferensi(e) ? potongKalimat(h.teks, 2) : String(h.teks).trim();
               if (!lamaIsi) e.isi = baruIsi.slice(0, 1500);
               else if (e.driver && lamaIsi.toLowerCase().indexOf(baruIsi.toLowerCase()) < 0) {
                 e.isi = (lamaIsi + '\n\n' + baruIsi).slice(0, 1500);
@@ -808,6 +841,9 @@
     /* Cuma untuk uji: memperlihatkan board yang benar-benar lolos penjaganya,
        bukan menebaknya dari arahan yang dikirim. */
     daftarBoardUji: daftarBoard,
-    pilihBoardUji: pilihBoard
+    pilihBoardUji: pilihBoard,
+    /* Cuma untuk uji: memperlihatkan panjang deskripsi yang benar-benar
+       ditegakkan kodenya, bukan yang cuma diminta di arahan. */
+    potongKalimatUji: potongKalimat
   };
 })(window);

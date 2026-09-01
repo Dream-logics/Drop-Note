@@ -93,13 +93,12 @@ button,input,textarea{font:inherit;color:inherit}
 .dok{position:sticky;top:0;z-index:6;background:var(--g);padding:4px 0 8px}
 
 /* Di ATAS: kotak selebar layar, tiga tombol berjajar di bawahnya. */
-.kepala-tetap{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.kepala-tetap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
 .kotak-bar{display:contents}
 #kotak,.kotak-bungkus{grid-column:1 / -1}
 #b-lampir{grid-column:1}
 #b-tugas{grid-column:2}
-#b-kamera{grid-column:3}
-#b-drop{grid-column:4}
+#b-drop{grid-column:3}
 
 /* --- lampiran (jenis dropping) --- */
 .lampiran{display:flex;gap:7px;margin-bottom:6px}
@@ -746,22 +745,13 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
   border:none;background:none;border-radius:0;
   min-height:42px;padding:11px 4px;
 }
-.dok-bawah #b-lampir,.dok-bawah #b-tugas,.dok-bawah #b-kamera{
+.dok-bawah #b-lampir,.dok-bawah #b-tugas{
   flex:0 0 auto;width:40px;height:40px;min-height:0;padding:0;border:none;
   border-radius:50%;color:var(--m);
 }
-.dok-bawah #b-lampir span,.dok-bawah #b-tugas span,.dok-bawah #b-kamera span,
+.dok-bawah #b-lampir span,.dok-bawah #b-tugas span,
 .dok-bawah #b-lampir .ik.kecil,.dok-bawah #b-tugas .ik.kecil{display:none}
 .dok-bawah #b-lampir.nyala,.dok-bawah #b-tugas.nyala{color:var(--a)}
-/* EMPAT IKON DI DALAM SATU KOTAK ITU BATASNYA. Di 360px yang tersisa untuk
-   kotaknya tinggal secuil, dan kotak yang placeholder-nya terpotong berhenti
-   terbaca sebagai undangan mengetik. Jadi di layar paling sempit ikonnya
-   menyusut - bukan salah satunya dibuang, karena yang dibuang pasti yang
-   sedang dibutuhkan orangnya. */
-@media (max-width:400px){
-  .dok-bawah #b-lampir,.dok-bawah #b-tugas,.dok-bawah #b-kamera{width:35px}
-  .dok-bawah #b-ai{width:33px}
-}
 /* Todo beraksen sejak diam: dia satu-satunya ikon di bilah ini yang MENYIMPAN
    sesuatu, dan yang menyimpan pantas kelihatan berbeda dari yang cuma membuka. */
 .dok-bawah #b-tugas{color:var(--a)}
@@ -857,8 +847,12 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    Gallery, bukan menyaring di tempat - memakai bentuk yang sama. Tidak ada
    yang harus dipelajari ulang, dan satu-satunya cip yang membawa pergi
    terlihat berbeda SEBELUM diketuk. */
-.saring-cip.reset,.saring-cip.pintu{border-style:dashed}
+.saring-cip.reset,.saring-cip.pintu,.saring-cip.kamera{border-style:dashed}
 .saring-cip.pintu{color:var(--a)}
+/* Kameranya beraksen sejak diam: dia satu-satunya cip di baris ini yang
+   MENGHASILKAN sesuatu, dan yang menghasilkan pantas kelihatan berbeda dari
+   yang cuma menyaring atau menghapus. */
+.saring-cip.kamera{color:var(--a)}
 .saring-cip.reset:active{color:var(--bahaya);border-color:var(--bahaya)}
 .saring-cip.nyala{
   border-color:transparent;color:var(--a);font-weight:700;
@@ -1091,11 +1085,9 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 }
 .dok-bawah #b-ai .ik{width:20px;height:20px}
 .dok-bawah #b-ai.nyala{color:var(--a)}
-/* Waktu mengetik di mode Drop, ikon AI dan kamera mengalah - kotaknya yang
-   dapat tempatnya, justru saat isinya paling panjang. Keduanya memang yang
-   paling tidak mungkin dipakai saat itu: orang yang sudah mengetik catatan
-   tidak sedang mau bertanya, dan tidak sedang mau memotret. */
-.mengetik #b-ai,.mengetik #b-kamera{display:none}
+/* Waktu mengetik di mode Drop, ikon AI mengalah - kotaknya yang dapat
+   tempatnya, justru saat isinya paling panjang. */
+.mengetik #b-ai{display:none}
 #b-drop .ik.kirim{display:none}
 .mode-ai #b-drop .ik.turun{display:none}
 .mode-ai #b-drop .ik.kirim{display:block}
@@ -1110,7 +1102,7 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    Klip dan Todo ikut pergi: belum ada yang bisa dilampirkan ke pertanyaan,
    dan tugas tidak pernah lahir dari layar ini. */
 .mode-ai #petak-hasil-depan,.mode-ai .saring-baris,.mode-ai .ruang-baris,
-.mode-ai #b-lampir,.mode-ai #b-tugas,.mode-ai #b-kamera{display:none}
+.mode-ai #b-lampir,.mode-ai #b-tugas{display:none}
 /* Yang terbaru MENEMPEL di kotaknya, bukan menggantung di puncak layar dengan
    sejengkal kosong di bawahnya. Ini bentuk yang sudah dikenali dari tiap
    aplikasi pesan, dan bukan sekadar rupa: jawaban terakhir duduk tepat di atas
@@ -1352,30 +1344,84 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    dipelajari ulang di layar sebelahnya. Yang ditambahkan cuma yang memang
    cuma ada di sini. */
 
-/* SATU BARIS untuk saringan dan tampilan. Dua baris terpisah mendorong gambar
-   pertama ke bawah layar - dan gambar pertama itu yang dicari. Saringannya
-   yang menggulir kalau kepanjangan; tombol tampilan tidak pernah ikut hanyut,
-   karena dialah yang paling sering ditekan berulang. */
+/* TIGA TOMBOL, DIBAGI RATA. Bukan cip yang menggulir: yang cuma tiga tidak
+   perlu digulir, dan yang lebarnya berubah-ubah mengikuti isinya membuat jari
+   tidak pernah hafal tempatnya. */
 .galeri-baris{
   display:flex;align-items:center;gap:8px;
   padding:6px 12px 8px;border-bottom:1px solid var(--l);
 }
-.galeri-saring{
-  display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0;
-  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+.galeri-kepala{display:flex;gap:8px;flex:1;min-width:0}
+.galeri-kbl{
+  flex:1;min-width:0;min-height:42px;border:1px solid var(--l);border-radius:11px;
+  background:none;color:var(--i);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  font-size:13px;font-weight:600;white-space:nowrap;padding:0 6px;
 }
-.galeri-saring::-webkit-scrollbar{display:none}
-.galeri-saring .cip{flex:0 0 auto}
-/* Angkanya BERSEBELAHAN, bukan menumpang di atas seperti di layar Drop. Di
-   sana cipnya ikon telanjang, jadi angkanya harus melayang di atasnya; di sini
-   cipnya bertuliskan kata, dan angka yang menempel tanpa jarak terbaca sebagai
-   satu kata ("Semua5"). */
-.galeri-saring .cip-angka{
+.galeri-kbl .ik{width:17px;height:17px;flex:none}
+.galeri-kbl.nyala{
+  border-color:transparent;color:var(--a);
+  background:color-mix(in srgb, var(--a) 14%, transparent);
+}
+.galeri-kbl .cip-angka{
+  font-size:11px;font-weight:700;color:var(--m);font-variant-numeric:tabular-nums;
+}
+.galeri-kbl.nyala .cip-angka{color:var(--a)}
+
+/* Menu View: turun DI BAWAH tombolnya, bukan melayang di atas isinya. Yang
+   melayang menutupi gambar pertama - dan gambar pertama itu yang dicari. */
+.galeri-tampil{
+  padding:8px 12px;border-bottom:1px solid var(--l);
+  display:flex;flex-direction:column;gap:8px;
+}
+.galeri-tampil .view-baris{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.galeri-tampil .view-saring{border-top:1px dashed var(--l);padding-top:8px}
+.galeri-tampil .cip-angka{
   margin-left:5px;font-size:11px;font-weight:700;color:var(--m);
   font-variant-numeric:tabular-nums;
 }
-.galeri-saring .cip.nyala .cip-angka{color:var(--a)}
-.galeri-tampil{display:flex;gap:2px;flex:0 0 auto}
+.galeri-tampil .cip.nyala .cip-angka{color:var(--a)}
+
+/* --- barisan foto sesi ini: bukti bahwa jepretanmu mendarat, dan di mana ---
+   Bergaris putus-putus, kosakata yang di aplikasi ini sudah berarti "ini
+   lewat, bukan keadaan" - dia memang akan hilang sendiri. */
+.galeri-baru{
+  margin:8px 12px 0;padding:8px 10px 10px;
+  border:1px dashed var(--l);border-radius:12px;
+}
+.galeri-baru .baru-kepala{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--m);margin-bottom:7px;
+}
+.galeri-baru .baru-buang{
+  width:30px;height:30px;margin:-6px -6px -6px 0;border:0;background:none;color:var(--m);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.galeri-baru .baru-buang .ik{width:15px;height:15px}
+.galeri-baru .baru-baris{
+  display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.galeri-baru .baru-baris::-webkit-scrollbar{display:none}
+.galeri-baru .baru-satu{
+  flex:0 0 auto;width:76px;border:0;background:none;padding:0;cursor:pointer;
+  display:flex;flex-direction:column;gap:4px;
+}
+.galeri-baru .baru-satu img{
+  width:76px;height:76px;object-fit:cover;border-radius:9px;display:block;
+}
+.galeri-baru .baru-satu .petak-kosong{
+  width:76px;height:76px;border-radius:9px;background:var(--l);display:block;
+}
+/* Alamatnya DUA BARIS penuh, bukan dipotong satu: "FNB / Menu Promo" yang
+   terpotong jadi "FNB / Menu…" tidak menjawab pertanyaan yang bikin baris ini
+   ada. */
+.galeri-baru .baru-ke{
+  font-size:10.5px;line-height:1.3;color:var(--a);text-align:left;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.galeri-baru .baru-ke.nunggu{color:var(--m);font-style:italic}
+#l-galeri.mode-pilih .galeri-baru{display:none}
 
 /* Dua tombol bulat, dibaca dari KANAN: memotret lebih sering daripada
    mengunggah yang sudah ada, jadi kameranya duduk paling kanan - tepat di
@@ -1443,24 +1489,37 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 .petak-satu.dipilih{outline:3px solid var(--a);outline-offset:-3px;border-radius:10px}
 .petak-satu.dipilih img{opacity:.72}
 
-/* --- menu board di Setelan: pohon dua tingkat ---
+/* --- menu board di Setelan: pohon dua tingkat, dilipat ---
    Barisnya 44px penuh walau isinya cuma nama pendek: ini disunting di HP,
    sambil berdiri, dan silang yang meleset menghapus board yang salah. */
 .board-pohon{margin-top:11px;border:1px solid var(--l);border-radius:10px;overflow:hidden}
 .board-main + .board-main{border-top:1px solid var(--l)}
-.board-baris{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 8px 0 12px}
+.board-baris{display:flex;align-items:center;gap:8px;min-height:46px;padding:0 8px 0 10px}
+.board-main{position:relative}
+.board-kepala{
+  width:100%;background:none;border:0;text-align:left;cursor:pointer;
+  padding-right:44px;color:inherit;font:inherit;
+}
+.board-panah{width:15px;height:15px;flex:none;color:var(--m);transition:transform .15s}
+.board-main.buka .board-panah{transform:rotate(90deg)}
 .board-baris .board-nama{flex:1;font-size:14px;font-weight:600;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board-hitung{font-size:12px;color:var(--m);flex:none}
+/* Silang main board MELAYANG di atas barisnya: barisnya sendiri sudah jadi
+   tombol buka-tutup, dan tombol di dalam tombol tidak bisa ditulis di HTML. */
+.board-buang-main{position:absolute;top:5px;right:4px}
 /* Sub board digeser masuk DAN diredupkan: satu isyarat saja gampang terlewat
    di layar sempit, dan susunan yang tidak terbaca sama saja dengan rata. */
-.board-baris.board-sub{padding-left:26px;min-height:40px}
+.board-panel{border-top:1px dashed var(--l);padding:2px 0 8px}
+.board-baris.board-sub{padding-left:30px;min-height:40px}
 .board-baris.board-sub .board-nama{font-size:13.5px;font-weight:400;color:var(--m)}
 /* Garis putus-putus: di aplikasi ini kosakata itu sudah berarti "jalan pintas,
-   bukan keadaan" - sama dengan Reset dan "+ Folder". */
+   bukan keadaan" - sama dengan Reset dan cip Gambar. */
 .board-tambah{
-  min-height:32px;padding:0 12px;border-radius:16px;
+  min-height:36px;padding:0 12px;border-radius:18px;
   border:1px dashed var(--a);background:none;color:var(--a);
   font-size:12.5px;cursor:pointer;white-space:nowrap;
+  margin:6px 10px 0 30px;
 }
 .board-tambah.board-utama{
   display:block;width:calc(100% - 24px);margin:12px;min-height:40px;font-size:13.5px;

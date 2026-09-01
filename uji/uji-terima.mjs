@@ -1606,9 +1606,34 @@ console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
   cek('pohonnya digambar sebagai baris, bukan textarea',
       (await hal.locator('#set-board .board-main').count()) === 2 &&
       (await hal.locator('#set-gerbong').count()) === 0);
+  /* DILIPAT, DAN ITU BUKAN KERAPIAN. Waktu semuanya tergelar, "+ Sub" milik
+     satu board duduk berdempetan dengan puluhan baris milik board lain, dan
+     "+ Main board" di kaki daftar cuma sejengkal dari "+ Sub" yang terakhir.
+     Sekali salah ketuk, sub board yang kamu maksud lahir sebagai main board -
+     kesalahan yang tidak kelihatan sampai kamu membuka Gallery. */
+  cek('isinya tertutup sampai boardnya diketuk',
+      (await hal.locator('#set-board .board-sub').count()) === 0 &&
+      (await hal.locator('#set-board [data-board-sub]').count()) === 0);
+  /* ABJAD, bukan urutan pembuatan: daftar yang urutannya cuma diketahui
+     pembuatnya harus dibaca seluruhnya tiap kali. */
+  cek('main board berurut abjad',
+      (await hal.locator('#set-board .board-kepala .board-nama').allInnerTexts())
+        .map((x) => x.trim()).join(',') === 'FNB,Interior',
+      JSON.stringify(await hal.locator('#set-board .board-kepala .board-nama').allInnerTexts()));
+
+  await hal.click('#set-board [data-board-buka="Interior"]');
+  await hal.waitForTimeout(300);
+  cek('mengetuknya membuka isinya',
+      (await hal.locator('#set-board .board-sub').count()) === 1);
   cek('sub board ditulis nama PENDEKNYA, nama panjangnya tetap identitasnya',
       (await hal.innerText('#set-board .board-sub .board-nama')).trim() === 'Bedroom',
       await hal.innerText('#set-board .board-sub .board-nama'));
+  /* "+ Sub" duduk DI DALAM panel yang terbuka, dengan nama induknya tertulis
+     di tombolnya sendiri - jadi tidak ada satu keadaan pun di mana dia bisa
+     tertukar dengan "+ Main board" di kaki daftar. */
+  cek('dan “+ Sub” duduk di dalamnya, menyebut induknya',
+      (await hal.innerText('#set-board [data-board-sub="Interior"]')).indexOf('Interior') >= 0,
+      await hal.innerText('#set-board [data-board-sub="Interior"]'));
   cek('jumlahnya dibacakan per tingkat',
       /2 main board, 1 sub board/.test(await hal.innerText('#board-jumlah')),
       await hal.innerText('#board-jumlah'));
@@ -1626,8 +1651,13 @@ console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
   cek('yang diketik cuma nama pendeknya; awalannya dipasang aplikasinya',
       pohon.indexOf('Interior Kitchen') >= 0 && pohon.indexOf('Kitchen') < 0,
       JSON.stringify(pohon));
-  cek('dan dia langsung tergambar di bawah induknya',
-      (await hal.locator('#set-board .board-main').first().locator('.board-sub').count()) === 2);
+  /* Yang baru dibuat LANGSUNG TERLIHAT: panel induknya tetap terbuka. Sub
+     board yang lahir di balik panel tertutup tidak bisa dibedakan dari sub
+     board yang gagal dibuat. */
+  cek('dan dia langsung tergambar di bawah induknya, panelnya tetap terbuka',
+      (await hal.locator('#set-board .board-sub').count()) === 2 &&
+      (await hal.locator('#set-board .board-sub .board-nama').allInnerTexts())
+        .map((x) => x.trim()).join(',') === 'Bedroom,Kitchen');
 
   await hal.click('#set-board [data-board-main]');
   await hal.waitForTimeout(300);
@@ -1636,6 +1666,12 @@ console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
   await hal.waitForTimeout(500);
   cek('main board baru mendarat di akar',
       (await hal.locator('#set-board .board-main').count()) === 3);
+  /* DAN DIA BENAR-BENAR DI AKAR, bukan sub yang kebetulan tergambar di baris
+     atas: inilah kekeliruan yang dilaporkan di lapangan, dan yang membedakan
+     keduanya cuma satu ketukan yang meleset. */
+  cek('dan dia memang main board, bukan sub yang tersesat',
+      (await hal.evaluate(() => JSON.parse(TAlur.setelanUji().board)))
+        .indexOf('Construction') >= 0);
 
   /* MENGHAPUS MAIN BOARD IKUT MENGHAPUS ANAKNYA - kalau tidak, anaknya jadi
      yatim: dia naik ke akar dan tiba-tiba jadi main board bernama "Interior
@@ -2509,6 +2545,12 @@ console.log('\nTo Do dua bagian, timestamp di Note, dan gambar yang membesar');
   await hal.fill('#galeri-cari', 'Moodboard uji besar');
   await hal.dispatchEvent('#galeri-cari', 'input');
   await hal.waitForTimeout(400);
+  /* Pilihan tampilan tinggal di dalam menu View sekarang - kepalanya cuma tiga
+     tombol, jadi dia harus dibuka dulu. */
+  if (await hal.locator('#galeri-tampil').isHidden()) {
+    await hal.click('#galeri-saring [data-gkepala="*view"]');
+    await hal.waitForTimeout(250);
+  }
   await hal.click('#galeri-tampil [data-ggaya="daftar"]');
   await hal.waitForTimeout(350);
   cek('gambarnya tergambar di kartunya',
@@ -2539,6 +2581,8 @@ console.log('\nTo Do dua bagian, timestamp di Note, dan gambar yang membesar');
   await hal.dispatchEvent('#galeri-cari', 'input');
   await hal.click('#galeri-tampil [data-ggaya="sedang"]');
   await hal.waitForTimeout(300);
+  await hal.click('#galeri-saring [data-gkepala="*home"]');
+  await hal.waitForTimeout(250);
   await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.fill('#kotak', '');
   await hal.waitForTimeout(200);
@@ -2646,13 +2690,17 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
      kanan bawah. */
   const semuaJenis = await hal.evaluate(() =>
     TAlur.jenisSaringUji().map((j) => j[0]));
-  cek('saringannya lengkap: semua, teks, gambar, berkas, link, pin, reset',
+  cek('barisnya lengkap: semua, teks, gambar, berkas, link, pin, reset, kamera',
       JSON.stringify(semuaJenis) ===
-        JSON.stringify(['*semua', 'teks', 'gambar', 'berkas', 'tautan', '*pin', '*reset']),
+        JSON.stringify(['*semua', 'teks', 'gambar', 'berkas', 'tautan', '*pin',
+                        '*reset', '*kamera']),
       JSON.stringify(semuaJenis));
-  cek('resetnya paling kanan, tepat di sebelah Pin',
-      semuaJenis[semuaJenis.length - 1] === '*reset' &&
-      semuaJenis[semuaJenis.length - 2] === '*pin');
+  /* KAMERA PALING KANAN, sesudah Reset - ujung yang paling dekat jempol, untuk
+     hal yang paling sering dilakukan di aplikasi ini. Keduanya bukan saringan:
+     mereka tidak punya angka dan tidak pernah menyala. */
+  cek('kameranya paling kanan, resetnya tepat di sebelahnya',
+      semuaJenis[semuaJenis.length - 1] === '*kamera' &&
+      semuaJenis[semuaJenis.length - 2] === '*reset');
 
   /* BAWAANNYA TEKS, bukan semua. Hasil yang langsung berisi dinding gambar
      memenuhi layar sebelum satu judul pun sempat terbaca; gambar dicari
@@ -2895,8 +2943,8 @@ console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan')
     const atas = anak.map((n) => Math.round(n.getBoundingClientRect().top));
     return { baris: new Set(atas).size, jumlah: anak.length };
   });
-  cek('tujuh saringan muat dalam satu baris',
-      saringSebaris.baris === 1 && saringSebaris.jumlah === 7,
+  cek('delapan cip muat dalam satu baris',
+      saringSebaris.baris === 1 && saringSebaris.jumlah === 8,
       JSON.stringify(saringSebaris));
 
   const muatLebar = await hal.evaluate(() => {
@@ -3323,25 +3371,30 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
   });
   cek('ikon AI duduk di ujung kiri kotak, seperti WhatsApp', diKiriKotak === 'ok', diKiriKotak);
 
-  /* LIMA IKON WAKTU DIAM, TIGA WAKTU MENGETIK. Yang pergi selalu yang paling
+  /* EMPAT IKON WAKTU DIAM, TIGA WAKTU MENGETIK. Yang pergi selalu yang paling
      tidak mungkin dipakai saat itu: orang yang sudah mengetik catatan tidak
-     sedang mau bertanya ke AI, dan tidak sedang mau memotret. */
+     sedang mau bertanya ke AI.
+
+     Kamera sempat ikut di sini dan itu keliru: di antara klip dan Todo - dua
+     ikon yang MEMBUKA LACI - dia tidak pernah terbaca sebagai tombol yang
+     menghasilkan sesuatu. Tempatnya sekarang di baris cip, di kanan Reset. */
   const ikonKotak = async () => hal.evaluate(() =>
-    ['#b-ai', '#b-lampir', '#b-tugas', '#b-kamera', '#b-drop']
+    ['#b-ai', '#b-lampir', '#b-tugas', '#b-drop']
       .filter((s) => document.querySelector(s).getBoundingClientRect().width > 0).length);
-  cek('lima ikon waktu kotaknya diam', (await ikonKotak()) === 5,
+  cek('empat ikon waktu kotaknya diam', (await ikonKotak()) === 4,
       String(await ikonKotak()));
+  cek('dan tidak ada lagi ikon kamera di dalam kotaknya',
+      (await hal.locator('#b-kamera').count()) === 0);
   await hal.fill('#kotak', 'sesuatu');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(200);
-  cek('tinggal tiga begitu mulai mengetik, dan yang pergi AI dan kamera',
+  cek('tinggal tiga begitu mulai mengetik, dan yang pergi ikon AI',
       (await ikonKotak()) === 3 &&
-      (await hal.locator('#b-ai').isHidden()) &&
-      (await hal.locator('#b-kamera').isHidden()), String(await ikonKotak()));
+      (await hal.locator('#b-ai').isHidden()), String(await ikonKotak()));
   await hal.fill('#kotak', '');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(200);
-  cek('dan kembali lima begitu kotaknya kosong lagi', (await ikonKotak()) === 5);
+  cek('dan kembali empat begitu kotaknya kosong lagi', (await ikonKotak()) === 4);
 
   cek('sebelum dinyalakan, obrolannya tidak kelihatan sama sekali',
       await hal.locator('#petak-ai').isHidden());
@@ -3357,10 +3410,8 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
      dia tetap ada walau kotaknya sudah berisi. */
   cek('ikon AI tetap kelihatan, karena dia jalan pulangnya',
       await hal.locator('#b-ai').isVisible());
-  /* Todo ikut pergi: tugas tidak pernah lahir dari layar ini. Kamera juga -
-     belum ada yang bisa dilampirkan ke pertanyaan yang belum dijawab. */
+  /* Todo ikut pergi: tugas tidak pernah lahir dari layar ini. */
   cek('cip Todo turun panggung juga', await hal.locator('#b-tugas').isHidden());
-  cek('kamera ikut turun panggung di mode AI', await hal.locator('#b-kamera').isHidden());
   cek('tombolnya berganti jadi panah kirim',
       await hal.locator('#b-drop .ik.kirim').isVisible() &&
       await hal.locator('#b-drop .ik.turun').isHidden());
@@ -4779,27 +4830,68 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
   /* SEBELUM ADA SATU ALBUM PUN, GAMBARNYA LANGSUNG TERLIHAT. Aturan "di akar
      yang tampil folder saja" ada supaya isinya tidak terhitung dua kali - dan
      itu cuma berlaku kalau memang ada album untuk membaginya. */
+  /* ABJAD, bukan terbanyak-dulu. Pohon board kamu tulis sendiri dan jumlahnya
+     tetap; urutan yang berubah-ubah mengikuti isinya berarti jarimu tidak
+     pernah bisa hafal tempatnya. Rak Storage lain ceritanya - dia lahir dari
+     catatan yang jatuh, jadi yang paling ramai memang yang paling mungkin
+     kamu tuju. */
+  await hal.evaluate(() => TSimpan.setel('board',
+    JSON.stringify(['Zeta uji', 'Alfa uji', 'Mika uji'])));
+  await hal.reload();
+  await hal.waitForFunction(() => window.TAlur);
+  await pasangAI();
+  await hal.waitForTimeout(700);
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(400);
+  cek('board di akar berurut abjad, bukan urutan pembuatan',
+      (await hal.locator('#galeri-isi [data-galeri-folder]').evaluateAll(
+        (n) => n.map((x) => x.getAttribute('data-galeri-folder'))))
+        .filter((x) => /uji$/.test(x)).join(',') === 'Alfa uji,Mika uji,Zeta uji',
+      JSON.stringify(await hal.locator('#galeri-isi [data-galeri-folder]').evaluateAll(
+        (n) => n.map((x) => x.getAttribute('data-galeri-folder')))));
+  await hal.evaluate(() => TSimpan.setel('board', '[]'));
+  await hal.reload();
+  await hal.waitForFunction(() => window.TAlur);
+  await pasangAI();
+  await hal.waitForTimeout(700);
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(400);
+
   cek('tanpa board, gambarnya langsung terlihat di akar',
       (await hal.locator('#galeri-isi .petak-satu').count()) >= 4,
       String(await hal.locator('#galeri-isi .petak-satu').count()));
 
   /* Saringannya SUMBER, bukan jenis: di layar ini semuanya gambar, jadi
      menyaring jenis tidak memisahkan apa pun. */
-  await hal.click('#galeri-saring [data-gsaring="kamera"]');
+  /* KEPALANYA TIGA TOMBOL: Home, All, View. Saringan sumber pindah ke dalam
+     menu View - satu ketukan lebih dalam, dan itu setara dengan seberapa
+     sering dia dipakai. Sembilan benda di satu baris, di layar yang isinya
+     justru gambar, adalah baris yang tidak pernah dibaca. */
+  cek('kepalanya tiga tombol: Home, All, View',
+      (await hal.locator('#galeri-saring [data-gkepala]').count()) === 3 &&
+      (await hal.locator('#galeri-saring').innerText()).replace(/\s+/g, ' ').indexOf('Home') >= 0);
+  cek('menu View tertutup sampai diminta',
+      await hal.locator('#galeri-tampil').isHidden());
+  await hal.click('#galeri-saring [data-gkepala="*view"]');
+  await hal.waitForTimeout(300);
+  cek('mengetuknya membuka pilihan tampilan dan saringan sumbernya',
+      (await hal.locator('#galeri-tampil').isVisible()) &&
+      (await hal.locator('#galeri-tampil .tampil-tbl').count()) === 4 &&
+      (await hal.locator('#galeri-tampil [data-gsaring]').count()) >= 2);
+
+  await hal.click('#galeri-tampil [data-gsaring="kamera"]');
   await hal.waitForTimeout(350);
   const dariKamera = await hal.locator('#galeri-isi .petak-satu').count();
-  await hal.click('#galeri-saring [data-gsaring="drop"]');
+  await hal.click('#galeri-tampil [data-gsaring="drop"]');
   await hal.waitForTimeout(350);
   const dariDrop = await hal.locator('#galeri-isi .petak-satu').count();
   cek('saringan sumber memisahkan kamera dari yang masuk lewat Drop',
       dariKamera === 2 && dariDrop >= 2, dariKamera + ' vs ' + dariDrop);
-  await hal.click('#galeri-saring [data-gsaring="*semua"]');
+  await hal.click('#galeri-tampil [data-gsaring="*semua"]');
   await hal.waitForTimeout(300);
 
   /* Empat tampilan, dan yang dipilih ikut ke pembukaan berikutnya - kebiasaan
      orang menetap di satu ukuran. */
-  cek('empat pilihan tampilan ditawarkan',
-      (await hal.locator('#galeri-tampil .tampil-tbl').count()) === 4);
   await hal.click('#galeri-tampil [data-ggaya="besar"]');
   await hal.waitForTimeout(300);
   cek('memilih petak besar benar-benar mengganti petaknya',
@@ -4814,6 +4906,15 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
       (await hal.evaluate(() => TSimpan.setelan('gayaGaleri'))) === 'daftar');
   await hal.click('#galeri-tampil [data-ggaya="sedang"]');
   await hal.waitForTimeout(300);
+
+  /* HOME MENGEMBALIKAN LAYAR SEPERTI BARU DIBUKA - satu ketukan, bukan empat
+     di empat tempat. Yang paling sering terjadi bukan "aku mau melepas yang
+     ini", tapi "aku mau mulai dari nol lagi". */
+  await hal.click('#galeri-saring [data-gkepala="*home"]');
+  await hal.waitForTimeout(350);
+  cek('Home menutup menu View dan mengembalikan layar ke keadaan bersih',
+      (await hal.locator('#galeri-tampil').isHidden()) &&
+      (await hal.inputValue('#galeri-cari')) === '');
 
   /* POHONNYA DIKURASI DI SATU TEMPAT, DI SETELAN - dan itu bukan penghematan
      tombol. Dua pintu untuk menumbuhkan daftar yang sama berarti daftarnya
@@ -5029,25 +5130,34 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
   await hal.fill('#kotak', '');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(200);
-  cek('ikon kamera duduk di dalam kotaknya, di sebelah tombol Drop',
+  /* TEMPATNYA DI BARIS CIP, DI KANAN RESET - ujung yang paling dekat jempol.
+     Dia sempat jadi ikon di dalam kotak Drop, di antara klip dan Todo, dan di
+     sana dia tidak pernah terbaca sebagai tombol yang MENGHASILKAN sesuatu:
+     dua tetangganya cuma membuka laci. */
+  cek('cip kamera duduk paling kanan di baris cip, sesudah Reset',
       await hal.evaluate(() => {
-        const k = document.querySelector('#b-kamera');
-        if (!k || !k.closest('.kotak-bar')) return false;
-        const d = document.querySelector('#b-drop').getBoundingClientRect();
-        const a = k.getBoundingClientRect();
-        return a.right <= d.left + 2 && Math.abs(a.bottom - d.bottom) < 24;
+        const k = document.querySelector('#saring-cip [data-jenis="*kamera"]');
+        const r = document.querySelector('#saring-cip [data-jenis="*reset"]');
+        if (!k || !r) return false;
+        return k.getBoundingClientRect().left > r.getBoundingClientRect().left;
       }) === true);
-  /* Kamera dan klip berdiri bersebelahan, dan itu memang dua benda: klip
-     MELAMPIRKAN gambar pada catatan yang sedang diketik, kamera ini
-     MENYIMPANNYA langsung jadi entri Gallery. */
-  cek('dan dia paling kanan di antara ikon dalam kotaknya',
-      await hal.evaluate(() => {
-        const x = (s) => document.querySelector(s).getBoundingClientRect().right;
-        return x('#b-kamera') > x('#b-tugas') && x('#b-tugas') > x('#b-lampir');
-      }) === true);
+  /* Dia bukan saringan: tidak punya angka, dan tidak pernah menyala. */
+  cek('dan dia bukan saringan — tanpa angka, tidak pernah menyala',
+      (await hal.locator('#saring-cip [data-jenis="*kamera"] .saring-angka').count()) === 0);
 
   const sblmKamera = await hal.evaluate(() => TAlur.semuaEntri()
     .filter((e) => e.jenis === 'gambar' && !e.pensiun).length);
+  /* Ditembakkan lewat isian yang sama persis dengan yang dibuka cipnya - kalau
+     cipnya membuka isian lain, yang lahir bentuk barang yang lain juga. */
+  cek('cipnya membuka isian kamera Gallery, bukan lampiran kotak Drop',
+      await hal.evaluate(() => {
+        let kena = '';
+        const asli = HTMLInputElement.prototype.click;
+        HTMLInputElement.prototype.click = function () { kena = this.id; };
+        document.querySelector('#saring-cip [data-jenis="*kamera"]').click();
+        HTMLInputElement.prototype.click = asli;
+        return kena;
+      }) === 'galeri-pilih-kamera');
   await hal.setInputFiles('#galeri-pilih-kamera', [
     { name: 'pintasuji.png', mimeType: 'image/png', buffer: binPng }
   ]);
@@ -5191,6 +5301,37 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
   cek('jepretan berikutnya mewarisi sudut pandangnya, tanpa satu ketukan pun',
       kedua.driver === 'interior mesjid' && (await hal.locator('#tanya').isHidden()),
       JSON.stringify(kedua));
+
+  /* BUKTI BAHWA JEPRETANNYA MENDARAT, DAN DI MANA. Sesudah memotret layarnya
+     bersih - tidak ada satu pun tanda foto tadi masuk ke mana - dan yang
+     terbaca bukan "sudah tersimpan" tapi "tombolnya tidak berfungsi". */
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(400);
+  cek('jepretan sesi ini berbaris di kepala Gallery',
+      (await hal.locator('#galeri-baru').isVisible()) &&
+      (await hal.locator('#galeri-baru .baru-satu').count()) === 2,
+      String(await hal.locator('#galeri-baru .baru-satu').count()));
+  /* ALAMATNYA IKUT TERTULIS, dan itu seluruh gunanya baris ini: yang kamu
+     tanyakan sesudah memotret bukan "sudah tersimpan?" tapi "masuk ke mana?".
+     Yang belum dipilih AI ditulis apa adanya - menunggu itu jawaban. */
+  cek('lengkap dengan ke mana perginya, atau bahwa dia masih menunggu',
+      (await hal.locator('#galeri-baru .baru-ke').count()) === 2 &&
+      (await hal.innerText('#galeri-baru')).length > 8,
+      (await hal.innerText('#galeri-baru')).replace(/\s+/g, ' ').slice(0, 90));
+  /* Yang terbaru paling depan: yang kamu tanyakan selalu jepretan terakhir. */
+  cek('yang paling baru duduk paling depan',
+      (await hal.evaluate(() => TAlur.fotoSesiUji()[0])) ===
+      (await hal.evaluate(() => TAlur.semuaEntri()
+        .filter((e) => e.namaBerkas === 'sesi2.png')[0].id)));
+  /* DI DALAM BOARD DIA TIDAK DIGAMBAR: fotonya sudah kelihatan sendiri di
+     bawahnya, dan mengulanginya di kepala berarti satu gambar terhitung dua
+     kali. */
+  await hal.click('#galeri-isi [data-galeri-folder="Interior"]');
+  await hal.waitForTimeout(350);
+  cek('tapi di dalam board dia tidak digambar lagi',
+      await hal.locator('#galeri-baru').isHidden());
+  await hal.click('#galeri-saring [data-gkepala="*home"]');
+  await hal.waitForTimeout(350);
   cek('dan kabarnya lewat, dengan satu jalan keluar',
       (await hal.locator('#pesan .pesan-aksi').count()) === 1,
       await hal.innerText('#pesan'));
@@ -5250,6 +5391,12 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
   await hal.waitForTimeout(400);
   cek('silangnya menutup sesinya',
       await hal.locator('#galeri-lengket').isHidden());
+  /* Barisan fotonya ikut hilang: dia kabar tentang sesi yang barusan kamu
+     jatuhkan, dan kabar yang hidup lebih lama daripada peristiwanya cuma jadi
+     sisa yang harus dibersihkan sendiri. */
+  cek('dan barisan foto sesinya ikut hilang bersamanya',
+      (await hal.locator('#galeri-baru').isHidden()) &&
+      (await hal.evaluate(() => TAlur.fotoSesiUji().length)) === 0);
 
   /* BERDIRI DI DALAM BOARD MENJAWAB "KE MANA", BUKAN "APA YANG KAMU LIHAT".
      Dua pertanyaan, dan menyamakannya adalah kesalahan yang paling mahal di
@@ -5325,7 +5472,7 @@ console.log('\ntag sudah dibuang seluruhnya, bukan cuma disembunyikan');
   cek('tidak ada satu pun permintaan tag atau hashtag yang tersisa di arahan',
       !/hashtag/i.test(baca) && !/"tag"/.test(baca) && !/\btag:/.test(baca), baca.slice(0, 200));
   cek('yang diminta deskripsi, dan isinya ditentukan',
-      /2-3 kalimat/.test(gambar) && /nama objeknya, gayanya, kategorinya/.test(gambar));
+      /MAKSIMAL 2 kalimat/.test(gambar) && /nama objeknya, gayanya,/.test(gambar));
   /* Deskripsinya kontekstual: yang menentukan isinya DRIVER, bukan yang paling
      menonjol di gambar. Foto masjid dengan driver "interior mesjid" harus
      menghasilkan kalimat tentang elemen interiornya. */
@@ -5433,10 +5580,32 @@ console.log('\narahan gambar: pendek, kontekstual, bahasamu');
 
   /* ENAM HAL YANG DISEBUT, dan bukan asal panjang: satu kalimat tidak muat
      enam, dan "sebanyak yang benar-benar ada" menghasilkan kalimat bubur. */
-  cek('deskripsinya 2-3 kalimat dengan isi yang ditentukan',
-      /2-3 kalimat/.test(arahanGbr) &&
-      /nama objeknya, gayanya, kategorinya/.test(arahanGbr) &&
+  /* DUA KALIMAT, DAN ITU BATAS ATAS - bukan sasaran. Waktu diminta "2-3
+     kalimat", yang kembali lima: model mengisi jatahnya dengan menulis ulang
+     kalimat pertama memakai kata lain, dan yang ketiga sampai kelima tidak
+     menambah satu pun pintu masuk. Deskripsi yang harus digulir berhenti
+     dibaca, dan yang berhenti dibaca sama saja dengan tidak ada. */
+  cek('deskripsinya maksimal 2 kalimat dengan isi yang ditentukan',
+      /MAKSIMAL 2 kalimat/.test(arahanGbr) &&
+      /nama objeknya, gayanya,/.test(arahanGbr) &&
       /bentuknya, fungsinya/.test(arahanGbr), arahanGbr);
+  cek('dan mengulang dilarang terang-terangan',
+      /JANGAN MENGULANG/.test(arahanGbr));
+  /* DITEGAKKAN KODENYA, bukan cuma diminta: permintaan bukan jaminan, dan yang
+     bocor di sini tidak pernah kelihatan sebagai galat - cuma sebagai kartu
+     yang makin lama makin panjang. */
+  const potong = await hal.evaluate(() => [
+    TPelabel.potongKalimatUji('Satu. Dua. Tiga. Empat.', 2),
+    TPelabel.potongKalimatUji('Cuma satu kalimat tanpa titik', 2),
+    TPelabel.potongKalimatUji('', 2)
+  ]);
+  cek('kalimat ketiga dan seterusnya dipotong kodenya',
+      potong[0] === 'Satu. Dua.', JSON.stringify(potong[0]));
+  /* Dipotong di UJUNG KALIMAT, bukan di jumlah karakter: kalimat yang putus di
+     tengah kata terbaca sebagai data rusak. */
+  cek('yang cuma satu kalimat tidak ikut dipotong di tengah',
+      potong[1] === 'Cuma satu kalimat tanpa titik' && potong[2] === '',
+      JSON.stringify(potong));
   /* Deskripsi menggantikan keyword, jadi kata-katanya harus kata yang akan dia
      ketik lagi - bukan bahasa katalog. */
   cek('dan diminta memakai sebutan yang akan dia ketik lagi',
@@ -5647,7 +5816,7 @@ console.log('\nberdiri di board menjawab "ke mana", bukan "apa yang kamu lihat"'
     dokumen: TPelabel.arahanUji(TAlur.setelanUji())
   }));
   cek('arahan gambar dan arahan dokumen memang dua benda berbeda',
-      /2-3 kalimat/.test(dua.gambar) && !/2-3 kalimat/.test(dua.dokumen) &&
+      /MAKSIMAL 2 kalimat/.test(dua.gambar) && !/MAKSIMAL 2 kalimat/.test(dua.dokumen) &&
       dua.gambar.length * 3 < dua.dokumen.length,
       dua.gambar.length + ' vs ' + dua.dokumen.length);
 
