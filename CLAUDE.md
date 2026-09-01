@@ -367,6 +367,26 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     membacakan DRIVERNYA (alamat masih bisa dipindah kapan saja;
                     sudut pandang yang basi tidak ketahuan); silangnya menutup
                     sesi - "use last scene set up until it dropped".
+                    YANG KAMU KETIK MENANG ATAS TEMPAT KAMU BERDIRI. Keduanya
+                    keputusanmu, tapi tidak sama umurnya: drivernya baru saja
+                    kamu ketik - satu-satunya teks di entri yang lahir dari
+                    kepalamu - sementara board yang kebetulan terbuka bisa saja
+                    sisa kunjungan tadi pagi. Jadi kalau drivernya menyebut
+                    bidang LAIN, tempat berdirinya DILEPAS, bukan diadu
+                    (seJalur di alur.js, dan wajib = sebut.main || albumInduk
+                    di taruhBoard). Kalau drivernya diam, tempat berdirinya
+                    tetap berlaku - dia satu-satunya jawaban yang ada.
+                    AKARNYA WAJIB IKUT DIKIRIM ke bacaBoardDariDriver, DI SEMUA
+                    PEMANGGILNYA. taruhDriver pernah memanggilnya tanpa itu, dan
+                    akibatnya paling licin dari semua kekeliruan di berkas ini:
+                    tanpa daftar akar dia tidak tahu "Business" itu akar, jadi
+                    "Business Hampers" terbaca sebagai SUB board - alamat
+                    lengkap - lalu DIKUNCI albumManual. Fotonya mendarat di
+                    pintu ruangan dan terkunci di situ, dan tiga aturan
+                    penempatan tidak ada satu pun yang dijalankan. Yang
+                    kelihatan "AI salah memilih" sebenarnya "AI tidak pernah
+                    ditanya", dan kekeliruannya tidak kelihatan dari mana pun
+                    kecuali dari alamat yang mendarat.
                     DRIVER BOLEH SEKALIAN MENYEBUT ALAMATNYA
                     (TOtak.bacaBoardDariDriver). Ketik nama SUB board -> langsung
                     mendarat di situ dan DIKUNCI, tanpa AI: kamu sudah menjawab.
@@ -839,7 +859,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (814 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (824 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

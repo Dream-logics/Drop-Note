@@ -643,14 +643,21 @@
     var akhiran = daftarAkhiran(setelan);
     var akarAda = daftarAkar(setelan);
     var sebut = TOtak.bacaBoardDariDriver(e.driver, punya, akhiran, akarAda);
-    /* DUA CARA MENYEBUT BIDANG, DAN KEDUANYA MENGIKAT SAMA KUATNYA: mengetiknya
-       di driver, atau BERDIRI DI DALAMNYA waktu memotret ('albumInduk').
+    /* DUA CARA MENYEBUT BIDANG, DAN YANG DIKETIK MENANG: mengetiknya di driver,
+       atau BERDIRI DI DALAMNYA waktu memotret ('albumInduk').
+
+       Keduanya keputusanmu, tapi tidak sama umurnya. Drivernya baru saja kamu
+       ketik - itu satu-satunya teks di entri ini yang lahir dari kepalamu.
+       Board yang kebetulan terbuka bisa saja sisa kunjungan tadi pagi, dan
+       memenangkannya berarti ketikan yang paling sengaja di seluruh alur ini
+       kalah oleh layar yang lupa ditutup.
+
        Berdiri di wadah menjawab separuh - yang tersisa "kamarnya yang mana",
        dan itu justru pertanyaan yang bisa dijawab mesin karena dia melihat
        gambarnya. Dulu berdiri di situ MENGUNCI alamatnya, dan kuncinya
        memulangkan fungsi ini di baris pertama: fotonya menumpuk di pintu
        ruangan walau kamarnya sudah ada. */
-    var wajib = e.albumInduk || sebut.main || '';
+    var wajib = sebut.main || e.albumInduk || '';
     var pilih = pilihBoard(jawab, punya, akhiran, wajib, akarAda);
     /* TIDAK ADA BIDANG YANG COCOK ITU JAWABAN, BUKAN KEGAGALAN. Foto antariksa
        tidak punya rumah di daftar bidang usahanya, dan membiarkannya di "Belum
