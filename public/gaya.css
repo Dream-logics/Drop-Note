@@ -93,12 +93,13 @@ button,input,textarea{font:inherit;color:inherit}
 .dok{position:sticky;top:0;z-index:6;background:var(--g);padding:4px 0 8px}
 
 /* Di ATAS: kotak selebar layar, tiga tombol berjajar di bawahnya. */
-.kepala-tetap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.kepala-tetap{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
 .kotak-bar{display:contents}
 #kotak,.kotak-bungkus{grid-column:1 / -1}
 #b-lampir{grid-column:1}
 #b-tugas{grid-column:2}
-#b-drop{grid-column:3}
+#b-kamera{grid-column:3}
+#b-drop{grid-column:4}
 
 /* --- lampiran (jenis dropping) --- */
 .lampiran{display:flex;gap:7px;margin-bottom:6px}
@@ -745,13 +746,22 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
   border:none;background:none;border-radius:0;
   min-height:42px;padding:11px 4px;
 }
-.dok-bawah #b-lampir,.dok-bawah #b-tugas{
+.dok-bawah #b-lampir,.dok-bawah #b-tugas,.dok-bawah #b-kamera{
   flex:0 0 auto;width:40px;height:40px;min-height:0;padding:0;border:none;
   border-radius:50%;color:var(--m);
 }
-.dok-bawah #b-lampir span,.dok-bawah #b-tugas span,
+.dok-bawah #b-lampir span,.dok-bawah #b-tugas span,.dok-bawah #b-kamera span,
 .dok-bawah #b-lampir .ik.kecil,.dok-bawah #b-tugas .ik.kecil{display:none}
 .dok-bawah #b-lampir.nyala,.dok-bawah #b-tugas.nyala{color:var(--a)}
+/* EMPAT IKON DI DALAM SATU KOTAK ITU BATASNYA. Di 360px yang tersisa untuk
+   kotaknya tinggal secuil, dan kotak yang placeholder-nya terpotong berhenti
+   terbaca sebagai undangan mengetik. Jadi di layar paling sempit ikonnya
+   menyusut - bukan salah satunya dibuang, karena yang dibuang pasti yang
+   sedang dibutuhkan orangnya. */
+@media (max-width:400px){
+  .dok-bawah #b-lampir,.dok-bawah #b-tugas,.dok-bawah #b-kamera{width:35px}
+  .dok-bawah #b-ai{width:33px}
+}
 /* Todo beraksen sejak diam: dia satu-satunya ikon di bilah ini yang MENYIMPAN
    sesuatu, dan yang menyimpan pantas kelihatan berbeda dari yang cuma membuka. */
 .dok-bawah #b-tugas{color:var(--a)}
@@ -1081,9 +1091,11 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 }
 .dok-bawah #b-ai .ik{width:20px;height:20px}
 .dok-bawah #b-ai.nyala{color:var(--a)}
-/* Waktu mengetik di mode Drop, ikon AI mengalah - kotaknya yang dapat
-   tempatnya, justru saat isinya paling panjang. */
-.mengetik #b-ai{display:none}
+/* Waktu mengetik di mode Drop, ikon AI dan kamera mengalah - kotaknya yang
+   dapat tempatnya, justru saat isinya paling panjang. Keduanya memang yang
+   paling tidak mungkin dipakai saat itu: orang yang sudah mengetik catatan
+   tidak sedang mau bertanya, dan tidak sedang mau memotret. */
+.mengetik #b-ai,.mengetik #b-kamera{display:none}
 #b-drop .ik.kirim{display:none}
 .mode-ai #b-drop .ik.turun{display:none}
 .mode-ai #b-drop .ik.kirim{display:block}
@@ -1098,7 +1110,7 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    Klip dan Todo ikut pergi: belum ada yang bisa dilampirkan ke pertanyaan,
    dan tugas tidak pernah lahir dari layar ini. */
 .mode-ai #petak-hasil-depan,.mode-ai .saring-baris,.mode-ai .ruang-baris,
-.mode-ai #b-lampir,.mode-ai #b-tugas{display:none}
+.mode-ai #b-lampir,.mode-ai #b-tugas,.mode-ai #b-kamera{display:none}
 /* Yang terbaru MENEMPEL di kotaknya, bukan menggantung di puncak layar dengan
    sejengkal kosong di bawahnya. Ini bentuk yang sudah dikenali dari tiap
    aplikasi pesan, dan bukan sekadar rupa: jawaban terakhir duduk tepat di atas

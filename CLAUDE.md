@@ -518,10 +518,27 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     jangan naikkan lagi ke kepala, itu ujung terjauh dari
                     jempol. Angka "N tersimpan" sudah dibuang dan jangan
                     dikembalikan.
-                    Isi kotak, ala WhatsApp: AI - [teks] - klip - Todo, lalu
-                    Drop di luar. EMPAT ikon waktu diam, TIGA waktu mengetik:
-                    ikon AI pergi di mode Drop begitu ada yang diketik, klip
-                    dan Todo pergi di mode AI.
+                    Isi kotak, ala WhatsApp: AI - [teks] - klip - Todo -
+                    KAMERA, lalu Drop di luar. LIMA ikon waktu diam, TIGA waktu
+                    mengetik: ikon AI dan kamera pergi di mode Drop begitu ada
+                    yang diketik (foto yang kamu ambil tidak ada hubungannya
+                    dengan kalimat yang sedang kamu tulis, dan kotaknya butuh
+                    tempatnya justru saat isinya paling panjang); klip, Todo,
+                    dan kamera pergi di mode AI. Di bawah 400px ikonnya
+                    MENYUSUT, tidak ada yang dibuang - yang dibuang pasti yang
+                    sedang dibutuhkan orangnya.
+                    IKON KAMERA ITU JALAN PINTAS KE GALLERY, BUKAN LAMPIRAN.
+                    Bedanya dengan klip di sebelahnya bukan bentuk berkasnya,
+                    tapi ke mana barangnya pergi: klip menempelkan gambar pada
+                    catatan yang sedang diketik, kamera menyimpannya LANGSUNG
+                    jadi entri Gallery lewat isian yang sama persis dengan dok
+                    kamera di sana - sesi dan pertanyaan drivernya ikut sama.
+                    Dua jalur masuk yang menghasilkan dua bentuk barang adalah
+                    cara tercepat membuat satu tumpukan jadi dua tumpukan yang
+                    tidak pernah bertemu. Layarnya TIDAK ikut berpindah, dan
+                    alamatnya DIKOSONGKAN - board yang kebetulan terakhir
+                    dibuka di Gallery tidak menjawab "ke mana" untuk foto yang
+                    diambil dari sini.
                     MODE AI: satu ikon tepat DI ATAS tombol Drop, dan ikon itu
                     yang mengubah arti tombol di bawahnya - selama menyala,
                     kotaknya berhenti mencari dan Drop berhenti menyimpan.
@@ -549,7 +566,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (727 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (735 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

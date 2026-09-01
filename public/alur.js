@@ -2566,7 +2566,14 @@
        DIKOSONGKAN - bukan diwarisi dari jepretan sebelumnya. Yang memilih
        boardnya AI, dan dia memilih dengan melihat gambarnya sendiri plus
        drivermu; mewariskan alamat lama justru menutup jawaban yang lebih baik. */
-    var diBuka = (galeriFolder && galeriFolder !== TANPA_ALBUM) ? galeriFolder : '';
+    /* Boardnya cuma diwarisi kalau kamu memang SEDANG BERDIRI di dalamnya -
+       dan berdiri berarti layar Gallery yang terbuka, bukan sekadar board
+       yang terakhir kamu buka di sana. Memotret lewat jalan pintas di layar
+       Drop tidak menjawab "ke mana" sama sekali, jadi menjawabkannya dengan
+       board sisa kunjungan kemarin adalah salah alamat yang tidak pernah kamu
+       curigai. Di sini alamatnya dikosongkan, dan AI yang memilihnya. */
+    var diBuka = (diLayarGaleri() && galeriFolder && galeriFolder !== TANPA_ALBUM)
+      ? galeriFolder : '';
     /* Drivernya yang mewaris, bukan alamatnya. Itu yang membuat sepuluh
        jepretan beruntun dibaca dari sudut pandang yang sama - bukan
        masing-masing menurut apa yang kebetulan paling menonjol di gambarnya. */
@@ -5052,6 +5059,14 @@
     });
     $('#b-lampir').addEventListener('click', function () { alihLaci('drop'); });
     $('#b-tugas').addEventListener('click', keTugas);
+    /* JALAN PINTAS, BUKAN PINTU KEDUA. Isian yang dipakai sama persis dengan
+       dok kamera di layar Gallery - jadi yang lahir dari sini entri Gallery
+       yang sama, dengan sesi dan pertanyaan driver yang sama. Dua jalur masuk
+       yang menghasilkan dua bentuk barang adalah cara tercepat membuat satu
+       tumpukan jadi dua tumpukan yang tidak pernah bertemu. */
+    $('#b-kamera').addEventListener('click', function () {
+      $('#galeri-pilih-kamera').click();
+    });
     /* RUANGNYA TERBATAS: laci yang menggantung terbuka menutupi kotak dan
        hasilnya sekaligus. Jadi dia menutup sendiri begitu kamu menyentuh hal
        lain - mengetuk kotak, menggulir hasil, apa pun di luar lacinya. Kalau
@@ -5065,7 +5080,7 @@
          terbuka menutup lacinya duluan - doknya bergeser turun, dan ketukan
          yang sudah dimulai mendarat di tempat kosong. Yang menutup lacinya
          nanti kosongkanKotak, sesudah barangnya benar-benar tersimpan. */
-      if (ev.target.closest('#b-lampir, #b-tugas, #b-drop, #b-ai, [data-tab-ke="l-utama"]')) return;
+      if (ev.target.closest('#b-lampir, #b-tugas, #b-kamera, #b-drop, #b-ai, [data-tab-ke="l-utama"]')) return;
       tutupLaci();
     }, true);
     $('#b-tutup-hasil').addEventListener('click', tutupHasilDepan);
