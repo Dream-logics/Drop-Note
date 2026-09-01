@@ -1275,16 +1275,34 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    Barisnya tetap satu baris folder biasa - yang ditambahkan cuma panah yang
    berputar dan tombol masuk di ujung kanan. Dua sasaran di satu baris, dan
    keduanya 40px: yang kiri mengintip, yang kanan benar-benar pindah. */
-.laci{position:relative}
-.laci .laci-kepala{padding-right:42px}
+/* 'laci-board', BUKAN 'laci': nama itu sudah dipakai laci lampiran di dok Drop
+   (kartu berbingkai, max-height 46vh). Kelas yang bertabrakan tidak pernah
+   menimbulkan galat - dia cuma diam-diam mewarisi gaya yang tidak dimaksud,
+   dan di sini akibatnya baris folder jadi kartu putih dan laci yang panjang
+   terpotong separuh layar. */
+.laci-board{position:relative}
+/* Barisnya sendiri yang jadi patokan panahnya, bukan seluruh laci - kalau
+   seluruh laci, panahnya menempel di atas begitu isinya terbuka. */
+.laci-baris{position:relative}
+.laci-baris .laci-kepala{padding-right:42px}
 .laci-panah{transition:transform .15s ease;flex:none}
-.laci.buka .laci-panah{transform:rotate(90deg)}
+.laci-board.buka .laci-panah{transform:rotate(90deg)}
+/* top DAN bottom nol: tingginya ikut barisnya, jadi ikonnya benar-benar di
+   tengah berapa pun tinggi barisnya - bukan ditebak dari angka tetap. */
 .laci-masuk{
-  position:absolute;top:0;right:0;width:40px;height:40px;display:flex;
+  position:absolute;top:0;bottom:0;right:0;width:40px;display:flex;
   align-items:center;justify-content:center;background:none;border:0;
   color:var(--m);cursor:pointer;
 }
 .laci-masuk .ik{width:16px;height:16px}
+/* GARIS DI BAWAH JUDUL CUMA KALAU ADA ISINYA. Garis yang memisahkan judul dari
+   ruang kosong tidak memisahkan apa pun - dia cuma coretan. Yang memisahkan
+   baris dari baris tetap ada, tapi itu garis ANTAR baris, bukan di bawah
+   judul: jadi dia dipasang di atas baris berikutnya, dan baris terakhir tidak
+   meninggalkan garis menggantung. */
+.laci-board .laci-kepala{border-bottom:none}
+.laci-board.buka .laci-kepala{border-bottom:1px solid var(--l)}
+.laci-board + .laci-board{border-top:1px solid var(--l)}
 /* Isinya menjorok sedikit supaya terbaca "milik baris di atasnya", bukan
    tumpukan baru yang sederajat. */
 .laci-isi{padding:8px 0 12px 10px}

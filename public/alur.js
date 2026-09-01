@@ -2992,7 +2992,16 @@
   function laciHtml(f, semuaA) {
     var buka = !!galeriLaci[f.nama];
     var isi = buka ? isiDalam(f.nama, semuaA) : [];
-    return '<div class="laci' + (buka ? ' buka' : '') + '">' +
+    /* 'laci-board', BUKAN 'laci': nama itu sudah dipakai laci lampiran di dok
+       Drop, dan gaya di sana memberi kartu berbingkai plus max-height 46vh -
+       jadi baris folder ikut jadi kartu, dan laci yang isinya banyak terpotong
+       separuh layar. Nama kelas yang bertabrakan tidak pernah menimbulkan galat;
+       dia cuma diam-diam mewarisi gaya yang tidak dimaksud. */
+    return '<div class="laci-board' + (buka ? ' buka' : '') + '">' +
+      /* Barisnya dibungkus supaya panahnya bisa dipatok ke TINGGI BARIS, bukan
+         ke seluruh laci - kalau dipatok ke lacinya, panahnya menempel di atas
+         begitu lacinya terbuka. */
+      '<div class="laci-baris">' +
       /* DUA PENANDA DI SATU BARIS, dan itu disengaja: 'data-laci' untuk ketukan
          biasa (mengintip isinya), 'data-galeri-folder' supaya TEKAN LAMA tetap
          menandainya untuk dibuang/gabung/pindah - kebiasaan yang sama dengan
@@ -3007,6 +3016,7 @@
       '<button class="laci-masuk" data-galeri-folder="' + H(f.nama) + '" aria-label="Buka folder">' +
         '<svg viewBox="0 0 24 24" class="ik"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>' +
       '</button>' +
+      '</div>' +
       (buka ? '<div class="laci-isi">' +
         (isi.length ? petakHtml(isi) : '<div class="laci-kosong">Belum ada gambar di sini.</div>') +
       '</div>' : '') +

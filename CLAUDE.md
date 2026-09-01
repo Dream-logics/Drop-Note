@@ -288,6 +288,20 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     tidak cocok dengan isi lacinya lebih buruk daripada tidak
                     berangka. Buka/tutup semua di kepalanya. Lacinya KEADAAN,
                     tidak ikut disimpan, dan ditutup Home.
+                    KELASNYA 'laci-board', BUKAN 'laci' - nama itu sudah dipakai
+                    laci lampiran di dok Drop (kartu berbingkai, max-height
+                    46vh). Kelas yang bertabrakan tidak pernah bergalat; dia
+                    cuma diam-diam mewarisi gaya yang tidak dimaksud, dan di
+                    sini akibatnya baris folder jadi kartu putih dan laci yang
+                    panjang terpotong separuh layar.
+                    GARIS DI BAWAH JUDUL CUMA KALAU LACINYA TERBUKA. Garis yang
+                    memisahkan judul dari ruang kosong tidak memisahkan apa pun,
+                    dia cuma coretan. Yang memisahkan baris dari baris tetap
+                    ada, tapi dipasang sebagai border-top baris BERIKUTNYA -
+                    jadi baris terakhir tidak meninggalkan garis menggantung.
+                    Panah masuknya dipatok ke '.laci-baris' (top:0;bottom:0),
+                    bukan ke seluruh laci: kalau ke lacinya, dia menempel di
+                    atas begitu isinya terbuka.
                     View menu turun berisi SATU BARIS saja: ukuran petak
                     (bawaan 'sedang'), dan barisnya MENCIUT begitu dipilih -
                     menu yang tetap terbuka mendorong gambarnya turun justru
@@ -889,7 +903,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (834 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (838 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
