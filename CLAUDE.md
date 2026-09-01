@@ -201,6 +201,33 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     puluh ribu foto adalah dinding tanpa alasan. Dok kameranya
                     PERGI selama memilih: dia duduk di sudut yang sama dengan
                     bilah pilih dan akan menutupi Batal.
+                    KEPALANYA TIGA TOMBOL: Home - All - View. Home mengembalikan
+                    layar seperti baru dibuka (akar, tanpa kueri, tanpa saringan,
+                    menu tertutup) - satu ketukan, bukan empat di empat tempat.
+                    All MENEMBUS board: yang tampil semua gambarnya, karena
+                    kadang yang kamu cari cuma "yang tadi" dan yang tadi tidak
+                    punya alamat di kepalamu; dia keadaan, tidak ikut disimpan.
+                    View menu turun berisi ukuran petak (bawaan 'sedang') plus
+                    saringan SUMBER di bawah garis. Dulu di sini lima cip
+                    saringan plus empat tombol tampilan berjajar - sembilan
+                    benda di satu baris, di layar yang isinya justru gambar.
+                    BOARDNYA BERURUT ABJAD, bukan terbanyak-dulu (bangunPohon
+                    dapat penanda 'abjad'). Pohon board kamu tulis sendiri dan
+                    jumlahnya tetap; urutan yang berubah mengikuti isinya
+                    berarti jari tidak pernah hafal tempatnya. Rak Storage lain
+                    ceritanya - dia lahir dari catatan yang jatuh, jadi yang
+                    paling ramai memang yang paling mungkin kamu tuju.
+                    BARISAN FOTO SESI ('fotoSesi', di kepala akar Gallery):
+                    bukti bahwa jepretanmu mendarat, DAN DI MANA. Sesudah
+                    memotret layarnya bersih, dan yang terbaca bukan "sudah
+                    tersimpan" tapi "tombolnya tidak berfungsi". Tiap petak
+                    membawa boardnya, atau "menunggu AI…" kalau belum dipilih -
+                    menunggu itu jawaban yang jujur, dan jawaban jujur lebih
+                    menenangkan daripada nama board yang diterka. HIDUP DI
+                    MEMORI SAJA: memuat ulang atau menutup sesinya
+                    membuangnya, karena kabar yang masih menempel besok pagi
+                    bukan kabar lagi. Tidak digambar di dalam board - fotonya
+                    sudah kelihatan sendiri di bawahnya.
                     TIDAK ADA "+ Folder" di layar ini. Pohonnya dikurasi di SATU
                     tempat, di Setelan - dua pintu untuk menumbuhkan daftar yang
                     sama berarti daftarnya tumbuh tanpa ada yang pernah melihat
@@ -268,7 +295,14 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     Driver yang datang belakangan memicu pelabelan ULANG.
 public/bawaan.js    (lanjutan) POHON BOARD ('boardAwal', disunting lewat menu
                     di Setelan) - SATU pohon, dua tingkat, dan dia satu-satunya
-                    alamat. Main board bidangnya, sub board urusannya di dalam
+                    alamat. Menunya DILIPAT, satu terbuka, berurut abjad:
+                    digelar sekaligus dia sepanjang tiga layar HP, dan waktu
+                    semuanya tergelar "+ Sub" milik satu board duduk berdempetan
+                    dengan puluhan baris milik board lain - sekali salah ketuk,
+                    sub board yang kamu maksud lahir sebagai main board, dan itu
+                    tidak kelihatan sampai kamu membuka Gallery. Sekarang
+                    "+ Sub" duduk DI DALAM panel yang terbuka dan menyebut nama
+                    induknya di tombolnya sendiri. Main board bidangnya, sub board urusannya di dalam
                     bidang itu. Susunannya dibaca dari NAMA ("FNB Menu Promo"
                     otomatis anak "FNB"), jadi tidak ada kolom induk yang bisa
                     jadi yatim - tapi awalannya DIPASANG APLIKASINYA lewat
@@ -318,9 +352,16 @@ public/pelabel.js   (lanjutan) TIDAK ADA TAG SAMA SEKALI, dan itu keputusan
                     isinya masih menyuruh "sebutkan jenis dokumennya" dan
                     "jangan menafsirkan" - dua perintah yang bertabrakan
                     langsung dengan sudut pandang.
-                    DESKRIPSI 2-3 KALIMAT, dan isinya ditentukan: nama objek,
-                    gaya, kategori, bentuk, fungsi, satu hal unik yang benar-
-                    benar terlihat. Satu kalimat tidak muat enam. Ditulis DARI
+                    DESKRIPSI MAKSIMAL 2 KALIMAT, dan isinya ditentukan: nama
+                    objek, gaya, kategori, bentuk, fungsi, satu hal unik yang
+                    benar-benar terlihat. Dua itu BATAS ATAS, bukan sasaran:
+                    waktu diminta "2-3 kalimat" yang kembali lima, dan yang
+                    ketiga sampai kelima cuma menulis ulang kalimat pertama
+                    dengan kata lain. Deskripsi yang harus digulir berhenti
+                    dibaca, dan yang berhenti dibaca sama saja dengan tidak
+                    ada. Ditegakkan KODENYA lewat potongKalimat(), dipotong di
+                    UJUNG KALIMAT - yang putus di tengah kata terbaca sebagai
+                    data rusak. Ditulis DARI
                     SUDUT PANDANG driver, bukan dari yang paling menonjol di
                     gambar - foto masjid dengan driver "interior mesjid"
                     menghasilkan kalimat tentang elemen interiornya; yang sama
@@ -518,27 +559,27 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     jangan naikkan lagi ke kepala, itu ujung terjauh dari
                     jempol. Angka "N tersimpan" sudah dibuang dan jangan
                     dikembalikan.
-                    Isi kotak, ala WhatsApp: AI - [teks] - klip - Todo -
-                    KAMERA, lalu Drop di luar. LIMA ikon waktu diam, TIGA waktu
-                    mengetik: ikon AI dan kamera pergi di mode Drop begitu ada
-                    yang diketik (foto yang kamu ambil tidak ada hubungannya
-                    dengan kalimat yang sedang kamu tulis, dan kotaknya butuh
-                    tempatnya justru saat isinya paling panjang); klip, Todo,
-                    dan kamera pergi di mode AI. Di bawah 400px ikonnya
-                    MENYUSUT, tidak ada yang dibuang - yang dibuang pasti yang
-                    sedang dibutuhkan orangnya.
-                    IKON KAMERA ITU JALAN PINTAS KE GALLERY, BUKAN LAMPIRAN.
-                    Bedanya dengan klip di sebelahnya bukan bentuk berkasnya,
-                    tapi ke mana barangnya pergi: klip menempelkan gambar pada
-                    catatan yang sedang diketik, kamera menyimpannya LANGSUNG
-                    jadi entri Gallery lewat isian yang sama persis dengan dok
-                    kamera di sana - sesi dan pertanyaan drivernya ikut sama.
-                    Dua jalur masuk yang menghasilkan dua bentuk barang adalah
-                    cara tercepat membuat satu tumpukan jadi dua tumpukan yang
-                    tidak pernah bertemu. Layarnya TIDAK ikut berpindah, dan
-                    alamatnya DIKOSONGKAN - board yang kebetulan terakhir
-                    dibuka di Gallery tidak menjawab "ke mana" untuk foto yang
-                    diambil dari sini.
+                    Isi kotak, ala WhatsApp: AI - [teks] - klip - Todo, lalu
+                    Drop di luar. EMPAT ikon waktu diam, TIGA waktu mengetik:
+                    ikon AI pergi di mode Drop begitu ada yang diketik, klip
+                    dan Todo pergi di mode AI.
+                    CIP KAMERA DI BARIS CIP, DI KANAN RESET - ujung yang paling
+                    dekat jempol. Dia sempat jadi ikon di dalam kotak, di antara
+                    klip dan Todo, dan di sana dia tidak pernah terbaca sebagai
+                    tombol yang MENGHASILKAN sesuatu: dua tetangganya cuma
+                    membuka laci. Dia bukan saringan - tanpa angka, tidak pernah
+                    menyala, bergaris putus-putus seperti Reset.
+                    ITU JALAN PINTAS KE GALLERY, BUKAN LAMPIRAN. Bedanya dengan
+                    klip bukan bentuk berkasnya, tapi ke mana barangnya pergi:
+                    klip menempelkan gambar pada catatan yang sedang diketik,
+                    kamera menyimpannya LANGSUNG jadi entri Gallery lewat isian
+                    yang sama persis dengan dok kamera di sana - sesi dan
+                    pertanyaan drivernya ikut sama. Dua jalur masuk yang
+                    menghasilkan dua bentuk barang adalah cara tercepat membuat
+                    satu tumpukan jadi dua tumpukan yang tidak pernah bertemu.
+                    Layarnya TIDAK ikut berpindah, dan alamatnya DIKOSONGKAN -
+                    board yang kebetulan terakhir dibuka di Gallery tidak
+                    menjawab "ke mana" untuk foto yang diambil dari sini.
                     MODE AI: satu ikon tepat DI ATAS tombol Drop, dan ikon itu
                     yang mengubah arti tombol di bawahnya - selama menyala,
                     kotaknya berhenti mencari dan Drop berhenti menyimpan.
@@ -566,7 +607,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (735 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (753 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

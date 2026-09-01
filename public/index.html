@@ -107,21 +107,6 @@
         <button class="tbl" id="b-tugas" aria-label="Jadikan tugas">
           <svg viewBox="0 0 24 24" class="ik"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg>
         </button>
-        <!-- KAMERA: JALAN PINTAS KE GALLERY, BUKAN LAMPIRAN.
-             Bedanya dengan klip di sebelahnya bukan bentuk file-nya, tapi ke
-             mana barangnya pergi: klip menempelkan gambar pada catatan yang
-             sedang kamu ketik, kamera ini menyimpannya LANGSUNG jadi entri
-             Gallery - sama persis dengan dok kamera di layar sana. Yang
-             dihemat perjalanan tiga ketukan (pindah pintu, buka dok, potret)
-             untuk hal yang paling sering dilakukan di aplikasi ini.
-
-             Dia PERGI begitu kamu mengetik, seperti ikon AI: foto yang kamu
-             ambil tidak ada hubungannya dengan kalimat yang sedang kamu tulis,
-             dan kotaknya yang butuh tempatnya justru saat isinya paling
-             panjang. -->
-        <button class="tbl" id="b-kamera" aria-label="Ambil foto">
-          <svg viewBox="0 0 24 24" class="ik"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.4"/></svg>
-        </button>
       </div>
       <!-- Kabar ke mana barangnya akan mendarat, plus turunan gudangnya.
            Tidak perlu disentuh sama sekali - mengetuknya cuma jalan pintas
@@ -367,13 +352,25 @@
     <button class="pilih-mulai" id="b-galeri-pilih">Pilih</button>
   </div>
 
-  <!-- SATU BARIS untuk dua hal, saringan di kiri dan tampilan di kanan.
-       Dua baris terpisah mendorong gambar pertama ke bawah layar - dan gambar
-       pertama itu yang dicari. -->
+  <!-- TIGA TOMBOL, dan ketiganya menjawab pertanyaan yang berbeda: Home
+       ("kembalikan seperti baru dibuka"), All ("perlihatkan semuanya
+       sekaligus"), View ("ubah cara melihatnya"). Dulu di sini lima cip
+       saringan berjajar plus empat tombol tampilan - sembilan benda di satu
+       baris, di layar yang isinya justru gambar. -->
   <div class="galeri-baris">
-    <div class="galeri-saring" id="galeri-saring"></div>
-    <div class="galeri-tampil" id="galeri-tampil"></div>
+    <div class="galeri-kepala" id="galeri-saring"></div>
   </div>
+  <!-- Isi menu View: ukuran petak dulu, saringan sumber di bawah garis.
+       Tertutup sampai diminta - dia jawaban untuk pertanyaan yang tidak setiap
+       hari ditanyakan. -->
+  <div class="galeri-tampil sembunyi" id="galeri-tampil"></div>
+
+  <!-- BUKTI BAHWA JEPRETANMU MENDARAT, DAN DI MANA. Sesudah memotret layarnya
+       bersih, dan yang terbaca bukan "sudah tersimpan" tapi "tombolnya tidak
+       berfungsi". Barisnya hidup di memori saja: memuat ulang halaman atau
+       menutup sesinya membuangnya, karena kabar yang masih menempel besok pagi
+       bukan kabar lagi. -->
+  <div class="galeri-baru sembunyi" id="galeri-baru"></div>
 
   <div id="galeri-isi"></div>
   <div class="tumbuh"></div>

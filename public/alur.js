@@ -1334,33 +1334,62 @@
   }
 
   /* ===================== MENU BOARD DI SETELAN =====================
-     Disunting sebagai POHON, bukan sebagai kotak teks berisi baris-baris.
-     Bedanya bukan kerapian: susunan di sini dibaca dari awalan nama, jadi
-     kotak teks menuntut pemakainya mengetik sendiri nama induk di depan tiap
-     anak - dan kalau dia lupa sekali, "Menu Promo" mendarat di akar sebagai
-     main board baru yang tidak pernah dia maksud. Tombol "+ Sub" tahu di mana
-     dia ditekan, jadi awalannya dipasang aplikasinya. Yang diketik cuma nama
-     pendeknya. */
+     DILIPAT, SATU TERBUKA. Pohon lengkapnya empat puluh baris; digelar
+     sekaligus dia sepanjang tiga layar HP, dan daftar yang tidak pernah
+     terlihat utuh persis yang mau dihindari sejak awal. Jadi yang tampil
+     tujuh baris bidangnya saja - satu ketukan membuka isinya, dan yang
+     terbuka cuma satu.
+
+     Bedanya bukan kerapian: waktu semuanya tergelar, "+ Sub" milik satu board
+     duduk berdempetan dengan puluhan baris milik board lain, dan tombol
+     "+ Main board" di kaki daftar cuma sejengkal dari "+ Sub" yang terakhir.
+     Sekali salah ketuk, sub board yang kamu maksud lahir sebagai main board -
+     kesalahan yang tidak kelihatan sampai kamu membuka Gallery.
+
+     Sekarang "+ Sub" duduk DI DALAM panel yang terbuka, dengan nama induknya
+     tertulis di kepalanya, dan "+ Main board" berdiri sendiri di kaki daftar
+     yang sudah pendek.
+
+     Susunannya ABJAD, bukan urutan pembuatan. Daftar yang urutannya cuma
+     diketahui pembuatnya harus dibaca seluruhnya tiap kali; yang berabjad
+     bisa dilompati dengan mata. */
+  var boardBuka = '';
+
+  function urutAbjad(a, b) { return String(a).localeCompare(String(b)); }
+
+  function boardInduk() {
+    return albumDaftar.filter(function (n) { return !indukBoard(n); }).sort(urutAbjad);
+  }
+
+  function boardAnak(m) {
+    return albumDaftar.filter(function (n) { return indukBoard(n) === m; }).sort(urutAbjad);
+  }
+
   function gambarPohonBoard() {
     var w = $('#set-board');
     if (!w) return;
-    var induk = albumDaftar.filter(function (n) { return !indukBoard(n); });
+    var induk = boardInduk();
     w.innerHTML = induk.map(function (m) {
-      var anak = albumDaftar.filter(function (n) { return indukBoard(n) === m; });
-      return '<div class="board-main">' +
-        '<div class="board-baris">' +
+      var anak = boardAnak(m);
+      var buka = boardBuka === m;
+      return '<div class="board-main' + (buka ? ' buka' : '') + '">' +
+        '<button class="board-baris board-kepala" data-board-buka="' + H(m) + '">' +
+          '<svg viewBox="0 0 24 24" class="ik board-panah"><path d="M9 6l6 6-6 6"/></svg>' +
           '<span class="board-nama" data-asli>' + H(m) + '</span>' +
-          '<button class="board-tambah" data-board-sub="' + H(m) + '">+ Sub</button>' +
-          '<button class="board-buang" data-board-buang="' + H(m) + '" aria-label="Hapus">' +
-          '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>' +
-        '</div>' +
-        anak.map(function (n) {
-          return '<div class="board-baris board-sub">' +
-            '<span class="board-nama" data-asli>' + H(namaPendek(n, m)) + '</span>' +
-            '<button class="board-buang" data-board-buang="' + H(n) + '" aria-label="Hapus">' +
-            '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>' +
-          '</div>';
-        }).join('') +
+          '<span class="board-hitung">' + anak.length + '</span>' +
+        '</button>' +
+        '<button class="board-buang board-buang-main" data-board-buang="' + H(m) + '" aria-label="Hapus">' +
+        '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>' +
+        (buka ? '<div class="board-panel">' +
+          anak.map(function (n) {
+            return '<div class="board-baris board-sub">' +
+              '<span class="board-nama" data-asli>' + H(namaPendek(n, m)) + '</span>' +
+              '<button class="board-buang" data-board-buang="' + H(n) + '" aria-label="Hapus">' +
+              '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>' +
+            '</div>';
+          }).join('') +
+          '<button class="board-tambah" data-board-sub="' + H(m) + '">+ Sub di ' + H(m) + '</button>' +
+        '</div>' : '') +
       '</div>';
     }).join('') +
     '<button class="board-tambah board-utama" data-board-main>+ Main board</button>';
@@ -1389,9 +1418,9 @@
   }
 
   function tambahBoard(induk) {
-    tanyaKetik(induk ? 'Sub board baru' : 'Main board baru',
-      induk ? 'Di dalam “' + induk + '”. Cukup nama pendeknya.'
-            : 'Bidangnya, satu-dua kata.',
+    tanyaKetik(induk ? 'Sub board di “' + induk + '”' : 'Main board baru',
+      induk ? 'Cukup nama pendeknya — awalan “' + induk + '” dipasang sendiri.'
+            : 'Bidangnya, satu-dua kata. Ini berdiri di akar, bukan di dalam board mana pun.',
       '', function (ketik) {
         var nama = String(ketik || '').trim();
         if (!nama) return;
@@ -1401,6 +1430,10 @@
           nama = induk + ' ' + nama;
         }
         if (!tambahAlbum(nama)) { pesan('Board itu sudah ada'); return; }
+        /* Yang baru dibuat LANGSUNG TERLIHAT: panel induknya dibuka sendiri.
+           Sub board yang lahir di balik panel tertutup tidak bisa dibedakan
+           dari sub board yang gagal dibuat. */
+        boardBuka = induk || nama;
         simpanAlbum().then(function () {
           gambarPohonBoard();
           pesan('Board “' + nama + '” dibuat');
@@ -1410,7 +1443,7 @@
 
   /* MENGHAPUS MAIN BOARD IKUT MENGHAPUS ANAKNYA - kalau tidak, anaknya jadi
      yatim: dia naik ke akar dan tiba-tiba jadi main board bernama "FNB Menu
-     Promo", yang tidak pernah dibuat siapa pun. Isinya tidak ikut terhapus;
+     Promo", yang tidak pernah dibuat siapa pun. Isinya TIDAK ikut terhapus;
      dia cuma keluar dari boardnya, persis seperti folder Note. */
   function buangBoard(nama) {
     var kena = albumDaftar.filter(function (n) {
@@ -1515,7 +1548,15 @@
        dipakai sepanjang hari, dan itu yang menentukan tempatnya. Sempat naik
        ke kepala layar dan itu keliru: kepala ada di ujung terjauh dari jempol
        yang bertumpu di sudut kanan bawah. */
-    ['*reset', 'Reset', '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>']
+    ['*reset', 'Reset', '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>'],
+    /* KAMERA PALING KANAN, sesudah Reset - ujung yang paling dekat jempol,
+       untuk hal yang paling sering dilakukan di aplikasi ini. Dia bukan
+       saringan: dia tidak punya angka dan tidak pernah menyala, sama seperti
+       Reset. Dulu dia ikon di dalam kotak Drop, berdesakan dengan klip dan
+       Todo - dan di sana dia tidak pernah terbaca sebagai tombol yang
+       MENGHASILKAN sesuatu, cuma satu ikon lagi di antara ikon yang membuka
+       laci. */
+    ['*kamera', 'Kamera', '<path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.4"/>']
   ];
 
   /* LINK DIBACA DARI ISINYA, BUKAN DARI BENTUK DROP-NYA.
@@ -1567,8 +1608,9 @@
       /* Reset bukan saringan: dia tidak punya angka dan tidak pernah menyala.
          Garis putus-putus yang membedakannya - bentuk yang di aplikasi ini
          selalu berarti "ini jalan pintas, bukan keadaan". */
-      if (j[0] === '*reset') {
-        return '<button class="saring-cip reset" data-jenis="*reset" title="' + H(j[1]) +
+      if (j[0] === '*reset' || j[0] === '*kamera') {
+        return '<button class="saring-cip ' + (j[0] === '*reset' ? 'reset' : 'kamera') +
+               '" data-jenis="' + j[0] + '" title="' + H(j[1]) +
                '" aria-label="' + H(j[1]) + '">' +
                '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
       }
@@ -1713,6 +1755,12 @@
 
   function pilihJenis(j) {
     if (j === '*reset') { resetLayar(); return; }
+    /* JALAN PINTAS, BUKAN PINTU KEDUA. Isian yang dipakai sama persis dengan
+       dok kamera di layar Gallery - jadi yang lahir dari sini entri Gallery
+       yang sama, dengan sesi dan pertanyaan driver yang sama. Dua jalur masuk
+       yang menghasilkan dua bentuk barang adalah cara tercepat membuat satu
+       tumpukan jadi dua tumpukan yang tidak pernah bertemu. */
+    if (j === '*kamera') { $('#galeri-pilih-kamera').click(); return; }
     if (j === 'gambar') { keGaleriDariDrop(); return; }
     /* Mengetuk yang sedang menyala mematikannya - tanpa itu, satu-satunya
        jalan keluar adalah menebak cip mana yang berarti "batal". */
@@ -1938,7 +1986,7 @@
      sudah terjadi di sini lebih dari sekali. Yang membedakan cuma tiga hal,
      dan ketiganya masuk sebagai bahan: daftar namanya, isinya, dan kolom mana
      yang menyimpan tempatnya. */
-  function bangunPohon(daftarNama, punya, kolom, tanpa) {
+  function bangunPohon(daftarNama, punya, kolom, tanpa, abjad) {
     var isi = {};
     /* Yang KOSONG tetap ditampilkan, dan itu disengaja: kamu membuat folder
        justru supaya ada tempat mengisi. Folder yang lenyap sedetik setelah
@@ -1970,6 +2018,13 @@
       /* Yang belum bertempat selalu paling bawah: dia bukan tempat yang kamu
          pilih, dia sisa yang belum sempat ditaruh. */
       if ((a.nama === tanpa) !== (b.nama === tanpa)) return a.nama === tanpa ? 1 : -1;
+      /* ABJAD untuk pohon yang KAMU KURASI, terbanyak-dulu untuk yang lahir
+         dari isinya. Bedanya bukan selera: rak Storage lahir dari catatan yang
+         jatuh, jadi yang paling ramai memang yang paling mungkin kamu tuju.
+         Pohon board kamu tulis sendiri dan jumlahnya tetap - di situ urutan
+         yang berubah-ubah mengikuti isi berarti jarimu tidak pernah bisa hafal
+         tempatnya, dan tiap kali harus membaca seluruh daftarnya lagi. */
+      if (abjad) return a.nama.localeCompare(b.nama);
       var na = a.isi.length + (a.anak ? 1000 : 0);
       var nb = b.isi.length + (b.anak ? 1000 : 0);
       if (nb !== na) return nb - na;
@@ -2317,17 +2372,59 @@
   var galeriFolder = null;      /* album yang sedang dibuka; null = daftar album */
   var galeriSaring = '*semua';
   var gayaGaleri = 'sedang';
+  /* "All" menembus board: yang tampil semua gambarnya, bukan daftar boardnya.
+     Keadaan, bukan setelan - dia tidak ikut disimpan, karena yang kamu minta
+     "sekarang perlihatkan semuanya", bukan "mulai sekarang selalu begitu". */
+  var galeriRata = false;
+  var viewTutup = true;
+
+  /* FOTO SESI INI: bukti bahwa jepretanmu mendarat, dan di mana.
+     Sesudah memotret layarnya bersih - tidak ada satu pun tanda foto tadi
+     masuk ke mana, dan yang terbaca bukan "sudah tersimpan" tapi "tombolnya
+     tidak berfungsi". Jadi jepretan sesi ini berbaris di kepala Gallery,
+     lengkap dengan boardnya begitu AI memilihnya.
+
+     HIDUP DI MEMORI SAJA, tidak ikut disimpan: dia bukan catatan, dia kabar.
+     Memuat ulang halaman atau menutup sesinya membuang barisnya, dan itu
+     memang yang diminta - kabar yang masih menempel besok pagi bukan kabar
+     lagi, cuma satu baris yang harus dibersihkan sendiri. */
+  var fotoSesi = [];
+  var FOTO_SESI_MAKS = 12;
 
   /* Sumbernya, bukan jenisnya: di layar ini semuanya gambar, jadi menyaring
      jenis tidak memisahkan apa pun. Yang benar-benar membedakan satu tumpukan
      dari tumpukan lain adalah dari mana dia masuk - dan itu yang kamu ingat
      waktu mencari ("tadi aku screenshot", "itu aku foto sendiri"). */
+  /* Saringan SUMBER, bukan jenis: di layar ini semuanya gambar. Sejak
+     kepalanya jadi tiga tombol, daftar ini pindah ke dalam menu View -
+     satu ketukan lebih dalam, dan itu memang setara dengan seberapa sering
+     dia dipakai. */
   var GALERI_SARING = [
     ['*semua', 'Semua'],
     ['kamera', 'Kamera'],
     ['unggah', 'Unggah'],
     ['drop', 'Drop'],
     ['*pin', 'Pin']
+  ];
+
+  /* ===================== KEPALA GALLERY: HOME - ALL - VIEW =====================
+     Tiga tombol, dan ketiganya menjawab pertanyaan yang berbeda:
+
+       Home  "kembalikan layar ini seperti baru dibuka"  - akar, tanpa kueri,
+             tanpa saringan, daftar board yang rapi.
+       All   "perlihatkan semua gambarnya sekaligus"     - menembus board,
+             karena kadang yang kamu cari cuma "yang tadi", dan yang tadi tidak
+             punya alamat di kepalamu.
+       View  "ubah cara melihatnya"                      - ukuran petak, dan
+             saringan sumber di bawahnya.
+
+     Dulu di sini lima cip saringan berjajar plus empat tombol tampilan - sembilan
+     benda di satu baris, di layar yang isinya justru gambar. Yang paling sering
+     dipakai dari kesembilannya cuma "Semua". */
+  var GALERI_KEPALA = [
+    ['*home', 'Home', '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>'],
+    ['*all', 'All', '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
+    ['*view', 'View', '<circle cx="12" cy="12" r="3"/><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/>']
   ];
 
   /* POHON BOARD: satu daftar, dan dia satu-satunya alamat gambar. Belum
@@ -2367,7 +2464,7 @@
   }
 
   function folderGaleriPohon() {
-    return bangunPohon(albumDaftar, semuaGambar(), 'album', TANPA_ALBUM);
+    return bangunPohon(albumDaftar, semuaGambar(), 'album', TANPA_ALBUM, true);
   }
 
   /* Kosong = masuk lewat Drop. Itu jawaban yang benar untuk entri lama: semua
@@ -2383,7 +2480,7 @@
     /* Mengetik selalu MENEMBUS album - kalau pencarian cuma berlaku di album
        yang sedang dibuka, kamu harus tahu dulu barangnya di mana, dan kalau
        sudah tahu kamu tidak perlu mencari. Aturan yang sama dengan layar Note. */
-    if (!kueri && galeriFolder) {
+    if (!kueri && galeriFolder && !galeriRata) {
       punya = punya.filter(function (e) {
         return galeriFolder === TANPA_ALBUM ? !e.album : (e.album || '') === galeriFolder;
       });
@@ -2403,29 +2500,44 @@
     var w = $('#galeri-saring');
     if (!w) return;
     var punya = semuaGambar();
-    w.innerHTML = GALERI_SARING.map(function (g) {
-      var n = g[0] === '*semua' ? punya.length
-            : g[0] === '*pin' ? punya.filter(function (e) { return e.pin; }).length
-            : punya.filter(function (e) { return sumberGambar(e) === g[0]; }).length;
-      /* Yang nol tidak digambar - cip yang menuju layar kosong cuma memakan
-         lebar baris yang sudah sempit. "Semua" selalu ada, karena dialah
-         jalan pulang dari saringan mana pun. */
-      if (!n && g[0] !== '*semua' && galeriSaring !== g[0]) return '';
-      return '<button class="cip' + (galeriSaring === g[0] ? ' nyala' : '') +
-             '" data-gsaring="' + g[0] + '">' + H(g[1]) +
-             (n ? '<span class="cip-angka">' + (n > 999 ? '999+' : n) + '</span>' : '') +
+    w.innerHTML = GALERI_KEPALA.map(function (g) {
+      var nyala = g[0] === '*all' ? galeriRata
+                : g[0] === '*view' ? !viewTutup : false;
+      return '<button class="galeri-kbl' + (nyala ? ' nyala' : '') +
+             '" data-gkepala="' + g[0] + '" aria-label="' + H(g[1]) + '">' +
+             '<svg viewBox="0 0 24 24" class="ik">' + g[2] + '</svg>' +
+             '<span>' + H(g[1]) + '</span>' +
+             (g[0] === '*all' && punya.length
+               ? '<span class="cip-angka">' + (punya.length > 999 ? '999+' : punya.length) + '</span>'
+               : '') +
              '</button>';
     }).join('');
   }
 
+  /* Isi menu View: ukuran petak dulu - itu yang dicari waktu tombolnya
+     ditekan - lalu saringan sumber di bawah garis. */
   function gambarTampilGaleri() {
     var w = $('#galeri-tampil');
     if (!w) return;
-    w.innerHTML = GAYA_GAMBAR.map(function (g) {
-      return '<button class="tampil-tbl' + (gayaGaleri === g[0] ? ' nyala' : '') +
-             '" data-ggaya="' + g[0] + '" title="' + H(g[1]) + '" aria-label="' + H(g[1]) + '">' +
-             '<svg viewBox="0 0 24 24" class="ik">' + g[2] + '</svg></button>';
-    }).join('');
+    w.classList.toggle('sembunyi', viewTutup);
+    if (viewTutup) { w.innerHTML = ''; return; }
+    var punya = semuaGambar();
+    w.innerHTML =
+      '<div class="view-baris">' + GAYA_GAMBAR.map(function (g) {
+        return '<button class="tampil-tbl' + (gayaGaleri === g[0] ? ' nyala' : '') +
+               '" data-ggaya="' + g[0] + '" title="' + H(g[1]) + '" aria-label="' + H(g[1]) + '">' +
+               '<svg viewBox="0 0 24 24" class="ik">' + g[2] + '</svg></button>';
+      }).join('') + '</div>' +
+      '<div class="view-baris view-saring">' + GALERI_SARING.map(function (g) {
+        var n = g[0] === '*semua' ? punya.length
+              : g[0] === '*pin' ? punya.filter(function (e) { return e.pin; }).length
+              : punya.filter(function (e) { return sumberGambar(e) === g[0]; }).length;
+        if (!n && g[0] !== '*semua' && galeriSaring !== g[0]) return '';
+        return '<button class="cip' + (galeriSaring === g[0] ? ' nyala' : '') +
+               '" data-gsaring="' + g[0] + '">' + H(g[1]) +
+               (n ? '<span class="cip-angka">' + (n > 999 ? '999+' : n) + '</span>' : '') +
+               '</button>';
+      }).join('') + '</div>';
   }
 
   function gambarJejakGaleri() {
@@ -2479,6 +2591,45 @@
       '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>';
   }
 
+  function catatFotoSesi(ids) {
+    (ids || []).forEach(function (id) {
+      var i = fotoSesi.indexOf(id);
+      if (i >= 0) fotoSesi.splice(i, 1);
+      fotoSesi.unshift(id);
+    });
+    fotoSesi = fotoSesi.slice(0, FOTO_SESI_MAKS);
+  }
+
+  /* Cuma di AKAR, dan cuma waktu tidak sedang mencari: di dalam board fotonya
+     sudah kelihatan sendiri di bawahnya, dan mengulanginya di kepala berarti
+     satu gambar terhitung dua kali. */
+  function gambarFotoSesi() {
+    var w = $('#galeri-baru');
+    if (!w) return;
+    var kueri = $('#galeri-cari') ? $('#galeri-cari').value.trim() : '';
+    var punya = kueri || galeriFolder ? [] : fotoSesi.map(function (id) {
+      return semuaEntri.filter(function (e) { return e.id === id && !e.dihapus && !e.pensiun; })[0];
+    }).filter(Boolean);
+    w.classList.toggle('sembunyi', !punya.length);
+    if (!punya.length) { w.innerHTML = ''; return; }
+    w.innerHTML =
+      '<div class="baru-kepala"><span>Baru dipotret</span>' +
+      '<button class="baru-buang" data-baru-buang aria-label="Tutup">' +
+      '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button></div>' +
+      '<div class="baru-baris">' + punya.map(function (e) {
+        /* ALAMATNYA IKUT TERTULIS, dan itu seluruh gunanya baris ini: yang
+           kamu tanyakan sesudah memotret bukan "sudah tersimpan?" tapi "masuk
+           ke mana?". Yang belum dipilih AI ditulis apa adanya - menunggu itu
+           jawaban, dan jawaban yang jujur lebih menenangkan daripada nama
+           board yang diterka. */
+        var ke = e.album ? labelAlbum(e.album) : 'menunggu AI…';
+        return '<button class="baru-satu" data-baru-buka="' + H(e.id) + '">' +
+          (e.thumb ? '<img src="' + H(e.thumb) + '" alt="">' : '<span class="petak-kosong"></span>') +
+          '<span class="baru-ke' + (e.album ? '' : ' nunggu') + '" data-asli>' + H(ke) + '</span>' +
+        '</button>';
+      }).join('') + '</div>';
+  }
+
   function gambarGaleri() {
     var wadah = $('#galeri-isi');
     if (!wadah) return;
@@ -2486,6 +2637,7 @@
     gambarSaringGaleri();
     gambarTampilGaleri();
     gambarLengket();
+    gambarFotoSesi();
 
     var daftar = daftarGambar();
     var kueri = $('#galeri-cari').value.trim();
@@ -2499,7 +2651,7 @@
        dan menjawabnya dengan daftar album adalah tidak menjawab. */
     var albumHtml2 = '';
     var tampil = daftar;
-    if (!kueri && galeriSaring === '*semua') {
+    if (!kueri && !galeriRata && galeriSaring === '*semua') {
       var semuaA = folderGaleriPohon();
       var anak = galeriFolder
         ? semuaA.filter(function (f) { return f.induk === galeriFolder; })
@@ -2616,6 +2768,7 @@
     }, Promise.resolve())
       .then(function () { return muatSemua(); })
       .then(function () {
+        catatFotoSesi(baru);
         gambarGaleri();
         /* Pelabelan AI menyusul di belakang dan boleh gagal diam-diam. */
         sundulLabel();
@@ -4691,11 +4844,19 @@
 
     var pohonBoard = $('#set-board');
     if (pohonBoard) pohonBoard.addEventListener('click', function (ev) {
+      /* Buang dibaca DULUAN: silangnya duduk di dalam baris yang juga membuka
+         panelnya, dan yang menghapus tidak boleh kalah oleh yang membuka. */
+      var buang = ev.target.closest('[data-board-buang]');
+      if (buang) { buangBoard(buang.getAttribute('data-board-buang')); return; }
       var sub = ev.target.closest('[data-board-sub]');
       if (sub) { tambahBoard(sub.getAttribute('data-board-sub')); return; }
       if (ev.target.closest('[data-board-main]')) { tambahBoard(''); return; }
-      var buang = ev.target.closest('[data-board-buang]');
-      if (buang) buangBoard(buang.getAttribute('data-board-buang'));
+      var buka = ev.target.closest('[data-board-buka]');
+      if (buka) {
+        var m = buka.getAttribute('data-board-buka');
+        boardBuka = (boardBuka === m) ? '' : m;
+        gambarPohonBoard();
+      }
     });
 
     var uji = $('#b-uji');
@@ -5059,14 +5220,6 @@
     });
     $('#b-lampir').addEventListener('click', function () { alihLaci('drop'); });
     $('#b-tugas').addEventListener('click', keTugas);
-    /* JALAN PINTAS, BUKAN PINTU KEDUA. Isian yang dipakai sama persis dengan
-       dok kamera di layar Gallery - jadi yang lahir dari sini entri Gallery
-       yang sama, dengan sesi dan pertanyaan driver yang sama. Dua jalur masuk
-       yang menghasilkan dua bentuk barang adalah cara tercepat membuat satu
-       tumpukan jadi dua tumpukan yang tidak pernah bertemu. */
-    $('#b-kamera').addEventListener('click', function () {
-      $('#galeri-pilih-kamera').click();
-    });
     /* RUANGNYA TERBATAS: laci yang menggantung terbuka menutupi kotak dan
        hasilnya sekaligus. Jadi dia menutup sendiri begitu kamu menyentuh hal
        lain - mengetuk kotak, menggulir hasil, apa pun di luar lacinya. Kalau
@@ -5080,7 +5233,7 @@
          terbuka menutup lacinya duluan - doknya bergeser turun, dan ketukan
          yang sudah dimulai mendarat di tempat kosong. Yang menutup lacinya
          nanti kosongkanKotak, sesudah barangnya benar-benar tersimpan. */
-      if (ev.target.closest('#b-lampir, #b-tugas, #b-kamera, #b-drop, #b-ai, [data-tab-ke="l-utama"]')) return;
+      if (ev.target.closest('#b-lampir, #b-tugas, #b-drop, #b-ai, [data-tab-ke="l-utama"]')) return;
       tutupLaci();
     }, true);
     $('#b-tutup-hasil').addEventListener('click', tutupHasilDepan);
@@ -5225,8 +5378,20 @@
     $('#galeri-lengket').addEventListener('click', function (ev) {
       if (!ev.target.closest('[data-lengket-buang]')) return;
       pakaiLengket('');
-      gambarLengket();
+      /* Barisan foto sesi ikut hilang: dia kabar tentang sesi yang barusan
+         kamu jatuhkan, dan kabar yang hidup lebih lama daripada peristiwanya
+         cuma jadi sisa yang harus dibersihkan sendiri. */
+      fotoSesi = [];
+      gambarGaleri();
       pesan('Sesi ditutup');
+    });
+    $('#galeri-baru').addEventListener('click', function (ev) {
+      if (ev.target.closest('[data-baru-buang]')) { fotoSesi = []; gambarGaleri(); return; }
+      var b = ev.target.closest('[data-baru-buka]');
+      if (!b) return;
+      var id = b.getAttribute('data-baru-buka');
+      var e = semuaEntri.filter(function (x) { return x.id === id; })[0];
+      if (e) lihatGambar(e);
     });
     $('#galeri-alamat').addEventListener('click', function (ev) {
       var naik = ev.target.closest('[data-galeri-naik]');
@@ -5237,16 +5402,42 @@
       gambarGaleri();
     });
     $('#galeri-saring').addEventListener('click', function (ev) {
-      var b = ev.target.closest('[data-gsaring]');
+      var b = ev.target.closest('[data-gkepala]');
       if (!b) return;
-      galeriSaring = b.getAttribute('data-gsaring');
+      var apa = b.getAttribute('data-gkepala');
+      if (apa === '*home') {
+        /* SATU KETUKAN MENGEMBALIKAN LAYAR SEPERTI BARU DIBUKA. Tanpa dia,
+           membereskan empat keadaan yang menyala butuh empat ketukan di empat
+           tempat - dan yang paling sering terjadi bukan "aku mau melepas yang
+           ini", tapi "aku mau mulai dari nol lagi". */
+        galeriFolder = null; galeriRata = false; galeriSaring = '*semua';
+        viewTutup = true;
+        $('#galeri-cari').value = '';
+        batalPilih();
+        gambarGaleri();
+        global.scrollTo(0, 0);
+        return;
+      }
+      if (apa === '*all') {
+        galeriRata = !galeriRata;
+        if (galeriRata) { galeriFolder = null; viewTutup = true; }
+        gambarGaleri();
+        return;
+      }
+      viewTutup = !viewTutup;
       gambarGaleri();
     });
     $('#galeri-tampil').addEventListener('click', function (ev) {
-      var b = ev.target.closest('[data-ggaya]');
-      if (!b) return;
-      gayaGaleri = b.getAttribute('data-ggaya');
-      simpanSetelan('gayaGaleri', gayaGaleri);
+      var g = ev.target.closest('[data-ggaya]');
+      if (g) {
+        gayaGaleri = g.getAttribute('data-ggaya');
+        simpanSetelan('gayaGaleri', gayaGaleri);
+        gambarGaleri();
+        return;
+      }
+      var f = ev.target.closest('[data-gsaring]');
+      if (!f) return;
+      galeriSaring = f.getAttribute('data-gsaring');
       gambarGaleri();
     });
     $('#galeri-isi').addEventListener('click', function (ev) {
@@ -5796,6 +5987,7 @@
     /* Cuma untuk uji: memeriksa bentuk entri yang baru lahir - kolom yang
        sudah pensiun tidak boleh diam-diam kembali lewat sini. */
     entriBaruUji: entriBaru,
+    fotoSesiUji: function () { return fotoSesi.slice(); },
     pilihLabelUji: pilihLabelDepan,
     daftarLabelUji: daftarLabel,
     /* Cuma untuk uji: memindah layar tanpa lewat tombol, dan memuat ulang
