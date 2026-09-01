@@ -851,7 +851,7 @@
      Ruangan yang lahir dari akhiran cuma bisa disebut dengan nama penuhnya.
 
      Nama PENUH selalu boleh: dia tidak pernah ambigu. */
-  function bacaBoardDariDriver(driver, daftar, akhiran) {
+  function bacaBoardDariDriver(driver, daftar, akhiran, akarSistem) {
     var k = ' ' + normal(driver) + ' ';
     if (!normal(driver)) return {};
     var punya = (daftar || []).filter(Boolean);
@@ -901,7 +901,24 @@
        memilih yang namanya kebetulan lebih panjang bukan jawaban, itu undian.
        Kalau keduanya satu induk, yang tersisa justru pertanyaan yang memang
        bisa dijawab mesin: sub yang mana - dan dia melihat gambarnya. */
-    if (kenaSub.length === 1) return { sub: kenaSub[0], induk: induk[kenaSub[0]] };
+    /* WADAH LAWAN ALAMAT, dan bedanya bukan tingkatnya tapi apakah dia masih
+       punya ruangan di dalamnya. Menyebut "hampers" waktu ada "Isi Hamper" di
+       dalamnya BUKAN alamat lengkap - dia baru menunjuk bidangnya, dan yang
+       tersisa ("sub yang mana") justru pertanyaan yang bisa dijawab mesin
+       karena dia melihat gambarnya. Mengunci di situ berarti foto menumpuk di
+       pintu ruangan, bukan di dalam kamarnya. */
+    function akar(n) {
+      return (akarSistem || []).some(function (a) { return normal(a) === normal(n); });
+    }
+    function wadah(n) {
+      if (!induk[n]) return true;              /* akar atau baris paling atas */
+      return akar(induk[n]);                   /* interest di bawah akar */
+    }
+
+    if (kenaSub.length === 1) {
+      return wadah(kenaSub[0]) ? { main: kenaSub[0] }
+                               : { sub: kenaSub[0], induk: induk[kenaSub[0]] };
+    }
     if (kenaSub.length > 1) {
       var satuInduk = induk[kenaSub[0]];
       var seragam = kenaSub.every(function (n) { return induk[n] === satuInduk; });

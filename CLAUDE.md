@@ -78,12 +78,44 @@ terpikir, dan itu membatalkan seluruh gunanya.
    diam. Karena itu **board itu ruangan**, dan tiap keping harus mendarat di
    salah satunya tanpa kamu memutuskan apa pun.
 
+   **Pohonnya TIGA TINGKAT: akar - interest - sub interest.** Akarnya
+   (`akarAwal` di bawaan.js — Business, Personal, Project, Social, Subject,
+   Tools, Work) DIPASANG SISTEM dan sehari-hari tidak dipikirkan pemakainya;
+   yang dia isi cuma dua tingkat di bawahnya. Gunanya MEMICU: "Subject"
+   mengingatkan mahasiswa bahwa mata kuliah punya tempatnya sendiri.
+   Kenapa tingkat ketiga ada: sembilan interest sejajar sudah di batas yang
+   bisa dipindai mata, di lima belas dia dinding — dan pemakainya sendiri
+   sudah menambal dengan menaruh "Biz –" di depan tiap nama, artinya
+   tingkat itu memang dibutuhkan (dan tambalan itu diam-diam mematikan
+   `bacaBoardDariDriver`, karena nama yang diketik jari tidak cocok lagi).
+   AKAR TIDAK BISA DIISI GAMBAR LANGSUNG dan TIDAK BISA DIHAPUS — dia tulang
+   punggung, bukan ruangan; kepalanya di Setelan dan di Gallery tidak bisa
+   diketuk untuk dibuka. Menjadikannya folder berarti menambah satu ketukan ke
+   tiap foto; memberinya silang berarti satu ketukan yang meleset melenyapkan
+   seluruh bidang beserta sub-nya, dan itu satu-satunya ketukan yang tidak
+   bisa dibatalkan.
+   **TAPI AKARNYA TETAP MILIK PEMAKAINYA:** bisa DITAMBAH ("+ Akar baru", di
+   dasar menu Setelan) dan DINAMAI ULANG (pensil di kepalanya; anaknya ikut
+   berganti nama, isinya tidak pindah ke mana-mana). Daftar bawaannya tebakan
+   tentang hidup orang lain — "Subject" tidak berarti apa-apa buat yang sudah
+   lulus. Yang tertutup buat AI, bukan buat jarinya: **AI tidak pernah
+   menyentuh tingkat akar sama sekali.**
+   Yang ditambah/dinamai sendiri dicatat di setelan **`akarTangan`** (ikut
+   sinkron), dan `akarSistem()`/`TPelabel.daftarAkar()` membaca gabungan
+   keduanya. Catatan itu terpisah dari pohonnya karena pohonnya cuma daftar
+   nama datar: tingkat dibaca dari awalan, dan akar tidak punya awalan untuk
+   dibaca. Tanpa catatan itu, akar buatan tangan turun pangkat jadi interest
+   yatim di bawah "Tanpa akar" — dan yang terbaca bukan "belum kucatat" tapi
+   "tombolnya salah menaruhnya".
+
    **Pohonnya boleh tumbuh; KATANYA yang tertutup.** Yang membuat taksonomi
    meleleh bukan pertumbuhan, tapi PENAMAAN BEBAS — tag mati karena mesin
    boleh mengarang kata (#sofa, #kursi, #seating untuk satu benda). Jadi AI
-   cuma boleh menggabungkan dua potong yang SUDAH tertulis: nama main board +
-   satu AKHIRAN dari daftar tertutup (`akhiranAwal` di bawaan.js). Main board
-   tetap tanganmu — atapnya tidak pernah tumbuh sendiri. Penggabungannya
+   cuma boleh menggabungkan dua potong yang SUDAH tertulis: nama INTEREST +
+   satu AKHIRAN dari daftar tertutup (`akhiranAwal` di bawaan.js). Interest
+   tetap tanganmu — atapnya tidak pernah tumbuh sendiri, dan AKARNYA tidak
+   pernah ditumbuhi sama sekali ("Business Inspiration" ruangan yang tidak
+   menjawab apa pun). Penggabungannya
    dikerjakan `pilihBoard()`, bukan modelnya: nama yang tidak ada di dua
    daftar itu tidak akan pernah lahir.
    Ongkosnya harus disebut: AI tidak akan pernah membuat "Interior Terrace" —
@@ -232,13 +264,20 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     punya baris untuk ditampilkan sama saja dengan foto yang
                     hilang. Berdiri di ruang tunggu TIDAK mengunci alamat -
                     dia tempat yang isinya belum diputuskan.
-                    AKAR GALLERY DIBAGI DUA, dan garisnya bukan hiasan:
-                    "Main Interest" (bidang yang kamu tentukan) di atas, ruang
-                    tunggu di bawah garis. Tanpa garisnya
+                    AKAR GALLERY DIBAGI PER AKAR SISTEM (akarBerbagian): satu
+                    kepala bagian per akar yang isinya tidak kosong, interest-nya
+                    berjajar di bawahnya, lalu GARIS ('.pisah') dan ruang tunggu
+                    paling bawah. Tanpa garisnya
                     keduanya terbaca sederajat, dan "Other and Various" duduk di
                     antara bidang usahamu seperti salah satunya - padahal dia
-                    kebalikannya. "Main Interest" TIDAK diterjemahkan: dia nama
-                    yang dipilih pemakainya, aturan yang sama dengan nama pintu.
+                    kebalikannya. Kepala bagiannya TIDAK BISA DIKETUK dan TIDAK
+                    diterjemahkan: dia tulang punggung, dan namanya nama yang
+                    dipilih sistem, aturan yang sama dengan nama pintu.
+                    AKAR YANG KOSONG TIDAK DIGAMBAR SAMA SEKALI - tujuh kepala
+                    yang enam di antaranya kosong bukan struktur, itu daftar
+                    kosong yang harus digulir. Pohon lama yang belum berakar
+                    tetap digambar di bawah satu kepala "Main Interest / kamu
+                    yang menentukan": berlaku maju, bukan mundur.
                     BOARDNYA BERURUT ABJAD, bukan terbanyak-dulu (bangunPohon
                     dapat penanda 'abjad'). Pohon board kamu tulis sendiri dan
                     jumlahnya tetap; urutan yang berubah mengikuti isinya
@@ -334,49 +373,90 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     tanpa driver tetap pembaca dokumen.
                     Driver yang datang belakangan memicu pelabelan ULANG.
 public/bawaan.js    (lanjutan) POHON BOARD ('boardAwal', disunting lewat menu
-                    di Setelan) - SATU pohon, dua tingkat, dan dia satu-satunya
-                    alamat. Menunya DILIPAT, satu terbuka, berurut abjad:
+                    di Setelan) - SATU pohon, TIGA TINGKAT, dan dia satu-satunya
+                    alamat. AKARNYA ('akarAwal') dipasang sistem: Business,
+                    Personal, Project, Social, Subject, Tools, Work. Tidak bisa
+                    dihapus dan tidak menampung gambar, dan di Setelan digambar
+                    sebagai KEPALA BAGIAN tanpa silang - dia tulang punggung,
+                    bukan isi. TAPI BISA DITAMBAH DAN DINAMAI ULANG TANGAN:
+                    "+ Akar baru" di dasar menunya, pensil di kepalanya
+                    (namaiAkar -> gantiNamaPohon dengan penanda paksaAlbum,
+                    karena layarnya Setelan dan diLayarGaleri() akan memilih
+                    kolom 'folder' yang sama sekali tidak dimaksud). Yang
+                    tertutup buat AI, bukan buat jarinya. Gunanya MEMICU: "Subject"
+                    mengingatkan mahasiswa bahwa mata kuliah punya tempatnya
+                    sendiri, "Social" bahwa yang bukan kerjaan juga layak
+                    disimpan. Interest dan sub interest saja yang dipikirkan
+                    pemakainya, dan cuma itu yang bisa dibuang.
+                    Interest-nya DILIPAT, satu terbuka, berurut abjad:
                     digelar sekaligus dia sepanjang tiga layar HP, dan waktu
                     semuanya tergelar "+ Sub" milik satu board duduk berdempetan
                     dengan puluhan baris milik board lain - sekali salah ketuk,
                     sub board yang kamu maksud lahir sebagai main board, dan itu
-                    tidak kelihatan sampai kamu membuka Gallery. Sekarang
-                    "+ Sub" duduk DI DALAM panel yang terbuka dan menyebut nama
-                    induknya di tombolnya sendiri. Main board bidangnya, sub board urusannya di dalam
-                    bidang itu. Susunannya dibaca dari NAMA ("FNB Menu Promo"
-                    otomatis anak "FNB"), jadi tidak ada kolom induk yang bisa
-                    jadi yatim - tapi awalannya DIPASANG APLIKASINYA lewat
-                    "+ Sub", bukan dituntut dari jarinya. Menyuruh orang menebak
-                    sendiri bahwa namanya wajib diawali nama induknya berarti
-                    sub boardnya tidak pernah terbentuk: yang terjadi dia
+                    tidak kelihatan sampai kamu membuka Gallery. Sekarang TIAP
+                    tombol tambah SELALU punya induk dan menyebut nama induknya
+                    di tombolnya sendiri: "+ Sub interest di X" duduk DI DALAM
+                    panel yang terbuka, "+ Interest di <akar>" di bawah tiap
+                    kepala akar. Tidak ada lagi tombol yang melahirkan baris di
+                    akar pohon (tambahBoard menolak induk kosong).
+                    Interest bidangnya, sub interest urusannya di dalam
+                    bidang itu. Susunannya dibaca dari NAMA ("Business FNB Menu
+                    Promo" otomatis anak "Business FNB", yang itu sendiri
+                    interest di akar "Business"), jadi tidak ada kolom induk yang
+                    bisa jadi yatim - tapi awalannya DIPASANG APLIKASINYA lewat
+                    tombol tambah, bukan dituntut dari jarinya. Menyuruh orang
+                    menebak sendiri bahwa namanya wajib diawali nama induknya
+                    berarti sub boardnya tidak pernah terbentuk: yang terjadi dia
                     mengetik "Kitchen" dan itu mendarat di akar.
+                    Barisnya menulis NAMA PENDEKNYA saja - di bawah kepala
+                    "Business", mengulang "Business" di tiap baris memakan lebar
+                    yang justru dibutuhkan nama aslinya.
+                    PINDAH KE SUSUNAN BARU CUMA LEWAT TOMBOL "Ganti dengan
+                    susunan bawaan" di Setelan. Tidak ada pemindahan otomatis:
+                    pohon yang sudah terlanjur ada itu keputusan pemakainya, dan
+                    menimpa keputusan orang diam-diam adalah cara tercepat
+                    membuat dia berhenti percaya pada apa yang dilihatnya. Pohon
+                    lama yang belum berakar tetap digambar apa adanya, di bawah
+                    kepala "Tanpa akar" - berlaku maju, bukan mundur.
                     KATANYA TERTUTUP, POHONNYA BOLEH TUMBUH. AI cuma boleh
-                    menggabungkan nama main board yang sudah ada dengan satu
+                    menggabungkan nama INTEREST yang sudah ada dengan satu
                     kata dari 'akhiranAwal' - Inspiration, Concept, Material,
-                    Layout, Menu, Promo, Pricing, Operational, Progress, Apps.
+                    Layout, Menu, Promo, Pricing, Operational, Progress, Apps,
+                    Various.
                     Daftar itu bukan karangan: "Inspiration" sudah muncul di
-                    empat dari tujuh main board, "Apps" di lima; sumbunya
+                    empat dari tujuh bidang usahanya, "Apps" di lima; sumbunya
                     memang sudah ada, ini cuma menamainya.
-                    Sebabnya: main board yang belum punya sub sama sekali akan
+                    AKARNYA TIDAK IKUT DITUMBUHI: "Business Inspiration" ruangan
+                    yang tidak menjawab apa pun, dan menaruh gambar di situ sama
+                    saja dengan tidak menaruhnya (pilihBoard menyaring akar dari
+                    daftar sasaran).
+                    Sebabnya: interest yang belum punya sub sama sekali akan
                     menampung SEMUANYA, dan timbunan yang dilawan aplikasi ini
                     lahir lagi di dalam ruangan yang baru dibuat untuk
                     mencegahnya. Tapi penamaan bebas yang membunuh tag, bukan
                     pertumbuhannya - jadi yang dibuka jumlahnya, bukan
-                    kosakatanya. Main board tetap tanganmu.
+                    kosakatanya. Interest tetap tanganmu.
                     Barisnya ditulis pilihBoard()+tambahBoardBaru(), bukan
                     modelnya, dan dicatat di 'boardAI' supaya bisa ditandai
                     titik di Setelan - sekali seminggu kamu bisa lihat ruangan
                     mana yang tumbuh tanpa kamu tulis.
-                    Kalau tidak ada sub yang cocok, jawabannya main board-nya
-                    saja; itu jawaban yang SAH, bukan kegagalan - "Interior"
-                    tanpa sub lebih benar daripada foto masjid yang dipaksa
-                    masuk "Interior Bedroom", dan ruangan yang belum
-                    terdefinisi (masjid, entrance, terrace) memang tinggal di
-                    situ sampai pemakainya membuatkan kamarnya.
-                    Menghapus main board IKUT menghapus anaknya - kalau tidak,
-                    anaknya naik ke akar dan jadi main board "FNB Menu Promo"
+                    JAWABAN YANG BERHENTI DI INTEREST DINAIKKAN KE
+                    "<interest> Various", bukan dibiarkan di pintu ruangan.
+                    Ini keadaan yang dilaporkan di lapangan: ketik "hampers",
+                    fotonya mendarat di "Business Hampers" dan menumpuk di situ
+                    walau "Isi Hamper" jelas-jelas ada di dalamnya. Interest yang
+                    menampung foto lepas di samping sub board-nya persis timbunan
+                    yang dilawan aplikasi ini. Jadi ada DUA TINGKAT RUANG TUNGGU:
+                    "Other and Various" kalau BIDANGNYA tidak ketemu, dan
+                    "<interest> Various" kalau bidangnya ketemu tapi kamarnya
+                    tidak. Yang kedua tetap di dalam bidang yang KAMU sebut -
+                    jawaban AI yang meleset bukan alasan membuang alamat yang
+                    sudah kamu berikan.
+                    Menghapus interest IKUT menghapus anaknya - kalau tidak,
+                    anaknya naik ke akar dan jadi interest "FNB Menu Promo"
                     yang tidak pernah dibuat siapa pun. Isinya TIDAK ikut
-                    terhapus; dia cuma keluar dari boardnya.
+                    terhapus; dia cuma keluar dari boardnya. Akarnya tetap
+                    berdiri.
                     KENAPA DUA PROMO: "FNB Menu Promo" itu menunya sendiri,
                     "FNB Ide Promo" cara menjualnya - billboard menarik yang
                     dipotret di jalan tidak punya menu sama sekali, tapi dia ide
@@ -386,7 +466,9 @@ public/bawaan.js    (lanjutan) POHON BOARD ('boardAwal', disunting lewat menu
                     punya, dan keberadaannya yang bikin daftar ini daftar
                     MILIKNYA, bukan daftar bisnis.
                     'boardLain' = "Other and Various", RUANG TUNGGU, dan
-                    satu-satunya main board yang dipasang sistem. Foto antariksa
+                    satu-satunya akar yang menampung gambar langsung
+                    (kepalanya di Gallery duduk DI BAWAH garis, bukan di antara
+                    akar sistem). Foto antariksa
                     tidak punya bidang di daftar mana pun, dan itu bukan
                     kegagalan - hidupnya memang lebih luas daripada tujuh bidang
                     usahanya. Yang dilawan bukan keberadaannya tapi
@@ -700,7 +782,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (792 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (806 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

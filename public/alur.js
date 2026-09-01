@@ -1357,29 +1357,22 @@
 
   function urutAbjad(a, b) { return String(a).localeCompare(String(b)); }
 
-  function boardInduk() {
-    return albumDaftar.filter(function (n) { return !indukBoard(n); }).sort(urutAbjad);
-  }
-
-  function boardAnak(m) {
-    return albumDaftar.filter(function (n) { return indukBoard(n) === m; }).sort(urutAbjad);
-  }
-
   function gambarPohonBoard() {
     var w = $('#set-board');
     if (!w) return;
-    var induk = boardInduk();
     /* Ruangan yang lahir dari akhiran ditandai titik. Bukan supaya bisa
        dibedakan gunanya - isinya sama saja - tapi supaya sekali seminggu kamu
        bisa melihat mana yang tumbuh tanpa kamu tulis. */
     var buatanAI = boardBuatanAI();
-    w.innerHTML = induk.map(function (m) {
-      var anak = boardAnak(m);
+
+    function barisInterest(m) {
+      var anak = boardInterestDi(m);
       var buka = boardBuka === m;
+      var induk = indukBoard(m);
       return '<div class="board-main' + (buka ? ' buka' : '') + '">' +
         '<button class="board-baris board-kepala" data-board-buka="' + H(m) + '">' +
           '<svg viewBox="0 0 24 24" class="ik board-panah"><path d="M9 6l6 6-6 6"/></svg>' +
-          '<span class="board-nama" data-asli>' + H(m) + '</span>' +
+          '<span class="board-nama" data-asli>' + H(namaPendek(m, induk)) + '</span>' +
           '<span class="board-hitung">' + anak.length + '</span>' +
         '</button>' +
         '<button class="board-buang board-buang-main" data-board-buang="' + H(m) + '" aria-label="Hapus">' +
@@ -1392,17 +1385,58 @@
               '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>' +
             '</div>';
           }).join('') +
-          '<button class="board-tambah" data-board-sub="' + H(m) + '">+ Sub di ' + H(m) + '</button>' +
+          '<button class="board-tambah" data-board-sub="' + H(m) + '">+ Sub interest di ' +
+            H(namaPendek(m, induk)) + '</button>' +
         '</div>' : '') +
       '</div>';
-    }).join('') +
-    '<button class="board-tambah board-utama" data-board-main>+ Main board</button>';
+    }
+
+    /* Akarnya kepala bagian yang selalu terbuka, TANPA silang: dia tulang
+       punggung, bukan isi, dan sekali salah ketuk di silang akar seluruh
+       bidang beserta sub-nya lenyap.
+
+       TAPI DIA TETAP MILIKMU. Daftar bawaannya tebakan tentang hidup orang
+       lain - "Subject" tidak berarti apa-apa buat yang sudah lulus, dan yang
+       kerja di ladang butuh baris yang tidak ada di daftar mana pun. Jadi
+       akarnya bisa DITAMBAH dan DINAMAI ULANG; yang tidak ada cuma tombol
+       hapusnya, karena itu satu-satunya ketukan yang tidak bisa dibatalkan. */
+    var html = boardAkarPakai().map(function (akar) {
+      return '<div class="board-akar">' +
+        '<div class="board-akar-kepala"><span data-asli>' + H(akar) + '</span>' +
+          '<button class="board-namai" data-board-namai="' + H(akar) + '" aria-label="Ubah nama">' +
+          '<svg viewBox="0 0 24 24" class="ik"><path d="M4 20h4l10-10-4-4L4 16v4z"/>' +
+          '<path d="M14 6l4 4"/></svg></button>' +
+        '</div>' +
+        boardInterestDi(akar).map(barisInterest).join('') +
+        '<button class="board-tambah board-utama" data-board-interest="' + H(akar) + '">+ Interest di ' +
+          H(akar) + '</button>' +
+      '</div>';
+    }).join('');
+
+    /* Pohon lama yang belum punya akar tetap digambar apa adanya - berlaku
+       maju, bukan mundur: yang sudah terlanjur ada tidak ikut berubah sampai
+       kamu sendiri yang menyetelnya ulang. */
+    var yatim = boardYatim();
+    if (yatim.length) {
+      html += '<div class="board-akar"><div class="board-akar-kepala">' +
+        '<span>Tanpa akar</span></div>' + yatim.map(barisInterest).join('') + '</div>';
+    }
+    /* Paling bawah, bukan di kepala: menambah akar itu tindakan sekali setahun,
+       dan yang sekali setahun tidak pernah duduk di jalan yang dilewati tiap
+       hari. */
+    html += '<button class="board-tambah board-akar-tambah" data-board-akar>+ Akar baru</button>';
+    w.innerHTML = html;
 
     var jml = $('#board-jumlah');
     if (jml) {
-      jml.textContent = albumDaftar.length
-        ? induk.length + ' main board, ' + (albumDaftar.length - induk.length) + ' sub board'
-        : 'Belum ada board — AI tidak punya satu pun alamat yang boleh dipilih.';
+      var akar = boardAkarPakai().length;
+      var interest = 0, sub = 0;
+      albumDaftar.forEach(function (n) {
+        var i = indukBoard(n);
+        if (!i) return;
+        if (indukBoard(i)) sub++; else interest++;
+      });
+      jml.textContent = akar + ' akar, ' + interest + ' interest, ' + sub + ' sub interest';
     }
   }
 
@@ -1421,10 +1455,16 @@
     return terbaik;
   }
 
+  /* SATU FUNGSI UNTUK DUA TINGKAT. Yang membedakan cuma induknya, dan
+     induknya selalu ADA sekarang - tidak ada lagi baris yang lahir di akar
+     tanpa disengaja, karena akarnya bukan tempat yang bisa diketik. */
   function tambahBoard(induk) {
-    tanyaKetik(induk ? 'Sub board di “' + induk + '”' : 'Main board baru',
-      induk ? 'Cukup nama pendeknya — awalan “' + induk + '” dipasang sendiri.'
-            : 'Bidangnya, satu-dua kata. Ini berdiri di akar, bukan di dalam board mana pun.',
+    if (!induk) return;
+    var akar = indukBoard(induk);
+    var judul = akar ? 'Sub interest di “' + namaPendek(induk, akar) + '”'
+                     : 'Interest di “' + induk + '”';
+    tanyaKetik(judul,
+      'Cukup nama pendeknya — awalan “' + induk + '” dipasang sendiri.',
       '', function (ketik) {
         var nama = String(ketik || '').trim();
         if (!nama) return;
@@ -1434,13 +1474,62 @@
           nama = induk + ' ' + nama;
         }
         if (!tambahAlbum(nama)) { pesan('Board itu sudah ada'); return; }
-        /* Yang baru dibuat LANGSUNG TERLIHAT: panel induknya dibuka sendiri.
-           Sub board yang lahir di balik panel tertutup tidak bisa dibedakan
-           dari sub board yang gagal dibuat. */
-        boardBuka = induk || nama;
+        /* Yang baru dibuat LANGSUNG TERLIHAT: panelnya sendiri kalau dia
+           interest baru, panel induknya kalau dia sub. Baris yang lahir di
+           balik panel tertutup tidak bisa dibedakan dari baris yang gagal
+           dibuat. */
+        boardBuka = indukBoard(induk) ? induk : nama;
         simpanAlbum().then(function () {
           gambarPohonBoard();
           pesan('Board “' + nama + '” dibuat');
+        });
+      });
+  }
+
+  /* AKAR BARU. Bedanya dengan tambahBoard() cuma satu: dia TIDAK punya induk,
+     jadi namanya tidak diberi awalan apa pun. Itu sebabnya dia fungsi
+     tersendiri dan bukan tambahBoard('') - tombol yang sama sekali tidak
+     bertuan persis yang dulu melahirkan sub board di akar pohon. */
+  function tambahAkar() {
+    tanyaKetik('Akar baru',
+      'Tulang punggungnya, satu kata: Work, Social, Subject… ' +
+      'Ini bukan tempat menaruh gambar — isinya interest.',
+      '', function (ketik) {
+        var nama = String(ketik || '').trim();
+        if (!nama) return;
+        if (!tambahAlbum(nama)) { pesan('Board itu sudah ada'); return; }
+        Promise.all([simpanAlbum(), simpanAkarTangan(akarTangan().concat([nama]))])
+          .then(function () {
+            gambarPohonBoard();
+            pesan('Akar “' + nama + '” dibuat');
+          });
+      });
+  }
+
+  /* UBAH NAMA AKAR, dan ANAKNYA IKUT. Tanpa itu anaknya yatim: "Business FNB"
+     yang induknya sudah bernama lain naik ke akar dan berdiri sebagai akar
+     bernama "Business FNB", yang tidak pernah dibuat siapa pun. */
+  function namaiAkar(lama) {
+    tanyaKetik('Ubah nama akar “' + lama + '”',
+      'Interest dan sub interest di dalamnya ikut berganti nama; isinya tidak pindah ke mana-mana.',
+      lama, function (ketik) {
+        var baru = String(ketik || '').trim();
+        if (!baru || baru === lama) return;
+        if (albumDaftar.some(function (n) { return TOtak.normal(n) === TOtak.normal(baru); })) {
+          pesan('Board itu sudah ada'); return;
+        }
+        if (boardBuka && TOtak.normal(boardBuka).indexOf(TOtak.normal(lama) + ' ') === 0) {
+          boardBuka = baru + String(boardBuka).slice(lama.length);
+        }
+        /* Nama barunya dicatat sebagai akar tangan APA PUN asalnya. Akar bawaan
+           yang dinamai ulang berhenti cocok dengan daftar di bawaan.js, dan
+           tanpa catatan ini dia turun pangkat jadi interest yatim tepat pada
+           ketukan yang dimaksudkan untuk merapikannya. */
+        var tangan = akarTangan().filter(function (n) {
+          return TOtak.normal(n) !== TOtak.normal(lama);
+        });
+        simpanAkarTangan(tangan.concat([baru])).then(function () {
+          gantiNamaPohon(lama, baru, albumDaftar, true);
         });
       });
   }
@@ -2501,6 +2590,60 @@
     } catch (e) { return []; }
   }
 
+  /* AKARNYA TULANG PUNGGUNG, BUKAN ISI. Daftar bawaannya disiapkan sistem,
+     dan gunanya MEMICU - "Subject" mengingatkan mahasiswa bahwa mata kuliah
+     punya tempatnya sendiri. Yang dipikirkan pemakainya sehari-hari cuma dua
+     tingkat di bawahnya: interest dan sub interest.
+
+     TAPI DAFTAR BAWAAN ITU TEBAKAN TENTANG HIDUP ORANG LAIN, jadi yang dia
+     tambah sendiri ("+ Akar baru") dicatat di 'akarTangan' dan berlaku sama
+     persis dengan yang bawaan. Tanpa catatan itu, akar yang baru dia buat
+     tergambar sebagai interest yatim di bawah "Tanpa akar" - dan yang terbaca
+     bukan "belum kucatat" tapi "tombolnya salah menaruhnya". Ini catatan
+     TERPISAH dari pohonnya sendiri karena pohonnya cuma daftar nama datar:
+     tingkat dibaca dari awalan, dan akar tidak punya awalan untuk dibaca. */
+  function akarTangan() {
+    try {
+      var v = JSON.parse(setelanSaat.akarTangan || '[]');
+      return Array.isArray(v) ? v : [];
+    } catch (e) { return []; }
+  }
+
+  function akarSistem() { return (TBawaan.akarAwal || []).concat(akarTangan()); }
+
+  function adalahAkar(n) {
+    return akarSistem().some(function (a) { return TOtak.normal(a) === TOtak.normal(n); });
+  }
+
+  function simpanAkarTangan(daftar) {
+    setelanSaat.akarTangan = JSON.stringify(daftar);
+    return TSimpan.setel('akarTangan', setelanSaat.akarTangan)
+      .then(function (r) { sundulNaik(); return r; });
+  }
+
+  /* Interest = tingkat yang KAMU isi. Di pohon bertiga tingkat dia anak
+     langsung akar; di pohon lama yang belum punya akar dia baris paling atas.
+     Satu fungsi untuk dua bentuk, supaya pohon yang sudah terlanjur ada tidak
+     ikut berubah rupanya sampai kamu sendiri yang menyetelnya ulang. */
+  function boardInterestDi(akar) {
+    return albumDaftar.filter(function (n) { return indukBoard(n) === akar; }).sort(urutAbjad);
+  }
+
+  function boardYatim() {
+    return albumDaftar.filter(function (n) {
+      return !indukBoard(n) && !adalahAkar(n);
+    }).sort(urutAbjad);
+  }
+
+  /* Akar yang benar-benar ada di pohonmu, berurut abjad. Ruang tunggu tidak
+     ikut: dia bukan kepala bagian, dia ruangan yang bisa dibuka. */
+  function boardAkarPakai() {
+    var lain = TOtak.normal(TBawaan.boardLain || '');
+    return albumDaftar.filter(function (n) {
+      return adalahAkar(n) && TOtak.normal(n) !== lain;
+    }).sort(urutAbjad);
+  }
+
   function boardBuatanAI() {
     try {
       var v = JSON.parse(setelanSaat.boardAI || '[]');
@@ -2701,32 +2844,46 @@
       }).join('') + '</div>';
   }
 
-  /* AKARNYA DIBAGI DUA, dan garisnya bukan hiasan.
+  /* AKAR GALLERY DIBAGI PER AKAR, dan kepalanya bukan hiasan.
 
-     Yang di atas BIDANG YANG KAMU TENTUKAN SENDIRI - tujuh baris yang kamu
-     tulis, dan yang kamu tuju waktu tahu mau ke mana. Yang di bawah ruang
-     tunggu: yang tidak punya bidang, dan yang belum sempat dialamatkan.
+     Sembilan interest sejajar sudah di batas yang bisa dipindai mata; di lima
+     belas dia dinding. Yang membedakannya dari daftar biasa: kepalanya TIDAK
+     BISA DIKETUK. Akar itu tulang punggung, bukan ruangan - menjadikannya
+     folder berarti menambah satu ketukan ke tiap foto, dan seluruh alasan
+     aplikasi ini ada adalah mengurangi ketukan, bukan menambahnya.
 
-     Tanpa garisnya keduanya terbaca sederajat, dan "Other and Various" duduk
-     di antara bidang usahamu seperti salah satunya - padahal dia justru
-     kebalikannya: dia tempat yang isinya belum diputuskan. Mata yang memindai
-     tujuh baris tiap hari tidak boleh harus membaca yang kedelapan untuk tahu
-     itu bukan salah satunya. */
-  function akarBerbagian(anak) {
+     Yang kosong tidak digambar sama sekali. Tujuh kepala bagian yang enam di
+     antaranya kosong bukan struktur, itu daftar kosong yang harus digulir. */
+  function akarBerbagian(semuaA) {
     var lain = TOtak.normal(TBawaan.boardLain || '');
-    var bawah = anak.filter(function (f) {
-      return f.nama === TANPA_ALBUM || (lain && TOtak.normal(f.nama) === lain);
+    var bawah = semuaA.filter(function (f) {
+      return !f.induk && (f.nama === TANPA_ALBUM || (lain && TOtak.normal(f.nama) === lain));
     });
-    var atas = anak.filter(function (f) { return bawah.indexOf(f) < 0; });
-    if (!bawah.length) return atas.map(albumHtml).join('');
-    /* "Main Interest" TIDAK DITERJEMAHKAN: dia nama yang dia pilih sendiri,
-       aturan yang sama dengan nama pintu dan nama board. Yang di bawahnya
-       kalimat aplikasi biasa, jadi dia ikut berganti bahasa. */
-    return (atas.length
-        ? '<div class="galeri-bagian"><span class="bagian-nama" data-asli>Main Interest</span>' +
-          '<span class="bagian-ket">kamu yang menentukan</span></div>' +
-          atas.map(albumHtml).join('')
-        : '') +
+
+    var html = '';
+    boardAkarPakai().forEach(function (akar) {
+      var isi = semuaA.filter(function (f) { return f.induk === akar; });
+      /* Akar yang isinya sendiri tidak kosong tetap dapat barisnya - foto yang
+         tidak punya baris untuk ditampilkan sama saja dengan foto yang hilang. */
+      var diri = semuaA.filter(function (f) { return f.nama === akar && f.isi.length; });
+      if (!isi.length && !diri.length) return;
+      html += '<div class="galeri-bagian"><span class="bagian-nama" data-asli>' + H(akar) + '</span></div>' +
+              diri.map(albumHtml).join('') + isi.map(albumHtml).join('');
+    });
+
+    /* Pohon lama yang belum punya akar tetap digambar apa adanya, di bawah satu
+       kepala - berlaku maju, bukan mundur. */
+    var yatim = semuaA.filter(function (f) {
+      return !f.induk && !adalahAkar(f.nama) && bawah.indexOf(f) < 0;
+    });
+    if (yatim.length) {
+      html += '<div class="galeri-bagian"><span class="bagian-nama" data-asli>Main Interest</span>' +
+              '<span class="bagian-ket">kamu yang menentukan</span></div>' +
+              yatim.map(albumHtml).join('');
+    }
+
+    if (!bawah.length) return html;
+    return html +
       '<div class="galeri-bagian pisah"><span class="bagian-ket">kalau tidak ada yang cocok</span></div>' +
       bawah.map(albumHtml).join('');
   }
@@ -2767,10 +2924,11 @@
          satu-satunya yang ada, satu baris tetap menyembunyikan seluruh
          timbunan di baliknya - dinding yang harus diketuk tanpa satu alasan. */
       var albumAsli = anak.filter(function (f) {
-        return f.nama !== TANPA_ALBUM && f.nama !== tanpaGaleri();
+        return f.nama !== TANPA_ALBUM && f.nama !== tanpaGaleri() &&
+               (!adalahAkar(f.nama) || f.anak || f.isi.length);
       });
       if (!galeriFolder && !albumAsli.length) anak = [];
-      albumHtml2 = galeriFolder ? anak.map(albumHtml).join('') : akarBerbagian(anak);
+      albumHtml2 = galeriFolder ? anak.map(albumHtml).join('') : akarBerbagian(semuaA);
       if (!galeriFolder && albumAsli.length) tampil = [];
     }
 
@@ -3584,8 +3742,12 @@
     return jalur.map(function (n, i) { return namaPendek(n, i ? jalur[i - 1] : ''); }).join(' / ');
   }
 
-  function gantiNamaPohon(lama, baru, daftar) {
-    var galeri = diLayarGaleri();
+  /* paksaAlbum: dipanggil dari Setelan, di mana layarnya bukan Gallery tapi
+     yang disunting tetap pohon board. Tanpa itu namanya berganti di setelan
+     'folderNote' dan kolom 'folder' - dua benda yang sama sekali tidak
+     dimaksud, dan kerusakannya baru kelihatan di layar Note. */
+  function gantiNamaPohon(lama, baru, daftar, paksaAlbum) {
+    var galeri = paksaAlbum || diLayarGaleri();
     var kolom = galeri ? 'album' : 'folder';
     var peta = {};
     daftar.forEach(function (n) {
@@ -3622,6 +3784,7 @@
       return muatSemua();
     }).then(function () {
       segarkanTampilan();
+      if (paksaAlbum) gambarPohonBoard();
       pesan(kena.length + ' isinya ikut pindah ke “' + baru + '”');
     });
   }
@@ -4821,6 +4984,16 @@
         'Menghapus satu board tidak menghapus isinya — isinya cuma keluar dari situ.</div>',
       '<div class="board-pohon" id="set-board"></div>',
       '<div class="set-ket" id="board-jumlah">…</div>',
+      /* Satu-satunya jalan pindah ke susunan baru. Tidak ada pemindahan
+         otomatis: pohon yang sudah terlanjur ada itu keputusanmu, dan menimpa
+         keputusan orang diam-diam adalah cara tercepat membuat dia berhenti
+         percaya pada apa yang dilihatnya. */
+      '<button class="set-tbl" id="b-board-reset">Ganti dengan susunan bawaan</button>',
+      /* SATU simpul teks, tanpa <b> di tengahnya: lapisan bahasa menukar teks
+         per simpul, jadi penebalan di tengah kalimat memotongnya jadi tiga
+         potongan yang tidak satu pun punya terjemahannya. */
+      '<div class="set-ket">Menghapus seluruh pohonmu dan menggantinya dengan susunan bawaan yang berakar. ' +
+        'Gambarnya tidak ikut terhapus — yang alamatnya tidak ada lagi menunggu di ruang tunggu.</div>',
       '</div>',
 
       '<div class="set-bagian">Akhiran</div>',
@@ -5153,6 +5326,26 @@
       });
     }
 
+    var reset = $('#b-board-reset');
+    if (reset) reset.addEventListener('click', function () {
+      tanya('Ganti dengan susunan bawaan?',
+        'Seluruh pohonmu sekarang dihapus dan diganti akar + interest bawaan. ' +
+        'Gambarnya tidak ikut terhapus; yang alamatnya tidak ada lagi menunggu di ruang tunggu.',
+        function () {
+          albumDaftar = (TBawaan.boardAwal || []).slice();
+          boardBuka = '';
+          setelanSaat.boardAI = '[]';
+          /* Akar tanganmu ikut dibuang: barisnya tidak ada lagi di pohonnya,
+             dan catatan akar yang menunjuk ke baris yang sudah tidak ada cuma
+             menunggu untuk membingungkan pemiliknya nanti. */
+          Promise.all([simpanAlbum(), TSimpan.setel('boardAI', '[]'), simpanAkarTangan([])])
+            .then(function () {
+              gambarSetelan();
+              pesan(albumDaftar.length + ' board dipasang');
+            });
+        });
+    });
+
     var pohonBoard = $('#set-board');
     if (pohonBoard) pohonBoard.addEventListener('click', function (ev) {
       /* Buang dibaca DULUAN: silangnya duduk di dalam baris yang juga membuka
@@ -5161,7 +5354,11 @@
       if (buang) { buangBoard(buang.getAttribute('data-board-buang')); return; }
       var sub = ev.target.closest('[data-board-sub]');
       if (sub) { tambahBoard(sub.getAttribute('data-board-sub')); return; }
-      if (ev.target.closest('[data-board-main]')) { tambahBoard(''); return; }
+      var it = ev.target.closest('[data-board-interest]');
+      if (it) { tambahBoard(it.getAttribute('data-board-interest')); return; }
+      if (ev.target.closest('[data-board-akar]')) { tambahAkar(); return; }
+      var namai = ev.target.closest('[data-board-namai]');
+      if (namai) { namaiAkar(namai.getAttribute('data-board-namai')); return; }
       var buka = ev.target.closest('[data-board-buka]');
       if (buka) {
         var m = buka.getAttribute('data-board-buka');

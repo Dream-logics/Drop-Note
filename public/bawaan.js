@@ -56,108 +56,116 @@
       'Various = lain, umum'
     ],
 
-    /* ===================== BOARD =====================
-       SATU pohon, dan dia satu-satunya alamat di aplikasi ini. Dua tingkat:
-       main board (bidangnya) dan sub board (urusannya di dalam bidang itu).
-       Susunannya dibaca dari NAMA, sama seperti folder Note - "FNB Menu Promo"
-       otomatis jadi anak "FNB" - jadi tidak ada mekanik baru yang harus
-       dipelajari, dan tidak ada kolom induk yang bisa jadi yatim.
+    /* ===================== POHON: AKAR - INTEREST - SUB =====================
+       TIGA TINGKAT, dan tingkat teratas DIPASANG SISTEM.
 
-       INI DAFTAR TERTUTUP, dan itu justru gunanya. AI MEMILIH dari sini, tidak
-       pernah menambah barisnya sendiri. Daftar yang boleh ditambah mesin akan
-       melar sampai tidak ada dua foto yang tinggal di ruangan yang sama - dan
-       gudang dengan seribu ruangan sama saja dengan gudang tanpa ruangan.
-       Yang menambah cuma pemakainya, lewat menu di Setelan.
+       Kenapa ada tingkat ketiga: sembilan main board sejajar sudah di batas
+       yang bisa dipindai mata; di lima belas dia dinding. Yang terjadi di
+       lapangan - pemakainya menambal sendiri dengan menaruh "Biz -" di depan
+       tiap nama, lalu pusing membacanya, sampai sadar dia sedang mengarang
+       satu tingkat yang belum ada tempatnya. Kalau orangnya sendiri sudah
+       mengarangnya, tingkat itu memang dibutuhkan.
 
-       Kalau tidak ada sub yang benar-benar cocok, jawabannya main board-nya
-       saja. Itu jawaban yang sah, bukan kegagalan: "Interior" tanpa sub lebih
-       benar daripada foto masjid yang dipaksa masuk "Interior Bedroom", dan
-       ruangan yang belum terdefinisi (masjid, entrance, terrace) memang
-       tinggal di situ sampai pemakainya memutuskan membuatkan kamarnya.
+       AKARNYA TIDAK DIPIKIRKAN PEMAKAINYA. Dia daftar tetap, disiapkan di
+       sini, dan gunanya MEMICU - "Subject" mengingatkan mahasiswa bahwa mata
+       kuliah punya tempatnya sendiri; "Social" mengingatkan bahwa yang bukan
+       kerjaan juga layak disimpan. Yang dipikirkannya cuma dua tingkat di
+       bawahnya: INTEREST (bidangnya) dan SUB INTEREST (urusannya).
 
-       Kenapa dua promo. "FNB Menu Promo" itu menunya sendiri; "FNB Ide Promo"
-       itu cara menjualnya - billboard menarik yang dipotret di jalan tidak
-       punya menu sama sekali, tapi dia ide promo yang paling berharga. Dua
-       benda, dua kamar; menggabungkannya membuat yang satu tenggelam.
+       Tingkatnya dibaca dari NAMA, aturan yang sama persis dengan dua tingkat
+       sebelumnya: "Business FNB Menu Promo" itu sub dari "Business FNB", yang
+       itu sendiri interest di dalam akar "Business". Tidak ada mekanik baru,
+       tidak ada kolom induk yang bisa jadi yatim.
 
-       Ini cuma NILAI AWAL. Begitu aplikasinya dipasang, pohonnya jadi milik
-       pemakainya dan disunting di Setelan; mengubah baris ini tidak menyentuh
-       pohon yang sudah terlanjur ada di perangkat siapa pun. */
+       AKAR TIDAK BISA DIHAPUS ATAU DIGANTI NAMA, dan itu bukan kekakuan: dia
+       tulang punggung, bukan isi. Yang kamu buang atau namai ulang selalu
+       interest dan sub-nya. */
+    akarAwal: ['Business', 'Personal', 'Project', 'Social', 'Subject',
+               'Tools', 'Work'],
+
+    /* Pohon awal: akarnya lengkap, dan isinya cuma contoh yang bisa langsung
+       dipakai. Sama seperti daftar lain di berkas ini, ini NILAI AWAL -
+       disunting di Setelan, dan mengubah baris ini tidak menyentuh pohon yang
+       sudah terlanjur ada di perangkat siapa pun. */
     boardAwal: [
-      'FNB',
-      'FNB Concept',
-      'FNB Inspiration',
-      'FNB Menu Baru',
-      'FNB Menu Promo',
-      'FNB Ide Promo',
-      'FNB Operational',
-      'FNB Pricing',
-      'FNB Ngoffee',
-      'FNB Project Space',
-      'FNB Apps',
+      'Business',
+      'Business Construction',
+      'Business Construction Material',
+      'Business Construction Structure',
+      'Business Construction Inspiration',
+      'Business Construction Teknik',
+      'Business Construction Apps',
+      'Business FNB',
+      'Business FNB Concept',
+      'Business FNB Inspiration',
+      'Business FNB Menu Baru',
+      'Business FNB Menu Promo',
+      'Business FNB Ide Promo',
+      'Business FNB Operational',
+      'Business FNB Pricing',
+      'Business FNB Ngoffee',
+      'Business FNB Project Space',
+      'Business FNB Apps',
+      'Business Hampers',
+      'Business Hampers Isi Hamper',
+      'Business Hospitality',
+      'Business Hospitality Hotel Inspiration',
+      'Business Hospitality Kost Inspiration',
+      'Business Hospitality Villa Inspiration',
+      'Business Hospitality Guest House Inspiration',
+      'Business Hospitality Kontrakan Inspiration',
+      'Business Hospitality Warehouse Inspiration',
+      'Business Hospitality Living Java',
+      'Business Hospitality Red Doorz',
+      'Business Hospitality Ultima Bdg',
+      'Business Hospitality Apps',
+      'Business Interior',
+      'Business Interior Furnishing',
+      'Business Interior Living Room',
+      'Business Interior Kitchen',
+      'Business Interior Bedroom',
+      'Business Interior Lighting',
+      'Business Interior Accessories',
+      'Business Interior Apps',
+      'Business Property',
+      'Business Property Inspiration',
+      'Business Property Facade',
+      'Business Property Layout',
+      'Business Property Sales Marketing',
+      'Business Property Amara Living',
+      'Business Property Lead Centre Apps',
 
-      'Property',
-      'Property Inspiration',
-      'Property Facade',
-      'Property Layout',
-      'Property Sales Marketing',
-      'Property Amara Living',
-      'Property Lead Centre Apps',
+      'Personal',
+      'Personal Life Style',
+      'Personal Motivation',
+      'Personal Motivation Quote',
+      'Personal Motivation Renungan',
 
-      'Interior',
-      'Interior Furnishing',
-      'Interior Living Room',
-      'Interior Kitchen',
-      'Interior Bedroom',
-      'Interior Lighting',
-      'Interior Accessories',
-      'Interior Apps',
+      'Project',
+      'Social',
+      'Subject',
 
-      'Construction',
-      'Construction Material',
-      'Construction Structure',
-      'Construction Inspiration',
-      'Construction Teknik',
-      'Construction Apps',
+      'Tools',
+      'Tools Apps Dev',
+      'Tools Apps Dev Cortex',
+      'Tools Apps Dev Shamira Creative',
 
-      'Hospitality',
-      'Hospitality Hotel Inspiration',
-      'Hospitality Kost Inspiration',
-      'Hospitality Villa Inspiration',
-      'Hospitality Guest House Inspiration',
-      'Hospitality Kontrakan Inspiration',
-      'Hospitality Warehouse Inspiration',
-      'Hospitality Living Java',
-      'Hospitality Red Doorz',
-      'Hospitality Ultima Bdg',
-      'Hospitality Apps',
-
-      'Apps Dev',
-      'Apps Dev Cortex',
-      'Apps Dev Shamira Creative',
-
-      'Motivation',
-      'Motivation Quote',
-      'Motivation Renungan',
+      'Work',
 
       'Other and Various'
     ],
 
-    /* RUANGAN TERAKHIR, dan dia satu-satunya main board yang dipasang sistem.
-       Foto antariksa tidak punya bidang di daftar mana pun, dan itu bukan
-       kegagalan - hidupmu memang lebih luas daripada tujuh bidang usahamu.
+    /* RUANGAN TERAKHIR, dan dia satu-satunya akar yang menampung gambar
+       langsung. Foto antariksa tidak punya bidang di daftar mana pun, dan itu
+       bukan kegagalan - hidupmu memang lebih luas daripada bidang usahamu.
 
        Yang dilawan bukan keberadaannya, tapi ketiadaannya: tanpa ruangan ini,
        yang tidak cocok mendarat di "Belum berboard" - baris yang bunyinya
        seperti kesalahan, dan yang isinya makin lama makin dihindari sampai
-       tidak pernah dibuka lagi. "Other and Various" bukan kesalahan; dia
-       jawaban yang jujur untuk pertanyaan yang memang tidak punya jawaban.
+       tidak pernah dibuka lagi.
 
-       AI TIDAK MEMBUAT SUB DI DALAMNYA. Ruangan di dalam ruang tunggu
-       membatalkan gunanya ruang tunggu: "Other and Various Inspiration" tidak
-       memberitahu apa pun yang tidak sudah diberitahu namanya sendiri. Kalau
-       kamu sendiri yang membuatkan sub-nya, itu lain - kamu sudah tahu apa
-       isinya. */
+       AI TIDAK MEMBUAT APA PUN DI DALAMNYA. Ruangan di dalam ruang tunggu
+       membatalkan gunanya ruang tunggu. */
     boardLain: 'Other and Various',
 
     /* ===================== AKHIRAN =====================
@@ -188,7 +196,18 @@
 
        Sama seperti pohonnya, ini cuma NILAI AWAL; disunting di Setelan. */
     akhiranAwal: ['Inspiration', 'Concept', 'Material', 'Layout', 'Menu',
-                  'Promo', 'Pricing', 'Operational', 'Progress', 'Apps'],
+                  'Promo', 'Pricing', 'Operational', 'Progress', 'Apps',
+                  /* JARING TERAKHIR DI DALAM INTEREST. Kalau tidak ada satu
+                     akhiran pun yang pas, gambarnya tetap tidak boleh berhenti
+                     di pintu ruangan: interest yang menampung foto lepas di
+                     samping sub-nya persis timbunan yang dilawan aplikasi ini.
+                     Jadi ada dua tingkat ruang tunggu - satu untuk "bidangnya
+                     tidak ketemu" (boardLain), satu untuk "bidangnya ketemu,
+                     kamarnya tidak" (ini). Dibuat waktu pertama dibutuhkan,
+                     bukan disiapkan kosong di tiap interest: sembilan baris
+                     kosong menambah panjang pohon tanpa menambah satu jawaban
+                     pun. */
+                  'Various'],
 
     /* Alamat proxy AI milik PEMBUAT aplikasi (Apps Script /exec).
        Kunci Gemini tinggal di sana, tidak pernah di perangkat siapa pun.
