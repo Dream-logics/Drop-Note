@@ -161,6 +161,10 @@
     'Kamera': 'Camera',
     'Unggah': 'Upload',
     'Tidak ada gambar yang cocok.': 'No image matches.',
+    'Buka semua': 'Expand all',
+    'Tutup semua': 'Collapse all',
+    'Buka folder': 'Open folder',
+    'Belum ada gambar di sini.': 'No images in here yet.',
     'Memasukkan…': 'Adding…',
     'album': 'folders',
 

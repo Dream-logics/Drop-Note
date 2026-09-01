@@ -1014,22 +1014,40 @@
       var total = 0, cocok = 0;
       kata.forEach(function (w) { var n = nilaiSatu(e, w); if (n) { cocok++; total += n; } });
       if (!cocok) return 0;
-      /* Semua kata harus ketemu. Kalau tidak ada satu pun entri yang memenuhi,
-         syaratnya dilonggarkan di bawah - lebih baik hasil kurang tepat
-         daripada layar kosong padahal barangnya ada. */
-      if (cocok < kata.length) return -total;
+      /* SEMUA KATA HARUS KETEMU, TITIK. Tidak ada pelonggaran ke "salah satu"
+         waktu tidak ada yang memenuhi - dan itu bukan penyederhanaan, itu
+         perbaikan.
+
+         Dulu di sini ada jaring pengaman: kalau tidak ada satu pun entri yang
+         memuat semua katanya, syaratnya turun jadi "salah satu" supaya layarnya
+         tidak kosong. Yang terjadi di lapangan justru kebalikannya. Mencari
+         "cangkir kopi" mengembalikan 2 hasil yang benar; menambah satu kata
+         jadi "cangkir kopi hitam" mengembalikan 40 hasil dan tidak satu pun
+         benar - laptop ikut naik karena "hitam", kamar tidur ikut naik karena
+         "kopi" pernah lewat di deskripsinya.
+
+         Artinya makin lengkap yang kamu ketik, makin buruk hasilnya. Itu
+         kebalikan dari yang dijanjikan kotak pencarian, dan sekali seseorang
+         melihatnya dia berhenti mengetik kata ketiga selamanya - padahal kata
+         ketiga itu yang paling menyempitkan.
+
+         Layar kosong itu jawaban yang jujur: "tidak ada yang memuat ketiganya".
+         Empat puluh hasil yang salah bukan jawaban, itu pekerjaan baru.
+
+         Urutannya tidak diikat: "kopi cangkir" sama saja dengan "cangkir kopi",
+         karena yang diingat orang enam bulan lagi kata-katanya, bukan
+         susunannya. */
+      if (cocok < kata.length) return 0;
       return total + Math.min(e.dipakai || 0, 20) * 0.6;
     }
 
-    var ketat = [], longgar = [];
+    var ketat = [];
     pakai.forEach(function (e) {
       var n = nilai(e);
       if (n > 0) ketat.push({ e: e, n: n });
-      else if (n < 0) longgar.push({ e: e, n: -n });
     });
 
-    var sumber = ketat.length ? ketat : longgar;
-    return sumber.sort(function (a, b) {
+    return ketat.sort(function (a, b) {
       if (b.n !== a.n) return b.n - a.n;
       return (b.e.diubah || 0) - (a.e.diubah || 0);
     }).map(function (x) { return x.e; });

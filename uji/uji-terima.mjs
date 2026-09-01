@@ -631,6 +631,35 @@ console.log('\ndeskripsi menggantikan tag, dan dinilai setinggi tag');
   ]);
   cek('board ketemu lewat main board maupun sub board', brd[0] === 1 && brd[1] === 1, JSON.stringify(brd));
 
+  /* ===== SEMUA KATA HARUS KETEMU, TANPA PELONGGARAN =====
+     Dulu ada jaring pengaman: kalau tidak ada satu pun entri yang memuat semua
+     katanya, syaratnya turun jadi "salah satu" supaya layarnya tidak kosong.
+     Yang terjadi di lapangan justru kebalikannya - "cangkir kopi" mengembalikan
+     2 hasil yang benar, "cangkir kopi hitam" mengembalikan 40 dan tidak satu
+     pun benar: laptop ikut naik karena "hitam", kamar tidur karena "kopi".
+     Makin lengkap yang diketik, makin buruk hasilnya - kebalikan dari yang
+     dijanjikan kotak pencarian. */
+  const AND = [
+    { id: 'c1', jenis: 'gambar', judul: 'Cangkir Kopi Keramik Biru', isi: 'cangkir keramik biru', label: [] },
+    { id: 'c2', jenis: 'gambar', judul: 'Setup Meja Kopi Project Space', isi: 'cangkir kopi di meja', label: [] },
+    { id: 'l1', jenis: 'gambar', judul: 'Laptop Gaming Hitam Lenovo', isi: 'laptop hitam', label: [] },
+    { id: 'k1', jenis: 'gambar', judul: 'Modern Bedroom Interior', isi: 'kamar tidur meja kopi', label: [] }
+  ];
+  const dan = await hal.evaluate((a) => [
+    TOtak.cari(a, 'cangkir kopi', '', '').map((e) => e.id),
+    TOtak.cari(a, 'cangkir kopi hitam', '', '').map((e) => e.id),
+    TOtak.cari(a, 'kopi cangkir', '', '').map((e) => e.id)
+  ], AND);
+  cek('dua kata: cuma yang memuat KEDUANYA',
+      dan[0].join(',') === 'c1,c2', JSON.stringify(dan[0]));
+  /* LAYAR KOSONG ITU JAWABAN YANG JUJUR. Empat puluh hasil yang salah bukan
+     jawaban, itu pekerjaan baru. */
+  cek('menambah kata yang tidak ada mengosongkan hasilnya, bukan melebarkannya',
+      dan[1].length === 0, JSON.stringify(dan[1]));
+  /* Urutannya tidak diikat: yang diingat orang kata-katanya, bukan susunannya. */
+  cek('urutan katanya tidak diikat',
+      dan[2].join(',') === 'c1,c2', JSON.stringify(dan[2]));
+
   const tgl = await hal.evaluate(() => TOtak.tanggalIndo(new Date(2026, 2, 9, 7, 5).getTime()));
   cek('tanggal ringkas: bulan disingkat, tanpa jam', /^9 Mar 2026$/.test(tgl), tgl);
 
@@ -5422,21 +5451,59 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
   await hal.click('#galeri-isi [data-galeri-folder="Business"]');
   await hal.waitForTimeout(350);
   cek('mengetuk akarnya membuka interest di dalamnya, bukan fotonya',
-      (await hal.locator('#galeri-isi [data-galeri-folder="Business Bidanguji"]').count()) === 1 &&
+      (await hal.locator('#galeri-isi [data-laci="Business Bidanguji"]').count()) === 1 &&
       (await hal.locator('#galeri-isi .petak-satu').count()) === 0);
   cek('dan interest-nya juga menghitung sampai ke sub-nya',
-      /\b3\b/.test(await hal.innerText('#galeri-isi [data-galeri-folder="Business Bidanguji"]')),
-      await hal.innerText('#galeri-isi [data-galeri-folder="Business Bidanguji"]'));
+      /\b3\b/.test(await hal.innerText('#galeri-isi [data-laci="Business Bidanguji"]')),
+      await hal.innerText('#galeri-isi [data-laci="Business Bidanguji"]'));
+
+  /* ===== LACI: SUB FOLDER YANG BISA DIINTIP TANPA DIMASUKI =====
+     Sebelumnya barisnya cuma nama dan angka, dan satu-satunya cara melihat
+     isinya adalah masuk ke dalamnya lalu keluar lagi: tiga ketukan untuk satu
+     pertanyaan yang jawabnya "oh, bukan yang ini". */
+  cek('lacinya tertutup sampai diketuk',
+      (await hal.locator('#galeri-isi .laci.buka').count()) === 0);
+  await hal.click('#galeri-isi [data-laci="Business Bidanguji"]');
+  await hal.waitForTimeout(300);
+  cek('mengetuk barisnya membuka lacinya di tempat, tanpa memindahkan layar',
+      (await hal.locator('#galeri-isi .laci.buka').count()) === 1 &&
+      (await hal.locator('#galeri-isi .laci-isi .petak-satu').count()) === 3 &&
+      (await hal.innerText('#galeri-alamat')).indexOf('Bidanguji') < 0,
+      await hal.innerText('#galeri-alamat'));
+  /* Isinya sama dengan angkanya - keturunannya sekalian. Angka yang tidak cocok
+     dengan isi lacinya lebih buruk daripada tidak berangka. */
+  cek('isi lacinya sama dengan angka di barisnya, keturunannya sekalian',
+      (await hal.locator('#galeri-isi .laci-isi .petak-satu').count()) === 3);
+  await hal.click('#galeri-isi [data-laci="Business Bidanguji"]');
+  await hal.waitForTimeout(300);
+  cek('mengetuknya lagi menutupnya',
+      (await hal.locator('#galeri-isi .laci.buka').count()) === 0);
+  /* Buka semua / tutup semua di kepalanya: sekali lihat seluruh isi board, atau
+     merapikan kembali jadi daftar. */
+  await hal.click('#galeri-isi [data-laci-semua="buka"]');
+  await hal.waitForTimeout(300);
+  cek('“Buka semua” membuka seluruh lacinya sekaligus',
+      (await hal.locator('#galeri-isi .laci.buka').count()) ===
+      (await hal.locator('#galeri-isi .laci').count()));
+  await hal.click('#galeri-isi [data-laci-semua="tutup"]');
+  await hal.waitForTimeout(300);
+  cek('dan tombolnya berganti jadi “Tutup semua” yang menutup semuanya',
+      (await hal.locator('#galeri-isi .laci.buka').count()) === 0);
 
   /* ===== TIAP INTEREST SELALU PUNYA "VARIOUS", WALAU KOSONG =====
      Yang membuka "Business Hampers" dan cuma melihat "Isi Hamper" tidak punya
      satu tempat pun untuk hamper yang bukan isinya - jadi dia menaruhnya di
      interest itu sendiri, dan interest yang menampung foto lepas di samping
      sub-nya persis timbunan yang dilawan aplikasi ini. */
-  await hal.click('#galeri-isi [data-galeri-folder="Business Bidanguji"]');
+  /* MASUK KE DALAMNYA lewat panah di ujung kanan - dua sasaran di satu baris,
+     dan keduanya 40px: yang kiri mengintip, yang kanan benar-benar pindah. */
+  await hal.click('#galeri-isi .laci-masuk[data-galeri-folder="Business Bidanguji"]');
   await hal.waitForTimeout(350);
+  cek('panah di ujung barisnya benar-benar memindahkan layarnya',
+      (await hal.innerText('#galeri-alamat')).indexOf('Bidanguji') >= 0,
+      await hal.innerText('#galeri-alamat'));
   cek('tiap interest dapat ruang tunggunya sendiri, walau belum ada isinya',
-      (await hal.locator('#galeri-isi [data-galeri-folder="Business Bidanguji Various"]').count()) === 1,
+      (await hal.locator('#galeri-isi [data-laci="Business Bidanguji Various"]').count()) === 1,
       await hal.innerText('#galeri-isi'));
   /* TAPI VIRTUAL, bukan ditanam ke pohonmu: sebelas baris "Various" yang lahir
      sendiri di Setelan adalah pohon yang menumbuhi dirinya di belakangmu, dan
@@ -5472,7 +5539,8 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
   await hal.waitForTimeout(400);
   await hal.click('#galeri-isi [data-galeri-folder="Rumahuji"]');
   await hal.waitForTimeout(350);
-  await hal.click('#galeri-isi [data-galeri-folder="Rumahuji Dapuruji"]');
+  /* Di dalam board, barisnya LACI - yang memindahkan layar panah di ujungnya. */
+  await hal.click('#galeri-isi .laci-masuk[data-galeri-folder="Rumahuji Dapuruji"]');
   await hal.waitForTimeout(350);
   cek('jejaknya menunjukkan jalurnya',
       (await hal.innerText('#galeri-alamat')).replace(/\s+/g, ' ')
@@ -5942,7 +6010,7 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
      dokumen. Yang kembali "Ruang Tamu Modern" untuk board Bedroom. */
   await hal.click('#galeri-isi [data-galeri-folder="Interior"]');
   await hal.waitForTimeout(350);
-  await hal.click('#galeri-isi [data-galeri-folder="Interior Sofauji"]');
+  await hal.click('#galeri-isi .laci-masuk[data-galeri-folder="Interior Sofauji"]');
   await hal.waitForTimeout(350);
   await potret('sesi5.png');
   const dalam = await fotoUji('sesi5.png');
@@ -6023,7 +6091,7 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
   await hal.waitForTimeout(350);
   await hal.click('#galeri-isi [data-galeri-folder="Interior"]');
   await hal.waitForTimeout(350);
-  await hal.locator('#galeri-isi [data-galeri-folder="Interior Sofauji"]').dispatchEvent('pointerdown');
+  await hal.locator('#galeri-isi .laci-kepala[data-galeri-folder="Interior Sofauji"]').dispatchEvent('pointerdown');
   await hal.waitForTimeout(700);
   cek('“Ubah nama” cuma muncul untuk SATU folder',
       await hal.locator('#b-pilih-nama').isVisible());
@@ -6066,7 +6134,7 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
   await hal.waitForTimeout(400);
   await hal.click('#galeri-isi [data-galeri-folder="Interior"]');
   await hal.waitForTimeout(350);
-  await hal.locator('#galeri-isi [data-galeri-folder="Interior Terraceuji"]').dispatchEvent('pointerdown');
+  await hal.locator('#galeri-isi .laci-kepala[data-galeri-folder="Interior Terraceuji"]').dispatchEvent('pointerdown');
   await hal.waitForTimeout(700);
   await hal.click('#b-pilih-pindah');
   await hal.waitForSelector('#tanya-pilih:not(.sembunyi)');
@@ -6119,9 +6187,9 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
   await hal.waitForTimeout(400);
   await hal.click('#galeri-isi [data-galeri-folder="Interior"]');
   await hal.waitForTimeout(350);
-  await hal.locator('#galeri-isi [data-galeri-folder="Interior Terraceuji"]').dispatchEvent('pointerdown');
+  await hal.locator('#galeri-isi .laci-kepala[data-galeri-folder="Interior Terraceuji"]').dispatchEvent('pointerdown');
   await hal.waitForTimeout(700);
-  await hal.click('#galeri-isi [data-galeri-folder="Interior Duauji"]');
+  await hal.click('#galeri-isi .laci-masuk[data-galeri-folder="Interior Duauji"]');
   await hal.waitForTimeout(300);
   await hal.click('#b-pilih-gabung');
   await hal.waitForSelector('#tanya-pilih:not(.sembunyi)');
@@ -6469,7 +6537,7 @@ console.log('\nberdiri di board menjawab "ke mana", bukan "apa yang kamu lihat"'
 
   await hal.click('#galeri-isi [data-galeri-folder="Interior"]');
   await hal.waitForTimeout(400);
-  await hal.click('#galeri-isi [data-galeri-folder="Interior Kamaruji"]');
+  await hal.click('#galeri-isi .laci-masuk[data-galeri-folder="Interior Kamaruji"]');
   await hal.waitForTimeout(400);
   cek('memang sedang berdiri di dalam boardnya',
       (await hal.innerText('#galeri-alamat')).indexOf('Kamaruji') >= 0,
