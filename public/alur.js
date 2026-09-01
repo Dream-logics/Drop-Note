@@ -1369,6 +1369,10 @@
     var w = $('#set-board');
     if (!w) return;
     var induk = boardInduk();
+    /* Ruangan yang lahir dari akhiran ditandai titik. Bukan supaya bisa
+       dibedakan gunanya - isinya sama saja - tapi supaya sekali seminggu kamu
+       bisa melihat mana yang tumbuh tanpa kamu tulis. */
+    var buatanAI = boardBuatanAI();
     w.innerHTML = induk.map(function (m) {
       var anak = boardAnak(m);
       var buka = boardBuka === m;
@@ -1382,7 +1386,7 @@
         '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>' +
         (buka ? '<div class="board-panel">' +
           anak.map(function (n) {
-            return '<div class="board-baris board-sub">' +
+            return '<div class="board-baris board-sub' + (buatanAI.indexOf(n) >= 0 ? ' dariAI' : '') + '">' +
               '<span class="board-nama" data-asli>' + H(namaPendek(n, m)) + '</span>' +
               '<button class="board-buang" data-board-buang="' + H(n) + '" aria-label="Hapus">' +
               '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>' +
@@ -2441,6 +2445,24 @@
     } catch (e) { albumDaftar = []; }
   }
 
+  /* Kosakata yang boleh dipakai AI untuk MEMBUAT sub board. Lihat bawaan.js
+     untuk alasan kenapa dia tertutup padahal pohonnya boleh tumbuh. */
+  function daftarAkhiran(s) {
+    var d = (s || setelanSaat || {}).akhiran;
+    if (d == null) return (TBawaan.akhiranAwal || []).slice();
+    try {
+      var v = JSON.parse(d);
+      return Array.isArray(v) ? v.filter(Boolean) : [];
+    } catch (e) { return []; }
+  }
+
+  function boardBuatanAI() {
+    try {
+      var v = JSON.parse(setelanSaat.boardAI || '[]');
+      return Array.isArray(v) ? v : [];
+    } catch (e) { return []; }
+  }
+
   function simpanAlbum() {
     setelanSaat.board = JSON.stringify(albumDaftar);
     return TSimpan.setel('board', setelanSaat.board)
@@ -2905,8 +2927,18 @@
 
   function taruhDriver(ids, driver) {
     var kena = semuaEntri.filter(function (e) { return ids.indexOf(e.id) >= 0; });
+    /* KALAU YANG KAMU KETIK MENYEBUT SUB BOARD-NYA, itu bukan lagi sudut
+       pandang saja - itu alamat, dan alamat yang kamu sebut sendiri tidak
+       pantas ditebak ulang siapa pun. Langsung mendarat, dan dikunci.
+
+       Yang menyebut MAIN board saja dibiarkan kosong: alamatnya baru separuh,
+       dan yang tersisa - "sub yang mana" - justru pertanyaan yang bisa dijawab
+       mesin, karena dia melihat gambarnya. Penjaganya di pilihBoard: jawaban
+       di luar main board itu ditolak. */
+    var sebut = TOtak.bacaBoardDariDriver(driver, albumDaftar, daftarAkhiran());
     return Promise.all(kena.map(function (e) {
       e.driver = driver;
+      if (sebut.sub && !e.albumManual) { e.album = sebut.sub; e.albumManual = true; }
       /* Dilabeli ULANG. Driver yang datang belakangan mengubah artinya, jadi
          judul, deskripsi, dan board yang terlanjur disusun tanpa dia sudah
          kedaluwarsa - membiarkannya berarti foto masjid itu selamanya berjudul
@@ -3207,6 +3239,12 @@
     $('#b-pilih-gabung').classList.toggle('sembunyi', nf ? nf < 2 : n < 2);
     $('#b-pilih-buang').classList.toggle('sembunyi', !n && !nf);
     $('#b-pilih-pindah').classList.toggle('sembunyi', !n && !nf);
+    /* UBAH NAMA cuma untuk SATU folder, dan cuma di layar yang foldernya punya
+       daftar sendiri. Rak Storage lahir dari kategori tiap catatan - mengganti
+       namanya di sana berarti menyunting catatannya satu per satu, dan itu
+       maksud yang berbeda dari "ganti nama ruangan". */
+    $('#b-pilih-nama').classList.toggle('sembunyi',
+      !(nf === 1 && !n && (diLayarGaleri() || diLayarTulis())));
   }
 
   function alihPilih(id) {
@@ -3333,9 +3371,52 @@
     });
   }
 
+  /* ===================== PINDAH BOARD LINTAS MAIN BOARD =====================
+     Yang berpindah BOARDNYA SENDIRI, bukan isinya. "Interior Bedroom" yang
+     ternyata urusan Hospitality tinggal digeser ke sana - namanya jadi
+     "Hospitality Bedroom", isinya dan sub-nya ikut, dan tidak ada satu foto
+     pun yang disentuh satu per satu.
+
+     Ini pasangan wajib dari pohon yang boleh tumbuh: AI membuat ruangan dari
+     akhiran, dan akhiran tidak tahu bidang. Tanpa jalan menggesernya, satu
+     ruangan yang lahir di bidang yang salah cuma bisa dihapus - dan menghapus
+     berarti isinya keluar semua.
+
+     CUMA UNTUK SATU BOARD, dan cuma yang punya induk. Main board tidak bisa
+     digeser ke mana-mana: dia atapnya, dan atap ditentukan tanganmu. */
+  function pindahBoardLintas(lama, daftar) {
+    var induk = indukDari(lama, daftar);
+    if (!induk) return false;
+    var mains = daftar.filter(function (n) { return !indukDari(n, daftar); })
+      .filter(function (n) { return n !== induk; })
+      .sort(function (a, b) { return a.localeCompare(b); });
+    if (!mains.length) { pesan('Belum ada main board lain untuk dituju'); return true; }
+    var pendek = namaPendek(lama, induk);
+    tanyaPilih('Pindahkan “' + pendek + '” ke main board mana?',
+      'Sekarang di “' + induk + '”. Isinya dan sub board di dalamnya ikut.',
+      mains, function (tujuan) {
+        if (!tujuan) return;
+        var baru = tujuan + ' ' + pendek;
+        if (daftar.some(function (n) { return TOtak.normal(n) === TOtak.normal(baru); })) {
+          pesan('Di sana sudah ada “' + pendek + '”'); return;
+        }
+        gantiNamaPohon(lama, baru, daftar);
+      });
+    return true;
+  }
+
   function pindahPilih() {
     var folderPilih = folderTerpilih();
     var semuaNama = namaFolderLayar();
+
+    /* SATU BOARD YANG DITANDAI = BOARDNYA yang pindah, bukan isinya. Dua atau
+       lebih tidak bisa: memindahkan tiga board sekaligus ke satu induk itu
+       maksud yang jarang, dan dialognya jadi bercabang untuk melayaninya. */
+    if (folderPilih.length === 1 && (diLayarGaleri() || diLayarTulis())) {
+      var daftarKu = diLayarGaleri() ? albumDaftar : folderDaftar;
+      if (daftarKu.indexOf(folderPilih[0]) >= 0 &&
+          pindahBoardLintas(folderPilih[0], daftarKu)) return;
+    }
 
     /* FOLDER YANG DIPILIH: isinya yang pindah, bukan foldernya sendiri.
        Foldernya cuma nama tempat - yang benar-benar berpindah selalu isinya. */
@@ -3370,6 +3451,90 @@
   /* MENGGABUNG FOLDER. Bedanya dengan Pindah cuma DARI MANA tujuannya diambil:
      di sini dari antara yang kamu pilih sendiri, jadi dua rak yang ternyata
      benda yang sama bisa dilebur tanpa mengetik satu nama pun. */
+  /* ===================== UBAH NAMA RUANGAN =====================
+     Satu-satunya jalan membereskan pohon yang boleh tumbuh. AI cuma bisa
+     membuat "<main> <akhiran>", jadi foto terrace mendarat di "Interior
+     Inspiration"; begitu isinya sudah jelas satu jenis, namanya tinggal
+     diganti dan seluruh isinya ikut - tanpa memindahkan satu foto pun.
+
+     ANAKNYA IKUT BERGANTI NAMA. Susunan di sini dibaca dari awalan nama, jadi
+     mengganti "Interior" tanpa menyentuh "Interior Bedroom" membuat anaknya
+     yatim seketika: dia naik ke akar sebagai main board yang tidak pernah
+     dibuat siapa pun.
+
+     Yang diketik NAMA PENDEKNYA saja - awalan induknya dipasang aplikasinya,
+     aturan yang sama persis dengan "+ Sub". */
+  function ubahNamaFolder() {
+    var pilih = folderTerpilih();
+    if (pilih.length !== 1) return;
+    var lama = pilih[0];
+    var daftar = diLayarGaleri() ? albumDaftar : folderDaftar;
+    if (daftar.indexOf(lama) < 0) { pesan('Folder itu tidak bisa diganti namanya'); return; }
+    var induk = indukDari(lama, daftar);
+    tanyaKetik('Ubah nama “' + labelAlbum2(lama, daftar) + '”',
+      induk ? 'Cukup nama pendeknya — awalan “' + induk + '” dipasang sendiri.'
+            : 'Nama barunya. Sub board di dalamnya ikut berganti.',
+      namaPendek(lama, induk), function (ketik) {
+        var pendek = String(ketik || '').trim();
+        if (!pendek) return;
+        var baru = (induk && TOtak.normal(pendek).indexOf(TOtak.normal(induk) + ' ') !== 0)
+          ? induk + ' ' + pendek : pendek;
+        if (TOtak.normal(baru) === TOtak.normal(lama)) { batalPilih(); return; }
+        if (daftar.some(function (n) { return TOtak.normal(n) === TOtak.normal(baru); })) {
+          pesan('Nama itu sudah dipakai'); return;
+        }
+        gantiNamaPohon(lama, baru, daftar);
+      });
+  }
+
+  /* Dipakai judul dialognya saja - labelAlbum() cuma tahu pohon Gallery. */
+  function labelAlbum2(nama, daftar) {
+    var jalur = jalurFolder(nama, daftar);
+    return jalur.map(function (n, i) { return namaPendek(n, i ? jalur[i - 1] : ''); }).join(' / ');
+  }
+
+  function gantiNamaPohon(lama, baru, daftar) {
+    var galeri = diLayarGaleri();
+    var kolom = galeri ? 'album' : 'folder';
+    var peta = {};
+    daftar.forEach(function (n) {
+      if (n === lama) peta[n] = baru;
+      else if (TOtak.normal(n).indexOf(TOtak.normal(lama) + ' ') === 0) {
+        peta[n] = baru + String(n).slice(lama.length);
+      }
+    });
+    var kena = semuaEntri.filter(function (e) { return !!peta[e[kolom] || '']; });
+    var buatan = boardBuatanAI();
+    Object.keys(peta).forEach(function (n) {
+      var i = daftar.indexOf(n);
+      if (i >= 0) daftar[i] = peta[n];
+      /* Yang sudah kamu namai sendiri berhenti jadi ruangan buatan AI - dan
+         titiknya ikut hilang, karena sekarang dia memang milikmu. */
+      var j = buatan.indexOf(n);
+      if (j >= 0) buatan.splice(j, 1);
+    });
+    Promise.all(kena.map(function (e) {
+      e[kolom] = peta[e[kolom]];
+      e.diubah = Date.now();
+      segarkanCache(e);
+      return TSimpan.taruh(e);
+    })).then(function () {
+      setelanSaat.boardAI = JSON.stringify(buatan);
+      return Promise.all([
+        galeri ? simpanAlbum() : simpanFolder(),
+        galeri ? TSimpan.setel('boardAI', setelanSaat.boardAI) : null
+      ]);
+    }).then(function () {
+      if (galeri && galeriFolder === lama) galeriFolder = baru;
+      if (!galeri && tulisFolder === lama) tulisFolder = baru;
+      batalPilih();
+      return muatSemua();
+    }).then(function () {
+      segarkanTampilan();
+      pesan(kena.length + ' isinya ikut pindah ke “' + baru + '”');
+    });
+  }
+
   function gabungFolder() {
     var folderPilih = folderTerpilih();
     if (folderPilih.length < 2) return;
@@ -3381,6 +3546,22 @@
         folderPilih.forEach(function (n) {
           if (n !== tujuan) isi = isi.concat(isiFolder(n));
         });
+        /* BARIS YANG SUDAH KOSONG IKUT DICORET. Di layar yang foldernya punya
+           daftar sendiri - Gallery dan Note - memindahkan isinya saja
+           meninggalkan ruangan kosong yang tetap berdiri, dan yang terbaca:
+           "gabungnya gagal". Yang punya anak dibiarkan: mencoretnya membuat
+           anaknya yatim dan naik ke akar. */
+        var daftar = diLayarGaleri() ? albumDaftar : diLayarTulis() ? folderDaftar : null;
+        if (daftar) {
+          folderPilih.forEach(function (n) {
+            if (n === tujuan || daftar.indexOf(n) < 0) return;
+            var punyaAnak = daftar.some(function (m) {
+              return TOtak.normal(m).indexOf(TOtak.normal(n) + ' ') === 0;
+            });
+            if (!punyaAnak) daftar.splice(daftar.indexOf(n), 1);
+          });
+          if (diLayarGaleri()) simpanAlbum(); else simpanFolder();
+        }
         pindahkanEntri(isi, tujuan, folderPilih.length + ' folder digabung jadi “' + tujuan + '”');
       });
   }
@@ -4551,6 +4732,19 @@
       '<div class="set-ket" id="board-jumlah">…</div>',
       '</div>',
 
+      '<div class="set-bagian">Akhiran</div>',
+      '<div class="set-kotak">',
+      '<div class="set-judul">Kosakata yang boleh dipakai AI membuat sub board</div>',
+      '<div class="set-ket">Kalau kamu cuma menyebut main board-nya — <i>“Daily Life”</i> — dan tidak ada sub yang cocok, ' +
+        'AI membuat satu dengan menggabungkan nama main board itu dengan <b>satu kata dari sini</b>: <i>Daily Life Inspiration</i>. ' +
+        'Dia tidak pernah mengarang kata lain. Yang membuat daftar meleleh bukan pertumbuhannya, tapi penamaan bebas — ' +
+        'tag dulu mati karena mesin boleh mengarang: #sofa, #kursi, #seating untuk satu benda. ' +
+        'Pisahkan dengan koma atau baris baru. Kosongkan kalau kamu tidak mau AI membuat sub board sama sekali.</div>',
+      '<textarea class="set-input" id="set-akhiran" spellcheck="false" placeholder="Inspiration, Concept">' +
+        H(daftarAkhiran(s).join(', ')) + '</textarea>',
+      '<div class="set-ket" id="akhiran-jumlah">…</div>',
+      '</div>',
+
       '<div class="set-bagian">Cadangan manual</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">Salinan teks ke berkas</div>',
@@ -4842,6 +5036,32 @@
 
     gambarPohonBoard();
 
+    var isianAkhiran = $('#set-akhiran');
+    if (isianAkhiran) {
+      var uraiAkhiran = function (teks) {
+        var keluar = [];
+        String(teks || '').split(/[,\n]+/).forEach(function (t) {
+          var v = t.trim().replace(/\s+/g, ' ');
+          if (!v) return;
+          if (!keluar.some(function (x) { return TOtak.normal(x) === TOtak.normal(v); })) keluar.push(v);
+        });
+        return keluar.slice(0, 40);
+      };
+      var tampilJumlahAkhiran = function () {
+        var n = uraiAkhiran(isianAkhiran.value).length;
+        $('#akhiran-jumlah').textContent = n ? n + ' akhiran'
+          : 'Kosong — AI tidak akan membuat sub board, cuma memilih yang sudah ada.';
+      };
+      tampilJumlahAkhiran();
+      isianAkhiran.addEventListener('input', tampilJumlahAkhiran);
+      isianAkhiran.addEventListener('change', function () {
+        var daftar = uraiAkhiran(isianAkhiran.value);
+        isianAkhiran.value = daftar.join(', ');
+        tampilJumlahAkhiran();
+        simpanSetelan('akhiran', JSON.stringify(daftar));
+      });
+    }
+
     var pohonBoard = $('#set-board');
     if (pohonBoard) pohonBoard.addEventListener('click', function (ev) {
       /* Buang dibaca DULUAN: silangnya duduk di dalam baris yang juga membuka
@@ -4969,7 +5189,14 @@
   function putaranLabel() {
     if (!TPelabel.siap(setelanSaat) || !adaAntrean()) return;
     TPelabel.putaran(setelanSaat).then(function (n) {
-      if (n) muatSemua().then(function () { segarkanTampilan(); });
+      if (!n) return;
+      /* WAJIB. Pelabelan sekarang boleh MELAHIRKAN ruangan baru - "Daily Life
+         Inspiration" untuk main board yang belum punya sub sama sekali - dan
+         dia menuliskannya ke setelan yang sama yang dipegang layar ini. Tanpa
+         memuat ulang pohonnya, gambar barunya menunjuk ke nama yang belum ada
+         barisnya di layar, dan yang terlihat: foto itu hilang. */
+      muatAlbum(setelanSaat);
+      muatSemua().then(function () { segarkanTampilan(); });
     });
   }
 
@@ -5598,6 +5825,7 @@
       if (jumlahFolderPilih()) gabungFolder(); else gabungPilih();
     });
     $('#b-pilih-pindah').addEventListener('click', pindahPilih);
+    $('#b-pilih-nama').addEventListener('click', ubahNamaFolder);
 
     /* Mengetuk latarnya tetap menutup - kebiasaan itu sudah ada dan tidak
        boleh dicabut. Yang ditambahkan tombolnya, karena ketukan yang tidak

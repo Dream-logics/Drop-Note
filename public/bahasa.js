@@ -316,6 +316,17 @@
     '+ Sub': '+ Sub',
     'Hapus': 'Delete',
     'Main board baru': 'New main board',
+    'Akhiran': 'Suffixes',
+    'Kosakata yang boleh dipakai AI membuat sub board':
+      'The vocabulary the AI may use to make a sub board',
+    'Kosong — AI tidak akan membuat sub board, cuma memilih yang sudah ada.':
+      'Empty — the AI will not make sub boards, only pick from the existing ones.',
+    'Ubah nama': 'Rename',
+    'Belum ada main board lain untuk dituju': 'There is no other main board to move it to',
+    'Nama itu sudah dipakai': 'That name is already taken',
+    'Folder itu tidak bisa diganti namanya': 'That folder cannot be renamed',
+    'Nama barunya. Sub board di dalamnya ikut berganti.':
+      'The new name. Sub boards inside it are renamed too.',
     'Bidangnya, satu-dua kata. Ini berdiri di akar, bukan di dalam board mana pun.':
       'The field it belongs to, one or two words. This one stands at the root, not inside any board.',
     'Baru dipotret': 'Just shot',
@@ -472,6 +483,13 @@
     [/^Cukup nama pendeknya — awalan “(.+)” dipasang sendiri\.$/,
      'Just the short name — the “$1” prefix is added for you.'],
     [/^\+ Sub di (.+)$/, '+ Sub in $1'],
+    [/^(\d+) akhiran$/, '$1 suffixes'],
+    [/^Ubah nama “(.+)”$/, 'Rename “$1”'],
+    [/^Pindahkan “(.+)” ke main board mana\?$/, 'Move “$1” to which main board?'],
+    [/^Sekarang di “(.+)”\. Isinya dan sub board di dalamnya ikut\.$/,
+     'Currently in “$1”. Its contents and sub boards come along.'],
+    [/^Di sana sudah ada “(.+)”$/, 'There is already a “$1” there'],
+    [/^(\d+) isinya ikut pindah ke “(.+)”$/, 'Its $1 items moved along to “$2”'],
     [/^(\d+) gambar di dalamnya TIDAK ikut terhapus — mereka keluar ke “Belum berboard”\.$/,
      'The $1 images inside are NOT deleted — they move out to “No board yet”.'],
     [/^Memasukkan (\d+) gambar…$/, 'Adding $1 images…'],
@@ -531,6 +549,9 @@
 
     'Main board itu bidangnya, sub board urusannya di dalam bidang itu. AI <b>memilih</b> dari daftar ini tiap kali melabeli — dia tidak pernah menambah barisnya sendiri, karena daftar alamat yang boleh ditambah mesin akan melar sampai tidak ada dua foto yang tinggal di ruangan yang sama. Kalau tidak ada sub yang cocok, yang dipilih main board-nya; itu jawaban yang sah. Menghapus satu board tidak menghapus isinya — isinya cuma keluar dari situ.':
       'A main board is the field; a sub board is a concern inside that field. The AI <b>picks</b> from this list every time it labels something — it never adds a row of its own, because an address list a machine may extend will stretch until no two photos live in the same room. When no sub fits, the main board is picked; that is a valid answer. Deleting a board does not delete what is in it — the contents just move out.',
+
+    'Kalau kamu cuma menyebut main board-nya — <i>“Daily Life”</i> — dan tidak ada sub yang cocok, AI membuat satu dengan menggabungkan nama main board itu dengan <b>satu kata dari sini</b>: <i>Daily Life Inspiration</i>. Dia tidak pernah mengarang kata lain. Yang membuat daftar meleleh bukan pertumbuhannya, tapi penamaan bebas — tag dulu mati karena mesin boleh mengarang: #sofa, #kursi, #seating untuk satu benda. Pisahkan dengan koma atau baris baru. Kosongkan kalau kamu tidak mau AI membuat sub board sama sekali.':
+      'When you name only the main board — <i>“Daily Life”</i> — and no sub board fits, the AI makes one by joining that main board’s name with <b>one word from here</b>: <i>Daily Life Inspiration</i>. It never invents a word of its own. What melts a list is not its growth but free naming — tags died because the machine could invent: #sofa, #kursi, #seating for one thing. Separate them with commas or new lines. Leave it empty if you do not want the AI making sub boards at all.',
 
     'Semua entri dan berkas di perangkat ini hilang, tanpa urung. Yang sudah naik ke Drive tetap aman. Ketik <b>HAPUS</b> untuk membuka tombolnya.':
       'Every entry and file on this device is gone, with no undo. Whatever already reached Drive stays safe. Type <b>HAPUS</b> to unlock the button.',

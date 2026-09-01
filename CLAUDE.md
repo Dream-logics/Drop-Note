@@ -76,12 +76,22 @@ terpikir, dan itu membatalkan seluruh gunanya.
    berhenti muncul, dan itu tidak sama dengan tersusun. Gudang yang isinya
    sepuluh ribu keping lepas tetap gudang berantakan walau yang basi sudah
    diam. Karena itu **board itu ruangan**, dan tiap keping harus mendarat di
-   salah satunya tanpa kamu memutuskan apa pun. Pohonnya TERTUTUP: AI memilih
-   dari situ, tidak pernah menambah barisnya — daftar alamat yang boleh
-   ditambah mesin melar sampai tidak ada dua foto yang tinggal di ruangan yang
-   sama, dan gudang dengan seribu ruangan sama saja dengan gudang tanpa
-   ruangan. Hashtag sudah dicoba dan **dibuang seluruhnya**; yang menggantikan
-   kata kunci adalah DESKRIPSI (lihat pelabel.js).
+   salah satunya tanpa kamu memutuskan apa pun.
+
+   **Pohonnya boleh tumbuh; KATANYA yang tertutup.** Yang membuat taksonomi
+   meleleh bukan pertumbuhan, tapi PENAMAAN BEBAS — tag mati karena mesin
+   boleh mengarang kata (#sofa, #kursi, #seating untuk satu benda). Jadi AI
+   cuma boleh menggabungkan dua potong yang SUDAH tertulis: nama main board +
+   satu AKHIRAN dari daftar tertutup (`akhiranAwal` di bawaan.js). Main board
+   tetap tanganmu — atapnya tidak pernah tumbuh sendiri. Penggabungannya
+   dikerjakan `pilihBoard()`, bukan modelnya: nama yang tidak ada di dua
+   daftar itu tidak akan pernah lahir.
+   Ongkosnya harus disebut: AI tidak akan pernah membuat "Interior Terrace" —
+   nama ruangan itu BENDA, dan begitu benda boleh dikarang kita kembali ke
+   #sofa lawan #kursi. Yang membereskannya **Ubah nama & Gabung di Gallery**,
+   bukan kelonggaran di arahannya.
+   Hashtag sudah dicoba dan **dibuang seluruhnya**; yang menggantikan kata
+   kunci adalah DESKRIPSI (lihat pelabel.js).
 5. **Layar depan kosong.**
 6. **Judul yang diketik sendiri tidak pernah ditimpa AI** (`judulManual`).
 7. **Swalayan.** Folder Drive dan spreadsheet dibuat aplikasi, bukan pemakainya.
@@ -260,6 +270,18 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     membacakan DRIVERNYA (alamat masih bisa dipindah kapan saja;
                     sudut pandang yang basi tidak ketahuan); silangnya menutup
                     sesi - "use last scene set up until it dropped".
+                    DRIVER BOLEH SEKALIAN MENYEBUT ALAMATNYA
+                    (TOtak.bacaBoardDariDriver). Ketik nama SUB board -> langsung
+                    mendarat di situ dan DIKUNCI, tanpa AI: kamu sudah menjawab.
+                    Ketik nama MAIN board -> alamatnya baru separuh, dan yang
+                    tersisa ("sub yang mana") justru pertanyaan yang bisa
+                    dijawab mesin karena dia melihat gambarnya; pilihBoard
+                    menolak jawaban di luar main board itu.
+                    COCOKNYA HARUS TIDAK AMBIGU: akhiran telanjang ("Menu")
+                    tidak pernah jadi alamat - dia niat, bukan tempat, dan
+                    "Daily Life Menu" bisa punya kembaran di bawah main board
+                    lain. Dua sub yang sama-sama disebut ("bedroom lighting")
+                    jatuh ke induknya, bukan diundi berdasarkan nama terpanjang.
                     DRIVER ('driver' di entri) - yang diketik waktu memotret
                     BUKAN ALAMAT, TAPI NIAT. Dua
                     tiga kata: "interior mesjid", "sofa unik minimalis". Satu
@@ -310,10 +332,23 @@ public/bawaan.js    (lanjutan) POHON BOARD ('boardAwal', disunting lewat menu
                     sendiri bahwa namanya wajib diawali nama induknya berarti
                     sub boardnya tidak pernah terbentuk: yang terjadi dia
                     mengetik "Kitchen" dan itu mendarat di akar.
-                    DAFTARNYA TERTUTUP. AI memilih dari sini, tidak pernah
-                    menambah barisnya - dan itu KEBALIKAN aturan tag yang lama
-                    (daftar tag sengaja terbuka, karena tag yang meleset cuma
-                    pintu tambahan yang tidak terpakai). Alamat lain ceritanya.
+                    KATANYA TERTUTUP, POHONNYA BOLEH TUMBUH. AI cuma boleh
+                    menggabungkan nama main board yang sudah ada dengan satu
+                    kata dari 'akhiranAwal' - Inspiration, Concept, Material,
+                    Layout, Menu, Promo, Pricing, Operational, Progress, Apps.
+                    Daftar itu bukan karangan: "Inspiration" sudah muncul di
+                    empat dari tujuh main board, "Apps" di lima; sumbunya
+                    memang sudah ada, ini cuma menamainya.
+                    Sebabnya: main board yang belum punya sub sama sekali akan
+                    menampung SEMUANYA, dan timbunan yang dilawan aplikasi ini
+                    lahir lagi di dalam ruangan yang baru dibuat untuk
+                    mencegahnya. Tapi penamaan bebas yang membunuh tag, bukan
+                    pertumbuhannya - jadi yang dibuka jumlahnya, bukan
+                    kosakatanya. Main board tetap tanganmu.
+                    Barisnya ditulis pilihBoard()+tambahBoardBaru(), bukan
+                    modelnya, dan dicatat di 'boardAI' supaya bisa ditandai
+                    titik di Setelan - sekali seminggu kamu bisa lihat ruangan
+                    mana yang tumbuh tanpa kamu tulis.
                     Kalau tidak ada sub yang cocok, jawabannya main board-nya
                     saja; itu jawaban yang SAH, bukan kegagalan - "Interior"
                     tanpa sub lebih benar daripada foto masjid yang dipaksa
@@ -418,7 +453,8 @@ public/sinkron.js   SINKRON DUA ARAH lewat Drive; tidak pernah di jalur drop.
                     tidak pernah ikut berubah). Kalau seluruh berkas yang
                     menang, menambah folder di HP menghapus board yang baru
                     ditulis di laptop. Yang ikut cuma ISI KEPALA (label, board,
-                    folderNote, namaElemen, ekorJudul, obrolan).
+                    boardAI, akhiran, folderNote, namaElemen, ekorJudul,
+                    obrolan).
                     YANG TIDAK PERNAH IKUT: tampilan (tema, bahasa, gayaGaleri
                     - berganti sendiri tanpa diminta itu kehilangan kendali)
                     dan SESI (driverLengket - itu kenyataan fisik, kamu sedang
@@ -491,6 +527,28 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     NAMA PENDEKNYA saja (di dalam "Prompt", anaknya tertulis
                     "Cortex"); nama panjangnya tetap identitasnya. Panah kembali
                     naik SATU tingkat, tidak melompat ke akar.
+                    UBAH NAMA ruangan ada di bilah pilih, cuma waktu SATU
+                    folder ditandai, dan cuma di layar yang foldernya punya
+                    daftar sendiri (Gallery & Note). Dia satu-satunya jalan
+                    membereskan pohon yang boleh tumbuh: "Interior Inspiration"
+                    yang ternyata berisi tiga puluh foto terrace tinggal
+                    diganti namanya, dan ketiga puluhnya ikut - tanpa
+                    memindahkan satu foto pun. ANAKNYA IKUT BERGANTI NAMA;
+                    tanpa itu anaknya yatim dan naik ke akar sebagai main board
+                    yang tidak pernah dibuat siapa pun. Yang diketik nama
+                    PENDEKNYA saja. Gabung MENCORET baris yang sudah kosong -
+                    memindahkan isinya saja meninggalkan ruangan kosong yang
+                    tetap berdiri, dan itu terbaca "gabungnya gagal".
+                    PINDAH untuk SATU board = BOARDNYA yang pindah lintas main
+                    board, bukan isinya ("Interior Bedroom" -> "Hospitality
+                    Bedroom"); isinya dan sub-nya ikut. Ini pasangan wajib dari
+                    pohon yang boleh tumbuh: AI membuat ruangan dari akhiran,
+                    dan akhiran tidak tahu bidang - tanpa jalan menggesernya,
+                    ruangan yang lahir di bidang yang salah cuma bisa dihapus,
+                    dan menghapus berarti isinya keluar semua. MAIN BOARD TIDAK
+                    BISA DIGESER: dia atapnya, dan atap ditentukan tangan
+                    pemakainya. Dua folder atau lebih tetap berarti ISINYA yang
+                    pindah.
                     Bilah pilih SATU untuk dua layar (Note & Storage),
                     melayang di bawah: buang, gabung, pindah - dan FOLDER ikut
                     bisa dipilih di keduanya. Tapi foldernya BUKAN benda yang
@@ -607,7 +665,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (753 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (782 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

@@ -142,8 +142,9 @@
 
      Pohon board ikut dikirim UTUH, dan itu bukan sekadar konteks: dialah daftar
      pilihannya. Yang tidak ada di daftar itu tidak boleh keluar dari sini. */
-  function arahanLabel(daftarBoard, namaElemenLama) {
+  function arahanLabel(daftarBoard, namaElemenLama, akhiran) {
     var board = (daftarBoard || []).join(', ');
+    var akhir = (akhiran || []).join(', ');
     var namaEl = (namaElemenLama || []).slice(0, 80).join(', ');
     return [
       'Kamu membantu seseorang menemukan kembali catatannya sendiri berbulan-bulan kemudian.',
@@ -251,6 +252,12 @@
       '   "Interior" saja lebih benar daripada memaksakan "Interior Bedroom" untuk foto masjid.',
       '   Salin namanya PERSIS seperti tertulis, lengkap dengan nama induknya.',
       board ? '   Board yang tersedia: ' + board : '   Belum ada board sama sekali; kembalikan kosong.',
+      akhir ? '   Kalau tidak ada sub yang cocok, gabungkan nama main board dengan SATU kata dari'
+            : '',
+      akhir ? '   daftar ini: ' + akhir : '',
+      akhir ? '   Dua daftar itu TERTUTUP: jangan mengarang nama main board baru, jangan mengarang'
+            : '',
+      akhir ? '   akhiran baru. Kalau akhirannya pun tidak pas, cukup main board-nya saja.' : '',
       '',
       'Selain itu, label: 4 sampai 8 kata kunci huruf kecil yang TIDAK dilihat pemakainya -',
       'tugasnya cuma membuat pencarian ketemu. Sertakan sebutan yang mungkin dia pakai saat',
@@ -308,7 +315,8 @@
 
     var namaEl = daftarNamaElemen(setelan);
     var board = daftarBoard(setelan);
-    return tanya(setelan, [{ text: pesanan(antre) }], arahanLabel(board, namaEl))
+    return tanya(setelan, [{ text: pesanan(antre) }],
+                 arahanLabel(board, namaEl, daftarAkhiran(setelan)))
       .then(function (jawab) {
         var hasil = (jawab && jawab.hasil) || [];
         if (!hasil.length) throw new Error('Jawaban AI kosong');
@@ -335,15 +343,13 @@
           (e.elemen || []).forEach(function (x) {
             if (x.nama && elBaru.indexOf(x.nama) < 0) elBaru.push(x.nama);
           });
-          /* Alamat yang KAMU tentukan tidak pernah ditimpa - sama persis dengan
-             judul manual. Yang diisi AI cuma yang masih kosong. */
-          if (!e.albumManual) {
-            var pilih = pilihBoard(h.board, board);
-            if (pilih) e.album = pilih;
-          }
           e.diLabeliAI = true;
           e.diubah = Date.now();
-          return TSimpan.taruh(e);
+          /* Alamat yang KAMU tentukan tidak pernah ditimpa - sama persis dengan
+             judul manual. Yang diisi AI cuma yang masih kosong. */
+          return taruhBoard(setelan, e, h.board).then(function () {
+            return TSimpan.taruh(e);
+          });
         }).filter(Boolean);
         return Promise.all(tulis)
           .then(function () { return catatNamaElemen(setelan, elBaru); })
@@ -387,8 +393,9 @@
      dibaca, dan yang berhenti dibaca sama saja dengan tidak ada - jadi
      larangan mengulang ditulis terang-terangan, dan panjangnya ditegakkan
      KODENYA lewat potongKalimat(), bukan cuma diminta di arahan. */
-  function arahanGambar(driver, daftarBoard) {
+  function arahanGambar(driver, daftarBoard, akhiran) {
     var board = (daftarBoard || []).join(', ');
+    var akhir = (akhiran || []).join(', ');
     return [
       driver ? 'Keywords: ' + String(driver).slice(0, 60) : 'Tidak ada keywords; baca apa adanya.',
       '',
@@ -404,8 +411,16 @@
       '',
       'Lalu pilih SATU board dari daftar ini, salin namanya PERSIS:',
       board || '(kosong)',
-      'Sub board kalau ada yang benar-benar cocok, kalau tidak cukup main board-nya.',
-      'Daftar ini tertutup - jangan mengarang nama baru. Kalau tidak ada yang cocok, kosongkan.',
+      'Utamakan SUB board. Kalau keywords menyebut nama main board, jawabannya WAJIB di dalam',
+      'main board itu.',
+      '',
+      'Kalau tidak ada sub board yang cocok, buat satu: nama main board-nya + SATU kata dari',
+      'daftar akhiran ini, tidak boleh kata lain.',
+      akhir || '(kosong)',
+      'Contoh: main board "Daily Life" tanpa sub yang cocok -> "Daily Life Inspiration".',
+      'DUA DAFTAR DI ATAS TERTUTUP: jangan mengarang nama main board baru, jangan mengarang',
+      'akhiran baru. Kalau akhiran pun tidak ada yang pas, cukup main board-nya saja; itu',
+      'jawaban yang sah. Kalau tetap tidak ada yang cocok, kosongkan.',
       '',
       'BAHASA JAWABAN MENGIKUTI BAHASA KEYWORDS.',
       '',
@@ -446,6 +461,26 @@
      akan bocor persis di hari tersibuk, dan yang bocor di sini melahirkan
      ruangan hantu - nama yang menempel di entrinya tapi tidak ada barisnya di
      Setelan, jadi tidak pernah bisa dibuka. */
+  function daftarAkhiran(setelan) {
+    var d = setelan && setelan.akhiran;
+    if (d == null) return (TBawaan.akhiranAwal || []).slice();
+    try {
+      var v = typeof d === 'string' ? JSON.parse(d) : d;
+      return Array.isArray(v) ? v.filter(Boolean) : [];
+    } catch (e) { return []; }
+  }
+
+  function indukDari(nama, semua) {
+    var n = TOtak.normal(nama), terbaik = '';
+    (semua || []).forEach(function (m) {
+      if (m === nama) return;
+      var v = TOtak.normal(m);
+      if (n.indexOf(v + ' ') !== 0) return;
+      if (v.length > TOtak.normal(terbaik).length) terbaik = m;
+    });
+    return terbaik;
+  }
+
   function daftarBoard(setelan) {
     var teks = setelan && setelan.board;
     if (teks == null) return (TBawaan.boardAwal || []).slice();
@@ -459,20 +494,102 @@
      dibuang diam-diam - bukan disimpan apa adanya - karena alamat yang tidak
      ada barisnya lebih buruk daripada tanpa alamat: yang tanpa alamat masih
      kelihatan di "Belum berboard", yang salah nama hilang sama sekali. */
-  function pilihBoard(nama, daftar) {
+  function pilihBoard(nama, daftar, akhiran, wajibInduk) {
     var n = TOtak.normal(nama || '');
     if (!n) return '';
-    var ada = (daftar || []).filter(function (b) { return TOtak.normal(b) === n; })[0];
+    var punya = (daftar || []).filter(Boolean);
+
+    /* KALAU DRIVERNYA SUDAH MENYEBUT MAIN BOARD-NYA, jawabannya wajib di dalam
+       situ. Kamu sudah menjawab separuh; membiarkan model memindahkannya ke
+       bidang lain berarti membatalkan jawaban yang barusan kamu berikan. */
+    function sah(b) {
+      if (!wajibInduk) return true;
+      var w = TOtak.normal(wajibInduk);
+      var v = TOtak.normal(b);
+      return v === w || v.indexOf(w + ' ') === 0;
+    }
+
+    var ada = punya.filter(function (b) { return TOtak.normal(b) === n && sah(b); })[0];
     if (ada) return ada;
     /* Model sesekali menjawab nama pendeknya saja ("Bedroom" untuk "Interior
        Bedroom"). Itu jawaban yang benar dengan penulisan yang salah, jadi
        diselamatkan - tapi cuma kalau cuma SATU baris yang berakhir begitu;
        dua kandidat berarti tebakan, dan menebak alamat itu yang dihindari. */
-    var ekor = (daftar || []).filter(function (b) {
+    var ekor = punya.filter(function (b) {
       var v = TOtak.normal(b);
-      return v === n || v.slice(-(n.length + 1)) === ' ' + n;
+      return (v === n || v.slice(-(n.length + 1)) === ' ' + n) && sah(b);
     });
-    return ekor.length === 1 ? ekor[0] : '';
+    if (ekor.length === 1) return ekor[0];
+
+    /* RUANGAN BARU: satu-satunya nama yang boleh lahir dari sini adalah
+       <main board yang sudah ada> + <akhiran yang sudah ada>. Model tidak
+       pernah mengarang kata; dia cuma menggabungkan dua potong yang sudah
+       tertulis, dan penggabungannya dikerjakan di sini - bukan di sana.
+
+       Tanpa ini, satu main board baru yang belum punya sub sama sekali akan
+       menampung SEMUANYA, dan tumpukan yang dilawan aplikasi ini lahir lagi
+       di dalam ruangan yang baru saja dibuat untuk mencegahnya. */
+    var mains = punya.filter(function (b) { return !indukDari(b, punya); });
+    var pilihM = '', pilihA = '';
+    mains.forEach(function (m) {
+      if (!sah(m)) return;
+      var vm = TOtak.normal(m);
+      if (n.indexOf(vm + ' ') !== 0) return;
+      var sisa = n.slice(vm.length + 1);
+      (akhiran || []).forEach(function (x) {
+        if (TOtak.normal(x) !== sisa) return;
+        /* Yang terpanjang menang, sama seperti di mana-mana: "Apps Dev" lebih
+           menjawab daripada "Apps" seandainya keduanya ada. */
+        if (vm.length > TOtak.normal(pilihM).length) { pilihM = m; pilihA = x; }
+      });
+    });
+    return pilihM ? pilihM + ' ' + pilihA : '';
+  }
+
+  /* Ruangan yang lahir dari akhiran DICATAT sebagai buatan AI. Bukan supaya
+     bisa dibedakan gunanya - isinya sama saja - tapi supaya sekali seminggu
+     kamu bisa melihat ruangan mana yang tumbuh tanpa kamu tulis, dan
+     membereskannya sebelum jumlahnya jadi masalah. */
+  function daftarBoardAI(setelan) {
+    var d = setelan && setelan.boardAI;
+    if (!d) return [];
+    try {
+      var v = typeof d === 'string' ? JSON.parse(d) : d;
+      return Array.isArray(v) ? v.filter(Boolean) : [];
+    } catch (e) { return []; }
+  }
+
+  function tambahBoardBaru(setelan, nama) {
+    var punya = daftarBoard(setelan);
+    if (punya.some(function (b) { return TOtak.normal(b) === TOtak.normal(nama); })) {
+      return Promise.resolve();
+    }
+    punya.push(nama);
+    var buatan = daftarBoardAI(setelan);
+    buatan.push(nama);
+    /* Objek setelan yang sama yang dipegang layar - jadi begitu putaran ini
+       selesai, pohon di memori sudah berisi ruangan barunya tanpa memuat ulang
+       apa pun. */
+    setelan.board = JSON.stringify(punya);
+    setelan.boardAI = JSON.stringify(buatan);
+    return Promise.all([
+      TSimpan.setel('board', setelan.board),
+      TSimpan.setel('boardAI', setelan.boardAI)
+    ]);
+  }
+
+  /* Satu corong untuk dua jalur (labeli & bacaBerkas): memilih boardnya,
+     membuat barisnya kalau memang baru, lalu menempelkannya. */
+  function taruhBoard(setelan, e, jawab) {
+    if (e.albumManual) return Promise.resolve();
+    var punya = daftarBoard(setelan);
+    var akhiran = daftarAkhiran(setelan);
+    var sebut = TOtak.bacaBoardDariDriver(e.driver, punya, akhiran);
+    var pilih = pilihBoard(jawab, punya, akhiran, sebut.main || '');
+    if (!pilih) return Promise.resolve();
+    e.album = pilih;
+    return punya.indexOf(pilih) >= 0 ? Promise.resolve()
+                                     : tambahBoardBaru(setelan, pilih);
   }
 
   function samaKata(a, b) { return String(a).toLowerCase() === String(b).toLowerCase(); }
@@ -508,8 +625,9 @@
 
   /* ===================== baca berkas (OCR) ===================== */
 
-  function arahanBaca(daftarBoard, namaElemenLama) {
+  function arahanBaca(daftarBoard, namaElemenLama, akhiran) {
     var board = (daftarBoard || []).join(', ');
+    var akhir = (akhiran || []).join(', ');
     var namaEl = (namaElemenLama || []).slice(0, 80).join(', ');
     return [
       'Kamu membaca satu dokumen atau foto milik seseorang, supaya dia bisa menemukannya lagi',
@@ -526,6 +644,9 @@
       '  TERTUTUP - kalau tidak ada yang cocok, kosongkan. Sub board kalau ada yang benar-benar',
       '  cocok, kalau tidak cukup main board-nya.',
       board ? '  Board yang tersedia: ' + board : '  Belum ada board sama sekali; kosongkan.',
+      akhir ? '  Kalau tidak ada sub yang cocok, gabungkan nama main board dengan satu kata dari:'
+            : '',
+      akhir ? '  ' + akhir + ' — di luar itu jangan mengarang nama.' : '',
       '- label: 5 sampai 12 kata kunci huruf kecil - jenis dokumen, nama orang/perusahaan,',
       '  tahun, nomor penting, dan sebutan sehari-hari yang mungkin dipakai mencarinya.',
       '- teks: ringkasan isi terpenting, maksimal 600 karakter. Tulis apa adanya, jangan menafsirkan.',
@@ -609,8 +730,9 @@
               { text: e.driver ? 'Keywords: ' + e.driver
                     : (pakaiGambar ? 'Baca gambar ini.' : 'Baca dokumen ini.') }
             ], pakaiGambar
-                 ? arahanGambar(e.driver, daftarBoard(setelan))
-                 : arahanBaca(daftarBoard(setelan), daftarNamaElemen(setelan)));
+                 ? arahanGambar(e.driver, daftarBoard(setelan), daftarAkhiran(setelan))
+                 : arahanBaca(daftarBoard(setelan), daftarNamaElemen(setelan),
+                              daftarAkhiran(setelan)));
           }).then(function (h) {
             if (!h) throw new Error('Dokumen tidak terbaca');
             if (!e.judulManual && h.judul) {
@@ -618,14 +740,6 @@
             }
             e.label = gabungLabel(e.label, h.label);
             e.elemen = TOtak.gabungElemen(h.elemen, e.elemen, daftarNamaElemen(setelan));
-            /* ALAMAT YANG KAMU TENTUKAN TIDAK PERNAH DITIMPA. Berdiri di dalam
-               board waktu memotret itu jawaban, bukan kebetulan - dan jawaban
-               yang barusan diberikan tidak boleh dibatalkan tebakan yang
-               datang tiga detik kemudian. Yang diisi AI cuma yang kosong. */
-            if (!e.albumManual) {
-              var pilih = pilihBoard(h.board, daftarBoard(setelan));
-              if (pilih) e.album = pilih;
-            }
             /* Teksnya ditaruh di isi, bukan di kolom baru: dengan begitu
                pencarian yang sudah ada langsung menemukannya, tanpa satu baris
                pun perubahan di otak.js. */
@@ -650,7 +764,12 @@
             e.diBacaAI = true;
             e.diLabeliAI = true;
             e.diubah = Date.now();
-            return TSimpan.taruh(e)
+            /* ALAMAT YANG KAMU TENTUKAN TIDAK PERNAH DITIMPA. Berdiri di dalam
+               board waktu memotret itu jawaban, bukan kebetulan - dan jawaban
+               yang barusan diberikan tidak boleh dibatalkan tebakan yang datang
+               tiga detik kemudian. Yang diisi AI cuma yang kosong. */
+            return taruhBoard(setelan, e, h.board)
+              .then(function () { return TSimpan.taruh(e); })
               .then(function () {
                 return catatNamaElemen(setelan, (e.elemen || []).map(function (x) { return x.nama; }));
               })
@@ -818,7 +937,8 @@
   function coba(setelan) {
     var contoh = [{ jenis: 'tautan', kategori: '', isi: 'https://script.google.com/macros/s/AKfycbCONTOH/dev' }];
     return tanya(setelan, [{ text: pesanan(contoh) }],
-                 arahanLabel(daftarBoard(setelan), daftarNamaElemen(setelan))).then(function (j) {
+                 arahanLabel(daftarBoard(setelan), daftarNamaElemen(setelan),
+                             daftarAkhiran(setelan))).then(function (j) {
       if (!j || !j.hasil || !j.hasil.length) throw new Error('Tersambung, tapi jawabannya tidak dikenali');
       return j.hasil[0];
     });
@@ -829,7 +949,10 @@
     obrolTeks: obrolTeks, gambarAI: gambarAI, ARAHAN_OBROL: ARAHAN_OBROL,
     /* Cuma untuk uji: melihat arahan yang benar-benar dikirim, bukan menebak
        dari kodenya. */
-    arahanUji: function (setelan) { return arahanLabel(daftarBoard(setelan), daftarNamaElemen(setelan)); },
+    arahanUji: function (setelan) {
+      return arahanLabel(daftarBoard(setelan), daftarNamaElemen(setelan),
+                         daftarAkhiran(setelan));
+    },
     /* Cuma untuk uji: melihat apa yang benar-benar MENINGGALKAN perangkat -
        drivernya ikut atau tidak, dan duduk di urutan yang mana. */
     pesananUji: pesanan,
@@ -841,6 +964,7 @@
     /* Cuma untuk uji: memperlihatkan board yang benar-benar lolos penjaganya,
        bukan menebaknya dari arahan yang dikirim. */
     daftarBoardUji: daftarBoard,
+    daftarAkhiranUji: daftarAkhiran,
     pilihBoardUji: pilihBoard,
     /* Cuma untuk uji: memperlihatkan panjang deskripsi yang benar-benar
        ditegakkan kodenya, bukan yang cuma diminta di arahan. */
