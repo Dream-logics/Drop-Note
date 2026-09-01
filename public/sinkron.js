@@ -36,7 +36,7 @@
   var menarik = false;
 
   function nyala(s) {
-    return !!(s && s.cadanganNyala && ((s.clientId || TBawaan.clientId)));
+    return !!(s && s.cadanganNyala && (TBawaan.clientId || s.clientId));
   }
 
   function catat(setelan, kunci, nilai) {

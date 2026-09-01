@@ -187,6 +187,47 @@ console.log('\npemasangan swalayan');
   });
   cek('Client ID tidak pernah ditanyakan ke pemakai', adaIsianKlien === false);
 
+  /* ===== YANG DITANAM PEMBUATNYA MENANG ATAS YANG TERSIMPAN =====
+     Ini jebakan yang tidak punya jalan keluar, dan sudah benar-benar terjadi:
+     Client ID yang pernah ditempel sekali waktu masih uji coba terus dikirim ke
+     Google SELAMANYA, sementara isian untuk mengubahnya cuma digambar kalau
+     bawaan.js masih kosong - jadi begitu pembuatnya menanam miliknya, nilai
+     basi tadi tidak terlihat DAN tidak bisa dihapus.
+     Yang kembali dari Google: "Error 401: invalid_client - no registered
+     origin". Di jendela penyamaran tidak pernah muncul, karena di sana tidak
+     ada yang tersimpan - jadi yang kelihatan seperti "peramban ini bermasalah"
+     sebenarnya "aplikasi ini mengirim Client ID yang salah, dan cuma di
+     peramban yang pernah kamu pakai". */
+  const klienDipakai = await hal.evaluate(async () => {
+    const asli = TBawaan.clientId;
+    TBawaan.clientId = 'punya-pembuat.apps.googleusercontent.com';
+    await TSimpan.setel('clientId', 'basi-dari-ujicoba.apps.googleusercontent.com');
+    const s = await TSimpan.semuaSetelan();
+    const dipakai = TAwan.clientIdUji(s);
+    TBawaan.clientId = asli;
+    return dipakai;
+  });
+  cek('Client ID bawaan.js yang dikirim, bukan yang basi di perangkat',
+      klienDipakai === 'punya-pembuat.apps.googleusercontent.com', klienDipakai);
+  /* DIBUANG, bukan cuma dikalahkan: kalau cuma diabaikan, dia menunggu sampai
+     suatu hari bawaan.js kosong lagi, lalu menjebak lagi. */
+  await hal.reload();
+  await hal.waitForFunction(() => window.TAlur);
+  await hal.waitForTimeout(700);
+  cek('dan yang basi benar-benar dibuang dari perangkat',
+      (await hal.evaluate(() => TSimpan.setelan('clientId'))) === '',
+      JSON.stringify(await hal.evaluate(() => TSimpan.setelan('clientId'))));
+  /* Tapi yang tersimpan TETAP dipakai kalau bawaan.js memang kosong - itu
+     memang gunanya, untuk yang memasang sendiri. */
+  cek('kalau bawaan.js kosong, yang tersimpan tetap dipakai',
+      (await hal.evaluate(async () => {
+        const asli = TBawaan.clientId;
+        TBawaan.clientId = '';
+        const dipakai = TAwan.clientIdUji({ clientId: 'pasang-sendiri.apps.googleusercontent.com' });
+        TBawaan.clientId = asli;
+        return dipakai;
+      })) === 'pasang-sendiri.apps.googleusercontent.com');
+
   /* Isian itu cuma ada selama `clientId` di bawaan.js masih kosong - artinya
      cuma di mesin yang belum ditanami. Begitu pembuatnya menanamnya, isian ini
      lenyap untuk selamanya, dan uji ini harus tetap lulus tanpa mengisi apa
