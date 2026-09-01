@@ -217,28 +217,6 @@ console.log('\npemasangan swalayan');
   cek('dan yang basi benar-benar dibuang dari perangkat',
       (await hal.evaluate(() => TSimpan.setelan('clientId'))) === '',
       JSON.stringify(await hal.evaluate(() => TSimpan.setelan('clientId'))));
-  /* ===== MEMILIH AKUN BUKAN RITUAL HARIAN =====
-     hangatkan() dulu berjalan tiap kali aplikasi dibuka, dan penjaganya cuma
-     "ada Client ID" - padahal Client ID SELALU ada, karena pembuatnya
-     menanamnya. Di perangkat yang belum pernah mengizinkan, tiap pembukaan
-     jadi permintaan token, dan Google menjawabnya dengan pemilih akun. */
-  const hangatBaru = await hal.evaluate(async () => {
-    window.__mintaToken = 0;
-    TAwan.keluar();
-    await TAwan.hangatkan({ clientId: 'x.apps.googleusercontent.com' });
-    return window.__mintaToken;
-  });
-  cek('yang belum pernah tersambung tidak dimintai token waktu aplikasi dibuka',
-      hangatBaru === 0, String(hangatBaru));
-  const hangatLama = await hal.evaluate(async () => {
-    window.__mintaToken = 0;
-    TAwan.keluar();
-    await TAwan.hangatkan({ clientId: 'x.apps.googleusercontent.com', sheetId: 'sheet-uji' });
-    return window.__mintaToken;
-  });
-  cek('tapi yang sudah pernah tetap dihangatkan, supaya klik pertama tidak dingin',
-      hangatLama === 1, String(hangatLama));
-
   /* PENJAGANYA DI SATU TEMPAT, bukan di tiap pemanggil. Yang meminta token
      diam-diam banyak dan semuanya berjalan sendiri: penghangat waktu aplikasi
      dibuka, cadangan, tarikan sinkron, pelabelan AI sesudah tiap drop. Kalau
@@ -991,13 +969,70 @@ console.log('\nGoogle: token basi diulang sekali, bukan menyerah');
     .then((s) => TAwan.ambilToken(s, true)).then(() => true, () => false));
   cek('sesudah selesai, permintaan berikutnya tetap boleh jalan', lagi === true);
 
-  /* Klik pertama tidak boleh jadi klik yang dingin. */
-  await hal.evaluate(() => TAwan.keluar());
-  const hangat = await hal.evaluate(() => TSimpan.semuaSetelan()
-    .then((s) => TAwan.hangatkan(s)).then(() => TAwan.punyaToken()));
-  cek('token dihangatkan di latar sebelum ada yang diketuk', hangat === true);
-  cek('dan itu benar-benar dipanggil waktu aplikasinya dibuka',
-      /TAwan\.hangatkan\(setelanSaat\)/.test(fs.readFileSync(path.join(AKAR, 'alur.js'), 'utf8')));
+  /* ===== TIDAK ADA GOOGLE SEBELUM LAYARNYA TERGAMBAR =====
+     requestAccessToken() GIS SELALU membuka jendela accounts.google.com;
+     'prompt: kosong' cuma membuatnya menutup sendiri sesudah beberapa detik.
+     Jadi satu saja permintaan token di pembukaan berarti "One moment
+     please..." dari Google mendahului layar aplikasinya - dan aplikasi yang
+     dipakai untuk memotret sesuatu di jalan tidak boleh punya ruang tunggu.
+
+     Jawabannya bukan menghangatkan lebih cepat, tapi TIDAK MEMANGGIL SAMA
+     SEKALI: tokennya disimpan, dan dimuat kembali sebelum apa pun berangkat. */
+  const alurKode = fs.readFileSync(path.join(AKAR, 'alur.js'), 'utf8');
+  cek('penghangat token sudah dibuang, bukan dipercepat',
+      !/TAwan\.hangatkan\(/.test(alurKode) &&
+      !/hangatkan:/.test(fs.readFileSync(path.join(AKAR, 'awan.js'), 'utf8')));
+  cek('dan tokennya dimuat dari simpanan sebelum apa pun menyentuh Google',
+      /TAwan\.muatToken\(setelanSaat\)/.test(alurKode));
+
+  /* TOKENNYA BERTAHAN LINTAS PEMUATAN. Kalau tidak, tiap pembukaan aplikasi
+     membayar satu jendela Google - dan itu seluruh keluhannya. */
+  const tokenSimpan = await hal.evaluate(async () => {
+    TAwan.keluar();
+    await TAwan.ambilToken({ clientId: 'x.apps.googleusercontent.com' }, false);
+    return {
+      tersimpan: !!(await TSimpan.setelan('gToken')),
+      sampai: Number(await TSimpan.setelan('gTokenSampai')) > Date.now()
+    };
+  });
+  cek('token yang didapat ikut tersimpan, berikut masa berlakunya',
+      tokenSimpan.tersimpan && tokenSimpan.sampai, JSON.stringify(tokenSimpan));
+  const tokenPulih = await hal.evaluate(async () => {
+    TAwan.keluar();
+    /* keluar() membuang yang tersimpan juga - jadi ditanam lagi seolah-olah
+       ini pembukaan berikutnya, dengan token yang masih hidup. */
+    const s = { gToken: 'token-lama', gTokenSampai: Date.now() + 3600000 };
+    window.__mintaToken = 0;
+    TAwan.muatToken(s);
+    const t = await TAwan.ambilToken({ clientId: 'x.apps.googleusercontent.com' }, true);
+    return { token: t, minta: window.__mintaToken };
+  });
+  cek('pembukaan berikutnya memakai token itu, tanpa memanggil Google sama sekali',
+      tokenPulih.token === 'token-lama' && tokenPulih.minta === 0,
+      JSON.stringify(tokenPulih));
+  /* YANG SUDAH LEWAT TIDAK DIPAKAI: token yang mati di tengah permintaan
+     terbaca sebagai galat, bukan sebagai token yang perlu diperbarui. */
+  cek('tapi yang tinggal semenit lagi dianggap habis, bukan dipaksakan',
+      (await hal.evaluate(() => TAwan.muatToken({
+        gToken: 'hampir-mati', gTokenSampai: Date.now() + 60000
+      }))) === false);
+  /* DIBUANG BEGITU DITOLAK, supaya yang basi tidak pernah dipakai dua kali.
+     Cadangannya dimatikan dulu: kalau tidak, pekerjaan latar mengambil token
+     baru di tengah pemeriksaan - dan yang terbaca "tidak dibuang", padahal
+     yang terjadi "dibuang lalu diisi lagi". */
+  const buangToken = await hal.evaluate(async () => {
+    const dulu = await TSimpan.setelan('cadanganNyala');
+    await TSimpan.setel('cadanganNyala', 0);
+    TAlur.setelanUji().cadanganNyala = 0;
+    TAwan.keluar();
+    await new Promise((r) => setTimeout(r, 250));
+    const sisa = await TSimpan.setelan('gToken');
+    await TSimpan.setel('cadanganNyala', dulu);
+    TAlur.setelanUji().cadanganNyala = dulu;
+    return sisa;
+  });
+  cek('dan dibuang dari simpanan begitu Google menolaknya', !buangToken,
+      JSON.stringify(buangToken));
 
   /* Mengambil berkas dulu memakai fetch sendiri, tanpa perlakuan 401 sama
      sekali - jadi mengetuk sebuah gambar tepat setelah aplikasi dibuka
@@ -6822,7 +6857,11 @@ console.log('\nsinkron empat perangkat');
   ]));
   await hal2.reload();
   await hal2.waitForFunction(() => window.TAlur && window.TSinkron);
-  await hal2.waitForTimeout(700);
+  /* Lebih lama dari JEDA_AWAN_AWAL: pekerjaan awan sekarang sengaja ditunda
+     sampai lewat penggambaran layar, jadi tarikan pembukaan belum tentu sudah
+     selesai di 700 ms - dan yang berangkat belakangan akan bertabrakan dengan
+     tarikan yang dipanggil uji ini sendiri. */
+  await hal2.waitForTimeout(2500);
   /* SATU IZIN PER PERANGKAT, ditekan jari. Ini bukan kekurangan uji - OAuth
      memang menuntut satu sentuhan di tiap peramban, dan latar belakang tidak
      pernah boleh membukanya sendiri. Dulu uji ini membiarkan perangkat kedua
@@ -7004,7 +7043,7 @@ console.log('\nsinkron empat perangkat');
      mengisi dirinya sendiri sampai penuh, tanpa satu tombol lagi. */
   await hal3.reload();
   await hal3.waitForFunction(() => window.TAlur && window.TSinkron);
-  await hal3.waitForTimeout(3000);
+  await hal3.waitForTimeout(3500);
   cek('perangkat baru DIAM dulu — tidak memanggil Google sendiri',
       (await hal3.evaluate(() => window.__mintaToken)) === 0 &&
       !(await punya(hal3, 'Catatan dari perangkat dua')),
