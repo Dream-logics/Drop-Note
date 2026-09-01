@@ -1533,7 +1533,9 @@ console.log('\npohon board: daftar tertutup, dan AI cuma memilih');
      satu baris yang lupa awalan naik ke akar sebagai main board yang tidak
      pernah dibuat siapa pun. */
   const akar = awal.filter((n) => !awal.some((m) => m !== n && n.indexOf(m + ' ') === 0));
-  cek('tiap sub board berawalan nama induknya', akar.length === 7, akar.join(' | '));
+  cek('tiap sub board berawalan nama induknya', akar.length === 8, akar.join(' | '));
+  /* Tujuh bidang yang dia tulis sendiri, plus satu ruang tunggu dari sistem. */
+  cek('dan ruang tunggunya salah satunya', akar.indexOf('Other and Various') >= 0);
 
   await hal.evaluate(() => TSimpan.setel('board', JSON.stringify(['Interior', 'Interior Bedroom'])));
   await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => {
@@ -1560,8 +1562,12 @@ console.log('\npohon board: daftar tertutup, dan AI cuma memilih');
   /* Board kosong itu jawaban yang sah. Tanpa jalan keluar ini, model dipaksa
      memilih, dan yang dipilih pasti yang paling mirip - foto masjid masuk
      "Interior Bedroom". */
-  cek('kalau tidak ada yang cocok, boleh kosong',
-      /kembalikan board kosong/.test(arahan) && /kosongkan/.test(gambar));
+  /* "TIDAK ADA YANG COCOK" HARUS PUNYA JAWABAN. Tanpa jalan keluar ini model
+     dipaksa memilih, dan yang dipilih pasti yang paling mirip - foto antariksa
+     masuk "Interior Inspiration". Di jalur dokumen jawabannya board kosong; di
+     jalur gambar ruang tunggu, karena gambar selalu punya tempat. */
+  cek('kalau tidak ada yang cocok, ada jalan keluarnya',
+      /kembalikan board kosong/.test(arahan) && /Other and Various/.test(gambar));
   cek('main board saja itu jawaban yang sah, bukan kegagalan',
       /cukup main board/.test(arahan) && /cukup main board/.test(gambar));
   /* TAPI BUKAN JAWABAN PERTAMA. Main board yang belum punya sub sama sekali
@@ -1700,6 +1706,30 @@ console.log('\npohon boleh tumbuh, tapi katanya tertutup');
      yang sah, bukan keadaan rusak. */
   cek('dikosongkan berarti AI berhenti membuat ruangan sama sekali',
       (await hal.evaluate(() => TPelabel.pilihBoardUji('FNB Inspiration', ['FNB'], []))) === '');
+
+  /* ===== RUANG TUNGGU: TIDAK ADA BIDANG YANG COCOK ITU JAWABAN =====
+     Foto antariksa tidak punya rumah di daftar bidang usahanya, dan itu bukan
+     kegagalan - hidupnya memang lebih luas daripada tujuh bidang usahanya.
+     Yang dilawan bukan keberadaan ruangan itu, tapi ketiadaannya: tanpa dia
+     yang tidak cocok mendarat di "Belum berboard", baris yang bunyinya seperti
+     kesalahan dan yang makin lama makin dihindari sampai tidak pernah dibuka. */
+  cek('ruang tunggunya ditanam sistem, ada sejak pemasangan pertama',
+      (await hal.evaluate(() => TBawaan.boardAwal.indexOf(TBawaan.boardLain))) >= 0 &&
+      (await hal.evaluate(() => TBawaan.boardLain)) === 'Other and Various');
+  cek('dan AI diberi tahu itu jawaban yang benar, bukan kegagalan',
+      /Other and Various/.test(arahanAk.gambar) &&
+      /bukan\s*\n?.*kegagalan|bukan kegagalan/.test(arahanAk.gambar.replace(/\n/g, ' ')),
+      arahanAk.gambar.slice(-300));
+  /* RUANGAN DI DALAM RUANG TUNGGU MEMBATALKAN GUNANYA RUANG TUNGGU:
+     "Other and Various Inspiration" tidak memberitahu apa pun yang tidak sudah
+     diberitahu namanya sendiri. */
+  cek('tapi AI tidak boleh membuat sub di dalamnya',
+      (await hal.evaluate(() => TPelabel.pilihBoardUji(
+        'Other and Various Inspiration', TBawaan.boardAwal, TBawaan.akhiranAwal))) === '');
+  cek('sementara main board lain tetap boleh tumbuh',
+      (await hal.evaluate(() => TPelabel.pilihBoardUji(
+        'Motivation Inspiration', TBawaan.boardAwal, TBawaan.akhiranAwal))) ===
+      'Motivation Inspiration');
 }
 
 console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
@@ -4944,6 +4974,45 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
      pernah bisa hafal tempatnya. Rak Storage lain ceritanya - dia lahir dari
      catatan yang jatuh, jadi yang paling ramai memang yang paling mungkin
      kamu tuju. */
+  await hal.evaluate(() => TSimpan.setel('board',
+    JSON.stringify(['Zeta uji', 'Alfa uji', 'Mika uji'])));
+  await hal.reload();
+  await hal.waitForFunction(() => window.TAlur);
+  await pasangAI();
+  await hal.waitForTimeout(700);
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(400);
+  /* AKARNYA DIBAGI DUA, dan garisnya bukan hiasan: tanpa dia ruang tunggu
+     duduk di antara bidang usahamu seperti salah satunya - padahal dia justru
+     kebalikannya, tempat yang isinya belum diputuskan. */
+  await hal.evaluate(() => TSimpan.setel('board',
+    JSON.stringify(['Zeta uji', 'Alfa uji', TBawaan.boardLain])));
+  await hal.reload();
+  await hal.waitForFunction(() => window.TAlur);
+  await pasangAI();
+  await hal.waitForTimeout(700);
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(400);
+  cek('akarnya dibagi dua, dengan kepala "Main Interest"',
+      (await hal.locator('#galeri-isi .galeri-bagian').count()) === 2 &&
+      /main interest/i.test(await hal.innerText('#galeri-isi .galeri-bagian')),
+      await hal.innerText('#galeri-isi'));
+  /* Ruang tunggunya di BAWAH garis, bukan di antara bidang usahamu. */
+  cek('dan ruang tunggunya duduk di bawah garisnya',
+      await hal.evaluate(() => {
+        const pisah = document.querySelector('#galeri-isi .galeri-bagian.pisah');
+        const lain = document.querySelector('#galeri-isi [data-galeri-folder="Other and Various"]');
+        if (!pisah || !lain) return false;
+        return lain.compareDocumentPosition(pisah) & Node.DOCUMENT_POSITION_PRECEDING;
+      }) ? true : false);
+  cek('dan dia bukan salah satu Main Interest',
+      await hal.evaluate(() => {
+        const pisah = document.querySelector('#galeri-isi .galeri-bagian.pisah');
+        const zeta = document.querySelector('#galeri-isi [data-galeri-folder="Zeta uji"]');
+        return !!(pisah && zeta &&
+          (pisah.compareDocumentPosition(zeta) & Node.DOCUMENT_POSITION_PRECEDING));
+      }) === true);
+
   await hal.evaluate(() => TSimpan.setel('board',
     JSON.stringify(['Zeta uji', 'Alfa uji', 'Mika uji'])));
   await hal.reload();

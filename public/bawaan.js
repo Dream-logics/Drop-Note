@@ -138,8 +138,27 @@
 
       'Motivation',
       'Motivation Quote',
-      'Motivation Renungan'
+      'Motivation Renungan',
+
+      'Other and Various'
     ],
+
+    /* RUANGAN TERAKHIR, dan dia satu-satunya main board yang dipasang sistem.
+       Foto antariksa tidak punya bidang di daftar mana pun, dan itu bukan
+       kegagalan - hidupmu memang lebih luas daripada tujuh bidang usahamu.
+
+       Yang dilawan bukan keberadaannya, tapi ketiadaannya: tanpa ruangan ini,
+       yang tidak cocok mendarat di "Belum berboard" - baris yang bunyinya
+       seperti kesalahan, dan yang isinya makin lama makin dihindari sampai
+       tidak pernah dibuka lagi. "Other and Various" bukan kesalahan; dia
+       jawaban yang jujur untuk pertanyaan yang memang tidak punya jawaban.
+
+       AI TIDAK MEMBUAT SUB DI DALAMNYA. Ruangan di dalam ruang tunggu
+       membatalkan gunanya ruang tunggu: "Other and Various Inspiration" tidak
+       memberitahu apa pun yang tidak sudah diberitahu namanya sendiri. Kalau
+       kamu sendiri yang membuatkan sub-nya, itu lain - kamu sudah tahu apa
+       isinya. */
+    boardLain: 'Other and Various',
 
     /* ===================== AKHIRAN =====================
        Satu-satunya kosakata yang boleh dipakai AI untuk MEMBUAT sub board.

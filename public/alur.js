@@ -2438,11 +2438,37 @@
      pemakainya kebetulan membuka Setelan. */
   function muatAlbum(s) {
     var teks = s && s.board;
-    if (teks == null) { albumDaftar = (TBawaan.boardAwal || []).slice(); return; }
-    try {
-      var d = JSON.parse(teks);
-      albumDaftar = Array.isArray(d) ? d.filter(function (x) { return !!x; }) : [];
-    } catch (e) { albumDaftar = []; }
+    if (teks == null) albumDaftar = (TBawaan.boardAwal || []).slice();
+    else {
+      try {
+        var d = JSON.parse(teks);
+        albumDaftar = Array.isArray(d) ? d.filter(function (x) { return !!x; }) : [];
+      } catch (e) { albumDaftar = []; }
+    }
+    /* Pemasangan baru sudah kebagian lewat boardAwal - yang dititipkan cuma
+       penandanya, supaya menghapus ruang tunggu di sana pun tetap berlaku. */
+    tanamBoardLain(s, teks == null);
+  }
+
+  /* DITANAM SEKALI, LALU JADI MILIKMU. Pohon yang sudah terlanjur ada di
+     perangkat tidak ikut kebagian baris baru dari bawaan.js - jadi ruang
+     tunggunya harus dititipkan sekali di sini, kalau tidak dia cuma ada di
+     pemasangan yang baru.
+
+     Sekali saja, ditandai. Menanamnya tiap kali dimuat berarti kamu tidak
+     pernah bisa menghapusnya: sekali dicoret, besok pagi dia berdiri lagi -
+     dan daftar yang menolak disunting berhenti terasa milik siapa pun. */
+  function tanamBoardLain(s, baru) {
+    var nama = TBawaan.boardLain || '';
+    if (!nama || (s && s.boardLainTanam)) return;
+    if (s) s.boardLainTanam = '1';
+    TSimpan.setel('boardLainTanam', '1');
+    if (baru) return;
+    var ada = albumDaftar.some(function (n) { return TOtak.normal(n) === TOtak.normal(nama); });
+    if (ada) return;
+    albumDaftar.push(nama);
+    if (s) s.board = JSON.stringify(albumDaftar);
+    TSimpan.setel('board', JSON.stringify(albumDaftar));
   }
 
   /* Kosakata yang boleh dipakai AI untuk MEMBUAT sub board. Lihat bawaan.js
@@ -2652,6 +2678,36 @@
       }).join('') + '</div>';
   }
 
+  /* AKARNYA DIBAGI DUA, dan garisnya bukan hiasan.
+
+     Yang di atas BIDANG YANG KAMU TENTUKAN SENDIRI - tujuh baris yang kamu
+     tulis, dan yang kamu tuju waktu tahu mau ke mana. Yang di bawah ruang
+     tunggu: yang tidak punya bidang, dan yang belum sempat dialamatkan.
+
+     Tanpa garisnya keduanya terbaca sederajat, dan "Other and Various" duduk
+     di antara bidang usahamu seperti salah satunya - padahal dia justru
+     kebalikannya: dia tempat yang isinya belum diputuskan. Mata yang memindai
+     tujuh baris tiap hari tidak boleh harus membaca yang kedelapan untuk tahu
+     itu bukan salah satunya. */
+  function akarBerbagian(anak) {
+    var lain = TOtak.normal(TBawaan.boardLain || '');
+    var bawah = anak.filter(function (f) {
+      return f.nama === TANPA_ALBUM || (lain && TOtak.normal(f.nama) === lain);
+    });
+    var atas = anak.filter(function (f) { return bawah.indexOf(f) < 0; });
+    if (!bawah.length) return atas.map(albumHtml).join('');
+    /* "Main Interest" TIDAK DITERJEMAHKAN: dia nama yang dia pilih sendiri,
+       aturan yang sama dengan nama pintu dan nama board. Yang di bawahnya
+       kalimat aplikasi biasa, jadi dia ikut berganti bahasa. */
+    return (atas.length
+        ? '<div class="galeri-bagian"><span class="bagian-nama" data-asli>Main Interest</span>' +
+          '<span class="bagian-ket">kamu yang menentukan</span></div>' +
+          atas.map(albumHtml).join('')
+        : '') +
+      '<div class="galeri-bagian pisah"><span class="bagian-ket">kalau tidak ada yang cocok</span></div>' +
+      bawah.map(albumHtml).join('');
+  }
+
   function gambarGaleri() {
     var wadah = $('#galeri-isi');
     if (!wadah) return;
@@ -2686,7 +2742,7 @@
          adalah dinding yang harus diketuk tanpa satu alasan pun. */
       var albumAsli = anak.filter(function (f) { return f.nama !== TANPA_ALBUM; });
       if (!galeriFolder && !albumAsli.length) anak = [];
-      albumHtml2 = anak.map(albumHtml).join('');
+      albumHtml2 = galeriFolder ? anak.map(albumHtml).join('') : akarBerbagian(anak);
       if (!galeriFolder && albumAsli.length) tampil = [];
     }
 

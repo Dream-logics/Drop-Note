@@ -221,6 +221,13 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     saringan SUMBER di bawah garis. Dulu di sini lima cip
                     saringan plus empat tombol tampilan berjajar - sembilan
                     benda di satu baris, di layar yang isinya justru gambar.
+                    AKAR GALLERY DIBAGI DUA, dan garisnya bukan hiasan:
+                    "Main Interest" (bidang yang kamu tentukan) di atas, ruang
+                    tunggu + "Belum berboard" di bawah garis. Tanpa garisnya
+                    keduanya terbaca sederajat, dan "Other and Various" duduk di
+                    antara bidang usahamu seperti salah satunya - padahal dia
+                    kebalikannya. "Main Interest" TIDAK diterjemahkan: dia nama
+                    yang dipilih pemakainya, aturan yang sama dengan nama pintu.
                     BOARDNYA BERURUT ABJAD, bukan terbanyak-dulu (bangunPohon
                     dapat penanda 'abjad'). Pohon board kamu tulis sendiri dan
                     jumlahnya tetap; urutan yang berubah mengikuti isinya
@@ -367,6 +374,23 @@ public/bawaan.js    (lanjutan) POHON BOARD ('boardAwal', disunting lewat menu
                     tengah jalan tidak punya proyek dan tidak akan pernah
                     punya, dan keberadaannya yang bikin daftar ini daftar
                     MILIKNYA, bukan daftar bisnis.
+                    'boardLain' = "Other and Various", RUANG TUNGGU, dan
+                    satu-satunya main board yang dipasang sistem. Foto antariksa
+                    tidak punya bidang di daftar mana pun, dan itu bukan
+                    kegagalan - hidupnya memang lebih luas daripada tujuh bidang
+                    usahanya. Yang dilawan bukan keberadaannya tapi
+                    KETIADAANNYA: tanpa dia yang tidak cocok mendarat di "Belum
+                    berboard", baris yang bunyinya seperti kesalahan dan yang
+                    makin lama makin dihindari sampai tidak pernah dibuka lagi.
+                    AI TIDAK MEMBUAT SUB DI DALAMNYA - ruangan di dalam ruang
+                    tunggu membatalkan gunanya ruang tunggu. Ruang tunggunya
+                    cuma dipakai kalau drivernya TIDAK menyebut bidangnya
+                    sendiri: kalau kamu sudah bilang "Interior", jawaban AI yang
+                    salah bukan alasan memindahkannya ke ruang tunggu.
+                    DITANAM SEKALI ke pohon yang sudah terlanjur ada
+                    ('boardLainTanam'), bukan tiap kali dimuat - kalau tiap
+                    kali, menghapusnya jadi mustahil dan daftar yang menolak
+                    disunting berhenti terasa milik siapa pun.
 public/pelabel.js   (lanjutan) TIDAK ADA TAG SAMA SEKALI, dan itu keputusan
                     yang disengaja, bukan yang belum dikerjakan. Hashtag buatan
                     mesin MELAR dan tidak pernah konvergen: sebulan kemudian ada
@@ -665,7 +689,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (782 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (790 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
