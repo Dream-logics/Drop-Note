@@ -813,94 +813,18 @@
     if (!istilah || !istilah.length) return true;
     var kat = normal(e.kategori).split(' ').filter(Boolean);
     var katUtuh = normal(e.kategori);
-    var tag = (e.tag || []).map(normal);
+    /* Boardnya ikut dibaca sebagai kata-kata, bukan sebagai satu nama utuh:
+       label "FnB Dev = fnb" harus menangkap yang mendarat di "FNB Menu Promo".
+       Tanpa itu label rak berhenti menjaring gambar sama sekali, karena sejak
+       tag dibuang alamat gambar cuma tinggal boardnya. */
+    var brd = normal(e.album).split(' ').filter(Boolean);
+    var brdUtuh = normal(e.album);
     return istilah.some(function (t) {
       if (!t) return false;
-      if (kat.indexOf(t) >= 0 || tag.indexOf(t) >= 0) return true;
-      /* Tag ditulis mepet ("AmaraLiving"), labelnya cuma sepenggal ("Amara").
-         Awalan dicocokkan - tapi cuma dari empat huruf ke atas, karena "PS"
-         atau "MAP" sebagai awalan akan menyeret hampir semua isi rak. */
-      var rapat = t.replace(/\s+/g, '');
-      if (rapat.length >= 4 && tag.some(function (x) {
-        return x.replace(/\s+/g, '').indexOf(rapat) === 0;
-      })) return true;
-      if (t.indexOf(' ') >= 0 && katUtuh.indexOf(t) >= 0) return true;
+      if (kat.indexOf(t) >= 0 || brd.indexOf(t) >= 0) return true;
+      if (t.indexOf(' ') >= 0 && (katUtuh.indexOf(t) >= 0 || brdUtuh.indexOf(t) >= 0)) return true;
       return false;
     });
-  }
-
-  /* MENCOCOKKAN DRIVER DENGAN GERBONG.
-
-     Driver itu dua-tiga kata yang kamu ketik waktu memotret - "interior
-     mesjid", "sofa unik minimalis", "menu murah enak". Dari situ dicari
-     gerbong mana yang paling mungkin jadi rumahnya.
-
-     DIKERJAKAN DI SINI, BUKAN DI AI, dan itu bukan penghematan. Ini berdiri
-     di jalur yang harus menjawab seketika: kamu baru saja memotret, layarnya
-     menunggu, dan sinyal di lapangan sering tidak ada sama sekali. Usulan yang
-     datang tiga detik kemudian - atau tidak datang - sama saja dengan tidak
-     ada usulan. AI tetap mengerjakan judul, caption, dan tag di belakang;
-     yang tidak boleh menunggu cuma alamatnya.
-
-     Skornya sengaja tumpul: satu istilah yang cocok itu satu poin, dan yang
-     cocok UTUH sebagai kata dihitung lebih tinggi daripada yang cuma
-     tersangkut di tengah kata lain ("kopi" di dalam "kopiah"). Yang lebih
-     rumit dari ini tidak bisa dijelaskan lagi ke pemakainya waktu usulannya
-     terasa aneh - dan usulan yang tidak bisa dijelaskan bikin orang berhenti
-     mempercayainya.
-
-     Yang dikembalikan DAFTAR, bukan satu jawaban: satu foto bisa punya
-     puluhan sudut pandang, jadi menetapkan sendiri satu gerbong berarti
-     merampas bagian yang justru cuma dia yang tahu. */
-  function cocokGerbong(driver, daftar, maks) {
-    var k = normal(driver);
-    if (!k) return [];
-    var kata = k.split(' ').filter(Boolean);
-    var pohon = pohonLabel(daftar || []);
-    var nilai = pohon.map(function (g) {
-      var n = 0;
-      /* EKORNYA IKUT DIHITUNG, dan tanpa ini seluruh tingkat kedua mati.
-         "FNB Menu" tidak punya kata sesudah '=' - namanya sendiri yang jadi
-         satu-satunya istilahnya - jadi driver "menu murah enak" tidak akan
-         pernah menyentuhnya, padahal itu persis rumahnya. Yang dicocokkan
-         harus nama pendeknya: di dalam FNB, anaknya bernama "Menu". */
-      var istilah = (g.istilah || []).slice();
-      if (g.induk && istilah.indexOf(normal(g.ekor)) < 0) istilah.push(normal(g.ekor));
-      istilah.forEach(function (t) {
-        if (!t) return;
-        if ((' ' + k + ' ').indexOf(' ' + t + ' ') >= 0) { n += 3; return; }
-        /* Sepenggal cuma dihitung dari empat huruf ke atas - "map" atau "ps"
-           sebagai penggalan akan tersangkut di hampir semua kalimat. */
-        if (t.length >= 4 && k.indexOf(t) >= 0) { n += 1; return; }
-        if (t.length >= 4 && kata.some(function (w) {
-          return w.length >= 4 && (t.indexOf(w) === 0 || w.indexOf(t) === 0);
-        })) n += 1;
-      });
-      /* Anak MEWARISI kecocokan induknya, setengah nilai. "FNB Menu" pantas
-         ikut tampil untuk driver yang jelas-jelas soal makanan walau kata
-         "menu" sendiri tidak disebut - tapi tidak boleh mengalahkan induknya,
-         yang lebih aman kalau tebakannya meleset. */
-      if (g.induk) {
-        var ind = pohon.filter(function (x) { return x.nama === g.induk; })[0];
-        if (ind && n === 0) {
-          var ni = 0;
-          (ind.istilah || []).forEach(function (t) {
-            if ((' ' + k + ' ').indexOf(' ' + t + ' ') >= 0) ni += 3;
-            else if (t.length >= 4 && k.indexOf(t) >= 0) ni += 1;
-          });
-          n = ni ? 1 : 0;
-        }
-      }
-      return { nama: g.nama, nilai: n };
-    }).filter(function (x) { return x.nilai > 0; });
-    nilai.sort(function (a, b) {
-      if (b.nilai !== a.nilai) return b.nilai - a.nilai;
-      /* Seri dimenangkan yang PALING KHUSUS: "FNB Menu" mengalahkan "FNB".
-         Yang lebih dalam lebih banyak memberitahu, dan yang lebih dangkal
-         tetap ikut tampil di bawahnya sebagai jalan mundur. */
-      return b.nama.length - a.nama.length;
-    });
-    return nilai.slice(0, maks || 3).map(function (x) { return x.nama; });
   }
 
   /* ===================== PENCARIAN =====================
@@ -939,9 +863,6 @@
       var n = 0;
       if (normal(e.judul).indexOf(w) >= 0) n += 6;
       if ((e.label || []).some(function (l) { return l.indexOf(w) === 0; })) n += 5;
-      /* Tag dinilai setinggi label karena dia label yang KELIHATAN - sekali
-         dipakai orangnya, dia akan mengetik kata itu lagi. */
-      if ((e.tag || []).some(function (t) { return normal(t).indexOf(w) === 0; })) n += 5;
       if (!e.rahasia && (e.elemen || []).some(function (x) {
         return normal(x.nilai).indexOf(w) >= 0 || normal(x.nama).indexOf(w) >= 0;
       })) n += 4;
@@ -954,7 +875,12 @@
          padahal albumnya jelas-jelas tertulis di layar.
 
          Dinilai setara kategori: dia memang alamat yang sama, cuma di layar
-         yang berbeda. */
+         yang berbeda.
+
+         Board disimpan dengan NAMA PENUHNYA ("FNB Menu Promo"), jadi satu
+         pencocokan substring ini sudah menjaring main board dan sub board
+         sekaligus - "fnb" ketemu, "promo" juga. Tanpa nama penuh, mencari
+         bidangnya berarti tidak menemukan satu pun anaknya. */
       if (normal(e.folder).indexOf(w) >= 0) n += 4;
       if (normal(e.album).indexOf(w) >= 0) n += 4;
     /* DRIVER ITU KALIMATMU SENDIRI, jadi dia dinilai setinggi judul. Enam
@@ -966,7 +892,17 @@
       /* Isi dan elemen entri rahasia sudah berupa sandi - mencocokkannya
          cuma menghasilkan kecocokan palsu. Judul, tag, dan labelnya tetap
          terbuka, dan itu memang yang membuatnya masih bisa DITEMUKAN. */
-      if (!e.rahasia && normal(e.isi).indexOf(w) >= 0) n += 3;
+      /* DESKRIPSI GAMBAR DINILAI SETINGGI LABEL, dan itu bukan penyetelan
+         angka: dia MENGGANTIKAN tag, jadi dia harus mewarisi bobotnya. Hashtag
+         buatan mesin sudah dicoba dan dibuang - dia melar sampai pemiliknya
+         tidak mengenali satu pun kata yang tertulis di kartunya sendiri.
+         Kalimat tidak punya penyakit itu, tapi kalau dinilai 3 seperti badan
+         catatan biasa, yang terjadi cuma menukar yang kuat dengan yang lemah.
+
+         Cuma untuk gambar. Di catatan teks, isi itu badan tulisannya - ratusan
+         kata yang tidak dipilih untuk dicari - dan menaikkannya ke 5 membuat
+         satu kata yang kebetulan lewat mengalahkan judul yang memang tepat. */
+      if (!e.rahasia && normal(e.isi).indexOf(w) >= 0) n += (e.jenis === 'gambar' ? 5 : 3);
       if (normal(e.namaBerkas).indexOf(w) >= 0) n += 3;
       if ((e.daftar || []).some(function (b) { return normal(b.teks).indexOf(w) >= 0; })) n += 3;
       return n;
@@ -1010,7 +946,6 @@
     buangSerpihan: buangSerpihan,
     uraiLabel: uraiLabel, tulisLabel: tulisLabel, cocokLabel: cocokLabel,
     pohonLabel: pohonLabel, lengkapiRuang: lengkapiRuang, bacaRuang: bacaRuang,
-    cocokGerbong: cocokGerbong,
     jenisNomorTelepon: jenisNomorTelepon,
     normal: normal, jarak: jarak, waktuPendek: waktuPendek,
     tanggalIndo: tanggalIndo, waktuRingkas: waktuRingkas,

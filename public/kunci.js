@@ -13,8 +13,8 @@
    Jadi yang dikunci cuma yang kamu tandai sendiri, dan cuma bagian yang
    memang rahasia:
 
-     TERKUNCI   isi, elemen        <- yang tidak boleh terbaca siapa pun
-     TERBUKA    judul, tag, label  <- supaya tetap BISA DITEMUKAN
+     TERKUNCI   isi, elemen          <- yang tidak boleh terbaca siapa pun
+     TERBUKA    judul, board, label  <- supaya tetap BISA DITEMUKAN
 
    Itu tukar-tambah yang disengaja. Kamu tetap bisa menemukan "Client Secret
    Cortex Space" lewat pencarian; yang tidak bisa dilakukan orang lain adalah
