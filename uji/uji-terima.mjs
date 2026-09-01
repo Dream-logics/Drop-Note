@@ -5467,13 +5467,29 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
   await hal.waitForTimeout(300);
   cek('mengetuk barisnya membuka lacinya di tempat, tanpa memindahkan layar',
       (await hal.locator('#galeri-isi .laci-board.buka').count()) === 1 &&
-      (await hal.locator('#galeri-isi .laci-isi .petak-satu').count()) === 3 &&
       (await hal.innerText('#galeri-alamat')).indexOf('Bidanguji') < 0,
       await hal.innerText('#galeri-alamat'));
-  /* Isinya sama dengan angkanya - keturunannya sekalian. Angka yang tidak cocok
-     dengan isi lacinya lebih buruk daripada tidak berangka. */
-  cek('isi lacinya sama dengan angka di barisnya, keturunannya sekalian',
-      (await hal.locator('#galeri-isi .laci-isi .petak-satu').count()) === 3);
+  /* ===== LACINYA BERSARANG, BUKAN MENELAN =====
+     Membuka satu laci dulu menumpahkan seluruh isinya sebagai satu tumpukan
+     rata, dan sub foldernya lenyap dari layar. Yang terbaca bukan "isinya
+     diperlihatkan" tapi "susunannya hilang" - dan susunan yang hilang begitu
+     diintip bikin mengintip berhenti bisa dipercaya. */
+  cek('sub foldernya tetap kelihatan di dalamnya, sebagai laci lagi',
+      (await hal.locator('#galeri-isi .laci-isi [data-laci="Business Bidanguji Kamaruji"]').count()) === 1,
+      await hal.innerText('#galeri-isi'));
+  /* Yang tampil langsung cuma gambar yang memang tinggal di baris ini sendiri;
+     sisanya ada di dalam laci anaknya. Dua-duanya dijumlah = angka di
+     barisnya, dan angka yang tidak cocok dengan isinya lebih buruk daripada
+     tidak berangka. */
+  cek('dan gambar yang memang tinggal di baris ini yang tergelar langsung',
+      (await hal.locator('#galeri-isi .laci-isi > .petak .petak-satu').count()) === 1);
+  await hal.click('#galeri-isi [data-laci="Business Bidanguji Kamaruji"]');
+  await hal.waitForTimeout(300);
+  cek('membuka laci anaknya menggelar sisanya, jadi genap seperti angkanya',
+      (await hal.locator('#galeri-isi .petak-satu').count()) === 3,
+      String(await hal.locator('#galeri-isi .petak-satu').count()));
+  await hal.click('#galeri-isi [data-laci="Business Bidanguji Kamaruji"]');
+  await hal.waitForTimeout(300);
   await hal.click('#galeri-isi [data-laci="Business Bidanguji"]');
   await hal.waitForTimeout(300);
   cek('mengetuknya lagi menutupnya',
@@ -5482,9 +5498,13 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
      merapikan kembali jadi daftar. */
   await hal.click('#galeri-isi [data-laci-semua="buka"]');
   await hal.waitForTimeout(300);
-  cek('“Buka semua” membuka seluruh lacinya sekaligus',
+  /* MENEMBUS SAMPAI KE DALAM: "buka semua" yang berhenti di tingkat pertama
+     bukan buka semua. */
+  cek('“Buka semua” membuka seluruh lacinya sekaligus, sampai ke dalam',
       (await hal.locator('#galeri-isi .laci-board.buka').count()) ===
-      (await hal.locator('#galeri-isi .laci-board').count()));
+      (await hal.locator('#galeri-isi .laci-board').count()) &&
+      (await hal.locator('#galeri-isi .laci-isi .laci-board.buka').count()) >= 1,
+      String(await hal.locator('#galeri-isi .laci-board.buka').count()));
   await hal.click('#galeri-isi [data-laci-semua="tutup"]');
   await hal.waitForTimeout(300);
   cek('dan tombolnya berganti jadi “Tutup semua” yang menutup semuanya',

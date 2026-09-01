@@ -2965,19 +2965,6 @@
     }).join('') + '</div>';
   }
 
-  /* Seluruh gambar di dalam satu baris, keturunannya sekalian - jumlahnya sama
-     dengan angka yang tertulis di barisnya. Angka yang tidak cocok dengan isi
-     lacinya lebih buruk daripada tidak berangka. */
-  function isiDalam(nama, semuaA) {
-    var v = TOtak.normal(nama);
-    var keluar = [];
-    semuaA.forEach(function (f) {
-      var u = TOtak.normal(f.nama);
-      if (f.nama === nama || u.indexOf(v + ' ') === 0) keluar = keluar.concat(f.isi);
-    });
-    return keluar.sort(function (a, b) { return (b.dibuat || 0) - (a.dibuat || 0); });
-  }
-
   /* ===================== LACI: SUB FOLDER YANG BISA DIINTIP =====================
      Di dalam sebuah board, sub-nya digambar sebagai LACI - namanya, angkanya,
      dan gambarnya tepat di bawahnya begitu dibuka. Sebelumnya barisnya cuma
@@ -2991,7 +2978,19 @@
      sekali lihat seluruh isi board, atau merapikan kembali jadi daftar. */
   function laciHtml(f, semuaA) {
     var buka = !!galeriLaci[f.nama];
-    var isi = buka ? isiDalam(f.nama, semuaA) : [];
+    /* LACINYA BERSARANG, BUKAN MENELAN. Membuka "Hampers" dulu menumpahkan
+       keempat gambarnya sebagai satu tumpukan rata, dan sub foldernya -
+       Inspiration, Isi Hamper, Various - lenyap dari layar. Yang terbaca bukan
+       "isinya diperlihatkan" tapi "susunannya hilang", dan susunan yang hilang
+       begitu diintip bikin mengintip berhenti bisa dipercaya.
+
+       Jadi yang digambar di dalamnya: sub foldernya sebagai laci lagi, lalu
+       gambar yang memang tinggal di baris ini sendiri. Jumlah keduanya persis
+       sama dengan angka di barisnya. */
+    var anak = buka ? semuaA.filter(function (x) { return x.induk === f.nama; }) : [];
+    var isi = buka ? f.isi.slice().sort(function (a, b) {
+      return (b.dibuat || 0) - (a.dibuat || 0);
+    }) : [];
     /* 'laci-board', BUKAN 'laci': nama itu sudah dipakai laci lampiran di dok
        Drop, dan gaya di sana memberi kartu berbingkai plus max-height 46vh -
        jadi baris folder ikut jadi kartu, dan laci yang isinya banyak terpotong
@@ -3018,7 +3017,10 @@
       '</button>' +
       '</div>' +
       (buka ? '<div class="laci-isi">' +
-        (isi.length ? petakHtml(isi) : '<div class="laci-kosong">Belum ada gambar di sini.</div>') +
+        anak.map(function (x) { return laciHtml(x, semuaA); }).join('') +
+        petakHtml(isi) +
+        (anak.length || isi.length ? ''
+          : '<div class="laci-kosong">Belum ada gambar di sini.</div>') +
       '</div>' : '') +
     '</div>';
   }
@@ -6146,8 +6148,12 @@
         var buka = semua.getAttribute('data-laci-semua') === 'buka';
         galeriLaci = {};
         if (buka) {
+          /* MENEMBUS SAMPAI KE DALAM. "Buka semua" yang berhenti di tingkat
+             pertama bukan buka semua - dan yang dicari waktu menekannya memang
+             "perlihatkan seluruh isi board ini sekaligus". */
+          var akarN = TOtak.normal(galeriFolder || '');
           folderGaleriPohon().forEach(function (x) {
-            if (x.induk === galeriFolder) galeriLaci[x.nama] = true;
+            if (TOtak.normal(x.nama).indexOf(akarN + ' ') === 0) galeriLaci[x.nama] = true;
           });
         }
         gambarGaleri();

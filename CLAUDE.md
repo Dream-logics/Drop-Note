@@ -283,10 +283,19 @@ public/alur.js      (lanjutan) LAYAR GALLERY ('l-galeri') - pintu kelima,
                     ('laci-masuk') benar-benar pindah. Barisnya tetap membawa
                     'data-galeri-folder' supaya TEKAN LAMA masih menandainya
                     untuk dibuang/gabung/pindah - yang mengintip dibaca duluan
-                    dan sengaja dilewati selama memilih. Isinya SELURUH gambar
-                    di subtree, jadi sama dengan angka di barisnya; angka yang
-                    tidak cocok dengan isi lacinya lebih buruk daripada tidak
-                    berangka. Buka/tutup semua di kepalanya. Lacinya KEADAAN,
+                    dan sengaja dilewati selama memilih.
+                    LACINYA BERSARANG, BUKAN MENELAN: yang digambar di dalamnya
+                    sub foldernya sebagai laci lagi, LALU gambar yang memang
+                    tinggal di baris itu sendiri. Dulu isinya seluruh subtree
+                    sebagai satu tumpukan rata, dan sub foldernya lenyap dari
+                    layar - yang terbaca bukan "isinya diperlihatkan" tapi
+                    "susunannya hilang", dan susunan yang hilang begitu diintip
+                    bikin mengintip berhenti bisa dipercaya. Jumlah laci anak +
+                    gambar langsungnya persis sama dengan angka di barisnya;
+                    angka yang tidak cocok dengan isinya lebih buruk daripada
+                    tidak berangka. Buka/tutup semua di kepalanya, dan
+                    "buka semua" MENEMBUS sampai ke dalam - yang berhenti di
+                    tingkat pertama bukan buka semua. Lacinya KEADAAN,
                     tidak ikut disimpan, dan ditutup Home.
                     KELASNYA 'laci-board', BUKAN 'laci' - nama itu sudah dipakai
                     laci lampiran di dok Drop (kartu berbingkai, max-height
@@ -903,7 +912,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (838 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (840 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
