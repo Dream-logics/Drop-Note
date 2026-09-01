@@ -5067,6 +5067,17 @@
       '<button class="cip' + (s.cadanganNyala ? ' nyala' : '') + '" data-cadangan="nyala">Nyala</button>',
       '</div>',
       '<div class="set-ket" id="cadangan-status">…</div>',
+      /* ASAL HALAMAN INI, ditulis apa adanya waktu belum tersambung. Penolakan
+         Google yang paling sering bukan soal izin, tapi soal ASAL yang tidak
+         terdaftar - dan satu-satunya cara mengetahuinya selama ini adalah
+         menebak. Yang ditempel ke Google Cloud Console harus persis baris ini:
+         asalnya saja, tanpa jalur, tanpa garis miring di ujung. */
+      /* SATU simpul teks per kalimat, tanpa <b> atau <i> di tengahnya: lapisan
+         bahasa menukar teks per simpul, jadi penebalan di tengah kalimat
+         memotongnya jadi potongan yang tidak satu pun punya terjemahannya. */
+      tersambung ? '' : '<div class="set-ket">Asal halaman ini:</div>',
+      tersambung ? '' : '<div class="set-ket asal"><b data-asli>' + H(global.location.origin) + '</b></div>',
+      tersambung ? '' : '<div class="set-ket">Baris itu harus terdaftar di Google Cloud Console sebagai Authorized JavaScript origin — persis begitu, tanpa jalur dan tanpa garis miring di ujungnya.</div>',
       '<button class="set-tbl' + (tersambung ? '' : ' emas') + '" id="b-hubungkan">' +
         (tersambung ? 'Sambungkan ulang Google' : 'Hubungkan Google') + '</button>',
       tersambung ? '<button class="set-tbl" id="b-buka-sheet">Buka spreadsheet-nya</button>' : '',

@@ -1623,3 +1623,11 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    satu ketukan ke tiap foto. */
 .galeri-bagian{cursor:default;user-select:none}
 .galeri-bagian .bagian-ket{font-size:11.5px;color:var(--m)}
+
+/* Asal halaman, ditulis apa adanya supaya bisa dibandingkan huruf per huruf
+   dengan yang terdaftar di Google Cloud Console. Kalau dia melipat di tengah,
+   yang dibandingkan mata jadi dua baris yang beda dari yang sebenarnya. */
+.set-ket.asal{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+  word-break:break-all;color:var(--i);
+}
