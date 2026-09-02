@@ -6562,14 +6562,37 @@ console.log('\ntag sudah dibuang seluruhnya, bukan cuma disembunyikan');
   /* Deskripsinya kontekstual: yang menentukan isinya DRIVER, bukan yang paling
      menonjol di gambar. Foto masjid dengan driver "interior mesjid" harus
      menghasilkan kalimat tentang elemen interiornya. */
-  cek('dan sudut pandangnya yang menentukan isinya, bukan yang menonjol di gambar',
-      /DARI SUDUT PANDANG keywords/.test(gambar) &&
-      /bukan dari yang paling menonjol/.test(gambar));
+  cek('dan drivernya yang menentukan isinya, bukan yang menonjol di gambar',
+      /MEMBAHAS keywords/.test(gambar) &&
+      /bukan yang paling menonjol/.test(gambar));
+
+  /* ===== KATA "SUDUT PANDANG" TIDAK BOLEH ADA DI ARAHAN GAMBAR =====
+     Aturannya tetap berlaku; yang dibuang cuma katanya. Yang dimaksud "bagian
+     mana dari benda ini yang dibahas"; yang dibaca model "suara siapa yang
+     bercerita" - dan jawabannya pulang sebagai laporan pandangan mata,
+     lengkap dengan pelakunya, sampai memakai bahasa gaul. */
+  cek('arahan gambar tidak lagi memakai kata "sudut pandang"',
+      !/sudut pandang/i.test(gambar), gambar.slice(0, 300));
+  /* Kata ganti orang di dalam PERINTAHNYA sendiri melahirkan kata ganti orang
+     di JAWABANNYA. "Pakai sebutan yang akan DIA ketik lagi" adalah sebabnya,
+     dan itu tidak kelihatan dari mana pun kecuali dari kalimat yang pulang. */
+  cek('dan tidak ada satu pun kata ganti orang di dalam perintahnya',
+      !/\b(dia|kamu|kami|kita|anda|aku|saya|gue|lo)\b/i.test(
+        gambar.split('Lalu pilih SATU board')[0]),
+      gambar.split('Lalu pilih SATU board')[0]);
+  cek('larangannya disebut terang-terangan, bukan diserahkan ke tebakan',
+      /DILARANG memakai kata ganti orang/.test(gambar) &&
+      /tidak ada pelaku/.test(gambar) &&
+      /Nada netral dan baku/.test(gambar));
   /* Kalau kamu mengetik driver dalam bahasa Inggris, jawabannya tidak boleh
-     pulang dalam bahasa Indonesia. */
+     pulang dalam bahasa Indonesia - jadi registernya TIDAK BOLEH diminta
+     dengan menamai bahasanya. "Tulis bahasa Indonesia baku" memperbaiki
+     nadanya sambil merusak aturan ini. */
   cek('bahasa jawaban mengikuti bahasa keywords, bukan dipaksa Indonesia',
       /BAHASA JAWABAN MENGIKUTI BAHASA KEYWORDS/.test(gambar) &&
       !/Bahasa Indonesia/.test(gambar));
+  cek('dan nadanya diminta tanpa menamai satu bahasa pun',
+      /nadanya netral di bahasa mana pun/.test(gambar));
   cek('drivernya ditaruh paling atas sebagai Keywords',
       gambar.indexOf('Keywords: bedroom lighting') === 0, gambar.slice(0, 60));
 
@@ -6708,19 +6731,32 @@ console.log('\narahan gambar: pendek, kontekstual, bahasamu');
   cek('yang cuma satu kalimat tidak ikut dipotong di tengah',
       potong[1] === 'Cuma satu kalimat tanpa titik' && potong[2] === '',
       JSON.stringify(potong));
-  /* Deskripsi menggantikan keyword, jadi kata-katanya harus kata yang akan dia
-     ketik lagi - bukan bahasa katalog. */
-  cek('dan diminta memakai sebutan yang akan dia ketik lagi',
-      /bukan bahasa katalog/.test(arahanGbr));
+  /* Deskripsi menggantikan keyword, jadi kata-katanya harus kata yang lazim
+     dipakai sehari-hari - bukan istilah pemasaran.
+
+     DIMINTA POSITIF, BUKAN CUMA DILARANG. Dulu bunyinya "bukan bahasa
+     katalog", dan itu cuma menyebut yang dilarang: yang paling jauh dari
+     katalog adalah bahasa percakapan, jadi ke situlah jawabannya pergi -
+     sampai gue-elo. */
+  cek('dan diminta memakai sebutan sehari-hari, bukan istilah pemasaran',
+      /Sebutan sehari-hari yang lazim/.test(arahanGbr) &&
+      /bukan istilah pemasaran/.test(arahanGbr) &&
+      !/bahasa katalog/.test(arahanGbr));
 
   /* KONTEKSTUAL: yang menentukan isinya DRIVER, bukan yang paling menonjol di
      gambar. Foto masjid dengan driver "interior mesjid" harus menghasilkan
      kalimat tentang elemen interiornya; yang sama dengan driver "karpet
      mesjid" menghasilkan kalimat tentang motif karpetnya. Bendanya satu,
      deskripsinya dua, dan keduanya benar. */
-  cek('sudut pandangnya yang menentukan isinya, bukan yang menonjol di gambar',
-      /DARI SUDUT PANDANG keywords/.test(arahanGbr) &&
-      /bukan dari yang paling menonjol di gambar/.test(arahanGbr));
+  cek('drivernya yang menentukan isinya, bukan yang menonjol di gambar',
+      /MEMBAHAS keywords/.test(arahanGbr) &&
+      /bukan yang paling menonjol di gambar/.test(arahanGbr));
+  /* KATANYA yang dibuang, bukan aturannya. "Sudut pandang" dimaksudkan
+     "bagian mana yang dibahas", tapi dibaca model "suara siapa yang
+     bercerita" - dan yang pulang laporan pandangan mata, lengkap dengan
+     pelakunya. */
+  cek('dan kata "sudut pandang" tidak dipakai lagi di arahan gambar',
+      !/sudut pandang/i.test(arahanGbr));
   cek('drivernya ditaruh paling atas sebagai Keywords',
       arahanGbr.indexOf('Keywords: Bedroom Interior Lighting') === 0, arahanGbr.slice(0, 60));
 
