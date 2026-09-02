@@ -7056,6 +7056,27 @@ console.log('\nsinkron empat perangkat');
       typeof gerbang.dipicu === 'number', JSON.stringify(gerbang));
   cek('dan sundulNaik memang memaksanya, bukan menyerahkannya ke jam',
       /putaranCadangan\(true\)/.test(fs.readFileSync(path.join(AKAR, 'alur.js'), 'utf8')));
+
+  /* ===== KEMBALI MELIHAT LAYAR INI ADALAH PERMINTAANNYA =====
+     Ini yang menggantikan tombol "tarik sekarang". Waktu kamu menoleh ke
+     Cortex, kamu sedang mencari sesuatu yang barusan kamu kirim dari perangkat
+     lain - dan menunggu setengah menit sesudah menoleh terbaca persis sama
+     dengan tidak sinkron. Penahan setengah menit itu untuk denyut berkala,
+     bukan untuk mata yang baru saja menoleh. */
+  const kodeAlur = fs.readFileSync(path.join(AKAR, 'alur.js'), 'utf8');
+  cek('kembali ke layar ini memaksa tarikan, bukan menunggu penahannya',
+      /putaranCadangan\(\);\s*(\/\*[\s\S]*?\*\/\s*)?tarikSinkron\(true\);/.test(kodeAlur));
+  /* Dan itu benar-benar terjadi di jalur visibilitychange, bukan cuma tertulis
+     di suatu tempat. */
+  const tarikSaatKembali = await hal2.evaluate(async () => {
+    await TSimpan.setel('tarikBerhasil', 0);
+    TAlur.setelanUji().tarikBerhasil = 0;
+    document.dispatchEvent(new Event('visibilitychange'));
+    await new Promise((r) => setTimeout(r, 1200));
+    return Number(await TSimpan.setelan('tarikBerhasil')) || 0;
+  });
+  cek('dan jalurnya memang terpasang di kembalinya layar',
+      tarikSaatKembali > 0, String(tarikSaatKembali));
   /* SEKALI SEJAM, bukan tiap tarikan: satu panggilan Drive tambahan tiap dua
      menit itu ongkos harian untuk jawaban yang hampir selalu "masih sama". */
   cek('pemeriksaannya tidak diulang tiap tarikan',

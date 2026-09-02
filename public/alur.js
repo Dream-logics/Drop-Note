@@ -6703,7 +6703,14 @@
          mengangkat HP, dan HP-nya tidak pernah benar-benar dibuka ulang.
          Keduanya punya penahannya sendiri supaya tidak menembak berulang. */
       putaranCadangan();
-      tarikSinkron();
+      /* DIPAKSA. Kembali melihat layar ini ADALAH permintaannya: kamu sedang
+         mencari sesuatu yang barusan kamu kirim dari perangkat lain. Penahan
+         setengah menit ada untuk denyut berkala, bukan untuk mata yang baru
+         saja menoleh ke sini - dan menunggu setengah menit sesudah menoleh
+         terbaca persis sama dengan tidak sinkron.
+         Ini yang menggantikan tombol "tarik sekarang": gerakan yang sudah
+         kamu lakukan, bukan satu lagi yang harus diingat. */
+      tarikSinkron(true);
     });
   }
 
