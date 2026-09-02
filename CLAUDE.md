@@ -1064,13 +1064,16 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     ketuk badge = preset dijatuhkan (dibaca DULUAN di
                     penangannya - dia duduk di dalam tombol kameranya, jadi
                     tanpa penjaga itu satu-satunya jalan keluar jadi jalan
-                    masuk). SELURUHNYA DI DALAM CIPNYA, tidak satu
-                    piksel pun menggantung keluar: barisnya 'overflow-x:auto',
-                    dan begitu satu sumbu berhenti 'visible' sumbu satunya ikut
-                    memotong - badge yang menggantung dipotong kotak yang
-                    menggulir, dan yang terlihat lingkaran yang kepalanya
-                    hilang. Angka saringan boleh menggantung karena dia cuma
-                    huruf tanpa alas; lingkaran beralas tidak boleh. Di sudut
+                    masuk). RUANGNYA DI PADDING KOTAK YANG
+                    MENGGULIR ('padding-top' di .saring-cip-baris), bukan di
+                    luar kotaknya: barisnya 'overflow-x:auto', dan begitu satu
+                    sumbu berhenti 'visible' sumbu satunya ikut memotong -
+                    potongannya terjadi di tepi PADDING, jadi ruang yang
+                    ditaruh di .saring-baris tidak menolong sama sekali. Tanpa
+                    ruang itu badge duduk di bahu ikon kamera (dua bentuk yang
+                    bersentuhan terbaca sebagai satu bentuk yang rusak) atau
+                    kepalanya dipotong. Tinggi barisnya memang bertambah, dan
+                    itu memang harganya. Di sudut
                     KIRI, bukan kanan: cip kamera duduk paling ujung kanan,
                     jadi sisi kanannya yang paling mungkin kena tepi layar.
                     Rupa menyalanya SAMA dengan cip saringan yang aktif di
@@ -1138,7 +1141,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (883 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (884 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
