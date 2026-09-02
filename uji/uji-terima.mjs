@@ -6239,26 +6239,39 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
      pada tinggi baris - dan tinggi baris itulah yang dijaga di seluruh dok
      ini: yang bertambah mendorong doknya naik, dan layar yang bergoyang di
      bawah jempol adalah harga yang tidak sepadan untuk satu kabar. */
-  cek('dan tidak menambah tinggi baris cipnya sama sekali',
+  cek('dan badge-nya sendiri tidak menambah tinggi baris cipnya',
       (await tinggiBaris()) === tinggiTanpaSesi,
       (await tinggiBaris()) + ' vs ' + tinggiTanpaSesi);
-  /* SELURUHNYA DI DALAM CIPNYA, tidak satu piksel pun menggantung keluar.
-     Barisnya 'overflow-x:auto', dan begitu satu sumbu berhenti 'visible' sumbu
-     satunya ikut memotong - jadi badge yang menggantung dipotong kotak yang
-     menggulir, dan yang terlihat cuma lingkaran yang kepalanya hilang. Angka
-     saringan bisa menggantung karena dia cuma huruf tanpa alas; lingkaran
-     beralas tidak bisa. */
+  /* YANG DIUKUR TERHADAP KOTAK YANG MENGGULIR, bukan terhadap cipnya. Kotak
+     itu yang memegang pisaunya: barisnya 'overflow-x:auto', dan begitu satu
+     sumbu berhenti 'visible' sumbu satunya ikut memotong. Badge boleh
+     menggantung keluar cipnya - dia memang badge - asal masih di dalam kotak
+     itu, dan ruang untuk itu ada di padding-nya.
+
+     CINCINNYA IKUT DIHITUNG (2px): dia dicat, jadi dia juga bisa dipotong,
+     dan lingkaran yang kepalanya hilang persis itu bentuknya. */
   const kotakBadge = await hal.evaluate(() => {
-    const c = document.querySelector('#saring-cip .saring-cip.kamera');
-    const g = c.querySelector('.cip-sesi');
-    const a = c.getBoundingClientRect(), b = g.getBoundingClientRect();
-    return { atas: b.top - a.top, kiri: b.left - a.left,
-             bawah: a.bottom - b.bottom, kanan: a.right - b.right };
+    const w = document.querySelector('#saring-cip');
+    const g = w.querySelector('.saring-cip.kamera .cip-sesi');
+    const a = w.getBoundingClientRect(), b = g.getBoundingClientRect();
+    const cincin = 2;
+    return { atas: (b.top - cincin) - a.top, kiri: (b.left - cincin) - a.left,
+             bawah: a.bottom - (b.bottom + cincin),
+             kanan: a.right - (b.right + cincin) };
   });
-  cek('badge-nya utuh di dalam cipnya, tidak ada yang menggantung keluar',
+  cek('badge-nya utuh di dalam kotak yang menggulir, cincinnya sekalian',
       kotakBadge.atas >= -0.5 && kotakBadge.kiri >= -0.5 &&
       kotakBadge.bawah >= -0.5 && kotakBadge.kanan >= -0.5,
       JSON.stringify(kotakBadge));
+  /* Dan angka saringan yang sudah lebih dulu ada di baris ini ikut terjaga -
+     dia menggantung 3px, dan selama ini persis di ambang pisaunya. */
+  cek('angka saringan pun tidak menggantung keluar kotaknya',
+      await hal.evaluate(() => {
+        const w = document.querySelector('#saring-cip');
+        const a = w.getBoundingClientRect();
+        return [...w.querySelectorAll('.saring-angka')]
+          .every((n) => n.getBoundingClientRect().top - a.top >= -0.5);
+      }));
   cek('dan tidak mendorong satu cip pun keluar layar',
       await hal.evaluate(() => {
         const b = document.querySelector('#saring-cip');
