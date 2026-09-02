@@ -6242,9 +6242,24 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
   cek('dan tidak menambah tinggi baris cipnya sama sekali',
       (await tinggiBaris()) === tinggiTanpaSesi,
       (await tinggiBaris()) + ' vs ' + tinggiTanpaSesi);
-  /* Badge-nya di sudut KIRI: cip kamera duduk paling ujung kanan baris, dan
-     badge yang menggantung di kanannya melewati tepi kotak yang menggulir. */
-  cek('badge-nya tidak mendorong satu cip pun keluar layar',
+  /* SELURUHNYA DI DALAM CIPNYA, tidak satu piksel pun menggantung keluar.
+     Barisnya 'overflow-x:auto', dan begitu satu sumbu berhenti 'visible' sumbu
+     satunya ikut memotong - jadi badge yang menggantung dipotong kotak yang
+     menggulir, dan yang terlihat cuma lingkaran yang kepalanya hilang. Angka
+     saringan bisa menggantung karena dia cuma huruf tanpa alas; lingkaran
+     beralas tidak bisa. */
+  const kotakBadge = await hal.evaluate(() => {
+    const c = document.querySelector('#saring-cip .saring-cip.kamera');
+    const g = c.querySelector('.cip-sesi');
+    const a = c.getBoundingClientRect(), b = g.getBoundingClientRect();
+    return { atas: b.top - a.top, kiri: b.left - a.left,
+             bawah: a.bottom - b.bottom, kanan: a.right - b.right };
+  });
+  cek('badge-nya utuh di dalam cipnya, tidak ada yang menggantung keluar',
+      kotakBadge.atas >= -0.5 && kotakBadge.kiri >= -0.5 &&
+      kotakBadge.bawah >= -0.5 && kotakBadge.kanan >= -0.5,
+      JSON.stringify(kotakBadge));
+  cek('dan tidak mendorong satu cip pun keluar layar',
       await hal.evaluate(() => {
         const b = document.querySelector('#saring-cip');
         return b.scrollWidth <= Math.ceil(b.getBoundingClientRect().width) + 1;
