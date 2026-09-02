@@ -6924,6 +6924,91 @@ console.log('\nsinkron empat perangkat');
   cek('catatan dari perangkat pertama sampai ke perangkat kedua',
       await punya(hal2, 'Catatan dari perangkat satu'));
 
+  /* ===== GAMBAR YANG LAHIR DI PERANGKAT LAIN =====
+     Yang dilaporkan di lapangan: foto dipotret di HP, entrinya sampai di
+     laptop dengan judul dan board yang benar, gambarnya tidak pernah muncul.
+     Delapan refresh, tiga reconnect, kesimpulannya "sinkronnya rusak" -
+     padahal sinkronnya sudah selesai bekerja sejak menit pertama.
+
+     Dua cacat bertumpuk, dan dua-duanya diam:
+     1. Berkasnya naik ke Drive lalu blob-nya dibuang dari HP, jadi yang
+        sampai ke laptop cuma 'driveId' - dan tidak ada satu pun jalur yang
+        menggambar dari situ.
+     2. Cuma BERKAS_SEKALI berkas yang naik per putaran, sementara barisnya
+        naik semua - jadi foto keempat dan seterusnya terkirim TANPA driveId,
+        dan tanpa 'diubah' yang ikut naik, id-nya tidak pernah menyusul. */
+  const buatFoto = (p, judul, jumlah) => p.evaluate(async ([j, n]) => {
+    const kanvas = document.createElement('canvas');
+    kanvas.width = 8; kanvas.height = 8;
+    const k = kanvas.getContext('2d');
+    for (let i = 0; i < n; i++) {
+      k.fillStyle = ['#f00', '#0f0', '#00f', '#ff0', '#0ff'][i % 5];
+      k.fillRect(0, 0, 8, 8);
+      const blob = await new Promise((t) => kanvas.toBlob(t, 'image/png'));
+      const bid = 'b-uji-' + j + '-' + i;
+      await TSimpan.taruhBerkas(bid, blob, 'uji.png', 'image/png');
+      await TSimpan.taruh({
+        id: 'e-uji-' + j + '-' + i, jenis: 'gambar',
+        judul: j + ' ' + (i + 1), isi: '', kategori: '', album: 'Ujiboard',
+        label: [], elemen: [], daftar: [], riwayat: [],
+        berkasId: bid, driveId: null, namaBerkas: 'uji.png', tipeBerkas: 'image/png',
+        ukuran: blob.size, thumb: '',
+        dibuat: Date.now(), diubah: Date.now(), dipakai: 0, dihapus: false
+      });
+    }
+  }, [judul, jumlah]);
+
+  /* LIMA, bukan satu: BERKAS_SEKALI-nya 3, jadi yang kelima baru naik di
+     putaran berikutnya - dan justru di situ cacat keduanya hidup. */
+  await buatFoto(hal, 'Foto sinkron', 5);
+  await dorong(hal);
+  await hal.waitForTimeout(300);
+  await dorong(hal);
+  await hal.waitForTimeout(300);
+  await dorong(hal);
+  await hal.waitForTimeout(300);
+
+  const berkasNaik = await hal.evaluate(() => TSimpan.semua().then((a) =>
+    a.filter((e) => /^e-uji-Foto sinkron/.test(e.id))
+     .map((e) => ({ id: e.id, drive: !!e.driveId, lokal: !!e.berkasId }))));
+  cek('semua berkasnya naik ke Drive dan blob lokalnya dilepas',
+      berkasNaik.length === 5 && berkasNaik.every((e) => e.drive && !e.lokal),
+      JSON.stringify(berkasNaik));
+
+  await tarik(hal2);
+  const sampai = await hal2.evaluate(() => TSimpan.semua().then((a) =>
+    a.filter((e) => /^e-uji-Foto sinkron/.test(e.id))
+     .map((e) => ({ id: e.id, drive: e.driveId || '', thumb: !!e.thumb }))));
+  cek('kelima fotonya sampai di perangkat kedua LENGKAP DENGAN driveId-nya',
+      sampai.length === 5 && sampai.every((e) => e.drive),
+      JSON.stringify(sampai));
+
+  /* Dan yang menentukan: petaknya benar-benar tergambar. Entri yang sampai
+     utuh tapi kotaknya kosong terbaca persis seperti sinkron yang gagal, dan
+     itu lebih buruk daripada galat - galat menyuruhmu berhenti, petak kosong
+     menyuruhmu mencoba lagi selamanya. */
+  await hal2.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal2.waitForTimeout(200);
+  await hal2.fill('#galeri-cari', 'Foto sinkron');
+  await hal2.dispatchEvent('#galeri-cari', 'input');
+  await hal2.waitForTimeout(400);
+  cek('petaknya menunggu gambar dari Drive, bukan kotak kosong',
+      (await hal2.locator('#galeri-isi img[data-drive]').count()) >= 1,
+      await hal2.innerText('#galeri-isi'));
+  const terisi = await hal2.waitForFunction(() => {
+    const g = document.querySelectorAll('#galeri-isi img[data-drive]');
+    return g.length > 0 && [...g].every((i) => /^(blob|data):/.test(i.src));
+  }, null, { timeout: 8000 }).then(() => true, () => false);
+  cek('dan gambarnya benar-benar diambil dari Drive lalu terpasang', terisi,
+      await hal2.evaluate(() => [...document.querySelectorAll('#galeri-isi img[data-drive]')]
+        .map((i) => i.src.slice(0, 24)).join(' | ')));
+  /* Dikembalikan ke pintu depan: uji sesudah ini mengetik di '#kotak', dan
+     kotak itu tidak ada di layar Gallery. */
+  await hal2.fill('#galeri-cari', '');
+  await hal2.dispatchEvent('#galeri-cari', 'input');
+  await hal2.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal2.waitForTimeout(200);
+
   /* ===== DUA JAM YANG BERBEDA TIDAK PERNAH DIBANDINGKAN =====
      'tarikCap' menyimpan modifiedTime SPREADSHEET-NYA - jam servernya Google.
      Dulu, kalau pemeriksaan modifiedTime gagal, waktunya jadi 0 dan yang

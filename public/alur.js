@@ -2966,7 +2966,8 @@
       var gbr = e.thumb
         ? '<img src="' + H(e.thumb) + '" alt="">'
         : (e.berkasId ? '<img data-berkas="' + H(e.berkasId) + '" alt="">'
-                      : '<span class="petak-kosong"></span>');
+                      : (e.driveId ? gambarAwanHtml(e, '')
+                                   : '<span class="petak-kosong"></span>'));
       return '<button class="petak-satu kartu" data-id="' + H(e.id) + '" data-buka="' + H(e.id) + '">' +
              gbr + '<span class="petak-nama">' +
              H(e.judul || e.namaBerkas || '(tanpa judul)') + '</span></button>';
@@ -4240,6 +4241,8 @@
       b.push('<img class="kartu-gambar" src="' + H(e.thumb) + '" alt="">');
     } else if (e.jenis === 'gambar' && e.berkasId) {
       b.push('<img class="kartu-gambar" data-berkas="' + H(e.berkasId) + '" alt="">');
+    } else if (e.jenis === 'gambar' && e.driveId) {
+      b.push(gambarAwanHtml(e, 'kartu-gambar'));
     }
 
     /* Elemen pertama ikut terlihat: menyalin satu nomor adalah alasan
@@ -4390,6 +4393,64 @@
     akar.addEventListener('pointerleave', lepasGeser);
   }
 
+  /* ===================== GAMBAR YANG LAHIR DI PERANGKAT LAIN =====================
+     Ini cacat yang paling menyesatkan dari semua yang pernah ada di sini,
+     karena yang terlihat di layar bukan bentuk aslinya sama sekali.
+
+     Foto yang dipotret di HP naik ke Drive, lalu blob-nya DIBUANG dari HP
+     (unggahAntre) - yang tersisa di entri cuma 'driveId'. Thumbnail-nya tidak
+     ikut tabel: dia dataURL puluhan kilobyte, dan dua puluh ribu di antaranya
+     tidak muat di satu spreadsheet. Jadi yang sampai ke laptop adalah entri
+     yang utuh - judul, board, deskripsi, semuanya benar - tapi TANPA satu byte
+     gambar pun, dan tanpa jalur untuk mengambilnya.
+
+     Yang terbaca dari kursi pemakainya: "gambarnya tidak sampai", lalu
+     refresh, lalu reconnect, lalu kesimpulan "sinkronnya rusak" - padahal
+     sinkronnya sudah selesai bekerja sejak menit pertama. Petak kosong adalah
+     laporan yang salah tentang keadaan yang benar, dan itu lebih buruk
+     daripada galat: galat menyuruhmu berhenti, petak kosong menyuruhmu
+     mencoba lagi selamanya. */
+  function gambarAwanHtml(e, kelas) {
+    return '<img' + (kelas ? ' class="' + kelas + '"' : '') +
+           ' data-drive="' + H(e.driveId) + '" data-entri="' + H(e.id) + '" alt="">';
+  }
+
+  /* Sekali unduh per driveId per sesi. Satu gambar bisa digambar di beberapa
+     tempat sekaligus (petak, kartu, laci yang terbuka), dan tanpa peta ini
+     tiap tempat menarik berkas yang sama dari Drive sendiri-sendiri. */
+  var berkasAwan = {};
+  function blobDariDrive(driveId) {
+    if (!berkasAwan[driveId]) {
+      berkasAwan[driveId] = TAwan.unduhBerkas(setelanSaat, driveId).catch(function () {
+        /* Dilupakan lagi supaya sinyal yang putus sekali tidak membuat gambar
+           ini kosong sampai aplikasinya ditutup. */
+        berkasAwan[driveId] = null;
+        return null;
+      });
+    }
+    return berkasAwan[driveId];
+  }
+
+  /* Thumbnail-nya ditulis ke entri lokal, sekali, supaya pembukaan berikutnya
+     tergambar seketika tanpa menyentuh jaringan - persis seperti gambar yang
+     memang lahir di perangkat ini. 'diubah' sengaja TIDAK disentuh: thumbnail
+     bukan suntingan, dan menaikkannya berarti entri ini didorong ulang ke
+     spreadsheet tiap kali ia pertama kali dilihat di perangkat baru. */
+  var thumbDitulis = {};
+  function simpanThumbAwan(id, blob) {
+    if (!id || thumbDitulis[id]) return;
+    thumbDitulis[id] = 1;
+    buatThumb(blob).then(function (t) {
+      if (!t) return;
+      semuaEntri.forEach(function (x) { if (x.id === id) x.thumb = t; });
+      return TSimpan.ambil(id).then(function (e) {
+        if (!e) return;
+        e.thumb = t;
+        return TSimpan.taruh(e);
+      });
+    }).catch(function () { /* gambarnya tetap terlihat lewat blob-nya */ });
+  }
+
   function pasangGambarKartu(akar) {
     $$('img[data-berkas]', akar).forEach(function (img) {
       TSimpan.ambilBerkas(img.getAttribute('data-berkas')).then(function (r) {
@@ -4397,6 +4458,15 @@
         var u = URL.createObjectURL(r.blob);
         urlSementara.push(u);
         img.src = u;
+      });
+    });
+    $$('img[data-drive]', akar).forEach(function (img) {
+      blobDariDrive(img.getAttribute('data-drive')).then(function (blob) {
+        if (!blob) return;
+        var u = URL.createObjectURL(blob);
+        urlSementara.push(u);
+        img.src = u;
+        simpanThumbAwan(img.getAttribute('data-entri') || '', blob);
       });
     });
   }
