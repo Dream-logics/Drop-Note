@@ -1056,9 +1056,19 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     ikon AI pergi di mode Drop begitu ada yang diketik, klip
                     dan Todo pergi di mode AI.
                     CIP KAMERA DI BARIS CIP, DI KANAN RESET - ujung yang paling
-                    dekat jempol. SESI YANG MASIH HIDUP DIBACAKAN DI CIPNYA,
-                    kecil saja ('.cip-sesi', cipnya melebar - barisnya
-                    menggulir mendatar, jadi aman). Cip ini dipakai persis
+                    dekat jempol. SESI YANG MASIH HIDUP PUNYA BILAHNYA
+                    SENDIRI DI ATAS BARIS CIP ('#drop-lengket'), rupanya sama
+                    persis dengan bilah sesi di Gallery - dua rupa untuk satu
+                    keadaan berarti dia harus dibaca dua kali, dan silang yang
+                    letaknya berpindah adalah silang yang meleset. DIA TIDAK
+                    IKUT BARIS CIP: sempat ditulis di dalam cip kameranya
+                    sendiri, dan cip itu jadi yang paling lebar di baris yang
+                    menggulir mendatar - terdorong keluar layar kanan, dan
+                    yang paling perlu terlihat jadi yang paling sering tidak
+                    kelihatan. Naiknya lewat 'order:-2', bukan urutan di HTML:
+                    kepala doknya flex yang boleh melipat dan baris cip sudah
+                    dinaikkan lewat order:-1, jadi yang cuma ditulis lebih dulu
+                    tetap mendarat di bawahnya. Cip ini dipakai persis
                     waktu kamu TIDAK di Gallery, jadi bilah sesi di sana tidak
                     pernah terbaca dari sini: yang terjadi kamu memotret,
                     gambarnya langsung masuk tanpa satu pertanyaan pun, dan
@@ -1111,7 +1121,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (879 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (882 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

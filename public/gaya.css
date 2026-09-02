@@ -854,15 +854,6 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    yang cuma menyaring atau menghapus. */
 .saring-cip.kamera{color:var(--a)}
 .saring-cip.reset:active{color:var(--bahaya);border-color:var(--bahaya)}
-/* SESI KAMERA YANG MASIH HIDUP, dibacakan di cipnya sendiri. Cipnya melebar,
-   dan itu aman: barisnya menggulir mendatar, tidak pernah melipat. Kecil saja
-   - yang dijawab bukan "apa sesinya" tapi "ada yang menyala tidak", dan huruf
-   yang menuntut dibaca akan bersaing dengan angka saringan di sebelahnya. */
-.saring-cip.bersesi{width:auto;gap:5px;padding:0 11px 0 9px}
-.cip-sesi{
-  max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  font-size:10px;font-weight:600;line-height:1;
-}
 .saring-cip.nyala{
   border-color:transparent;color:var(--a);font-weight:700;
   background:color-mix(in srgb, var(--a) 14%, transparent);
@@ -914,6 +905,12 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    bawahnya karena dia tentang yang sedang kamu cari. */
 .dok-bawah .ruang-baris{order:-2;width:100%;padding-bottom:4px}
 .dok-bawah .saring-baris{order:-1;width:100%;padding-bottom:6px}
+/* DI ATAS BARIS CIP, dan 'order' yang mengurusnya - bukan urutan di HTML.
+   Kepala doknya flex yang boleh melipat, dan baris cip sudah dinaikkan ke
+   puncaknya lewat order:-1; sebuah bilah yang cuma ditulis lebih dulu di HTML
+   tetap mendarat DI BAWAHNYA. Lebarnya dibiarkan mengikuti isinya: tetangganya
+   selebar penuh, jadi dia sudah pasti sendirian di barisnya. */
+.dok-bawah .drop-lengket{order:-2;margin:0 0 6px}
 
 
 /* Judul bagian di dalam daftar tugas. Redup dan kecil: dia pembatas, bukan
@@ -1530,6 +1527,34 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
   display:flex;align-items:center;justify-content:center;cursor:pointer;
 }
 .galeri-lengket .lengket-buang .ik{width:16px;height:16px}
+
+/* BILAH SESI DI LAYAR DROP. Rupanya sama persis dengan yang di Gallery - dua
+   rupa untuk satu keadaan berarti dia harus dibaca dua kali - tapi dia IKUT
+   ALIRAN, bukan melayang: doknya sudah menempel di bawah, dan bilah melayang
+   di atas dok yang menempel cuma akan menutupi baris cipnya sendiri.
+
+   Dia tidak ikut baris cip, dan itu sebabnya dia ada di sini: waktu drivernya
+   ditulis di dalam cip kamera, cip itu jadi yang paling lebar di baris yang
+   menggulir mendatar - terdorong keluar layar kanan, dan yang paling perlu
+   terlihat jadi yang paling sering tidak kelihatan. */
+.drop-lengket{
+  display:flex;align-items:center;gap:6px;
+  align-self:flex-start;max-width:100%;margin:0 0 7px;
+  padding:5px 6px 5px 11px;border-radius:16px;
+  border:1px dashed var(--a);background:var(--p);color:var(--a);
+  font-size:12px;
+}
+.drop-lengket .lengket-nama{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+/* Sasarannya penuh walau rupanya kecil - ini dipakai satu tangan, dan silang
+   yang meleset berarti sesi yang tidak pernah bisa dijatuhkan. */
+.drop-lengket .lengket-buang{
+  width:30px;height:30px;margin:-5px -6px -5px 0;
+  border:0;background:none;color:var(--m);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.drop-lengket .lengket-buang .ik{width:15px;height:15px}
 #l-galeri.mode-pilih .galeri-lengket{display:none}
 
 /* Doknya melayang di atas isinya, jadi petak terakhir harus punya ruang untuk
