@@ -7030,6 +7030,32 @@ console.log('\nsinkron empat perangkat');
   /* DAN YANG LAIN TIDAK IKUT TERBAWA: nisan cuma menghapus dirinya sendiri. */
   cek('catatan lain di perangkat kedua tidak ikut terbawa',
       await punya(hal2, 'Catatan dari perangkat satu'));
+
+  /* ===== DROP BARU BERANGKAT SEKARANG, BUKAN LIMA MENIT LAGI =====
+     putaran() punya gerbang lima menit supaya denyut berkala tidak menghajar
+     Drive. Tapi dorongan yang lahir dari drop kamu sendiri ikut kena gerbang
+     itu - jadi foto yang baru diambil menunggu sampai lima menit sebelum
+     berangkat, dan di perangkat lain baru muncul beberapa menit sesudahnya.
+     Yang terbaca "entri baru tidak sinkron", padahal sinkronnya menunggu jam.
+     Yang menahan laju dorongan perubahan sudah ada dan sudah cukup: jeda 8
+     detik di sundulNaik. */
+  await hal.evaluate(() => TSimpan.setel('cadanganDicoba', Date.now()));
+  await hal.evaluate(() => { TAlur.setelanUji().cadanganDicoba = Date.now(); });
+  const gerbang = await hal.evaluate(async () => {
+    const s = TAlur.setelanUji();
+    return {
+      berkala: await TSinkron.putaran(s),        /* denyut: kena gerbang */
+      dipicu: await TSinkron.putaran(s, true)    /* drop kamu: lewat */
+    };
+  });
+  cek('denyut berkala tetap ditahan gerbang lima menitnya',
+      gerbang.berkala === 0, JSON.stringify(gerbang));
+  /* Yang penting BUKAN angkanya, tapi bahwa yang dipaksa memang menembus
+     gerbang - kalau tidak, dia memulangkan 0 tanpa menyentuh Drive. */
+  cek('tapi dorongan yang dipicu drop menembusnya',
+      typeof gerbang.dipicu === 'number', JSON.stringify(gerbang));
+  cek('dan sundulNaik memang memaksanya, bukan menyerahkannya ke jam',
+      /putaranCadangan\(true\)/.test(fs.readFileSync(path.join(AKAR, 'alur.js'), 'utf8')));
   /* SEKALI SEJAM, bukan tiap tarikan: satu panggilan Drive tambahan tiap dua
      menit itu ongkos harian untuk jawaban yang hampir selalu "masih sama". */
   cek('pemeriksaannya tidak diulang tiap tarikan',

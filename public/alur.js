@@ -47,7 +47,7 @@
   /* Denyut sinkron selama layarnya hidup. Dua menit: cukup rapat supaya
      laptop yang dibiarkan terbuka tidak pernah basi, cukup jarang supaya
      tabelnya tidak ditarik puluhan kali sejam. */
-  var DENYUT_SINKRON = 2 * 60 * 1000;
+  var DENYUT_SINKRON = 45 * 1000;
 
   /* Momen paling murah untuk melabeli adalah tepat SESUDAH catatan jatuh:
      HP masih di tangan, sinyal masih menyala. Menunggu putaran 3 menit membuat
@@ -5749,8 +5749,17 @@
     });
   }
 
-  function putaranCadangan() {
-    return TSinkron.putaran(setelanSaat).then(function () {
+  /* paksa: dorongan yang DIPICU PERUBAHAN, bukan denyut berkala.
+     Bedanya menentukan: putaran() punya gerbang lima menit supaya denyut
+     berkala tidak menghajar Drive. Tapi dorongan yang lahir dari drop kamu
+     sendiri ikut kena gerbang itu - jadi foto yang baru diambil bisa menunggu
+     lima menit sebelum berangkat, dan di perangkat lain baru muncul beberapa
+     menit sesudahnya. Yang terbaca "entri baru tidak sinkron", padahal
+     sinkronnya sedang menunggu jam.
+     Yang menahan laju dorongan perubahan sudah ada dan sudah cukup: jeda 8
+     detik di sundulNaik. */
+  function putaranCadangan(paksa) {
+    return TSinkron.putaran(setelanSaat, paksa).then(function () {
       /* WAJIB. Cadangan menyunting entri di belakang layar: berkas yang naik
          ke Drive kehilangan berkasId dan mendapat driveId, dan nisan yang
          sudah bersih dibuang. Kalau salinan di memori tidak disegarkan,
@@ -5802,12 +5811,17 @@
   var JEDA_DORONG = 8000;
   var dorongan = null;
   var tarikTerakhir = 0;
-  var JEDA_TARIK = 60000;   /* pindah tab bolak-balik tidak memanggil tabelnya berkali-kali */
+  /* Turun dari 60 detik: satu tarikan diawali SATU panggilan modifiedTime,
+     dan tabelnya baru dibaca kalau memang berubah. Ongkosnya kecil, dan yang
+     dibeli dengannya besar - foto yang diambil di jalan muncul di laptop
+     dalam hitungan detik, bukan menit. Yang menjaga dari berulang-ulang tetap
+     ada; yang dikurangi cuma jaraknya. */
+  var JEDA_TARIK = 30000;
 
   function sundulNaik() {
     if (!TSinkron.nyala(setelanSaat)) return;
     clearTimeout(dorongan);
-    dorongan = setTimeout(putaranCadangan, JEDA_DORONG);
+    dorongan = setTimeout(function () { putaranCadangan(true); }, JEDA_DORONG);
   }
 
   function tarikSinkron(paksa) {

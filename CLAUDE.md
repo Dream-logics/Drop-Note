@@ -760,9 +760,19 @@ public/sinkron.js   SINKRON DUA ARAH lewat Drive; tidak pernah di jalur drop.
                     aplikasi sehari tidak akan pernah ingat menekan "tarik" -
                     yang dia rasakan cuma "Cortex tidak sinkron", dan itu sama
                     buruknya dengan tidak punya Cortex.
+                    DROP BARU BERANGKAT SEKARANG, BUKAN LIMA MENIT LAGI.
+                    putaran() punya gerbang lima menit supaya denyut berkala
+                    tidak menghajar Drive - dan dulu dorongan yang lahir dari
+                    drop kamu sendiri ikut kena gerbang itu. Foto yang baru
+                    diambil menunggu sampai lima menit sebelum berangkat, lalu
+                    beberapa menit lagi sebelum muncul di perangkat lain. Yang
+                    terbaca "entri baru tidak sinkron", padahal sinkronnya
+                    menunggu jam. Sekarang sundulNaik memanggil
+                    putaranCadangan(true) - yang menahan lajunya sudah ada dan
+                    sudah cukup: jeda 8 detik di sundulNaik sendiri.
                     EMPAT pemicunya: waktu aplikasinya dibuka, waktu kembali
                     dari aplikasi lain (di HP PWA jarang benar-benar ditutup),
-                    DENYUT BERKALA tiap 2 menit selama layarnya terlihat
+                    DENYUT BERKALA tiap 45 detik selama layarnya terlihat
                     (tanpa ini, laptop yang tabnya dibiarkan terbuka seharian
                     tidak pernah menarik sama sekali - dua pemicu pertama tidak
                     pernah terjadi di sana), dan dorongan 8 detik sesudah ada
@@ -1029,7 +1039,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (864 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (867 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
