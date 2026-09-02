@@ -795,6 +795,22 @@ public/sinkron.js   SINKRON DUA ARAH lewat Drive; tidak pernah di jalur drop.
                     dan SESI (driverLengket - itu kenyataan fisik, kamu sedang
                     berdiri di masjid; menularkannya ke PC bikin unggahan di
                     kantor berangkat dengan sudut pandang survey)
+public/awan.js      SATU RUMAH, DAN DIPERIKSA ULANG (samakanRumah di
+                    sinkron.js, sekali sejam). rumah() memakai sheetId yang
+                    sudah dipatok dan tidak pernah memeriksanya lagi - benar
+                    sehari-hari, bencana sekali seumur hidup: dua perangkat yang
+                    pernah membuat rumahnya masing-masing terpatok SELAMANYA ke
+                    spreadsheet yang berbeda. Yang terlihat di layar dua
+                    perangkat sehat sempurna - dorongan berhasil, tarikan
+                    berhasil, "belum terkirim: 0" di dua-duanya - sementara HP
+                    berisi 55 catatan dan laptop 11. Yang menang tetap YANG
+                    TERTUA (aturan yang sama dengan cariAtauBuat, jadi semua
+                    perangkat sampai pada jawaban yang sama tanpa berunding);
+                    yang kalah TIDAK dihapus, dan yang lokal didorong ulang ke
+                    rumah yang benar - tulisBaris menimpa berdasarkan id, jadi
+                    tidak ada yang berganda. Kotak Vault menyebut enam huruf
+                    terakhir sheetId supaya keadaan ini bisa dilihat mata, bukan
+                    ditebak.
 public/awan.js      (lanjutan) cariAtauBuat PUNYA PENJAGA BALAPAN. Dua
                     perangkat yang pertama kali dibuka pada menit yang sama
                     sama-sama tidak menemukan apa pun lalu sama-sama membuat -
@@ -1000,7 +1016,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (855 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (859 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

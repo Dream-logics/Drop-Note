@@ -423,6 +423,20 @@
 
   /* Menyiapkan folder + spreadsheet, lalu mengingat id-nya. Aman dipanggil
      berkali-kali: kalau sudah ada, dia cuma memakai yang lama. */
+  /* RUMAH MANA YANG SEHARUSNYA DIPAKAI SEMUA PERANGKAT: yang TERTUA, aturan
+     yang sama persis dengan cariAtauBuat. Dipakai untuk memeriksa apakah
+     perangkat ini terlanjur terpatok ke rumah yang salah - dan itu bisa
+     terjadi, karena satu-satunya cara dua perangkat berpisah adalah keduanya
+     membuat rumah sendiri pada saat masing-masing belum bisa melihat punya
+     yang lain. */
+  function rumahKanonik(setelan) {
+    return cariSemua(setelan, TBawaan.nama, 'application/vnd.google-apps.folder', null)
+      .then(function (ada) {
+        var t = ada.length ? tertua(ada) : null;
+        return t ? t.id : '';
+      });
+  }
+
   function siapkanRumah(setelan, simpanKunci) {
     var akar, berkas, sheet;
     return cariAtauBuat(setelan, TBawaan.nama, 'application/vnd.google-apps.folder', null)
@@ -659,7 +673,7 @@
     muatToken: muatToken,
     clientIdUji: clientId,
     siapa: siapa,
-    siapkanRumah: siapkanRumah,
+    siapkanRumah: siapkanRumah, rumahKanonik: rumahKanonik,
     tulisBaris: tulisBaris, bacaSemuaBaris: bacaSemuaBaris, hapusBaris: hapusBaris,
     unggahBerkas: unggahBerkas, unduhBerkas: unduhBerkas, hapusBerkas: hapusBerkas,
     cariBerkas: cariBerkas, tulisJson: tulisJson, bacaJson: bacaJson,

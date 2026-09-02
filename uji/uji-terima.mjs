@@ -6941,6 +6941,43 @@ console.log('\nsinkron empat perangkat');
   cek('dan tariknya tetap jalan walau waktunya tidak terbaca',
       await punya(hal2, 'Catatan dari perangkat satu'));
 
+  /* ===== DUA PERANGKAT YANG TERPATOK KE RUMAH BERBEDA =====
+     Ini keadaan yang dilaporkan di lapangan, dan yang paling sulit dilihat
+     dari mana pun: HP menunjuk satu spreadsheet, laptop menunjuk yang lain.
+     Dua-duanya sehat sempurna - dorongan berhasil, tarikan berhasil, "belum
+     terkirim: 0" - dan isinya 55 lawan 11.
+     Sebabnya rumah() memakai sheetId yang sudah dipatok dan tidak pernah
+     memeriksanya lagi. Sekali dua perangkat terlanjur membuat rumah
+     masing-masing, keduanya terpatok selamanya. */
+  const rumahPalsu = await hal2.evaluate(async () => {
+    const s = TAlur.setelanUji();
+    const asli = s.folderAkar;
+    /* Dipatok ke rumah karangan, persis seperti perangkat yang dulu membuat
+       rumahnya sendiri waktu belum bisa melihat punya yang lain. */
+    for (const [k, v] of [['folderAkar', 'akar-nyasar'], ['folderBerkas', 'berkas-nyasar'],
+                          ['sheetId', 'sheet-nyasar'], ['rumahPeriksa', 0]]) {
+      await TSimpan.setel(k, v); s[k] = v;
+    }
+    await TSinkron.samakanRumahUji(s);
+    return { asli: asli, sesudah: s.folderAkar };
+  });
+  cek('rumah yang nyasar dilepas, bukan dipakai selamanya',
+      rumahPalsu.sesudah === '', JSON.stringify(rumahPalsu));
+  /* Dan tarikan berikutnya menemukan rumah yang benar sendiri - yang TERTUA,
+     aturan yang sama dengan cariAtauBuat, jadi semua perangkat sampai pada
+     jawaban yang sama tanpa perlu berunding. */
+  await tarik(hal2);
+  await hal2.waitForTimeout(600);
+  cek('lalu tarikan berikutnya kembali ke rumah yang sama dengan perangkat lain',
+      (await setelanDi(hal2, 'folderAkar')) === rumahPalsu.asli,
+      JSON.stringify([await setelanDi(hal2, 'folderAkar'), rumahPalsu.asli]));
+  cek('dan isinya kembali bertemu',
+      await punya(hal2, 'Catatan dari perangkat satu'));
+  /* SEKALI SEJAM, bukan tiap tarikan: satu panggilan Drive tambahan tiap dua
+     menit itu ongkos harian untuk jawaban yang hampir selalu "masih sama". */
+  cek('pemeriksaannya tidak diulang tiap tarikan',
+      (await hal2.evaluate(() => TSinkron.samakanRumahUji(TAlur.setelanUji()))) === false);
+
   /* ALAMATNYA IKUT PINDAH, BUKAN CUMA CATATANNYA. Catatan yang sampai di
      laptop TANPA RAKNYA jatuh semua ke "Belum berlabel" - dan yang terbaca di
      situ bukan "raknya belum ikut", melainkan "aplikasinya kacau". */
