@@ -586,9 +586,22 @@ console.log('\nhapus permanen sampai ke Sheet dan Drive');
   await hal.evaluate(() => TSimpan.setel('cadanganDicoba', 0));
   await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => TSinkron.putaran(s, true)));
 
+  /* NISANNYA TINGGAL, BARISNYA TIDAK DIBUANG - dan itu perubahan yang
+     disengaja. Baris yang hilang dari tabel tidak memberi tahu siapa pun bahwa
+     dia pernah ada, jadi perangkat lain yang sudah terlanjur punya catatan itu
+     menyimpannya SELAMANYA. Jumlahnya menyimpang permanen, dan menyimpangnya
+     ke arah yang paling membingungkan: dua perangkat sama-sama melapor
+     sinkron sambil berisi jumlah yang berbeda.
+     Yang tinggal cuma kabar bahwa dia sudah tiada: isinya dikosongkan. */
   const baris = [...google.lembar.values()][0];
-  cek('barisnya hilang dari spreadsheet', !baris.some((b) => b[0] === idHapus), JSON.stringify(baris.map((b) => b[0])));
-  cek('berkasnya hilang dari Drive', ![...google.berkas.values()].some((f) => f.name === 'kontrak.txt'));
+  const nisan = baris.filter((b) => b[0] === idHapus)[0];
+  cek('barisnya tinggal sebagai nisan, bukan dibuang', !!nisan,
+      JSON.stringify(baris.map((b) => b[0])));
+  cek('dan nisannya bertanda dihapus', nisan && String(nisan[18]) === 'true',
+      nisan && String(nisan[18]));
+  cek('isinya dikosongkan — yang tersisa cuma kabar bahwa dia sudah tiada',
+      nisan && !nisan[2] && !nisan[4], nisan && JSON.stringify([nisan[2], nisan[4]]));
+  cek('berkasnya tetap hilang dari Drive', ![...google.berkas.values()].some((f) => f.name === 'kontrak.txt'));
   const sisa = await hal.evaluate(() => TSimpan.semua().then((a) => a.map((x) => x.id)));
   cek('entrinya dibuang dari HP juga', !sisa.includes(idHapus), sisa.join(','));
 }
@@ -6972,6 +6985,50 @@ console.log('\nsinkron empat perangkat');
       (await setelanDi(hal2, 'folderAkar')) === rumahPalsu.asli,
       JSON.stringify([await setelanDi(hal2, 'folderAkar'), rumahPalsu.asli]));
   cek('dan isinya kembali bertemu',
+      await punya(hal2, 'Catatan dari perangkat satu'));
+
+  /* ===== YANG DIHAPUS DI SATU PERANGKAT IKUT HILANG DI PERANGKAT LAIN =====
+     Ini cacat yang paling sunyi: menghapus di HP membuang BARISNYA dari
+     spreadsheet, lalu membuangnya dari HP. Perangkat lain yang sudah terlanjur
+     punya catatan itu tidak pernah tahu apa-apa - baris yang hilang dari tabel
+     tidak memberi tahu siapa pun bahwa dia pernah ada.
+     Akibatnya jumlahnya menyimpang PERMANEN: HP 4, laptop 6, dua-duanya
+     melapor sinkron. */
+  /* Umpan SENDIRI, bukan menumpang catatan yang dipakai uji berikutnya:
+     menghapus umpan bersama membuat uji setelahnya gagal karena alasan yang
+     tidak ada hubungannya dengan yang diujinya. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(300);
+  await hal.fill('#kotak', 'Catatan yang akan dihapus');
+  await hal.click('#b-drop');
+  await hal.waitForTimeout(700);
+  await dorong(hal);
+  await hal.waitForTimeout(400);
+  await tarik(hal2);
+  await hal2.waitForTimeout(700);
+  const hapusId = await hal.evaluate(() => {
+    const e = TAlur.semuaEntri().filter((x) => x.judul === 'Catatan yang akan dihapus')[0];
+    return e ? e.id : '';
+  });
+  cek('umpannya ada di dua perangkat sebelum dihapus',
+      !!hapusId && await punya(hal2, 'Catatan yang akan dihapus'), hapusId);
+  await hal.evaluate(async (id) => {
+    const e = TAlur.semuaEntri().filter((x) => x.id === id)[0];
+    e.dihapus = true;
+    e.diubah = Date.now();
+    await TSimpan.taruh(e);
+  }, hapusId);
+  await hal.evaluate(() => TSimpan.setel('cadanganDicoba', 0));
+  await dorong(hal);
+  await hal.waitForTimeout(600);
+  await tarik(hal2);
+  await hal2.waitForTimeout(800);
+  cek('nisannya menyeberang, dan catatannya ikut hilang di perangkat kedua',
+      !(await punya(hal2, 'Catatan yang akan dihapus')),
+      JSON.stringify(await hal2.evaluate(() => TAlur.semuaEntri()
+        .filter((e) => !e.dihapus).map((e) => e.judul))));
+  /* DAN YANG LAIN TIDAK IKUT TERBAWA: nisan cuma menghapus dirinya sendiri. */
+  cek('catatan lain di perangkat kedua tidak ikut terbawa',
       await punya(hal2, 'Catatan dari perangkat satu'));
   /* SEKALI SEJAM, bukan tiap tarikan: satu panggilan Drive tambahan tiap dua
      menit itu ongkos harian untuk jawaban yang hampir selalu "masih sama". */

@@ -5365,8 +5365,18 @@
              Enam huruf terakhir cukup: yang dibandingkan mata di dua layar,
              bukan disalin. */
           var rumah = String(s.sheetId || '');
+          /* Berapa rumah yang TERLIHAT dari perangkat ini. Dua perangkat yang
+             sama-sama menjawab 1 sementara kodenya berbeda berarti mereka buta
+             satu sama lain - dan itu satu-satunya keadaan yang tidak bisa
+             diperbaiki dengan memeriksa lebih sering. Diambil di belakang,
+             boleh gagal diam. */
+          TAwan.hitungRumah(s).then(function (n) {
+            var b = $('#rumah-terlihat');
+            if (b) b.textContent = String(n);
+          }, function () {});
           kotak.innerHTML = 'Rumah di Drive: <b data-asli>' +
               H(rumah ? '…' + rumah.slice(-6) : '(belum ada)') + '</b>' +
+            ' · terlihat: <b data-asli id="rumah-terlihat">…</b>' +
             '<br>Terakhir menarik: <b>' + H(waktuPanjang(s.tarikBerhasil)) + '</b>' +
             '<br>Terakhir mengirim: <b>' + H(waktuPanjang(s.cadanganBerhasil)) + '</b>' +
             ' · belum terkirim: <b>' + n + '</b>' +
