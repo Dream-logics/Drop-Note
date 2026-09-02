@@ -44,6 +44,10 @@
      tergambar dan jempolnya sudah bisa mengetik; tidak cukup lama untuk terasa
      sebagai "cadangannya tidak jalan". */
   var JEDA_AWAN_AWAL = 1500;
+  /* Denyut sinkron selama layarnya hidup. Dua menit: cukup rapat supaya
+     laptop yang dibiarkan terbuka tidak pernah basi, cukup jarang supaya
+     tabelnya tidak ditarik puluhan kali sejam. */
+  var DENYUT_SINKRON = 2 * 60 * 1000;
 
   /* Momen paling murah untuk melabeli adalah tepat SESUDAH catatan jatuh:
      HP masih di tangan, sinyal masih menyala. Menunggu putaran 3 menit membuat
@@ -5347,7 +5351,13 @@
         kotak.textContent = 'Mati — catatanmu cuma ada di HP ini.';
       } else {
         TSinkron.belumTerkirim(s).then(function (n) {
-          kotak.innerHTML = 'Terakhir berhasil: <b>' + H(waktuPanjang(s.cadanganBerhasil)) + '</b>' +
+          /* DUA ARAH, DUA WAKTU. Yang dibaca orang di sini bukan "apakah
+             cadanganku jalan" tapi "apakah yang kutulis di HP sudah ada di
+             sini". Tanpa waktu MENARIK, satu-satunya yang kelihatan cuma arah
+             keluar - dan perangkat yang rajin mendorong tapi tidak pernah
+             menarik tetap terlihat sehat sempurna. */
+          kotak.innerHTML = 'Terakhir menarik: <b>' + H(waktuPanjang(s.tarikBerhasil)) + '</b>' +
+            '<br>Terakhir mengirim: <b>' + H(waktuPanjang(s.cadanganBerhasil)) + '</b>' +
             ' · belum terkirim: <b>' + n + '</b>' +
             (s.cadanganGalat ? '<br>Percobaan terakhir gagal: ' + H(s.cadanganGalat) : '');
         });
@@ -5413,6 +5423,17 @@
         return TSinkron.rumah(setelanSaat);
       }).then(function () {
         return simpanSetelan('cadanganNyala', true);
+      }).then(function () {
+        /* LANGSUNG DIISI, bukan menunggu pembukaan berikutnya. Menekan
+           Hubungkan lalu melihat layar yang tetap kosong terbaca sebagai
+           "sambungannya gagal" - dan orang yang membaca begitu tidak akan
+           menekannya kedua kali. Ini juga satu-satunya sentuhan yang pernah
+           diminta dari perangkat baru, jadi dia harus menyelesaikan
+           pekerjaannya sampai habis. */
+        ket.textContent = 'Mengambil catatanmu dari perangkat lain…';
+        return tarikSinkron(true);
+      }).then(function () {
+        return putaranCadangan();
       }).then(gambarSetelan, function (err) {
         ket.textContent = 'Gagal: ' + err.message;
       });
@@ -6755,6 +6776,20 @@
         tarikSinkron(true);
       }, JEDA_AWAN_AWAL);
       setInterval(putaranLabel, PUTARAN_LABEL);
+      /* SINKRON TIDAK PERNAH MENUNGGU DIMINTA. Membuka aplikasi dan kembali
+         dari aplikasi lain sudah jadi pemicunya - tapi keduanya tidak pernah
+         terjadi di laptop yang tabnya dibiarkan terbuka seharian. Di situ
+         catatan yang ditulis di HP tidak akan pernah sampai, dan yang terbaca
+         bukan "belum ditarik" melainkan "aplikasinya tidak sinkron".
+         Jadi ada denyut berkala juga, dan dia diam waktu layarnya tidak
+         terlihat: menarik tabel untuk layar yang sedang tidak dilihat siapa pun
+         cuma memakan baterai. Keduanya punya penahannya sendiri, jadi denyut
+         ini tidak pernah menembak berulang. */
+      setInterval(function () {
+        if (document.visibilityState !== 'visible') return;
+        tarikSinkron();
+        putaranCadangan();
+      }, DENYUT_SINKRON);
     }).catch(function (err) {
       pesan('Penyimpanan tidak bisa dibuka: ' + err.message);
     });
