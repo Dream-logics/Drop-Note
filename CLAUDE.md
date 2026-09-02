@@ -698,9 +698,25 @@ public/pelabel.js   (lanjutan) TIDAK ADA TAG SAMA SEKALI, dan itu keputusan
                     dibaca, dan yang berhenti dibaca sama saja dengan tidak
                     ada. Ditegakkan KODENYA lewat potongKalimat(), dipotong di
                     UJUNG KALIMAT - yang putus di tengah kata terbaca sebagai
-                    data rusak. Ditulis DARI
-                    SUDUT PANDANG driver, bukan dari yang paling menonjol di
-                    gambar - foto masjid dengan driver "interior mesjid"
+                    data rusak.
+                    KATA "SUDUT PANDANG" DIBUANG DARI ARAHAN GAMBAR, dan cuma
+                    katanya - aturannya tetap sama persis. Yang dimaksud
+                    "bagian mana dari benda ini yang dibahas"; yang dibaca
+                    model "suara siapa yang bercerita", jadi jawabannya pulang
+                    sebagai LAPORAN PANDANGAN MATA lengkap dengan pelakunya.
+                    Dua baris lain memperparah: "sebutan yang akan DIA ketik
+                    lagi" menaruh kata ganti orang di dalam perintahnya
+                    sendiri, dan "bukan bahasa katalog" cuma menyebut yang
+                    dilarang - yang paling jauh dari katalog itu bahasa
+                    percakapan, jadi ke situlah dia pergi, sampai gue-elo.
+                    Sekarang larangannya terang-terangan (tidak ada kata ganti
+                    orang, tidak menyapa pembaca, tidak ada pelaku) dan
+                    registernya diminta lurus: netral dan baku. REGISTERNYA
+                    TIDAK BOLEH DISEBUT DENGAN MENAMAI BAHASANYA - "tulis
+                    bahasa Indonesia baku" memperbaiki nadanya sambil merusak
+                    aturan bahwa jawaban mengikuti bahasa driver.
+                    Isinya tetap ditentukan driver, bukan yang paling menonjol
+                    di gambar - foto masjid dengan driver "interior mesjid"
                     menghasilkan kalimat tentang elemen interiornya; yang sama
                     dengan "karpet mesjid" menghasilkan kalimat tentang motif
                     karpetnya. Bendanya satu, deskripsinya dua, keduanya benar.
@@ -1141,7 +1157,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (884 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (889 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

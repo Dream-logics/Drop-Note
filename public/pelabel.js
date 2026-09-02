@@ -411,6 +411,25 @@
      driver "karpet mesjid" menghasilkan kalimat tentang motif dan bahan
      karpetnya. Bendanya satu, deskripsinya dua, dan keduanya benar.
 
+     KATA "SUDUT PANDANG" DIBUANG DARI ARAHANNYA, dan cuma dari arahannya -
+     aturannya tetap berlaku persis sama. Yang dimaksud kata itu "bagian mana
+     dari benda ini yang dibahas"; yang dibaca model "suara siapa yang
+     bercerita". Dua-duanya sah sebagai bahasa Indonesia, dan yang kedua yang
+     dipakainya: jawabannya pulang sebagai laporan pandangan mata, lengkap
+     dengan pelakunya.
+
+     Dua baris lain memperparah. "Pakai sebutan yang akan DIA ketik lagi" -
+     ada kata ganti orang di dalam perintahnya sendiri, jadi ada orang di
+     kalimat jawabannya. Dan "bukan bahasa katalog" cuma menyebut yang
+     dilarang, tidak yang diminta; yang paling jauh dari katalog itu bahasa
+     percakapan, jadi ke situlah dia pergi - sampai gue-elo.
+
+     Jadi larangannya sekarang disebut TERANG-TERANGAN (tidak ada kata ganti
+     orang, tidak menyapa pembaca, tidak ada pelaku) dan registernya diminta
+     lurus: netral dan baku. Registernya TIDAK boleh disebut dengan menamai
+     bahasanya - "tulis bahasa Indonesia baku" akan memaksa jawaban Indonesia
+     untuk driver berbahasa Inggris, dan itu aturan lain yang ikut rusak.
+
      DUA KALIMAT, DAN ITU BATAS ATAS - bukan sasaran. Waktu diminta "2-3
      kalimat", yang kembali lima: model mengisi jatahnya dengan menulis ulang
      kalimat pertama memakai kata lain, dan yang ketiga sampai kelima tidak
@@ -424,18 +443,21 @@
     return [
       driver ? 'Keywords: ' + String(driver).slice(0, 60) : 'Tidak ada keywords; baca apa adanya.',
       '',
-      'Tulis MAKSIMAL 2 kalimat DARI SUDUT PANDANG keywords di atas,',
-      'bukan dari yang paling menonjol di gambar.',
-      'Pakai sebutan yang akan dia ketik lagi enam bulan kemudian, bukan bahasa katalog.',
+      'Tulis MAKSIMAL 2 kalimat yang MEMBAHAS keywords di atas,',
+      'bukan yang paling menonjol di gambar.',
+      'CATATAN BENDA, BUKAN CERITA MELIHAT. DILARANG memakai kata ganti orang',
+      'dan menyapa pembaca — tidak ada pelaku di kalimat ini.',
+      'Nada netral dan baku, bukan gaul. Sebutan sehari-hari yang lazim untuk',
+      'benda ini, bukan istilah pemasaran.',
       'TULIS YANG MEMBEDAKAN benda ini dari benda sejenis: warna, bahan, merek, ukuran,',
       'kondisi, tulisan yang tertera, bentuk tak biasa, latar tempatnya.',
       'DILARANG menyebut fungsi umum bendanya ("pulpen untuk mencatat", "mobil untuk',
-      'transportasi") atau membuka dengan "ini adalah foto…" — itu sudah diketahui siapa pun,',
+      'transportasi") atau membuka dengan "ini adalah foto…" — itu sudah diketahui,',
       'jadi kalimatnya habis tanpa memberi apa pun.',
-      'Kalau tidak ada yang membedakan, cukup SATU kalimat; jangan mengulang kalimat pertama',
+      'Kalau tidak ada yang membedakan, cukup SATU kalimat; jangan mengulanginya',
       'dengan kata lain untuk memenuhi jatah.',
       '',
-      'Judul maksimal 8 kata, juga dari sudut pandang keywords.',
+      'Judul maksimal 8 kata, topik sama, tanpa kata ganti orang.',
       '',
       'Lalu pilih SATU board dari daftar ini, salin namanya PERSIS:',
       board || '(kosong)',
@@ -450,7 +472,7 @@
       'Kalau tidak ada satu pun bidang yang cocok, jawab "' + (TBawaan.boardLain || '') + '" —',
       'itu jawaban yang benar, bukan kegagalan; jangan memaksakan bidang yang paling mirip.',
       '',
-      'BAHASA JAWABAN MENGIKUTI BAHASA KEYWORDS.',
+      'BAHASA JAWABAN MENGIKUTI BAHASA KEYWORDS; nadanya netral di bahasa mana pun.',
       '',
       'Jawab HANYA JSON: {"judul":"...","teks":"...","board":"...",',
       '"elemen":[{"jenis":"...","nilai":"...","nama":"..."}]}',
