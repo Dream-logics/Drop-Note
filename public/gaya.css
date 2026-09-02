@@ -838,36 +838,49 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
   font-size:9px;font-weight:700;line-height:1;
 }
 /* ===== BADGE SESI KAMERA =====
-   Kosakata yang sama dengan angka saringan di sebelahnya: menumpang DI ATAS
-   ikonnya, bukan di sebelahnya. Karena dia absolute, dia tidak menambah satu
-   piksel pun pada tinggi baris maupun lebar cipnya - dan tinggi baris itulah
-   yang sedang dijaga di seluruh dok ini.
+   SELURUHNYA DI DALAM CIPNYA, tidak satu piksel pun menggantung keluar. Ini
+   bukan selera: barisnya 'overflow-x:auto', dan begitu satu sumbu berhenti
+   'visible' sumbu satunya ikut memotong - jadi badge yang menggantung di luar
+   cipnya dipotong kotak yang menggulir, dan yang terlihat cuma lingkaran yang
+   kepalanya hilang. Angka saringan bisa menggantung karena dia cuma huruf
+   tanpa alas; lingkaran beralas tidak bisa.
+
+   Karena dia absolute, dia tetap tidak menambah satu piksel pun pada tinggi
+   baris maupun lebar cipnya - dan tinggi baris itulah yang dijaga di seluruh
+   dok ini.
 
    Di sudut KIRI, bukan kanan: cip kamera duduk paling ujung kanan baris, dan
-   badge yang menggantung di kanannya akan melewati tepi kotak yang menggulir.
+   yang paling mungkin terpotong tepi layar justru sisi kanannya.
 
-   Terisi penuh warna aksen, bukan cuma bergaris: yang dijawab bentuk ini
-   "ADA yang menyala", dan yang harus terbaca sekilas tidak boleh setipis
-   hiasan. */
+   Ukurannya mengikuti cip yang menyala di baris yang sama - satu keluarga
+   bentuk, bukan tempelan: bulat penuh, terisi warna aksen. Yang dijawab
+   bentuk ini "ADA yang menyala", dan yang harus terbaca sekilas tidak boleh
+   setipis hiasan. */
 .saring-cip .cip-sesi{
-  position:absolute;top:-4px;left:-5px;
+  position:absolute;top:0;left:0;
   display:flex;align-items:center;justify-content:center;
-  width:16px;height:16px;border-radius:50%;
+  width:15px;height:15px;border-radius:50%;
   background:var(--a);color:var(--at);
-  box-shadow:0 0 0 2px var(--g);
 }
 .saring-cip .cip-sesi .ik{width:9px;height:9px;stroke-width:3.4}
-/* Sasarannya dilebarkan tanpa menambah rupanya - tapi TIDAK sampai menelan
+/* Sasarannya dilebarkan tanpa menambah rupanya - dan pelebarannya pun tetap
+   di dalam cipnya, supaya tidak ada yang bisa dipotong. TIDAK sampai menelan
    cip kameranya: yang di bawah badge ini tombol yang dipakai tiap hari, dan
    jalan keluar yang mencuri ketukan jalan masuk lebih buruk daripada jalan
    keluar yang harus dibidik. */
-.saring-cip .cip-sesi::after{content:'';position:absolute;inset:-6px}
-/* Cipnya sendiri ikut menyala: badge saja terbaca sebagai hiasan di sudut,
-   sementara yang sedang berlaku itu KAMERANYA. */
+.saring-cip .cip-sesi::after{content:'';position:absolute;top:0;left:0;width:24px;height:24px}
+/* Cipnya sendiri ikut menyala, dan MEMAKAI RUPA YANG SAMA dengan cip saringan
+   yang aktif di baris ini - bukan rupa ketiga yang harus dipelajari sendiri.
+   Badge saja terbaca sebagai hiasan di sudut, sementara yang sedang berlaku
+   itu KAMERANYA. */
 .saring-cip.kamera.bersesi{
-  border-style:solid;border-color:var(--a);
-  background:color-mix(in srgb, var(--a) 12%, transparent);
+  border-color:transparent;
+  background:color-mix(in srgb, var(--a) 14%, transparent);
 }
+/* Ikonnya digeser sedikit menjauh dari badge-nya: di 38px, lingkaran 15px di
+   sudut kiri atas menyentuh bahu ikon kamera, dan dua bentuk yang bersentuhan
+   terbaca sebagai satu bentuk yang rusak. */
+.saring-cip.kamera.bersesi > .ik{transform:translate(2px, 2px)}
 .saring-cip.sepi{opacity:.4}
 .saring-cip.nyala .saring-angka{color:var(--a)}
 /* Reset dibedakan: dia satu-satunya cip di baris ini yang MENGHAPUS keadaan,
