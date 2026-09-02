@@ -6210,6 +6210,28 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
       (await fotoUji('sesi4.png')).driver === '');
   await ketikDriver('granit motif');
 
+  /* ===== SESINYA HARUS TERBACA DARI LAYAR DROP JUGA =====
+     Cip kamera di layar Drop dipakai persis waktu kamu TIDAK sedang di
+     Gallery, jadi bilah sesi di sana tidak pernah terbaca dari sini. Yang
+     terjadi di lapangan: ketuk kamera, gambarnya langsung masuk tanpa satu
+     pertanyaan pun, dan yang terbaca "kok tidak ditanya foldernya?" - padahal
+     jawabannya "karena sudut pandang tadi masih berlaku". */
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(350);
+  cek('cip kamera di layar Drop membacakan sesi yang masih hidup',
+      (await hal.locator('#saring-cip .saring-cip.kamera .cip-sesi').count()) === 1 &&
+      (await hal.innerText('#saring-cip .saring-cip.kamera')).indexOf('granit motif') >= 0,
+      await hal.innerText('#saring-cip'));
+  /* Barisnya tetap SATU baris - dia menggulir mendatar, tidak pernah melipat.
+     Yang melipat mendorong seluruh dok naik di bawah jempol. */
+  cek('dan barisnya tetap satu baris, tidak melipat',
+      await hal.evaluate(() => {
+        const b = document.querySelector('#saring-cip');
+        const c = [...b.querySelectorAll('.saring-cip')];
+        return c.every((x) => Math.abs(x.getBoundingClientRect().top -
+                                       c[0].getBoundingClientRect().top) < 2);
+      }));
+
   /* "Use last scene set up UNTIL IT DROPPED." Silangnya itu yang menjatuhkan. */
   await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
   await hal.waitForTimeout(350);
@@ -6219,6 +6241,13 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
   await hal.waitForTimeout(400);
   cek('silangnya menutup sesinya',
       await hal.locator('#galeri-lengket').isHidden());
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(350);
+  cek('dan tulisannya ikut hilang dari cip kamera',
+      (await hal.locator('#saring-cip .saring-cip.kamera .cip-sesi').count()) === 0,
+      await hal.innerText('#saring-cip'));
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(300);
   /* Barisan fotonya ikut hilang: dia kabar tentang sesi yang barusan kamu
      jatuhkan, dan kabar yang hidup lebih lama daripada peristiwanya cuma jadi
      sisa yang harus dibersihkan sendiri. */

@@ -854,6 +854,15 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    yang cuma menyaring atau menghapus. */
 .saring-cip.kamera{color:var(--a)}
 .saring-cip.reset:active{color:var(--bahaya);border-color:var(--bahaya)}
+/* SESI KAMERA YANG MASIH HIDUP, dibacakan di cipnya sendiri. Cipnya melebar,
+   dan itu aman: barisnya menggulir mendatar, tidak pernah melipat. Kecil saja
+   - yang dijawab bukan "apa sesinya" tapi "ada yang menyala tidak", dan huruf
+   yang menuntut dibaca akan bersaing dengan angka saringan di sebelahnya. */
+.saring-cip.bersesi{width:auto;gap:5px;padding:0 11px 0 9px}
+.cip-sesi{
+  max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:10px;font-weight:600;line-height:1;
+}
 .saring-cip.nyala{
   border-color:transparent;color:var(--a);font-weight:700;
   background:color-mix(in srgb, var(--a) 14%, transparent);

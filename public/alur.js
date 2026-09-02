@@ -1724,10 +1724,25 @@
          Garis putus-putus yang membedakannya - bentuk yang di aplikasi ini
          selalu berarti "ini jalan pintas, bukan keadaan". */
       if (j[0] === '*reset' || j[0] === '*kamera') {
+        /* SESI YANG MASIH HIDUP HARUS KELIHATAN DARI SINI JUGA, bukan cuma di
+           Gallery. Cip ini dipakai persis waktu kamu TIDAK sedang di Gallery -
+           jadi bilah sesi di sana tidak pernah terbaca dari sini, dan yang
+           terjadi: kamu memotret, gambarnya langsung masuk tanpa satu
+           pertanyaan pun, dan yang terbaca "kok tidak ditanya foldernya?"
+           padahal jawabannya "karena sudut pandang tadi masih berlaku".
+
+           Sudut pandang yang basi itu satu-satunya kekeliruan di jalur ini
+           yang tidak bisa diperbaiki belakangan - alamatnya masih bisa
+           dipindah kapan saja. Jadi yang dibacakan drivernya, kecil saja:
+           cukup untuk tahu ada yang menyala, tidak cukup untuk menuntut
+           dibaca. */
+        var sesi = j[0] === '*kamera' && lengketHidup()
+          ? '<span class="cip-sesi" data-asli>' + H(driverLengket) + '</span>' : '';
         return '<button class="saring-cip ' + (j[0] === '*reset' ? 'reset' : 'kamera') +
+               (sesi ? ' bersesi' : '') +
                '" data-jenis="' + j[0] + '" title="' + H(j[1]) +
                '" aria-label="' + H(j[1]) + '">' +
-               '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
+               '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg>' + sesi + '</button>';
       }
       /* ANGKANYA ANGKA HASIL PENCARIAN, bukan angka seluruh timbunan. Yang
          menolong waktu kamu mengetik bukan "aku punya berapa gambar", tapi
@@ -3265,6 +3280,10 @@
   function pakaiLengket(driver) {
     driverLengket = driver || '';
     driverLengketPada = driver ? Date.now() : 0;
+    /* Cip kameranya ikut digambar ulang: dia hidup di layar Drop, dan sesi
+       biasanya berganti dari layar Gallery - tanpa ini, yang tertulis di cip
+       itu sesi kemarin sampai layarnya kebetulan tergambar ulang. */
+    gambarCipSaring();
     return Promise.all([
       TSimpan.setel('driverLengket', driverLengket),
       TSimpan.setel('driverLengketPada', String(driverLengketPada))
@@ -3292,7 +3311,11 @@
        konteksnya sudah berpindah: tadi granit, sekarang alumunium. Yang basi
        drivernya; boardnya cuma akibat, dan akibat itu dihitung ulang sendiri
        begitu drivernya berganti. */
-    pesan(diBuka ? '→ ' + labelAlbum(diBuka) : ids.length + ' gambar masuk', {
+    /* DRIVERNYA YANG DITULIS, bukan alamatnya. "Ganti" cuma bisa kamu tekan
+       kalau kamu tahu apa yang sedang diwarisi - dan alamat yang benar di
+       bawah sudut pandang yang basi tetap salah. Alamatnya sudah terbaca
+       sendiri di baris "Baru dipotret". */
+    pesan('→ ' + driver, {
       teks: 'Ganti',
       jalan: function () { tanyaDriver(ids); }
     });
