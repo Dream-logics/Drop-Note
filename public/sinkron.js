@@ -437,7 +437,13 @@
       });
     }).then(function (n) {
       ubah += (n || 0);
-      return catat(setelan, 'tarikGalat', '').then(function () { return ubah; });
+      /* Dicatat walau tidak ada yang berubah: yang dijawab baris ini di layar
+         bukan "berapa yang turun" tapi "kapan terakhir dia benar-benar
+         memeriksa" - dan "tidak ada yang baru" itu pemeriksaan yang berhasil,
+         bukan yang gagal. */
+      return catat(setelan, 'tarikBerhasil', Date.now())
+        .then(function () { return catat(setelan, 'tarikGalat', ''); })
+        .then(function () { return ubah; });
     }).catch(function (err) {
       /* Diam, seperti semua yang di berkas ini. Yang di perangkat tetap utuh;
          yang gagal cuma pertemuannya dengan perangkat lain. */

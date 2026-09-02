@@ -7049,10 +7049,16 @@ console.log('\nsinkron empat perangkat');
       !(await punya(hal3, 'Catatan dari perangkat dua')),
       String(await hal3.evaluate(() => window.__mintaToken)));
 
-  await hal3.evaluate(() => TAwan.masuk(TAlur.setelanUji()));
+  /* DITEKAN LEWAT TOMBOLNYA SENDIRI, dan sesudah itu TIDAK ADA satu pun
+     panggilan tarik dari uji ini. Menekan Hubungkan lalu melihat layar yang
+     tetap kosong terbaca sebagai "sambungannya gagal", dan orang yang membaca
+     begitu tidak akan menekannya kedua kali. Ini juga satu-satunya sentuhan
+     yang pernah diminta dari perangkat baru, jadi dia harus menyelesaikan
+     pekerjaannya sampai habis. */
+  await hal3.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
   await hal3.waitForTimeout(300);
-  await tarik(hal3);
-  await hal3.waitForTimeout(600);
+  await hal3.click('#b-hubungkan');
+  await hal3.waitForTimeout(2500);
   cek('sesudah satu kali diizinkan, dia terisi sendiri sampai penuh',
       await punya(hal3, 'Catatan dari perangkat dua'),
       JSON.stringify(await hal3.evaluate(() => TAlur.semuaEntri().map((e) => e.judul))));

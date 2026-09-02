@@ -742,9 +742,26 @@ public/sinkron.js   SINKRON DUA ARAH lewat Drive; tidak pernah di jalur drop.
                     menulis di laptop, membuka HP, layarnya kosong - yang
                     terbaca bukan "belum saya tarik" tapi "datanya hilang",
                     dan sekali itu terbaca kepercayaannya ikut hilang.
-                    TARIK jalan sendiri: waktu aplikasinya dibuka, waktu
-                    kembali dari aplikasi lain (di HP PWA jarang benar-benar
-                    ditutup), dan didorong 8 detik sesudah ada yang berubah.
+                    SINKRON TIDAK PERNAH MENUNGGU DIMINTA, dan tidak boleh
+                    punya tombol yang wajib diketuk. Orang yang memakai belasan
+                    aplikasi sehari tidak akan pernah ingat menekan "tarik" -
+                    yang dia rasakan cuma "Cortex tidak sinkron", dan itu sama
+                    buruknya dengan tidak punya Cortex.
+                    EMPAT pemicunya: waktu aplikasinya dibuka, waktu kembali
+                    dari aplikasi lain (di HP PWA jarang benar-benar ditutup),
+                    DENYUT BERKALA tiap 2 menit selama layarnya terlihat
+                    (tanpa ini, laptop yang tabnya dibiarkan terbuka seharian
+                    tidak pernah menarik sama sekali - dua pemicu pertama tidak
+                    pernah terjadi di sana), dan dorongan 8 detik sesudah ada
+                    yang berubah. Denyutnya DIAM waktu layarnya tidak terlihat:
+                    menarik tabel untuk layar yang tidak dilihat siapa pun cuma
+                    memakan baterai.
+                    MENEKAN "HUBUNGKAN" LANGSUNG MENGISI PERANGKATNYA sampai
+                    penuh - tarik dulu, baru dorong. Itu satu-satunya sentuhan
+                    yang pernah diminta dari perangkat baru, jadi dia harus
+                    menyelesaikan pekerjaannya: menekannya lalu melihat layar
+                    yang tetap kosong terbaca sebagai "sambungannya gagal", dan
+                    yang membaca begitu tidak menekannya kedua kali.
                     Tarikan MEMERIKSA modifiedTime dulu - menarik dua puluh
                     ribu baris tiap kali dibuka itu ongkos harian untuk jawaban
                     yang hampir selalu "tidak ada yang baru".
