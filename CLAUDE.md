@@ -765,6 +765,22 @@ public/sinkron.js   SINKRON DUA ARAH lewat Drive; tidak pernah di jalur drop.
                     Tarikan MEMERIKSA modifiedTime dulu - menarik dua puluh
                     ribu baris tiap kali dibuka itu ongkos harian untuk jawaban
                     yang hampir selalu "tidak ada yang baru".
+                    DUA JAM YANG BERBEDA TIDAK PERNAH DIBANDINGKAN. 'tarikCap'
+                    menyimpan modifiedTime SPREADSHEET-nya - jam servernya
+                    Google - dan CUMA diisi kalau waktunya memang terbaca dari
+                    sana. Dulu, kalau pemeriksaannya gagal, yang dicatat malah
+                    Date.now(): jam LOKAL perangkat itu. Sejak saat itu dia
+                    membandingkan jam server dengan jam lokalnya sendiri,
+                    spreadsheet yang baru diubah punya modifiedTime yang lebih
+                    KECIL daripada "sekarang" yang terlanjur tercatat, dan
+                    pulihkan() tidak pernah dijalankan lagi - selamanya.
+                    Yang terlihat di layar justru sehat: pemeriksaannya
+                    berhasil, jadi "Terakhir menarik: baru saja", padahal yang
+                    berhasil cuma memeriksanya. Laptop berisi 11 catatan
+                    sementara HP berisi 55, dan dua-duanya melapor baik-baik
+                    saja. Kalau waktunya tidak terbaca, tariknya TETAP JALAN dan
+                    capnya dibiarkan - menarik sekali lagi tanpa perlu jauh
+                    lebih murah daripada berhenti menarik selamanya.
                     SETELAN IKUT PINDAH lewat 'setelan.json' di folder yang
                     sama, MENANGNYA PER KUNCI (peta 'setelanWaktu', dicap di
                     dalam TSimpan.setel - satu corong, bukan belasan pemanggil,
@@ -984,7 +1000,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (853 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (855 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

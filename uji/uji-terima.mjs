@@ -6911,6 +6911,36 @@ console.log('\nsinkron empat perangkat');
   cek('catatan dari perangkat pertama sampai ke perangkat kedua',
       await punya(hal2, 'Catatan dari perangkat satu'));
 
+  /* ===== DUA JAM YANG BERBEDA TIDAK PERNAH DIBANDINGKAN =====
+     'tarikCap' menyimpan modifiedTime SPREADSHEET-NYA - jam servernya Google.
+     Dulu, kalau pemeriksaan modifiedTime gagal, waktunya jadi 0 dan yang
+     DICATAT malah Date.now() - jam LOKAL perangkat ini. Sejak saat itu
+     perangkat itu membandingkan jam server dengan jam lokalnya sendiri:
+     spreadsheet yang diubah dua puluh menit lalu punya modifiedTime yang LEBIH
+     KECIL daripada "sekarang" yang terlanjur tercatat, jadi jawabannya selalu
+     "tidak ada yang baru" - dan pulihkan() tidak pernah jalan lagi. Selamanya.
+
+     Yang terlihat di layar justru sehat: pemeriksaannya berhasil, jadi
+     "Terakhir menarik: baru saja" - padahal yang berhasil cuma memeriksanya.
+     Laptop berisi 11 catatan sementara HP berisi 55, dan dua-duanya melapor
+     baik-baik saja. */
+  const capGagal = await hal2.evaluate(async () => {
+    const s = TAlur.setelanUji();
+    await TSimpan.setel('tarikCap', 0);
+    s.tarikCap = 0;
+    const asli = TAwan.waktuBerkas;
+    TAwan.waktuBerkas = () => Promise.reject(new Error('sinyal putus'));
+    await TSinkron.tarik(s, true);
+    TAwan.waktuBerkas = asli;
+    return Number(await TSimpan.setelan('tarikCap')) || 0;
+  });
+  cek('pemeriksaan waktu yang gagal tidak pernah mencatat jam lokal sebagai cap',
+      capGagal === 0, String(capGagal));
+  /* Dan tariknya TETAP JALAN: lebih baik menarik sekali lagi tanpa perlu
+     daripada berhenti menarik selamanya. */
+  cek('dan tariknya tetap jalan walau waktunya tidak terbaca',
+      await punya(hal2, 'Catatan dari perangkat satu'));
+
   /* ALAMATNYA IKUT PINDAH, BUKAN CUMA CATATANNYA. Catatan yang sampai di
      laptop TANPA RAKNYA jatuh semua ke "Belum berlabel" - dan yang terbaca di
      situ bukan "raknya belum ikut", melainkan "aplikasinya kacau". */
