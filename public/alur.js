@@ -309,6 +309,10 @@
        menampilkannya, dari jalan mana pun dia sampai ke sana. */
     if (id !== 'l-utama' && id !== 'l-tulis' && id !== 'l-note' && id !== 'l-galeri') batalPilih();
     if (id === 'l-utama') perbaruiJumlah();
+    /* Bilah sesinya digambar untuk SETIAP layar, bukan cuma waktu Gallery
+       dibuka: kembarannya hidup di layar Drop, dan sesi bisa kedaluwarsa
+       sendiri lewat satu jam sementara layarnya tidak ke mana-mana. */
+    gambarLengket();
     /* Digambar ulang tiap kali layarnya tampil, bukan cuma waktu pintunya
        diketuk: jalan pulang yang paling sering dari layar tulis adalah tombol
        kembali, dan daftar yang tidak ikut segar di situ memperlihatkan judul
@@ -1724,25 +1728,16 @@
          Garis putus-putus yang membedakannya - bentuk yang di aplikasi ini
          selalu berarti "ini jalan pintas, bukan keadaan". */
       if (j[0] === '*reset' || j[0] === '*kamera') {
-        /* SESI YANG MASIH HIDUP HARUS KELIHATAN DARI SINI JUGA, bukan cuma di
-           Gallery. Cip ini dipakai persis waktu kamu TIDAK sedang di Gallery -
-           jadi bilah sesi di sana tidak pernah terbaca dari sini, dan yang
-           terjadi: kamu memotret, gambarnya langsung masuk tanpa satu
-           pertanyaan pun, dan yang terbaca "kok tidak ditanya foldernya?"
-           padahal jawabannya "karena sudut pandang tadi masih berlaku".
-
-           Sudut pandang yang basi itu satu-satunya kekeliruan di jalur ini
-           yang tidak bisa diperbaiki belakangan - alamatnya masih bisa
-           dipindah kapan saja. Jadi yang dibacakan drivernya, kecil saja:
-           cukup untuk tahu ada yang menyala, tidak cukup untuk menuntut
-           dibaca. */
-        var sesi = j[0] === '*kamera' && lengketHidup()
-          ? '<span class="cip-sesi" data-asli>' + H(driverLengket) + '</span>' : '';
+        /* CIPNYA TETAP TELANJANG. Sesi yang berjalan dibacakan bilahnya
+           sendiri DI ATAS baris ini (#drop-lengket) - bukan di dalam cipnya.
+           Sempat ditulis di dalam cip, dan akibatnya cip itu jadi yang paling
+           lebar di baris yang menggulir mendatar: dia terdorong keluar layar
+           kanan, dan yang paling perlu terlihat justru jadi yang paling
+           sering tidak kelihatan. */
         return '<button class="saring-cip ' + (j[0] === '*reset' ? 'reset' : 'kamera') +
-               (sesi ? ' bersesi' : '') +
                '" data-jenis="' + j[0] + '" title="' + H(j[1]) +
                '" aria-label="' + H(j[1]) + '">' +
-               '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg>' + sesi + '</button>';
+               '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
       }
       /* ANGKANYA ANGKA HASIL PENCARIAN, bukan angka seluruh timbunan. Yang
          menolong waktu kamu mengetik bukan "aku punya berapa gambar", tapi
@@ -2879,15 +2874,30 @@
      belakangan adalah foto yang berangkat ke AI dengan sudut pandang yang sudah
      berhenti berlaku. Jadi yang perlu kamu periksa sebelum menekan tombol
      kamera cuma satu: apakah "granit" masih yang kamu lihat. */
+  /* DUA TEMPAT, SATU BENTUK. Bilah yang sama digambar di Gallery dan di atas
+     baris cip layar Drop - cip kamera dipakai persis waktu kamu TIDAK sedang
+     di Gallery, jadi bilah di sana tidak pernah terbaca dari sini. Yang
+     terjadi tanpa ini: kamu memotret dari layar Drop, gambarnya langsung
+     masuk tanpa satu pertanyaan pun, dan yang terbaca "kok tidak ditanya
+     foldernya?" - padahal jawabannya "karena sudut pandang tadi masih
+     berlaku".
+
+     Rupanya sengaja sama persis: dua rupa untuk satu keadaan berarti kamu
+     harus belajar membacanya dua kali, dan silang yang letaknya berpindah
+     adalah silang yang meleset. */
   function gambarLengket() {
-    var w = $('#galeri-lengket');
-    if (!w) return;
     var tampil = lengketHidup();
-    w.classList.toggle('sembunyi', !tampil);
-    if (!tampil) { w.innerHTML = ''; return; }
-    w.innerHTML = '<span class="lengket-nama" data-asli>→ ' + H(driverLengket) +
-      '<button class="lengket-buang" data-lengket-buang aria-label="Akhiri sesi">' +
-      '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>';
+    var isi = tampil
+      ? '<span class="lengket-nama" data-asli>→ ' + H(driverLengket) + '</span>' +
+        '<button class="lengket-buang" data-lengket-buang aria-label="Akhiri sesi">' +
+        '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>'
+      : '';
+    ['#galeri-lengket', '#drop-lengket'].forEach(function (sel) {
+      var w = $(sel);
+      if (!w) return;
+      w.classList.toggle('sembunyi', !tampil);
+      w.innerHTML = isi;
+    });
   }
 
   function catatFotoSesi(ids) {
@@ -3280,10 +3290,11 @@
   function pakaiLengket(driver) {
     driverLengket = driver || '';
     driverLengketPada = driver ? Date.now() : 0;
-    /* Cip kameranya ikut digambar ulang: dia hidup di layar Drop, dan sesi
-       biasanya berganti dari layar Gallery - tanpa ini, yang tertulis di cip
-       itu sesi kemarin sampai layarnya kebetulan tergambar ulang. */
-    gambarCipSaring();
+    /* Bilahnya digambar ulang di DUA layar sekaligus. Sesi biasanya berganti
+       dari Gallery, sementara bilah kembarannya hidup di layar Drop - tanpa
+       ini, yang tertulis di sana adalah sesi kemarin sampai layarnya
+       kebetulan tergambar ulang. */
+    gambarLengket();
     return Promise.all([
       TSimpan.setel('driverLengket', driverLengket),
       TSimpan.setel('driverLengketPada', String(driverLengketPada))
@@ -6265,7 +6276,11 @@
       mulaiPilih(!(pilihNyala || jumlahPilih()));
     });
     $('#galeri-cari').addEventListener('input', gambarGaleri);
-    $('#galeri-lengket').addEventListener('click', function (ev) {
+    /* Satu penanganan untuk dua bilah: silang di layar Drop menjatuhkan sesi
+       yang sama persis, dan silang yang cuma bekerja di satu layar lebih
+       buruk daripada tidak ada - dia terlihat bisa ditekan. */
+    ['#galeri-lengket', '#drop-lengket'].forEach(function (sel) {
+    $(sel).addEventListener('click', function (ev) {
       if (!ev.target.closest('[data-lengket-buang]')) return;
       pakaiLengket('');
       /* Barisan foto sesi ikut hilang: dia kabar tentang sesi yang barusan
@@ -6274,6 +6289,7 @@
       fotoSesi = [];
       gambarGaleri();
       pesan('Sesi ditutup');
+    });
     });
     $('#galeri-baru').addEventListener('click', function (ev) {
       if (ev.target.closest('[data-baru-buang]')) { fotoSesi = []; gambarGaleri(); return; }
@@ -6891,6 +6907,11 @@
          dan justru itu keadaan yang dilayaninya. */
       gambarCipRuang();
       gambarCipSaring();
+      /* Bilah sesinya ikut digambar di pembukaan: sesi kemarin yang masih
+         berumur kurang dari sejam tetap berlaku, dan yang tidak terlihat di
+         pembukaan berarti jepretan pertama hari ini mewarisi sudut pandang
+         yang tidak pernah kamu sadari masih menyala. */
+      gambarLengket();
 
       /* ===== TIDAK ADA GOOGLE SEBELUM LAYARNYA TERGAMBAR =====
          Keempat pekerjaan di bawah ini menyentuh Google, dan dulu ketiganya

@@ -6218,18 +6218,31 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
      jawabannya "karena sudut pandang tadi masih berlaku". */
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(350);
-  cek('cip kamera di layar Drop membacakan sesi yang masih hidup',
-      (await hal.locator('#saring-cip .saring-cip.kamera .cip-sesi').count()) === 1 &&
-      (await hal.innerText('#saring-cip .saring-cip.kamera')).indexOf('granit motif') >= 0,
-      await hal.innerText('#saring-cip'));
-  /* Barisnya tetap SATU baris - dia menggulir mendatar, tidak pernah melipat.
-     Yang melipat mendorong seluruh dok naik di bawah jempol. */
-  cek('dan barisnya tetap satu baris, tidak melipat',
+  cek('layar Drop punya bilah sesi yang sama, di atas baris cip',
+      (await hal.locator('#drop-lengket').isVisible()) &&
+      (await hal.innerText('#drop-lengket')).indexOf('granit motif') >= 0,
+      await hal.innerText('#drop-lengket'));
+  /* DIA TIDAK BOLEH IKUT BARIS CIP. Sempat ditulis di dalam cip kameranya
+     sendiri, dan cip itu jadi yang paling lebar di baris yang menggulir
+     mendatar: terdorong keluar layar kanan, dan yang paling perlu terlihat
+     jadi yang paling sering tidak kelihatan. */
+  cek('bilahnya duduk DI ATAS baris cip, bukan di dalamnya',
+      await hal.evaluate(() => {
+        const l = document.querySelector('#drop-lengket').getBoundingClientRect();
+        const c = document.querySelector('#saring-cip').getBoundingClientRect();
+        return l.bottom <= c.top + 1 &&
+               !document.querySelector('#saring-cip #drop-lengket');
+      }));
+  /* Dan tidak ada satu cip pun yang terdorong keluar layar kanan. */
+  cek('seluruh cipnya tetap di dalam layar, tidak ada yang terdorong keluar',
       await hal.evaluate(() => {
         const b = document.querySelector('#saring-cip');
-        const c = [...b.querySelectorAll('.saring-cip')];
-        return c.every((x) => Math.abs(x.getBoundingClientRect().top -
-                                       c[0].getBoundingClientRect().top) < 2);
+        const r = b.getBoundingClientRect();
+        return b.scrollWidth <= Math.ceil(r.width) + 1;
+      }),
+      await hal.evaluate(() => {
+        const b = document.querySelector('#saring-cip');
+        return b.scrollWidth + ' vs ' + b.getBoundingClientRect().width;
       }));
 
   /* "Use last scene set up UNTIL IT DROPPED." Silangnya itu yang menjatuhkan. */
@@ -6243,9 +6256,8 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
       await hal.locator('#galeri-lengket').isHidden());
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(350);
-  cek('dan tulisannya ikut hilang dari cip kamera',
-      (await hal.locator('#saring-cip .saring-cip.kamera .cip-sesi').count()) === 0,
-      await hal.innerText('#saring-cip'));
+  cek('dan bilah kembarannya di layar Drop ikut hilang',
+      await hal.locator('#drop-lengket').isHidden());
   await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
   await hal.waitForTimeout(300);
   /* Barisan fotonya ikut hilang: dia kabar tentang sesi yang barusan kamu
@@ -6254,6 +6266,23 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
   cek('dan barisan foto sesinya ikut hilang bersamanya',
       (await hal.locator('#galeri-baru').isHidden()) &&
       (await hal.evaluate(() => TAlur.fotoSesiUji().length)) === 0);
+
+  /* SILANG DI LAYAR DROP MENJATUHKAN SESI YANG SAMA. Silang yang cuma bekerja
+     di satu layar lebih buruk daripada tidak ada sama sekali - dia terlihat
+     bisa ditekan. */
+  await potret('sesi4b.png');
+  await ketikDriver('granit motif');
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(350);
+  cek('sesi barunya terbaca lagi dari layar Drop',
+      await hal.locator('#drop-lengket').isVisible());
+  await hal.click('#drop-lengket [data-lengket-buang]');
+  await hal.waitForTimeout(450);
+  cek('dan silangnya menjatuhkan sesinya dari sini juga',
+      (await hal.locator('#drop-lengket').isHidden()) &&
+      !(await hal.evaluate(() => TSimpan.setelan('driverLengket'))));
+  await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
+  await hal.waitForTimeout(350);
 
   /* BERDIRI DI DALAM BOARD MENJAWAB "KE MANA", BUKAN "APA YANG KAMU LIHAT".
      Dua pertanyaan, dan menyamakannya adalah kesalahan yang paling mahal di
