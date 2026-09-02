@@ -1728,16 +1728,35 @@
          Garis putus-putus yang membedakannya - bentuk yang di aplikasi ini
          selalu berarti "ini jalan pintas, bukan keadaan". */
       if (j[0] === '*reset' || j[0] === '*kamera') {
-        /* CIPNYA TETAP TELANJANG. Sesi yang berjalan dibacakan bilahnya
-           sendiri DI ATAS baris ini (#drop-lengket) - bukan di dalam cipnya.
-           Sempat ditulis di dalam cip, dan akibatnya cip itu jadi yang paling
-           lebar di baris yang menggulir mendatar: dia terdorong keluar layar
-           kanan, dan yang paling perlu terlihat justru jadi yang paling
-           sering tidak kelihatan. */
+        /* ===== SESI YANG BERJALAN = SATU BADGE DI CIP KAMERANYA =====
+           Dua bentuk sudah dicoba dan dua-duanya salah dengan caranya sendiri:
+           drivernya ditulis DI DALAM cip (cipnya jadi paling lebar di baris
+           yang menggulir mendatar, lalu terdorong keluar layar kanan), lalu
+           bilah sendiri di atas baris cip (satu baris tambahan di dok yang
+           sudah padat - yang dibaca mata cuma kebisingan).
+
+           Yang tersisa dan benar: badge, sekosakata dengan angka saringan yang
+           sudah ada di baris ini. Dia MENUMPANG di atas ikonnya (position
+           absolute), jadi tidak menambah satu piksel pun pada tinggi baris
+           maupun lebar cipnya. Ada badge = ada preset menyala; ketuk badge =
+           preset dijatuhkan.
+
+           Namanya pindah ke title/aria-label, dan itu memang penurunan: yang
+           dijawab badge cuma "ada yang menyala tidak", tidak lagi "apa
+           isinya". Yang menggantikannya kabar sesudah memotret - di situ
+           namanya tertulis penuh, lengkap dengan tombol "Ganti". */
+        var sesi = j[0] === '*kamera' && lengketHidup();
+        var nama = sesi ? j[1] + ' · ' + driverLengket : j[1];
         return '<button class="saring-cip ' + (j[0] === '*reset' ? 'reset' : 'kamera') +
-               '" data-jenis="' + j[0] + '" title="' + H(j[1]) +
-               '" aria-label="' + H(j[1]) + '">' +
-               '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
+               (sesi ? ' bersesi' : '') +
+               '" data-jenis="' + j[0] + '" title="' + H(nama) +
+               '" aria-label="' + H(nama) + '">' +
+               '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg>' +
+               (sesi ? '<span class="cip-sesi" data-lengket-buang' +
+                       ' aria-label="Akhiri sesi kamera">' +
+                       '<svg viewBox="0 0 24 24" class="ik">' +
+                       '<path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></span>' : '') +
+               '</button>';
       }
       /* ANGKANYA ANGKA HASIL PENCARIAN, bukan angka seluruh timbunan. Yang
          menolong waktu kamu mengetik bukan "aku punya berapa gambar", tapi
@@ -2874,30 +2893,27 @@
      belakangan adalah foto yang berangkat ke AI dengan sudut pandang yang sudah
      berhenti berlaku. Jadi yang perlu kamu periksa sebelum menekan tombol
      kamera cuma satu: apakah "granit" masih yang kamu lihat. */
-  /* DUA TEMPAT, SATU BENTUK. Bilah yang sama digambar di Gallery dan di atas
-     baris cip layar Drop - cip kamera dipakai persis waktu kamu TIDAK sedang
-     di Gallery, jadi bilah di sana tidak pernah terbaca dari sini. Yang
-     terjadi tanpa ini: kamu memotret dari layar Drop, gambarnya langsung
-     masuk tanpa satu pertanyaan pun, dan yang terbaca "kok tidak ditanya
-     foldernya?" - padahal jawabannya "karena sudut pandang tadi masih
-     berlaku".
+  /* DUA LAYAR, DUA BENTUK, SATU KEADAAN. Di Gallery ada ruang untuk bilah
+     penuh dengan namanya; di layar Drop tidak - doknya sudah padat, dan satu
+     baris tambahan di situ terbaca sebagai kebisingan, bukan kabar. Jadi di
+     sana keadaan yang sama diwakili satu BADGE di cip kameranya (lihat
+     gambarCipSaring), yang menumpang di atas ikonnya tanpa menambah tinggi
+     satu piksel pun.
 
-     Rupanya sengaja sama persis: dua rupa untuk satu keadaan berarti kamu
-     harus belajar membacanya dua kali, dan silang yang letaknya berpindah
-     adalah silang yang meleset. */
+     Keduanya digambar dari sini supaya tidak pernah ada satu layar yang masih
+     memperlihatkan sesi kemarin. */
   function gambarLengket() {
-    var tampil = lengketHidup();
-    var isi = tampil
-      ? '<span class="lengket-nama" data-asli>→ ' + H(driverLengket) + '</span>' +
-        '<button class="lengket-buang" data-lengket-buang aria-label="Akhiri sesi">' +
-        '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>'
-      : '';
-    ['#galeri-lengket', '#drop-lengket'].forEach(function (sel) {
-      var w = $(sel);
-      if (!w) return;
+    var w = $('#galeri-lengket');
+    if (w) {
+      var tampil = lengketHidup();
       w.classList.toggle('sembunyi', !tampil);
-      w.innerHTML = isi;
-    });
+      w.innerHTML = tampil
+        ? '<span class="lengket-nama" data-asli>→ ' + H(driverLengket) + '</span>' +
+          '<button class="lengket-buang" data-lengket-buang aria-label="Akhiri sesi">' +
+          '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>'
+        : '';
+    }
+    gambarCipSaring();
   }
 
   function catatFotoSesi(ids) {
@@ -3285,6 +3301,19 @@
   function lengketHidup() {
     if (!driverLengket) return false;
     return Date.now() - driverLengketPada < LENGKET_MS;
+  }
+
+  /* Satu tempat, dua pemanggil (silang di Gallery, badge di layar Drop).
+     Menjatuhkan sesi harus berakibat sama persis dari mana pun ditekan;
+     dua salinan berarti suatu hari yang satu lupa membersihkan sesuatu. */
+  function tutupSesiLengket() {
+    pakaiLengket('');
+    /* Barisan foto sesi ikut hilang: dia kabar tentang sesi yang barusan kamu
+       jatuhkan, dan kabar yang hidup lebih lama daripada peristiwanya cuma
+       jadi sisa yang harus dibersihkan sendiri. */
+    fotoSesi = [];
+    gambarGaleri();
+    pesan('Sesi ditutup');
   }
 
   function pakaiLengket(driver) {
@@ -6040,6 +6069,14 @@
     $('#b-terima').addEventListener('click', function (ev) { ev.preventDefault(); });
 
     $('#saring-baris').addEventListener('click', function (ev) {
+      /* DIBACA DULUAN. Badge sesinya duduk DI DALAM tombol kameranya, jadi
+         tanpa ini ketukan di badge tetap terbaca sebagai "buka kamera" - dan
+         satu-satunya jalan keluar dari sesi jadi jalan masuk ke sesi. */
+      if (ev.target.closest('[data-lengket-buang]')) {
+        ev.stopPropagation();
+        tutupSesiLengket();
+        return;
+      }
       var j = ev.target.closest('[data-jenis]');
       if (j) { pilihJenis(j.getAttribute('data-jenis')); return; }
     });
@@ -6276,20 +6313,9 @@
       mulaiPilih(!(pilihNyala || jumlahPilih()));
     });
     $('#galeri-cari').addEventListener('input', gambarGaleri);
-    /* Satu penanganan untuk dua bilah: silang di layar Drop menjatuhkan sesi
-       yang sama persis, dan silang yang cuma bekerja di satu layar lebih
-       buruk daripada tidak ada - dia terlihat bisa ditekan. */
-    ['#galeri-lengket', '#drop-lengket'].forEach(function (sel) {
-    $(sel).addEventListener('click', function (ev) {
+    $('#galeri-lengket').addEventListener('click', function (ev) {
       if (!ev.target.closest('[data-lengket-buang]')) return;
-      pakaiLengket('');
-      /* Barisan foto sesi ikut hilang: dia kabar tentang sesi yang barusan
-         kamu jatuhkan, dan kabar yang hidup lebih lama daripada peristiwanya
-         cuma jadi sisa yang harus dibersihkan sendiri. */
-      fotoSesi = [];
-      gambarGaleri();
-      pesan('Sesi ditutup');
-    });
+      tutupSesiLengket();
     });
     $('#galeri-baru').addEventListener('click', function (ev) {
       if (ev.target.closest('[data-baru-buang]')) { fotoSesi = []; gambarGaleri(); return; }
@@ -6971,6 +6997,16 @@
        sudah pensiun tidak boleh diam-diam kembali lewat sini. */
     entriBaruUji: entriBaru,
     fotoSesiUji: function () { return fotoSesi.slice(); },
+    /* Dua kait uji untuk mengukur tinggi baris cip dengan dan tanpa badge
+       sesinya - satu-satunya cara membuktikan bahwa badge itu memang tidak
+       menambah tinggi, bukan cuma kelihatan begitu. */
+    pakaiLengketUji: pakaiLengket,
+    muatLengketUji: function () {
+      return TSimpan.semuaSetelan().then(function (s) {
+        muatLengket(s);
+        gambarLengket();
+      });
+    },
     pilihLabelUji: pilihLabelDepan,
     daftarLabelUji: daftarLabel,
     /* Cuma untuk uji: memindah layar tanpa lewat tombol, dan memuat ulang
