@@ -1056,7 +1056,19 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     ikon AI pergi di mode Drop begitu ada yang diketik, klip
                     dan Todo pergi di mode AI.
                     CIP KAMERA DI BARIS CIP, DI KANAN RESET - ujung yang paling
-                    dekat jempol. Dia sempat jadi ikon di dalam kotak, di antara
+                    dekat jempol. SESI YANG MASIH HIDUP DIBACAKAN DI CIPNYA,
+                    kecil saja ('.cip-sesi', cipnya melebar - barisnya
+                    menggulir mendatar, jadi aman). Cip ini dipakai persis
+                    waktu kamu TIDAK di Gallery, jadi bilah sesi di sana tidak
+                    pernah terbaca dari sini: yang terjadi kamu memotret,
+                    gambarnya langsung masuk tanpa satu pertanyaan pun, dan
+                    yang terbaca "kok tidak ditanya foldernya?" - padahal
+                    jawabannya "karena sudut pandang tadi masih berlaku".
+                    Sudut pandang basi itu satu-satunya kekeliruan di jalur ini
+                    yang tidak bisa diperbaiki belakangan; alamatnya masih bisa
+                    dipindah kapan saja. Kabar sesudah memotret juga menyebut
+                    DRIVERNYA, bukan alamatnya - "Ganti" cuma bisa ditekan
+                    kalau kamu tahu apa yang sedang diwarisi. Dia sempat jadi ikon di dalam kotak, di antara
                     klip dan Todo, dan di sana dia tidak pernah terbaca sebagai
                     tombol yang MENGHASILKAN sesuatu: dua tetangganya cuma
                     membuka laci. Dia bukan saringan - tanpa angka, tidak pernah
@@ -1099,7 +1111,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (876 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (879 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
