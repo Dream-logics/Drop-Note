@@ -6218,27 +6218,36 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
      jawabannya "karena sudut pandang tadi masih berlaku". */
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(350);
-  cek('layar Drop punya bilah sesi yang sama, di atas baris cip',
-      (await hal.locator('#drop-lengket').isVisible()) &&
-      (await hal.innerText('#drop-lengket')).indexOf('granit motif') >= 0,
-      await hal.innerText('#drop-lengket'));
-  /* DIA TIDAK BOLEH IKUT BARIS CIP. Sempat ditulis di dalam cip kameranya
-     sendiri, dan cip itu jadi yang paling lebar di baris yang menggulir
-     mendatar: terdorong keluar layar kanan, dan yang paling perlu terlihat
-     jadi yang paling sering tidak kelihatan. */
-  cek('bilahnya duduk DI ATAS baris cip, bukan di dalamnya',
-      await hal.evaluate(() => {
-        const l = document.querySelector('#drop-lengket').getBoundingClientRect();
-        const c = document.querySelector('#saring-cip').getBoundingClientRect();
-        return l.bottom <= c.top + 1 &&
-               !document.querySelector('#saring-cip #drop-lengket');
-      }));
-  /* Dan tidak ada satu cip pun yang terdorong keluar layar kanan. */
-  cek('seluruh cipnya tetap di dalam layar, tidak ada yang terdorong keluar',
+  const tinggiBaris = () => hal.evaluate(() =>
+    Math.round(document.querySelector('#saring-baris').getBoundingClientRect().height));
+  const tinggiTanpaSesi = await hal.evaluate(async () => {
+    /* Diukur waktu sesinya sengaja dimatikan sebentar, lalu dinyalakan lagi -
+       supaya yang dibandingkan tinggi baris yang sama, bukan dua layar. */
+    const d = await TSimpan.setelan('driverLengket');
+    const t = await TSimpan.setelan('driverLengketPada');
+    await TAlur.pakaiLengketUji('');
+    const h = Math.round(document.querySelector('#saring-baris').getBoundingClientRect().height);
+    await TSimpan.setel('driverLengket', d);
+    await TSimpan.setel('driverLengketPada', t);
+    await TAlur.muatLengketUji();
+    return h;
+  });
+  cek('cip kamera memakai BADGE, bukan cip atau baris tambahan',
+      (await hal.locator('#saring-cip .saring-cip.kamera .cip-sesi').count()) === 1 &&
+      (await hal.locator('#drop-lengket').count()) === 0);
+  /* BADGE-NYA MENUMPANG DI ATAS IKONNYA, jadi tidak menambah satu piksel pun
+     pada tinggi baris - dan tinggi baris itulah yang dijaga di seluruh dok
+     ini: yang bertambah mendorong doknya naik, dan layar yang bergoyang di
+     bawah jempol adalah harga yang tidak sepadan untuk satu kabar. */
+  cek('dan tidak menambah tinggi baris cipnya sama sekali',
+      (await tinggiBaris()) === tinggiTanpaSesi,
+      (await tinggiBaris()) + ' vs ' + tinggiTanpaSesi);
+  /* Badge-nya di sudut KIRI: cip kamera duduk paling ujung kanan baris, dan
+     badge yang menggantung di kanannya melewati tepi kotak yang menggulir. */
+  cek('badge-nya tidak mendorong satu cip pun keluar layar',
       await hal.evaluate(() => {
         const b = document.querySelector('#saring-cip');
-        const r = b.getBoundingClientRect();
-        return b.scrollWidth <= Math.ceil(r.width) + 1;
+        return b.scrollWidth <= Math.ceil(b.getBoundingClientRect().width) + 1;
       }),
       await hal.evaluate(() => {
         const b = document.querySelector('#saring-cip');
@@ -6256,8 +6265,8 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
       await hal.locator('#galeri-lengket').isHidden());
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(350);
-  cek('dan bilah kembarannya di layar Drop ikut hilang',
-      await hal.locator('#drop-lengket').isHidden());
+  cek('dan badge di cip kameranya ikut hilang',
+      (await hal.locator('#saring-cip .saring-cip.kamera .cip-sesi').count()) === 0);
   await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
   await hal.waitForTimeout(300);
   /* Barisan fotonya ikut hilang: dia kabar tentang sesi yang barusan kamu
@@ -6274,12 +6283,15 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
   await ketikDriver('granit motif');
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(350);
-  cek('sesi barunya terbaca lagi dari layar Drop',
-      await hal.locator('#drop-lengket').isVisible());
-  await hal.click('#drop-lengket [data-lengket-buang]');
+  cek('sesi barunya terbaca lagi dari badge cip kamera',
+      (await hal.locator('#saring-cip .saring-cip.kamera .cip-sesi').count()) === 1);
+  /* BADGE-NYA DIBACA DULUAN. Dia duduk DI DALAM tombol kameranya, jadi tanpa
+     penjaga itu ketukan di badge tetap terbaca "buka kamera" - dan
+     satu-satunya jalan keluar dari sesi jadi jalan masuk ke sesi. */
+  await hal.click('#saring-cip .saring-cip.kamera .cip-sesi');
   await hal.waitForTimeout(450);
-  cek('dan silangnya menjatuhkan sesinya dari sini juga',
-      (await hal.locator('#drop-lengket').isHidden()) &&
+  cek('mengetuk badge-nya menjatuhkan sesi, bukan membuka kamera',
+      (await hal.locator('#saring-cip .saring-cip.kamera .cip-sesi').count()) === 0 &&
       !(await hal.evaluate(() => TSimpan.setelan('driverLengket'))));
   await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
   await hal.waitForTimeout(350);

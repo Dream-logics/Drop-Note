@@ -837,6 +837,37 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
   background:var(--g);color:var(--m);
   font-size:9px;font-weight:700;line-height:1;
 }
+/* ===== BADGE SESI KAMERA =====
+   Kosakata yang sama dengan angka saringan di sebelahnya: menumpang DI ATAS
+   ikonnya, bukan di sebelahnya. Karena dia absolute, dia tidak menambah satu
+   piksel pun pada tinggi baris maupun lebar cipnya - dan tinggi baris itulah
+   yang sedang dijaga di seluruh dok ini.
+
+   Di sudut KIRI, bukan kanan: cip kamera duduk paling ujung kanan baris, dan
+   badge yang menggantung di kanannya akan melewati tepi kotak yang menggulir.
+
+   Terisi penuh warna aksen, bukan cuma bergaris: yang dijawab bentuk ini
+   "ADA yang menyala", dan yang harus terbaca sekilas tidak boleh setipis
+   hiasan. */
+.saring-cip .cip-sesi{
+  position:absolute;top:-4px;left:-5px;
+  display:flex;align-items:center;justify-content:center;
+  width:16px;height:16px;border-radius:50%;
+  background:var(--a);color:var(--at);
+  box-shadow:0 0 0 2px var(--g);
+}
+.saring-cip .cip-sesi .ik{width:9px;height:9px;stroke-width:3.4}
+/* Sasarannya dilebarkan tanpa menambah rupanya - tapi TIDAK sampai menelan
+   cip kameranya: yang di bawah badge ini tombol yang dipakai tiap hari, dan
+   jalan keluar yang mencuri ketukan jalan masuk lebih buruk daripada jalan
+   keluar yang harus dibidik. */
+.saring-cip .cip-sesi::after{content:'';position:absolute;inset:-6px}
+/* Cipnya sendiri ikut menyala: badge saja terbaca sebagai hiasan di sudut,
+   sementara yang sedang berlaku itu KAMERANYA. */
+.saring-cip.kamera.bersesi{
+  border-style:solid;border-color:var(--a);
+  background:color-mix(in srgb, var(--a) 12%, transparent);
+}
 .saring-cip.sepi{opacity:.4}
 .saring-cip.nyala .saring-angka{color:var(--a)}
 /* Reset dibedakan: dia satu-satunya cip di baris ini yang MENGHAPUS keadaan,
@@ -905,12 +936,6 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    bawahnya karena dia tentang yang sedang kamu cari. */
 .dok-bawah .ruang-baris{order:-2;width:100%;padding-bottom:4px}
 .dok-bawah .saring-baris{order:-1;width:100%;padding-bottom:6px}
-/* DI ATAS BARIS CIP, dan 'order' yang mengurusnya - bukan urutan di HTML.
-   Kepala doknya flex yang boleh melipat, dan baris cip sudah dinaikkan ke
-   puncaknya lewat order:-1; sebuah bilah yang cuma ditulis lebih dulu di HTML
-   tetap mendarat DI BAWAHNYA. Lebarnya dibiarkan mengikuti isinya: tetangganya
-   selebar penuh, jadi dia sudah pasti sendirian di barisnya. */
-.dok-bawah .drop-lengket{order:-2;margin:0 0 6px}
 
 
 /* Judul bagian di dalam daftar tugas. Redup dan kecil: dia pembatas, bukan
@@ -1527,34 +1552,6 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
   display:flex;align-items:center;justify-content:center;cursor:pointer;
 }
 .galeri-lengket .lengket-buang .ik{width:16px;height:16px}
-
-/* BILAH SESI DI LAYAR DROP. Rupanya sama persis dengan yang di Gallery - dua
-   rupa untuk satu keadaan berarti dia harus dibaca dua kali - tapi dia IKUT
-   ALIRAN, bukan melayang: doknya sudah menempel di bawah, dan bilah melayang
-   di atas dok yang menempel cuma akan menutupi baris cipnya sendiri.
-
-   Dia tidak ikut baris cip, dan itu sebabnya dia ada di sini: waktu drivernya
-   ditulis di dalam cip kamera, cip itu jadi yang paling lebar di baris yang
-   menggulir mendatar - terdorong keluar layar kanan, dan yang paling perlu
-   terlihat jadi yang paling sering tidak kelihatan. */
-.drop-lengket{
-  display:flex;align-items:center;gap:6px;
-  align-self:flex-start;max-width:100%;margin:0 0 7px;
-  padding:5px 6px 5px 11px;border-radius:16px;
-  border:1px dashed var(--a);background:var(--p);color:var(--a);
-  font-size:12px;
-}
-.drop-lengket .lengket-nama{
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
-/* Sasarannya penuh walau rupanya kecil - ini dipakai satu tangan, dan silang
-   yang meleset berarti sesi yang tidak pernah bisa dijatuhkan. */
-.drop-lengket .lengket-buang{
-  width:30px;height:30px;margin:-5px -6px -5px 0;
-  border:0;background:none;color:var(--m);
-  display:flex;align-items:center;justify-content:center;cursor:pointer;
-}
-.drop-lengket .lengket-buang .ik{width:15px;height:15px}
 #l-galeri.mode-pilih .galeri-lengket{display:none}
 
 /* Doknya melayang di atas isinya, jadi petak terakhir harus punya ruang untuk
