@@ -59,6 +59,44 @@
     };
   }
 
+  /* ===== SATU RUMAH, DAN DIPERIKSA ULANG =====
+     rumah() memakai sheetId yang sudah dipatok dan TIDAK PERNAH memeriksanya
+     lagi. Itu benar sehari-hari, dan sekali seumur hidup itu bencana: kalau
+     dua perangkat pernah membuat rumahnya masing-masing - dan itu persis yang
+     terjadi selama Client ID-nya masih salah, waktu tidak ada satu pun yang
+     bisa melihat punya yang lain - maka keduanya terpatok SELAMANYA ke
+     spreadsheet yang berbeda.
+
+     Yang terlihat di layar: dua perangkat sehat sempurna. Dorongan berhasil,
+     tarikan berhasil, "belum terkirim: 0" di dua-duanya. HP berisi 55 catatan,
+     laptop 11, dan tidak ada satu baris pun yang menyebut kenapa.
+
+     Jadi rumahnya diperiksa ulang berkala. Yang menang tetap YANG TERTUA -
+     aturan yang sama dengan cariAtauBuat, jadi semua perangkat sampai pada
+     jawaban yang sama tanpa perlu berunding. Yang kalah TIDAK dihapus: isinya
+     catatan sungguhan, dan yang lokal akan didorong ulang ke rumah yang benar
+     (tulisBaris menimpa berdasarkan id, jadi tidak ada yang berganda). */
+  var JEDA_PERIKSA_RUMAH = 60 * 60 * 1000;
+
+  function samakanRumah(setelan) {
+    if (!setelan.folderAkar) return Promise.resolve(false);
+    var lalu = Number(setelan.rumahPeriksa) || 0;
+    if (Date.now() - lalu < JEDA_PERIKSA_RUMAH) return Promise.resolve(false);
+    return TAwan.rumahKanonik(setelan).then(function (id) {
+      return catat(setelan, 'rumahPeriksa', Date.now()).then(function () {
+        if (!id || id === setelan.folderAkar) return false;
+        /* Pindah rumah: patokan lama dilepas, lalu siapkanRumah menemukan yang
+           tertua sendiri. Dua batas air ikut dinolkan - yang lokal harus naik
+           lagi ke rumah baru, dan seluruh isi rumah baru harus turun. */
+        return Promise.all([
+          catat(setelan, 'folderAkar', ''), catat(setelan, 'folderBerkas', ''),
+          catat(setelan, 'sheetId', ''), catat(setelan, 'sheetTab', ''),
+          catat(setelan, 'cadanganSampai', 0), catat(setelan, 'tarikCap', 0)
+        ]).then(function () { return true; });
+      });
+    }).catch(function () { return false; });
+  }
+
   function rumah(setelan) {
     if (setelan.sheetId && setelan.folderBerkas) {
       return Promise.resolve({
@@ -421,7 +459,9 @@
     if (menarik || !nyala(setelan)) return Promise.resolve(0);
     menarik = true;
     var sarang = null, ubah = 0;
-    return rumah(setelan).then(function (r) {
+    return samakanRumah(setelan).then(function () {
+      return rumah(setelan);
+    }).then(function (r) {
       sarang = r;
       return sinkronSetelan(setelan, sarang).catch(function () { return 0; });
     }).then(function (n) {
@@ -485,6 +525,7 @@
 
   global.TSinkron = {
     putaran: putaran, pulihkan: pulihkan, tarik: tarik, coba: coba, rumah: rumah,
+    samakanRumahUji: samakanRumah,
     nyala: nyala, belumTerkirim: belumTerkirim,
     pipihkan: pipihkan, mekarkan: mekarkan,
     gabungSetelan: gabungSetelan, KUNCI_SINKRON: KUNCI_SINKRON
