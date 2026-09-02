@@ -428,12 +428,33 @@
       ubah += (n || 0);
       return TAwan.waktuBerkas(setelan, sarang.sheetId).catch(function () { return 0; });
     }).then(function (waktu) {
-      var lalu = Number(setelan.tarikSampai) || 0;
+      /* ===== DUA JAM YANG BERBEDA TIDAK PERNAH DIBANDINGKAN =====
+         'tarikCap' menyimpan modifiedTime SPREADSHEET-NYA - jam servernya
+         Google. Dulu, kalau pemeriksaan modifiedTime gagal (sinyal putus,
+         berkasnya sedang dikunci, medan apa pun), waktu-nya jadi 0 dan yang
+         DICATAT malah Date.now() - jam LOKAL perangkat ini.
+
+         Sejak saat itu perangkat itu membandingkan jam server dengan jam
+         lokalnya sendiri. Spreadsheet yang diubah HP dua puluh menit lalu
+         punya modifiedTime yang LEBIH KECIL daripada "sekarang" yang terlanjur
+         tercatat, jadi jawabannya selalu "tidak ada yang baru" - dan pulihkan()
+         tidak pernah dijalankan lagi. Selamanya.
+
+         Yang terlihat di layar justru sehat: pemeriksaannya berhasil, jadi
+         "Terakhir menarik: baru saja" - padahal yang berhasil cuma
+         memeriksanya, bukan menariknya. Laptop berisi 11 catatan sementara HP
+         berisi 55, dan dua-duanya melapor baik-baik saja.
+
+         Sekarang capnya cuma diisi kalau waktunya MEMANG dari Google. Kalau
+         tidak terbaca, tariknya tetap jalan dan capnya dibiarkan - lebih baik
+         menarik sekali lagi tanpa perlu daripada berhenti menarik selamanya. */
+      var lalu = Number(setelan.tarikCap) || 0;
       if (!paksa && waktu && waktu <= lalu) return 0;
       return pulihkan(setelan).then(function (n) {
         /* Batas airnya dimajukan SESUDAH berhasil, bukan sebelum: tarikan yang
            putus di tengah harus diulang, bukan dilewati. */
-        return catat(setelan, 'tarikSampai', waktu || Date.now()).then(function () { return n; });
+        if (!waktu) return n;
+        return catat(setelan, 'tarikCap', waktu).then(function () { return n; });
       });
     }).then(function (n) {
       ubah += (n || 0);
