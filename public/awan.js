@@ -429,6 +429,20 @@
      terjadi, karena satu-satunya cara dua perangkat berpisah adalah keduanya
      membuat rumah sendiri pada saat masing-masing belum bisa melihat punya
      yang lain. */
+  /* BERAPA RUMAH YANG TERLIHAT DARI PERANGKAT INI. Satu angka, dan dia
+     memutus pertanyaan yang tidak bisa dijawab dari mana pun:
+
+       2 di dua perangkat  -> mereka saling melihat, penyatuan rumah bisa
+                              bekerja lewat pencarian nama.
+       1 di dua perangkat  -> mereka BUTA satu sama lain. Pencarian nama tidak
+                              akan pernah menyatukan mereka, berapa kali pun
+                              dijalankan, dan yang harus diganti cara
+                              menemukannya - bukan kapan memeriksanya. */
+  function hitungRumah(setelan) {
+    return cariSemua(setelan, TBawaan.nama, 'application/vnd.google-apps.folder', null)
+      .then(function (ada) { return ada.length; });
+  }
+
   function rumahKanonik(setelan) {
     return cariSemua(setelan, TBawaan.nama, 'application/vnd.google-apps.folder', null)
       .then(function (ada) {
@@ -674,6 +688,7 @@
     clientIdUji: clientId,
     siapa: siapa,
     siapkanRumah: siapkanRumah, rumahKanonik: rumahKanonik,
+    hitungRumah: hitungRumah,
     tulisBaris: tulisBaris, bacaSemuaBaris: bacaSemuaBaris, hapusBaris: hapusBaris,
     unggahBerkas: unggahBerkas, unduhBerkas: unduhBerkas, hapusBerkas: hapusBerkas,
     cariBerkas: cariBerkas, tulisJson: tulisJson, bacaJson: bacaJson,

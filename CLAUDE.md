@@ -735,6 +735,19 @@ public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
 public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
                     dikunci, judul & board tetap terbuka supaya masih bisa
                     ditemukan. Yang terkunci tidak pernah dikirim ke AI
+public/sinkron.js   NISANNYA DITULIS, BUKAN DIBUANG. Menghapus dulu membuang
+                    BARISNYA dari spreadsheet lalu membuangnya dari HP -
+                    perangkat lain yang sudah terlanjur punya catatan itu tidak
+                    pernah tahu apa-apa, karena baris yang hilang dari tabel
+                    tidak memberi tahu siapa pun bahwa dia pernah ada. Jumlahnya
+                    menyimpang PERMANEN, dan menyimpangnya ke arah yang paling
+                    membingungkan: HP 4, laptop 6, dua-duanya melapor sinkron.
+                    Sekarang barisnya ditulis ulang sebagai NISAN (id, jenis,
+                    dihapus=true, waktu penghapusannya; isinya dikosongkan),
+                    mekarkan() membaca 'dihapus' apa adanya - bukan dipaksa
+                    false - dan pulihkan() menghapusnya di perangkat ini. Yang
+                    belum pernah ada di sini dilewati: tidak ada yang perlu
+                    dihapus.
 public/sinkron.js   SINKRON DUA ARAH lewat Drive; tidak pernah di jalur drop.
                     Dulu cadangan satu arah, dan itu benar selama ini cuma
                     aplikasi HP. Dia dipakai di EMPAT perangkat (HP, tablet,
@@ -1016,7 +1029,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (859 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (864 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

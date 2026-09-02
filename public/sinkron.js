@@ -156,7 +156,10 @@
          lagi bersamanya. */
       rakLepas: benar(r.rakLepas),
       album: r.album || '', sumber: r.sumber || '', driver: r.driver || '',
-      dihapus: false, riwayat: urai(r.riwayat, []), thumb: ''
+      /* DIBACA APA ADANYA, bukan dipaksa false. Nisan yang turun dari awan
+         adalah satu-satunya cara perangkat ini tahu ada yang dihapus di
+         perangkat lain. */
+      dihapus: benar(r.dihapus), riwayat: urai(r.riwayat, []), thumb: ''
     };
   }
 
@@ -199,12 +202,38 @@
     });
   }
 
+  /* NISANNYA DITULIS, BUKAN DIBUANG. Ini cacat yang paling sunyi dari semua:
+     menghapus di HP membuang BARISNYA dari spreadsheet, lalu membuangnya dari
+     HP. Perangkat lain yang sudah terlanjur punya catatan itu tidak pernah
+     tahu apa-apa - baris yang hilang dari tabel tidak memberi tahu siapa pun
+     bahwa dia pernah ada.
+
+     Akibatnya jumlahnya menyimpang PERMANEN, dan menyimpangnya persis ke arah
+     yang paling membingungkan: HP 4, laptop 6, dua-duanya melapor sinkron.
+     Yang dihapus di satu perangkat hidup selamanya di perangkat lain.
+
+     Jadi barisnya ditulis ulang sebagai NISAN - id, jenis, dihapus=true, dan
+     waktu penghapusannya - bukan dihapus. Perangkat lain menarik nisan itu dan
+     menghapusnya di rumahnya sendiri (lihat pulihkan). Barisnya tetap kecil:
+     seluruh isinya dikosongkan, yang tersisa cuma kabar bahwa dia sudah
+     tiada. */
+  function nisanBaris(e) {
+    return TAwan.KOLOM.map(function (k) {
+      if (k === 'id') return String(e.id);
+      if (k === 'jenis') return e.jenis || 'teks';
+      if (k === 'dihapus') return 'true';
+      if (k === 'diubah') return String(e.diubah || Date.now());
+      if (k === 'dibuat') return String(e.dibuat || 0);
+      return '';
+    });
+  }
+
   function bersihkanNisan(setelan, sarang) {
     return TSimpan.semua().then(function (semua) {
       var mati = semua.filter(function (e) { return e.dihapus; });
       if (!mati.length) return 0;
 
-      return TAwan.hapusBaris(setelan, sarang, mati.map(function (e) { return e.id; }))
+      return TAwan.tulisBaris(setelan, sarang, mati.map(nisanBaris))
         .then(function () {
           return Promise.all(mati.map(function (e) {
             return e.driveId ? TAwan.hapusBerkas(setelan, e.driveId) : null;
@@ -436,6 +465,19 @@
           /* Yang di HP menang kalau sama baru atau lebih baru. Memulihkan
              tidak boleh memundurkan tulisan yang belum sempat naik. */
           if (lama && (lama.diubah || 0) >= (baru.diubah || 0)) return;
+          /* NISAN: yang dihapus di perangkat lain ikut dihapus di sini. Kalau
+             tidak, yang sudah dibuang hidup selamanya di perangkat yang
+             kebetulan sudah memilikinya - dan itu penyakit yang justru mau
+             disembuhkan aplikasi ini. Yang belum pernah ada di sini dilewati
+             saja: tidak ada yang perlu dihapus. */
+          if (baru.dihapus) {
+            if (!lama) return;
+            tulis.push(Promise.all([
+              lama.berkasId ? TSimpan.hapusBerkas(lama.berkasId) : null,
+              TSimpan.hapus(lama.id)
+            ]));
+            return;
+          }
           tulis.push(TSimpan.taruh(baru));
         });
         return Promise.all(tulis).then(function () { return tulis.length; });

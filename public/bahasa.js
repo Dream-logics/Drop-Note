@@ -419,6 +419,7 @@
     'Percobaan terakhir gagal:': 'Last attempt failed:',
     'Terakhir menarik:': 'Last pulled in:',
     'Rumah di Drive:': 'Home on Drive:',
+    'terlihat:': 'visible:',
     '(belum ada)': '(none yet)',
     'Tarikan terakhir gagal:': 'Last pull failed:',
     'Kiriman terakhir gagal:': 'Last send failed:',
