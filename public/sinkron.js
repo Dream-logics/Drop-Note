@@ -189,6 +189,16 @@
                                       e.namaBerkas || 'berkas', e.tipeBerkas)
               .then(function (id) {
                 e.driveId = id;
+                /* DIUBAH IKUT NAIK, dan ini bukan kosmetik. Barisnya didorong
+                   berdasarkan 'diubah' > batas air; hanya BERKAS_SEKALI berkas
+                   yang naik per putaran, jadi foto keempat dan seterusnya
+                   barisnya sudah terlanjur terkirim TANPA driveId - lalu
+                   berkasnya naik di putaran berikutnya dan, tanpa baris ini,
+                   id-nya tidak pernah menyusul ke tabel. Yang terjadi di
+                   perangkat lain: entrinya lengkap, judulnya benar, boardnya
+                   benar, dan gambarnya kosong SELAMANYA - tanpa satu pesan
+                   galat pun, di kedua perangkat. */
+                e.diubah = Date.now();
                 /* Baru dibuang SETELAH id-nya di tangan. Kalau urutannya
                    dibalik, satu sinyal putus berarti berkasnya lenyap. */
                 return TSimpan.hapusBerkas(e.berkasId).then(function () {

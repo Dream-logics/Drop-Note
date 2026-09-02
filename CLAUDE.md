@@ -735,6 +735,33 @@ public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
 public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
                     dikunci, judul & board tetap terbuka supaya masih bisa
                     ditemukan. Yang terkunci tidak pernah dikirim ke AI
+public/sinkron.js   GAMBAR YANG LAHIR DI PERANGKAT LAIN PUNYA JALUR MENGGAMBAR
+                    SENDIRI, dan sebelum ini dia tidak ada. Foto naik ke Drive
+                    lalu blob-nya DIBUANG dari pengirimnya, dan thumbnail-nya
+                    tidak ikut tabel (dataURL puluhan kilobyte kali dua puluh
+                    ribu tidak muat di satu spreadsheet). Jadi yang sampai ke
+                    perangkat kedua entri utuh - judul, board, deskripsi,
+                    semuanya benar - dengan 'driveId' saja dan tanpa satu byte
+                    gambar. petakHtml/kartuHtml sekarang menggambar
+                    'data-drive' untuk keadaan itu, dan pasangGambarKartu
+                    mengunduhnya (blobDariDrive, sekali per driveId per sesi)
+                    lalu MENULIS thumbnail-nya ke entri lokal - tanpa menyentuh
+                    'diubah', karena thumbnail bukan suntingan dan menaikkannya
+                    berarti entri itu didorong ulang tiap kali pertama dilihat
+                    di perangkat baru.
+                    Yang terbaca kalau jalurnya tidak ada bukan "gambarnya
+                    belum diunduh" tapi "sinkronnya rusak": petak kosong adalah
+                    laporan yang SALAH tentang keadaan yang BENAR, dan itu
+                    lebih buruk daripada galat - galat menyuruhmu berhenti,
+                    petak kosong menyuruhmu refresh dan reconnect selamanya.
+                    'diubah' IKUT NAIK BEGITU driveId DIDAPAT (unggahAntre).
+                    Barisnya didorong berdasarkan 'diubah' > batas air, tapi
+                    cuma BERKAS_SEKALI (3) berkas yang naik per putaran - jadi
+                    foto keempat dan seterusnya barisnya sudah terlanjur
+                    terkirim TANPA driveId, dan tanpa cap baru itu id-nya tidak
+                    pernah menyusul ke tabel. Akibatnya permanen dan sunyi:
+                    entrinya lengkap di perangkat lain, gambarnya kosong
+                    SELAMANYA, dan kedua perangkat melapor sinkron.
 public/sinkron.js   NISANNYA DITULIS, BUKAN DIBUANG. Menghapus dulu membuang
                     BARISNYA dari spreadsheet lalu membuangnya dari HP -
                     perangkat lain yang sudah terlanjur punya catatan itu tidak
@@ -1049,7 +1076,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (869 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (873 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
