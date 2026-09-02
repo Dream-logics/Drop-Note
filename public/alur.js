@@ -5356,10 +5356,22 @@
              sini". Tanpa waktu MENARIK, satu-satunya yang kelihatan cuma arah
              keluar - dan perangkat yang rajin mendorong tapi tidak pernah
              menarik tetap terlihat sehat sempurna. */
-          kotak.innerHTML = 'Terakhir menarik: <b>' + H(waktuPanjang(s.tarikBerhasil)) + '</b>' +
+          /* PENANDA RUMAH, dan ini bukan hiasan teknis. Dua perangkat yang
+             sama-sama sehat tapi memakai spreadsheet BERBEDA akan terlihat
+             sempurna dari dua-duanya - dorongannya berhasil, tarikannya
+             berhasil, isinya tetap tidak pernah bertemu. Tidak ada satu pun
+             baris lain di layar ini yang bisa membedakan keadaan itu dari
+             sinkron yang benar.
+             Enam huruf terakhir cukup: yang dibandingkan mata di dua layar,
+             bukan disalin. */
+          var rumah = String(s.sheetId || '');
+          kotak.innerHTML = 'Rumah di Drive: <b data-asli>' +
+              H(rumah ? '…' + rumah.slice(-6) : '(belum ada)') + '</b>' +
+            '<br>Terakhir menarik: <b>' + H(waktuPanjang(s.tarikBerhasil)) + '</b>' +
             '<br>Terakhir mengirim: <b>' + H(waktuPanjang(s.cadanganBerhasil)) + '</b>' +
             ' · belum terkirim: <b>' + n + '</b>' +
-            (s.cadanganGalat ? '<br>Percobaan terakhir gagal: ' + H(s.cadanganGalat) : '');
+            (s.tarikGalat ? '<br>Tarikan terakhir gagal: ' + H(s.tarikGalat) : '') +
+            (s.cadanganGalat ? '<br>Kiriman terakhir gagal: ' + H(s.cadanganGalat) : '');
         });
       }
     }
