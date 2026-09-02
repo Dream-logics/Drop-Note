@@ -770,6 +770,16 @@ public/sinkron.js   SINKRON DUA ARAH lewat Drive; tidak pernah di jalur drop.
                     menunggu jam. Sekarang sundulNaik memanggil
                     putaranCadangan(true) - yang menahan lajunya sudah ada dan
                     sudah cukup: jeda 8 detik di sundulNaik sendiri.
+                    KEMBALI MELIHAT LAYARNYA ADALAH PERMINTAANNYA, dan itu
+                    yang menggantikan tombol "tarik sekarang". Waktu kamu
+                    menoleh ke Cortex, kamu sedang mencari sesuatu yang barusan
+                    kamu kirim dari perangkat lain - jadi tarikannya DIPAKSA di
+                    situ, tidak menunggu penahan setengah menit. Penahan itu
+                    untuk denyut berkala, bukan untuk mata yang baru menoleh.
+                    Tombol khusus tidak dipasang dan jangan dipasang: yang
+                    lambat ada di sisi PENERIMA, dan tombol di pengirim tidak
+                    bisa menyuruh perangkat lain menarik. Yang bisa cuma
+                    gerakan yang memang sudah kamu lakukan.
                     EMPAT pemicunya: waktu aplikasinya dibuka, waktu kembali
                     dari aplikasi lain (di HP PWA jarang benar-benar ditutup),
                     DENYUT BERKALA tiap 45 detik selama layarnya terlihat
@@ -1039,7 +1049,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (867 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (869 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
