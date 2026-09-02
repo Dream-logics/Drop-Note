@@ -44,10 +44,17 @@
      tergambar dan jempolnya sudah bisa mengetik; tidak cukup lama untuk terasa
      sebagai "cadangannya tidak jalan". */
   var JEDA_AWAN_AWAL = 1500;
-  /* Denyut sinkron selama layarnya hidup. Dua menit: cukup rapat supaya
-     laptop yang dibiarkan terbuka tidak pernah basi, cukup jarang supaya
-     tabelnya tidak ditarik puluhan kali sejam. */
-  var DENYUT_SINKRON = 45 * 1000;
+  /* Denyut sinkron selama layarnya hidup - dan CUMA selama terlihat; menarik
+     untuk layar yang tidak dilihat siapa pun cuma memakan baterai.
+
+     Lima belas detik, turun dari empat puluh lima. Satu denyut itu SATU
+     panggilan modifiedTime beberapa ratus byte, dan tabelnya baru dibaca
+     kalau jawabannya memang berubah - jadi yang dibayar tetap sekecil dulu.
+     Yang dibeli: laptop yang tabnya terbuka di sebelahmu memperlihatkan foto
+     dari HP dalam hitungan detik, bukan setengah menit. Aplikasi tanpa server
+     tidak bisa DIDORONG seperti Sheets atau Form - yang bisa cuma menanya
+     lebih sering, dan menanya di sini memang murah. */
+  var DENYUT_SINKRON = 15 * 1000;
 
   /* Momen paling murah untuk melabeli adalah tepat SESUDAH catatan jatuh:
      HP masih di tangan, sinyal masih menyala. Menunggu putaran 3 menit membuat
@@ -5886,7 +5893,7 @@
      dibeli dengannya besar - foto yang diambil di jalan muncul di laptop
      dalam hitungan detik, bukan menit. Yang menjaga dari berulang-ulang tetap
      ada; yang dikurangi cuma jaraknya. */
-  var JEDA_TARIK = 30000;
+  var JEDA_TARIK = 10000;
 
   function sundulNaik() {
     if (!TSinkron.nyala(setelanSaat)) return;

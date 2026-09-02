@@ -25,6 +25,7 @@
   var SEKALI = 100;              /* baris per kiriman */
   var POTONG_MAKS = 6;
   var BERKAS_SEKALI = 3;         /* unggahan per putaran; sisanya menyusul */
+  var NISAN_SEKALI = 25;         /* nisan per putaran; sisanya menyusul */
   /* Dorongan berkala. Turun dari 30 menit ke 5: dengan empat perangkat,
      setengah jam berarti catatan yang ditulis di laptop belum ada di HP waktu
      kamu sudah berdiri di lokasi. Dorongan yang dipicu perubahan (lihat
@@ -238,16 +239,29 @@
     });
   }
 
+  /* DIBATASI, dan batasnya bukan kehati-hatian yang berlebihan. Membersihkan
+     puluhan catatan uji sekaligus melahirkan satu kiriman raksasa DI DEPAN
+     antrean - dan kalau kiriman itu ditolak sekali saja (terlalu besar, laju
+     dibatasi, sinyal putus di tengah), seluruh putaran ikut mati sebelum satu
+     pun catatan baru sempat berangkat. Nisannya juga tidak pernah terhapus
+     dari perangkat ini, jadi lima menit lagi dia mencoba lagi dengan kiriman
+     yang sama besarnya, dan gagal dengan cara yang sama. Selamanya. */
   function bersihkanNisan(setelan, sarang) {
     return TSimpan.semua().then(function (semua) {
-      var mati = semua.filter(function (e) { return e.dihapus; });
+      var mati = semua.filter(function (e) { return e.dihapus; }).slice(0, NISAN_SEKALI);
       if (!mati.length) return 0;
 
       return TAwan.tulisBaris(setelan, sarang, mati.map(nisanBaris))
         .then(function () {
-          return Promise.all(mati.map(function (e) {
-            return e.driveId ? TAwan.hapusBerkas(setelan, e.driveId) : null;
-          }));
+          /* BERURUTAN, bukan Promise.all. Dua puluh lima penghapusan Drive
+             yang berangkat berbarengan adalah cara paling cepat kena batas
+             laju - dan yang dibayar bukan cuma penghapusan itu, tapi token
+             dan kuota yang dipakai kiriman sesudahnya. */
+          return mati.reduce(function (rantai, e) {
+            return rantai.then(function () {
+              return e.driveId ? TAwan.hapusBerkas(setelan, e.driveId) : null;
+            });
+          }, Promise.resolve());
         })
         .then(function () {
           return Promise.all(mati.map(function (e) {
@@ -273,9 +287,26 @@
       .then(function () { return rumah(setelan); })
       .then(function (r) {
         sarang = r;
-        return bersihkanNisan(setelan, sarang);
+        /* ===== TIAP TAHAP BERDIRI SENDIRI =====
+           Dulu satu putaran adalah satu rantai: bersihkan nisan -> unggah
+           berkas -> dorong baris. Satu rantai berarti satu tahap yang gagal
+           membunuh SEMUA tahap sesudahnya, diam-diam.
+
+           Yang terjadi di lapangan persis itu: puluhan catatan uji dihapus
+           sekaligus, kirimannya ditolak, dan sejak saat itu tidak ada satu
+           baris pun yang pernah naik lagi - termasuk satu baris teks yang
+           baru saja diketik. Kedua perangkat tetap melapor sehat. Satu foto
+           rusak yang gagal diunggah punya kuasa yang sama besarnya.
+
+           Membereskan yang lama tidak pernah boleh menyandera yang baru. Jadi
+           dua tahap pertama sekarang menelan galatnya sendiri: yang gagal
+           dicoba lagi di putaran berikutnya, yang lain tetap berangkat
+           sekarang. */
+        return bersihkanNisan(setelan, sarang).catch(function () { return 0; });
       })
-      .then(function () { return unggahAntre(setelan, sarang); })
+      .then(function () {
+        return unggahAntre(setelan, sarang).catch(function () { return 0; });
+      })
       .then(function () { return TSimpan.semua(); })
       .then(function (semua) {
         var antre = antrean(semua, Number(setelan.cadanganSampai) || 0);

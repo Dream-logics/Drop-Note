@@ -735,6 +735,29 @@ public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
 public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
                     dikunci, judul & board tetap terbuka supaya masih bisa
                     ditemukan. Yang terkunci tidak pernah dikirim ke AI
+public/sinkron.js   TIAP TAHAP PUTARAN BERDIRI SENDIRI. Satu putaran dulu satu
+                    rantai: bersihkan nisan - unggah berkas - dorong baris.
+                    Satu rantai berarti satu tahap yang gagal membunuh SEMUA
+                    tahap sesudahnya, diam-diam. Yang terjadi di lapangan:
+                    puluhan catatan uji dihapus sekaligus, kiriman nisannya
+                    ditolak (terlalu besar / laju dibatasi), dan sejak saat itu
+                    tidak ada satu baris pun yang pernah naik lagi - termasuk
+                    satu baris teks yang baru diketik. Nisannya juga tidak
+                    pernah terhapus dari perangkat itu, jadi lima menit lagi
+                    dia mencoba lagi dengan kiriman yang sama besarnya dan
+                    gagal dengan cara yang sama. Selamanya, dan kedua perangkat
+                    melapor sehat. Menekan "Pulihkan dari Drive" tidak menolong
+                    sama sekali: yang rusak sisi PENGIRIMNYA, jadi tidak ada
+                    apa pun di tabel untuk ditarik - dan itu yang terbaca
+                    sebagai "arsitekturnya salah".
+                    Sekarang bersihkanNisan dan unggahAntre MENELAN GALATNYA
+                    SENDIRI (.catch di rantainya): yang gagal dicoba lagi di
+                    putaran berikutnya, yang lain tetap berangkat sekarang.
+                    Membereskan yang lama tidak pernah boleh menyandera yang
+                    baru. Nisannya dibatasi NISAN_SEKALI (25) per putaran dan
+                    hapus berkasnya BERURUTAN, bukan Promise.all - dua puluh
+                    lima penghapusan Drive yang berangkat berbarengan adalah
+                    cara tercepat kena batas laju.
 public/sinkron.js   GAMBAR YANG LAHIR DI PERANGKAT LAIN PUNYA JALUR MENGGAMBAR
                     SENDIRI, dan sebelum ini dia tidak ada. Foto naik ke Drive
                     lalu blob-nya DIBUANG dari pengirimnya, dan thumbnail-nya
@@ -809,7 +832,7 @@ public/sinkron.js   SINKRON DUA ARAH lewat Drive; tidak pernah di jalur drop.
                     gerakan yang memang sudah kamu lakukan.
                     EMPAT pemicunya: waktu aplikasinya dibuka, waktu kembali
                     dari aplikasi lain (di HP PWA jarang benar-benar ditutup),
-                    DENYUT BERKALA tiap 45 detik selama layarnya terlihat
+                    DENYUT BERKALA tiap 15 detik selama layarnya terlihat
                     (tanpa ini, laptop yang tabnya dibiarkan terbuka seharian
                     tidak pernah menarik sama sekali - dua pemicu pertama tidak
                     pernah terjadi di sana), dan dorongan 8 detik sesudah ada
@@ -1076,7 +1099,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (873 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (876 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

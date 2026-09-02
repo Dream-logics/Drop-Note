@@ -7009,6 +7009,55 @@ console.log('\nsinkron empat perangkat');
   await hal2.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal2.waitForTimeout(200);
 
+  /* ===== MEMBERESKAN YANG LAMA TIDAK BOLEH MENYANDERA YANG BARU =====
+     Satu putaran dulu adalah satu rantai: bersihkan nisan -> unggah berkas ->
+     dorong baris. Satu rantai berarti satu tahap yang gagal membunuh semua
+     tahap sesudahnya, DIAM-DIAM.
+
+     Yang terjadi di lapangan: puluhan catatan uji dihapus sekaligus,
+     kirimannya ditolak, dan sejak saat itu tidak ada satu baris pun yang
+     pernah naik lagi - termasuk satu baris teks yang baru saja diketik. Dua
+     perangkat tetap melapor sehat, dan menekan "Pulihkan dari Drive"
+     berkali-kali tidak menolong sama sekali: yang rusak sisi PENGIRIMNYA,
+     jadi tidak ada apa pun di tabel untuk ditarik. */
+  await hal.evaluate(async () => {
+    const s = TAlur.setelanUji();
+    await TSimpan.taruh({
+      id: 'e-nisan-nakal', jenis: 'teks', judul: 'Nisan nakal', isi: '',
+      label: [], elemen: [], daftar: [], riwayat: [],
+      dibuat: Date.now(), diubah: Date.now(), dihapus: true
+    });
+    await TSimpan.taruh({
+      id: 'e-sesudah-nisan', jenis: 'teks', judul: 'Teks sesudah nisan',
+      isi: 'satu baris saja', kategori: '',
+      label: [], elemen: [], daftar: [], riwayat: [],
+      dibuat: Date.now(), diubah: Date.now(), dihapus: false
+    });
+    /* Kiriman NISAN-nya yang ditolak, bukan yang lain - persis seperti
+       kiriman yang terlalu besar atau lajunya dibatasi. */
+    const asli = TAwan.tulisBaris;
+    const kolomDihapus = TAwan.KOLOM.indexOf('dihapus');
+    TAwan.tulisBaris = function (st, sa, baris) {
+      if (baris.some((b) => b[kolomDihapus] === 'true')) {
+        return Promise.reject(new Error('kiriman nisan ditolak'));
+      }
+      return asli(st, sa, baris);
+    };
+    await TSinkron.putaran(s, true);
+    TAwan.tulisBaris = asli;
+  });
+  await tarik(hal2);
+  cek('kiriman nisan yang ditolak tidak ikut membunuh catatan baru',
+      await punya(hal2, 'Teks sesudah nisan'));
+  /* Dan nisannya sendiri tidak hilang begitu saja - dia cuma menunggu
+     putaran berikutnya. */
+  cek('nisannya sendiri tetap menunggu, bukan dianggap sudah beres',
+      await hal.evaluate(() => TSimpan.ambil('e-nisan-nakal').then((e) => !!(e && e.dihapus))));
+  await dorong(hal);
+  await hal.waitForTimeout(300);
+  cek('lalu berangkat sendiri di putaran sesudahnya',
+      await hal.evaluate(() => TSimpan.ambil('e-nisan-nakal').then((e) => !e)));
+
   /* ===== DUA JAM YANG BERBEDA TIDAK PERNAH DIBANDINGKAN =====
      'tarikCap' menyimpan modifiedTime SPREADSHEET-NYA - jam servernya Google.
      Dulu, kalau pemeriksaan modifiedTime gagal, waktunya jadi 0 dan yang
