@@ -3254,22 +3254,18 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
      kanan bawah. */
   const semuaJenis = await hal.evaluate(() =>
     TAlur.jenisSaringUji().map((j) => j[0]));
-  cek('barisnya lengkap: semua, teks, gambar, berkas, link, pin, reset, tulis, kamera',
+  cek('barisnya lengkap: semua, teks, gambar, berkas, link, pin, reset',
       JSON.stringify(semuaJenis) ===
         JSON.stringify(['*semua', 'teks', 'gambar', 'berkas', 'tautan', '*pin',
-                        '*reset', '*note', '*kamera']),
+                        '*reset']),
       JSON.stringify(semuaJenis));
   /* KAMERA PALING KANAN, sesudah Reset - ujung yang paling dekat jempol, untuk
      hal yang paling sering dilakukan di aplikasi ini. Keduanya bukan saringan:
      mereka tidak punya angka dan tidak pernah menyala. */
-  /* KAMERA TETAP PALING KANAN walau jalan pintas Tulis datang belakangan.
-     Ujung itu punya pemiliknya - memotret yang paling sering dilakukan di
-     aplikasi ini - dan menggesernya demi tombol yang lebih jarang dipakai
-     berarti membayar gerakan tersering untuk yang lebih jarang. */
-  cek('kameranya tetap paling kanan, Tulis menyelip di kiri­nya',
-      semuaJenis[semuaJenis.length - 1] === '*kamera' &&
-      semuaJenis[semuaJenis.length - 2] === '*note' &&
-      semuaJenis[semuaJenis.length - 3] === '*reset');
+  /* Reset kembali paling kanan di baris ini: kamera dan Tulis sudah pindah
+     jadi sepasang lingkaran di luar kotak yang menggulir. */
+  cek('resetnya paling kanan di antara cipnya sendiri',
+      semuaJenis[semuaJenis.length - 1] === '*reset');
 
   /* BAWAANNYA TEKS, bukan semua. Hasil yang langsung berisi dinding gambar
      memenuhi layar sebelum satu judul pun sempat terbaca; gambar dicari
@@ -3512,8 +3508,8 @@ console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan')
     const atas = anak.map((n) => Math.round(n.getBoundingClientRect().top));
     return { baris: new Set(atas).size, jumlah: anak.length };
   });
-  cek('sembilan cip muat dalam satu baris',
-      saringSebaris.baris === 1 && saringSebaris.jumlah === 9,
+  cek('tujuh cip muat dalam satu baris',
+      saringSebaris.baris === 1 && saringSebaris.jumlah === 7,
       JSON.stringify(saringSebaris));
 
   const muatLebar = await hal.evaluate(() => {
@@ -5963,39 +5959,36 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
   await hal.fill('#kotak', '');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(200);
-  /* TEMPATNYA DI BARIS CIP, DI KANAN RESET - ujung yang paling dekat jempol.
-     Dia sempat jadi ikon di dalam kotak Drop, di antara klip dan Todo, dan di
-     sana dia tidak pernah terbaca sebagai tombol yang MENGHASILKAN sesuatu:
-     dua tetangganya cuma membuka laci. */
-  cek('cip kamera duduk paling kanan di baris cip, sesudah Reset',
+  /* ===== DUA JALAN PINTAS YANG MEMBUAT =====
+     Keduanya BUKAN cip, dan itu bukan soal tempat tapi soal jenis: baris cip
+     menjawab "perlihatkan yang mana", sementara dua ini menjawab "aku mau
+     MEMBUAT sesuatu sekarang". Selama mereka duduk di dalam baris itu, dua
+     pertanyaan yang berbeda memakai bentuk yang sama - dan yang paling sering
+     ditekan ikut menggulir keluar layar begitu saringannya bertambah. */
+  cek('kamera dan Tulis tidak lagi jadi cip di baris saringan',
+      (await hal.locator('#saring-cip [data-jenis="*kamera"]').count()) === 0 &&
+      (await hal.locator('#saring-cip [data-jenis="*note"]').count()) === 0);
+  /* DIPATOK DI UJUNG KANAN, tepat di atas tombol Drop - tempat jempol kanan
+     sudah bertumpu. Di LUAR kotak yang menggulir: saringan boleh tergeser
+     keluar layar kalau suatu hari bertambah, dua ini tidak boleh. */
+  cek('keduanya duduk di ujung kanan baris, di luar kotak yang menggulir',
       await hal.evaluate(() => {
-        const k = document.querySelector('#saring-cip [data-jenis="*kamera"]');
-        const r = document.querySelector('#saring-cip [data-jenis="*reset"]');
-        if (!k || !r) return false;
-        return k.getBoundingClientRect().left > r.getBoundingClientRect().left;
+        const g = document.querySelector('#pintas-bulat');
+        const c = document.querySelector('#saring-cip');
+        const d = document.querySelector('#b-drop');
+        if (!g || !c || !d) return false;
+        return g.getBoundingClientRect().left >= c.getBoundingClientRect().right - 1 &&
+               !c.contains(g) &&
+               Math.abs(g.getBoundingClientRect().right - d.getBoundingClientRect().right) < 40;
       }) === true);
-  /* Dia bukan saringan: tidak punya angka, dan tidak pernah menyala. */
-  cek('dan dia bukan saringan — tanpa angka, tidak pernah menyala',
-      (await hal.locator('#saring-cip [data-jenis="*kamera"] .saring-angka').count()) === 0);
-
-  /* ===== JALAN PINTAS TULIS: PASANGAN KAMERA =====
-     Lewat pintu Note kamu mendarat di daftar folder, dan yang tergambar di
-     situ pertanyaan "mau ditaruh di mana?" sebelum satu huruf pun sempat
-     diketik - padahal yang mendesak justru kalimatnya. Jadi cip ini membuka
-     layar tulis LANGSUNG, tanpa folder. */
-  cek('cip Tulis menyelip antara Reset dan kamera',
+  cek('dan keduanya bulat, sepasang, tidak menggulir bersama cipnya',
+      (await hal.locator('#pintas-bulat .pintas-tbl').count()) === 2 &&
       await hal.evaluate(() => {
-        const n = document.querySelector('#saring-cip [data-jenis="*note"]');
-        const k = document.querySelector('#saring-cip [data-jenis="*kamera"]');
-        const r = document.querySelector('#saring-cip [data-jenis="*reset"]');
-        if (!n || !k || !r) return false;
-        return n.getBoundingClientRect().left > r.getBoundingClientRect().left &&
-               n.getBoundingClientRect().left < k.getBoundingClientRect().left;
-      }) === true);
-  cek('dan dia bukan saringan juga — tanpa angka',
-      (await hal.locator('#saring-cip [data-jenis="*note"] .saring-angka').count()) === 0);
+        const t = document.querySelector('#b-pintas-tulis').getBoundingClientRect();
+        return Math.abs(t.width - t.height) < 1.5;
+      }));
 
-  await hal.click('#saring-cip [data-jenis="*note"]');
+  await hal.click('#b-pintas-tulis');
   await hal.waitForTimeout(400);
   cek('mengetuknya langsung membuka layar tulis, bukan daftar folder',
       (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-catat',
@@ -6023,12 +6016,12 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
     .filter((e) => e.jenis === 'gambar' && !e.pensiun).length);
   /* Ditembakkan lewat isian yang sama persis dengan yang dibuka cipnya - kalau
      cipnya membuka isian lain, yang lahir bentuk barang yang lain juga. */
-  cek('cipnya membuka isian kamera Gallery, bukan lampiran kotak Drop',
+  cek('tombolnya membuka isian kamera Gallery, bukan lampiran kotak Drop',
       await hal.evaluate(() => {
         let kena = '';
         const asli = HTMLInputElement.prototype.click;
         HTMLInputElement.prototype.click = function () { kena = this.id; };
-        document.querySelector('#saring-cip [data-jenis="*kamera"]').click();
+        document.querySelector('#b-pintas-kamera').click();
         HTMLInputElement.prototype.click = asli;
         return kena;
       }) === 'galeri-pilih-kamera');
@@ -6278,8 +6271,8 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
     await TAlur.muatLengketUji();
     return h;
   });
-  cek('cip kamera memakai BADGE, bukan cip atau baris tambahan',
-      (await hal.locator('#saring-cip .saring-cip.kamera .cip-sesi').count()) === 1 &&
+  cek('tombol kamera memakai BADGE, bukan cip atau baris tambahan',
+      (await hal.locator('#b-pintas-kamera .cip-sesi').count()) === 1 &&
       (await hal.locator('#drop-lengket').count()) === 0);
   /* BADGE-NYA MENUMPANG DI ATAS IKONNYA, jadi tidak menambah satu piksel pun
      pada tinggi baris - dan tinggi baris itulah yang dijaga di seluruh dok
@@ -6288,24 +6281,19 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
   cek('dan badge-nya sendiri tidak menambah tinggi baris cipnya',
       (await tinggiBaris()) === tinggiTanpaSesi,
       (await tinggiBaris()) + ' vs ' + tinggiTanpaSesi);
-  /* YANG DIUKUR TERHADAP KOTAK YANG MENGGULIR, bukan terhadap cipnya. Kotak
-     itu yang memegang pisaunya: barisnya 'overflow-x:auto', dan begitu satu
-     sumbu berhenti 'visible' sumbu satunya ikut memotong. Badge boleh
-     menggantung keluar cipnya - dia memang badge - asal masih di dalam kotak
-     itu, dan ruang untuk itu ada di padding-nya.
-
-     CINCINNYA IKUT DIHITUNG (2px): dia dicat, jadi dia juga bisa dipotong,
-     dan lingkaran yang kepalanya hilang persis itu bentuknya. */
+  /* SELURUHNYA DI DALAM TOMBOLNYA, tidak satu piksel pun menggantung keluar.
+     Badge yang menggantung bergantung pada kelonggaran baris di sekitarnya,
+     dan kelonggaran itu berubah tiap kali doknya disunting - jadi cacatnya
+     kembali tanpa ada yang menyentuh badge-nya sama sekali. Di dalam, dia
+     tidak bisa dipotong siapa pun. */
   const kotakBadge = await hal.evaluate(() => {
-    const w = document.querySelector('#saring-cip');
-    const g = w.querySelector('.saring-cip.kamera .cip-sesi');
+    const w = document.querySelector('#b-pintas-kamera');
+    const g = w.querySelector('.cip-sesi');
     const a = w.getBoundingClientRect(), b = g.getBoundingClientRect();
-    const cincin = 2;
-    return { atas: (b.top - cincin) - a.top, kiri: (b.left - cincin) - a.left,
-             bawah: a.bottom - (b.bottom + cincin),
-             kanan: a.right - (b.right + cincin) };
+    return { atas: b.top - a.top, kiri: b.left - a.left,
+             bawah: a.bottom - b.bottom, kanan: a.right - b.right };
   });
-  cek('badge-nya utuh di dalam kotak yang menggulir, cincinnya sekalian',
+  cek('badge-nya utuh di dalam tombolnya, tidak ada yang menggantung keluar',
       kotakBadge.atas >= -0.5 && kotakBadge.kiri >= -0.5 &&
       kotakBadge.bawah >= -0.5 && kotakBadge.kanan >= -0.5,
       JSON.stringify(kotakBadge));
@@ -6339,8 +6327,8 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
       await hal.locator('#galeri-lengket').isHidden());
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(350);
-  cek('dan badge di cip kameranya ikut hilang',
-      (await hal.locator('#saring-cip .saring-cip.kamera .cip-sesi').count()) === 0);
+  cek('dan badge di tombol kameranya ikut hilang',
+      (await hal.locator('#b-pintas-kamera .cip-sesi').count()) === 0);
   await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
   await hal.waitForTimeout(300);
   /* Barisan fotonya ikut hilang: dia kabar tentang sesi yang barusan kamu
@@ -6357,15 +6345,15 @@ console.log('\nsesi jepretan — satu pertanyaan, dan AI yang mengalamatkan');
   await ketikDriver('granit motif');
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(350);
-  cek('sesi barunya terbaca lagi dari badge cip kamera',
-      (await hal.locator('#saring-cip .saring-cip.kamera .cip-sesi').count()) === 1);
+  cek('sesi barunya terbaca lagi dari badge tombol kamera',
+      (await hal.locator('#b-pintas-kamera .cip-sesi').count()) === 1);
   /* BADGE-NYA DIBACA DULUAN. Dia duduk DI DALAM tombol kameranya, jadi tanpa
      penjaga itu ketukan di badge tetap terbaca "buka kamera" - dan
      satu-satunya jalan keluar dari sesi jadi jalan masuk ke sesi. */
-  await hal.click('#saring-cip .saring-cip.kamera .cip-sesi');
+  await hal.click('#b-pintas-kamera .cip-sesi');
   await hal.waitForTimeout(450);
   cek('mengetuk badge-nya menjatuhkan sesi, bukan membuka kamera',
-      (await hal.locator('#saring-cip .saring-cip.kamera .cip-sesi').count()) === 0 &&
+      (await hal.locator('#b-pintas-kamera .cip-sesi').count()) === 0 &&
       !(await hal.evaluate(() => TSimpan.setelan('driverLengket'))));
   await hal.evaluate(() => TAlur.keLayarUji('l-galeri'));
   await hal.waitForTimeout(350);
@@ -7591,6 +7579,59 @@ console.log('\nnama cuma kulit');
   cek('nama basis data tidak menyebut merek', /var NAMA = 'simpanan'/.test(simpan));
   cek('model Gemini yang benar',
       /gemini-3\.5-flash-lite/.test(fs.readFileSync(path.join(AKAR, 'bawaan.js'), 'utf8')));
+}
+
+console.log('\nshortcut layar home Android');
+{
+  /* Manifest 'shortcuts' membuat Android menaruh "Tulis" dan "Kamera" di menu
+     tekan-lama ikon Cortex - dan tiap shortcut itu bisa diseret keluar jadi
+     ikonnya sendiri di home screen. Dari home, menulis catatan jadi SATU
+     ketukan; tanpa ini tiga (buka aplikasi, pindah pintu, tekan pensil). */
+  const mf = JSON.parse(fs.readFileSync(path.join(AKAR, 'manifest.webmanifest'), 'utf8'));
+  cek('manifest menyebut dua shortcut, dengan ikon dan alamatnya sendiri',
+      Array.isArray(mf.shortcuts) && mf.shortcuts.length === 2 &&
+      mf.shortcuts.every((x) => x.url && x.icons && x.icons.length &&
+                                fs.existsSync(path.join(AKAR, x.icons[0].src))),
+      JSON.stringify(mf.shortcuts || null));
+  cek('dan ikonnya ikut disinggahkan service worker',
+      /ikon-tulis-192\.png/.test(fs.readFileSync(path.join(AKAR, 'sw.js'), 'utf8')) &&
+      /ikon-kamera-192\.png/.test(fs.readFileSync(path.join(AKAR, 'sw.js'), 'utf8')));
+
+  const halS = await konteks.newPage();
+  halS.on('pageerror', (e) => galat.push('[shortcut] ' + e.message));
+  await halS.goto(alamat + '?aksi=tulis');
+  await halS.waitForFunction(() => window.TAlur);
+  await halS.waitForTimeout(900);
+  cek('membuka lewat ?aksi=tulis langsung mendarat di layar tulis',
+      (await halS.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-catat',
+      await halS.evaluate(() => document.querySelector('.layar.aktif').id));
+  cek('dan judulnya kosong — tidak menagih folder sebelum kalimatnya ada',
+      (await halS.inputValue('#catat-judul')) === '');
+  /* ALAMATNYA DIBERSIHKAN begitu dibaca. Kalau tidak, satu kali muat ulang -
+     atau tombol Kembali - menjalankan perbuatannya lagi, dan yang lahir
+     catatan kosong kedua yang tidak pernah kamu minta. */
+  cek('alamatnya dibersihkan, jadi muat ulang tidak mengulanginya',
+      (await halS.evaluate(() => location.search)) === '',
+      await halS.evaluate(() => location.search));
+
+  const halK = await konteks.newPage();
+  halK.on('pageerror', (e) => galat.push('[shortcut] ' + e.message));
+  await halK.addInitScript(() => {
+    window.__kenaKamera = '';
+    const asli = HTMLInputElement.prototype.click;
+    HTMLInputElement.prototype.click = function () {
+      window.__kenaKamera = this.id;
+      if (this.id !== 'galeri-pilih-kamera') asli.call(this);
+    };
+  });
+  await halK.goto(alamat + '?aksi=kamera');
+  await halK.waitForFunction(() => window.TAlur);
+  await halK.waitForTimeout(900);
+  cek('dan ?aksi=kamera membuka isian kamera Gallery, bukan lampiran Drop',
+      (await halK.evaluate(() => window.__kenaKamera)) === 'galeri-pilih-kamera',
+      await halK.evaluate(() => window.__kenaKamera));
+  await halS.close();
+  await halK.close();
 }
 
 console.log('\ntanpa galat');

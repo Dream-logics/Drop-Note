@@ -1666,34 +1666,17 @@
        saringan - dia menghapus keadaan, bukan menyempitkannya - tapi dia
        dipakai sepanjang hari, dan itu yang menentukan tempatnya. Sempat naik
        ke kepala layar dan itu keliru: kepala ada di ujung terjauh dari jempol
-       yang bertumpu di sudut kanan bawah. */
-    ['*reset', 'Reset', '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>'],
-    /* KAMERA PALING KANAN, sesudah Reset - ujung yang paling dekat jempol,
-       untuk hal yang paling sering dilakukan di aplikasi ini. Dia bukan
-       saringan: dia tidak punya angka dan tidak pernah menyala, sama seperti
-       Reset. Dulu dia ikon di dalam kotak Drop, berdesakan dengan klip dan
-       Todo - dan di sana dia tidak pernah terbaca sebagai tombol yang
-       MENGHASILKAN sesuatu, cuma satu ikon lagi di antara ikon yang membuka
-       laci. */
-    /* NOTE: PASANGAN KAMERA, dan tempatnya memang di sebelahnya. Keduanya
-       menjawab pertanyaan yang sama bentuknya - "aku mau MEMBUAT sesuatu
-       sekarang", bukan "perlihatkan yang mana" - dan keduanya berangkat dari
-       layar Drop justru supaya kamu tidak perlu pindah pintu dulu.
+       yang bertumpu di sudut kanan bawah.
 
-       Yang dipangkasnya nyata: lewat pintu Note kamu mendarat di daftar
-       folder, dan yang tergambar di situ pertanyaan "mau ditaruh di mana?"
-       sebelum satu huruf pun sempat diketik. Padahal yang mendesak justru
-       kalimatnya. Jadi jalan pintas ini membuka layar tulis LANGSUNG, tanpa
-       folder - dan tanpa folder itu bukan kekurangan, itu seluruh gunanya:
-       alamatnya masih bisa dipilih kapan saja sesudah tulisannya ada.
-
-       DI KIRI KAMERA, bukan di kanannya. Ujung paling kanan sudah punya
-       pemiliknya - memotret yang paling sering dilakukan di aplikasi ini, dan
-       ujung itu yang paling dekat jempol. Menggeser kamera dari situ demi
-       tombol yang lebih jarang dipakai berarti membayar gerakan tersering
-       untuk yang lebih jarang. */
-    ['*note', 'Tulis', '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>'],
-    ['*kamera', 'Kamera', '<path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.4"/>']
+       KAMERA DAN TULIS TIDAK ADA LAGI DI BARIS INI. Keduanya pindah jadi
+       sepasang lingkaran di ujung kanan baris yang sama, DI LUAR kotak yang
+       menggulir - lihat '.pintas-bulat'. Sebabnya bukan tempat, tapi jenis:
+       baris ini menjawab "perlihatkan yang mana", sementara keduanya
+       menjawab "aku mau MEMBUAT sesuatu sekarang". Selama mereka duduk di
+       sini, dua pertanyaan yang berbeda memakai bentuk yang sama, dan yang
+       paling sering ditekan ikut menggulir keluar layar begitu saringannya
+       bertambah. */
+    ['*reset', 'Reset', '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>']
   ];
 
   /* LINK DIBACA DARI ISINYA, BUKAN DARI BENTUK DROP-NYA.
@@ -1745,37 +1728,10 @@
       /* Reset bukan saringan: dia tidak punya angka dan tidak pernah menyala.
          Garis putus-putus yang membedakannya - bentuk yang di aplikasi ini
          selalu berarti "ini jalan pintas, bukan keadaan". */
-      if (j[0] === '*reset' || j[0] === '*kamera' || j[0] === '*note') {
-        /* ===== SESI YANG BERJALAN = SATU BADGE DI CIP KAMERANYA =====
-           Dua bentuk sudah dicoba dan dua-duanya salah dengan caranya sendiri:
-           drivernya ditulis DI DALAM cip (cipnya jadi paling lebar di baris
-           yang menggulir mendatar, lalu terdorong keluar layar kanan), lalu
-           bilah sendiri di atas baris cip (satu baris tambahan di dok yang
-           sudah padat - yang dibaca mata cuma kebisingan).
-
-           Yang tersisa dan benar: badge, sekosakata dengan angka saringan yang
-           sudah ada di baris ini. Dia MENUMPANG di atas ikonnya (position
-           absolute), jadi tidak menambah satu piksel pun pada tinggi baris
-           maupun lebar cipnya. Ada badge = ada preset menyala; ketuk badge =
-           preset dijatuhkan.
-
-           Namanya pindah ke title/aria-label, dan itu memang penurunan: yang
-           dijawab badge cuma "ada yang menyala tidak", tidak lagi "apa
-           isinya". Yang menggantikannya kabar sesudah memotret - di situ
-           namanya tertulis penuh, lengkap dengan tombol "Ganti". */
-        var sesi = j[0] === '*kamera' && lengketHidup();
-        var nama = sesi ? j[1] + ' · ' + driverLengket : j[1];
-        var rupa = j[0] === '*reset' ? 'reset' : (j[0] === '*note' ? 'note' : 'kamera');
-        return '<button class="saring-cip ' + rupa +
-               (sesi ? ' bersesi' : '') +
-               '" data-jenis="' + j[0] + '" title="' + H(nama) +
-               '" aria-label="' + H(nama) + '">' +
-               '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg>' +
-               (sesi ? '<span class="cip-sesi" data-lengket-buang' +
-                       ' aria-label="Akhiri sesi kamera">' +
-                       '<svg viewBox="0 0 24 24" class="ik">' +
-                       '<path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></span>' : '') +
-               '</button>';
+      if (j[0] === '*reset') {
+        return '<button class="saring-cip reset" data-jenis="' + j[0] +
+               '" title="' + H(j[1]) + '" aria-label="' + H(j[1]) + '">' +
+               '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
       }
       /* ANGKANYA ANGKA HASIL PENCARIAN, bukan angka seluruh timbunan. Yang
          menolong waktu kamu mengetik bukan "aku punya berapa gambar", tapi
@@ -1917,18 +1873,6 @@
 
   function pilihJenis(j) {
     if (j === '*reset') { resetLayar(); return; }
-    /* JALAN PINTAS, BUKAN PINTU KEDUA. Isian yang dipakai sama persis dengan
-       dok kamera di layar Gallery - jadi yang lahir dari sini entri Gallery
-       yang sama, dengan sesi dan pertanyaan driver yang sama. Dua jalur masuk
-       yang menghasilkan dua bentuk barang adalah cara tercepat membuat satu
-       tumpukan jadi dua tumpukan yang tidak pernah bertemu. */
-    if (j === '*kamera') { $('#galeri-pilih-kamera').click(); return; }
-    /* LANGSUNG KE LAYAR TULIS, TANPA MAMPIR KE DAFTAR FOLDER. Foldernya
-       dikosongkan dengan sengaja: yang mendesak kalimatnya, dan menagih
-       alamat sebelum kalimatnya ada persis pertanyaan yang bikin catatan itu
-       tidak jadi ditulis. Alamatnya masih bisa dipilih kapan saja sesudahnya,
-       di layar tulis itu juga. */
-    if (j === '*note') { tulisBaru(true); return; }
     if (j === 'gambar') { keGaleriDariDrop(); return; }
     /* Mengetuk yang sedang menyala mematikannya - tanpa itu, satu-satunya
        jalan keluar adalah menebak cip mana yang berarti "batal". */
@@ -2933,15 +2877,36 @@
      Keduanya digambar dari sini supaya tidak pernah ada satu layar yang masih
      memperlihatkan sesi kemarin. */
   function gambarLengket() {
+    var tampil = lengketHidup();
     var w = $('#galeri-lengket');
     if (w) {
-      var tampil = lengketHidup();
       w.classList.toggle('sembunyi', !tampil);
       w.innerHTML = tampil
         ? '<span class="lengket-nama" data-asli>→ ' + H(driverLengket) + '</span>' +
           '<button class="lengket-buang" data-lengket-buang aria-label="Akhiri sesi">' +
           '<svg viewBox="0 0 24 24" class="ik"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>'
         : '';
+    }
+    /* BADGE SESI KAMERA, sekarang menumpang di tombol bulatnya. Ada badge =
+       ada preset menyala; ketuk badge = preset dijatuhkan. Dia absolute, jadi
+       tidak menambah satu piksel pun pada tinggi baris maupun lebar
+       tombolnya - dan tinggi baris itulah yang dijaga di seluruh dok ini. */
+    var k = $('#b-pintas-kamera');
+    if (k) {
+      k.classList.toggle('bersesi', tampil);
+      var lama = k.querySelector('.cip-sesi');
+      if (lama) k.removeChild(lama);
+      if (tampil) {
+        var b = document.createElement('span');
+        b.className = 'cip-sesi';
+        b.setAttribute('data-lengket-buang', '');
+        b.setAttribute('aria-label', 'Akhiri sesi kamera');
+        b.innerHTML = '<svg viewBox="0 0 24 24" class="ik">' +
+                      '<path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>';
+        k.appendChild(b);
+      }
+      /* Namanya di title: yang dijawab badge cuma "ada yang menyala tidak". */
+      k.setAttribute('title', tampil ? 'Kamera · ' + driverLengket : 'Kamera');
     }
     gambarCipSaring();
   }
@@ -6018,6 +5983,32 @@
 
   /* ===================== bagikan & pemasangan ===================== */
 
+  /* ===== SHORTCUT DARI LAYAR HOME ANDROID =====
+     Manifest 'shortcuts' membuat Android menaruh "Tulis" dan "Kamera" di menu
+     tekan-lama ikon Cortex - dan tiap shortcut itu bisa diseret keluar jadi
+     ikonnya sendiri di home screen. Jadi dari home, menulis catatan itu SATU
+     ketukan; tanpa ini tiga (buka aplikasi, pindah pintu, tekan pensil).
+
+     Alamatnya dibersihkan begitu dibaca. Kalau tidak, satu kali muat ulang -
+     atau tombol Kembali - menjalankan perbuatannya lagi, dan yang lahir
+     catatan kosong kedua yang tidak pernah kamu minta.
+
+     Ditunda satu putaran (setTimeout 0) supaya layarnya sempat tergambar
+     dulu: aturan "tidak ada apa pun sebelum layarnya tergambar" berlaku sama
+     untuk jalur ini. */
+  function jalankanAksiAlamat() {
+    var m = location.search.match(/[?&]aksi=([a-z]+)/);
+    if (!m) return;
+    var aksi = m[1];
+    try {
+      history.replaceState({}, '', location.pathname + location.hash);
+    } catch (e) { /* alamatnya tidak bisa ditulis; sekali jalan sudah cukup */ }
+    setTimeout(function () {
+      if (aksi === 'tulis') { tulisBaru(true); return; }
+      if (aksi === 'kamera') { $('#galeri-pilih-kamera').click(); }
+    }, 0);
+  }
+
   /* Titipan dari tombol Bagikan aplikasi lain, sudah ditulis sw.js ke
      IndexedDB. Sengaja TIDAK langsung di-drop: isinya masuk ke kotak supaya
      raknya sempat ditempel sekali ketuk. Satu ketukan, bukan satu keputusan. */
@@ -6098,15 +6089,36 @@
     });
     $('#b-terima').addEventListener('click', function (ev) { ev.preventDefault(); });
 
-    $('#saring-baris').addEventListener('click', function (ev) {
-      /* DIBACA DULUAN. Badge sesinya duduk DI DALAM tombol kameranya, jadi
-         tanpa ini ketukan di badge tetap terbaca sebagai "buka kamera" - dan
+    /* ===== DUA JALAN PINTAS YANG MEMBUAT =====
+       Keduanya berangkat dari layar Drop justru supaya kamu tidak perlu
+       pindah pintu dulu. Yang dipangkasnya nyata: lewat pintu Note kamu
+       mendarat di daftar folder, dan yang tergambar di situ pertanyaan "mau
+       ditaruh di mana?" sebelum satu huruf pun sempat diketik - padahal yang
+       mendesak justru kalimatnya. */
+    $('#b-pintas-tulis').addEventListener('click', function () {
+      /* Foldernya DIKOSONGKAN dengan sengaja, dan itu bukan kekurangan -
+         itu seluruh gunanya. Alamatnya masih bisa dipilih kapan saja sesudah
+         tulisannya ada. */
+      tulisBaru(true);
+    });
+    $('#b-pintas-kamera').addEventListener('click', function (ev) {
+      /* BADGE SESINYA DIBACA DULUAN. Dia duduk DI DALAM tombol ini, jadi
+         tanpa penjaga ini ketukan di badge tetap terbaca "buka kamera" - dan
          satu-satunya jalan keluar dari sesi jadi jalan masuk ke sesi. */
       if (ev.target.closest('[data-lengket-buang]')) {
         ev.stopPropagation();
         tutupSesiLengket();
         return;
       }
+      /* Isian yang dipakai sama persis dengan dok kamera di layar Gallery -
+         jadi yang lahir dari sini entri Gallery yang sama, dengan sesi dan
+         pertanyaan driver yang sama. Dua jalur masuk yang menghasilkan dua
+         bentuk barang adalah cara tercepat membuat satu tumpukan jadi dua
+         tumpukan yang tidak pernah bertemu. */
+      $('#galeri-pilih-kamera').click();
+    });
+
+    $('#saring-baris').addEventListener('click', function (ev) {
       var j = ev.target.closest('[data-jenis]');
       if (j) { pilihJenis(j.getAttribute('data-jenis')); return; }
     });
@@ -6967,6 +6979,7 @@
          dan justru itu keadaan yang dilayaninya. */
       gambarCipRuang();
       gambarCipSaring();
+      jalankanAksiAlamat();
       /* Bilah sesinya ikut digambar di pembukaan: sesi kemarin yang masih
          berumur kurang dari sejam tetap berlaku, dan yang tidak terlihat di
          pembukaan berarti jepretan pertama hari ini mewarisi sudut pandang

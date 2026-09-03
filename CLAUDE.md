@@ -1071,8 +1071,30 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     Drop di luar. EMPAT ikon waktu diam, TIGA waktu mengetik:
                     ikon AI pergi di mode Drop begitu ada yang diketik, klip
                     dan Todo pergi di mode AI.
-                    CIP TULIS DI KIRI KAMERA, sesudah Reset: jalan pintas ke
-                    layar tulis LANGSUNG, tanpa mampir ke daftar folder.
+                    KAMERA DAN TULIS BUKAN CIP: sepasang LINGKARAN
+                    ('.pintas-bulat') dipatok di ujung kanan baris cip, tepat
+                    di atas tombol Drop, DI LUAR kotak yang menggulir.
+                    Sebabnya jenis, bukan tempat: baris cip menjawab
+                    "perlihatkan yang mana", dua ini menjawab "aku mau MEMBUAT
+                    sesuatu sekarang" - dan selama mereka duduk di dalam baris
+                    itu, yang paling sering ditekan ikut menggulir keluar layar
+                    begitu saringannya bertambah. Badge sesi kameranya pindah
+                    ikut ke tombolnya, SELURUHNYA DI DALAM tombolnya: badge
+                    yang menggantung bergantung pada kelonggaran baris di
+                    sekitarnya, dan kelonggaran itu berubah tiap kali doknya
+                    disunting - sudah dua kali cacatnya kembali tanpa ada yang
+                    menyentuh badge-nya sama sekali.
+                    SHORTCUT LAYAR HOME ANDROID lewat 'shortcuts' di manifest:
+                    tekan lama ikon Cortex -> "Tulis" dan "Kamera", dan tiap
+                    shortcut bisa diseret keluar jadi ikonnya sendiri. Dari
+                    home, menulis catatan jadi SATU ketukan; tanpa itu tiga.
+                    Alamatnya ('?aksi=tulis', '?aksi=kamera') DIBERSIHKAN
+                    begitu dibaca - kalau tidak, satu kali muat ulang atau
+                    tombol Kembali menjalankan perbuatannya lagi, dan yang
+                    lahir catatan kosong kedua yang tidak pernah diminta.
+                    iOS tidak mendukung ini sama sekali.
+                    JALAN PINTAS TULIS: ke layar tulis LANGSUNG, tanpa mampir
+                    ke daftar folder.
                     Lewat pintu Note kamu mendarat di daftar folder dulu, dan
                     yang tergambar di situ pertanyaan "mau ditaruh di mana?"
                     sebelum satu huruf pun sempat diketik - padahal yang
@@ -1167,7 +1189,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (894 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (899 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

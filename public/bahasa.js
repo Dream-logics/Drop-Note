@@ -43,7 +43,7 @@
     'Jadikan tugas': 'Make it a task',
     'Mode AI': 'AI mode',
     'Kamera': 'Camera',
-    'Tulis': 'Write',
+    'Akhiri sesi kamera': 'End camera session',
     'Berkas': 'File',
     'Gambar': 'Image',
     'Daftar': 'List',
