@@ -7593,9 +7593,21 @@ console.log('\nshortcut layar home Android');
       mf.shortcuts.every((x) => x.url && x.icons && x.icons.length &&
                                 fs.existsSync(path.join(AKAR, x.icons[0].src))),
       JSON.stringify(mf.shortcuts || null));
+  const kodeSw = fs.readFileSync(path.join(AKAR, 'sw.js'), 'utf8');
   cek('dan ikonnya ikut disinggahkan service worker',
-      /ikon-tulis-192\.png/.test(fs.readFileSync(path.join(AKAR, 'sw.js'), 'utf8')) &&
-      /ikon-kamera-192\.png/.test(fs.readFileSync(path.join(AKAR, 'sw.js'), 'utf8')));
+      /ikon-tulis-192\.png/.test(kodeSw) && /ikon-kamera-192\.png/.test(kodeSw));
+  /* ===== MANIFEST SELALU DARI JARINGAN DULU =====
+     Dia dibaca Android SEKALI, waktu ikonnya dipasang ke layar home, dan dari
+     situ dicetak WebAPK yang isinya tidak berubah lagi. Kalau yang dibacanya
+     salinan lama dari singgahan, shortcut-nya tidak akan pernah ada - dan
+     memasang ulang berapa kali pun tidak menolong, karena yang dibaca ulang
+     tetap salinan yang sama. */
+  cek('manifest tidak boleh dilayani dari singgahan lebih dulu',
+      /manifest\.webmanifest'\)\) \{[\s\S]{0,200}?fetch\(permintaan\)/.test(kodeSw));
+  /* Tapi tetap jatuh ke singgahan kalau sinyalnya mati: manifest yang tidak
+     terbaca berarti aplikasinya berhenti bisa dipasang sama sekali. */
+  cek('tapi tetap jatuh ke singgahan waktu jaringannya mati',
+      /\.catch\(function \(\) \{[\s\S]{0,120}caches\.match\(permintaan\)/.test(kodeSw));
 
   const halS = await konteks.newPage();
   halS.on('pageerror', (e) => galat.push('[shortcut] ' + e.message));

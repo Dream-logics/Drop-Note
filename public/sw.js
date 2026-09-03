@@ -24,7 +24,7 @@
    singgahan yang baru, HP yang sudah memasang aplikasinya akan terus
    memakai versi lama SELAMANYA - terbitan baru tidak akan pernah sampai.
    'activate' membuang singgahan bernama lain, jadi menaikkannya sudah cukup. */
-var SINGGAH = 'singgahan-v124';
+var SINGGAH = 'singgahan-v125';
 var KERANGKA = [
   './', './index.html', './gaya.css',
   './bawaan.js', './bahasa.js', './simpan.js', './otak.js', './awan.js', './pelabel.js',
@@ -146,6 +146,33 @@ self.addEventListener('fetch', function (ev) {
       fetch(permintaan).catch(function () {
         return caches.match('./index.html').then(function (r) {
           return r || new Response('Tidak ada sinyal', { status: 503 });
+        });
+      })
+    );
+    return;
+  }
+
+  /* MANIFEST SELALU DARI JARINGAN DULU, dan itu satu-satunya berkas yang
+     diperlakukan begitu. Sebabnya bukan kesegaran biasa: manifest dibaca
+     Android SEKALI, waktu ikonnya dipasang ke layar home, dan dari situ dia
+     mencetak WebAPK yang isinya tidak berubah lagi. Kalau yang dibacanya
+     salinan lama dari singgahan, shortcut "Tulis" dan "Kamera" tidak akan
+     pernah ada di ikonnya - dan memasang ulang berapa kali pun tidak menolong,
+     karena yang dibaca ulang tetap salinan yang sama.
+
+     Jatuh ke singgahan kalau jaringannya mati: manifest yang tidak terbaca
+     berarti aplikasinya berhenti bisa dipasang sama sekali. */
+  if (alamat.pathname.endsWith('/manifest.webmanifest')) {
+    ev.respondWith(
+      fetch(permintaan).then(function (jawab) {
+        if (jawab && jawab.ok && jawab.type === 'basic') {
+          var salinan = jawab.clone();
+          caches.open(SINGGAH).then(function (c) { c.put(permintaan, salinan); });
+        }
+        return jawab;
+      }).catch(function () {
+        return caches.match(permintaan).then(function (r) {
+          return r || new Response('{}', { headers: { 'Content-Type': 'application/manifest+json' } });
         });
       })
     );
