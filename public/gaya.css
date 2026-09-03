@@ -846,41 +846,67 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
   font-size:9px;font-weight:700;line-height:1;
 }
 /* ===== BADGE SESI KAMERA =====
-   Duduk di SUDUT cipnya, seperti badge di mana pun - dan ruang untuk itu
-   dibuat di padding kotak yang menggulir, bukan diambil dari cipnya. Ditaruh
-   di dalam cip, dia menempel di bahu ikon kamera dan dua bentuk yang
-   bersentuhan terbaca sebagai satu bentuk yang rusak; ditaruh di luar tanpa
-   padding, kepalanya dipotong kotak yang menggulir.
+   SELURUHNYA DI DALAM TOMBOLNYA, tidak satu piksel pun menggantung keluar.
+   Badge yang menggantung bergantung pada kelonggaran baris di sekitarnya, dan
+   kelonggaran itu berubah tiap kali doknya disunting - jadi cacatnya kembali
+   tanpa ada yang menyentuh badge-nya sama sekali. Sudah dua kali begitu:
+   sekali dipotong kotak cip yang menggulir, sekali lagi menggantung di atas
+   baris yang tidak lagi punya padding. Di dalam, dia tidak bisa dipotong
+   siapa pun.
 
-   Di sudut KIRI, bukan kanan: cip kamera duduk paling ujung kanan baris, jadi
-   sisi kanannya yang paling mungkin kena tepi layar.
+   Di sudut KIRI, bukan kanan: pasangan tombol ini duduk di ujung kanan baris,
+   jadi sisi kanannya yang paling mungkin kena tepi layar.
 
-   Rupanya satu keluarga dengan cip yang menyala di baris yang sama - bulat
-   penuh, terisi warna aksen, bukan tempelan. Yang dijawab bentuk ini "ADA
-   yang menyala", dan yang harus terbaca sekilas tidak boleh setipis hiasan.
-   Cincin sewarna alas halaman memisahkannya dari cipnya, sama seperti alas
-   angka saringan di sebelahnya. */
-.saring-cip .cip-sesi{
-  position:absolute;top:-5px;left:-5px;
+   Terisi penuh warna aksen: yang dijawab bentuk ini "ADA yang menyala", dan
+   yang harus terbaca sekilas tidak boleh setipis hiasan. Tanpa cincin - alas
+   tombolnya sendiri sudah beraksen tipis, jadi yang memisahkan keduanya beda
+   pekatnya, bukan garis tambahan. */
+.pintas-tbl .cip-sesi{
+  position:absolute;top:0;left:0;
   display:flex;align-items:center;justify-content:center;
   width:16px;height:16px;border-radius:50%;
   background:var(--a);color:var(--at);
-  box-shadow:0 0 0 2px var(--g);
 }
-.saring-cip .cip-sesi .ik{width:9px;height:9px;stroke-width:3.4}
-/* Sasarannya dilebarkan tanpa menambah rupanya, tapi TIDAK sampai menelan cip
-   kameranya: yang di bawah badge ini tombol yang dipakai tiap hari, dan jalan
-   keluar yang mencuri ketukan jalan masuk lebih buruk daripada jalan keluar
-   yang harus dibidik. */
-.saring-cip .cip-sesi::after{content:'';position:absolute;inset:-5px}
-/* Cipnya sendiri ikut menyala, dan MEMAKAI RUPA YANG SAMA dengan cip saringan
-   yang aktif di baris ini - bukan rupa ketiga yang harus dipelajari sendiri.
-   Badge saja terbaca sebagai hiasan di sudut, sementara yang sedang berlaku
-   itu KAMERANYA. */
-.saring-cip.kamera.bersesi{
+.pintas-tbl .cip-sesi .ik{width:9px;height:9px;stroke-width:3.4}
+/* Ikon tombolnya digeser sedikit menjauh dari badge-nya: di 36px, lingkaran
+   16px di sudut kiri atas menyentuh bahu ikonnya, dan dua bentuk yang
+   bersentuhan terbaca sebagai satu bentuk yang rusak. */
+.pintas-tbl.bersesi > .ik{transform:translate(2px, 2px)}
+/* Sasarannya dilebarkan tanpa menambah rupanya, tapi TIDAK sampai menelan
+   tombol kameranya: yang di bawah badge ini tombol yang dipakai tiap hari, dan
+   jalan keluar yang mencuri ketukan jalan masuk lebih buruk daripada jalan
+   keluar yang harus dibidik. */
+.pintas-tbl .cip-sesi::after{content:'';position:absolute;inset:-4px}
+/* Tombolnya sendiri ikut menyala. Badge saja terbaca sebagai hiasan di sudut,
+   sementara yang sedang berlaku itu KAMERANYA. */
+.pintas-tbl.bersesi{
   border-color:transparent;
-  background:color-mix(in srgb, var(--a) 14%, transparent);
+  background:color-mix(in srgb, var(--a) 22%, transparent);
 }
+
+/* ===== DUA JALAN PINTAS YANG MEMBUAT =====
+   Dipatok di ujung KANAN baris cip - tepat di atas tombol Drop, tempat jempol
+   kanan sudah bertumpu. Mereka duduk DI LUAR kotak cip yang menggulir, dan itu
+   seluruh gunanya berada di sini: saringan boleh tergeser keluar layar kalau
+   suatu hari bertambah, dua ini tidak boleh.
+
+   Bulat penuh dan beralas, bukan bergaris putus-putus seperti cip di
+   sebelahnya: yang di kiri MENJAWAB "perlihatkan yang mana", dua ini MEMBUAT
+   sesuatu. Bentuk yang berbeda untuk pekerjaan yang berbeda. */
+.pintas-bulat{display:flex;gap:6px;flex:0 0 auto;align-items:center;margin-left:6px}
+.pintas-tbl{
+  position:relative;flex:0 0 auto;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:36px;height:36px;min-height:0;padding:0;
+  border:1px solid transparent;border-radius:50%;cursor:pointer;
+  background:color-mix(in srgb, var(--a) 11%, transparent);color:var(--a);
+}
+.pintas-tbl .ik{width:18px;height:18px}
+.pintas-tbl:active{background:color-mix(in srgb, var(--a) 22%, transparent)}
+/* Di mode AI keduanya ikut pergi bersama seluruh '.saring-baris' - tidak perlu
+   aturan sendiri. Itu memang benar: selama mode itu menyala, kotaknya berhenti
+   mencari dan tombol di bawahnya berhenti menyimpan, jadi dua tombol yang
+   MEMBUAT sesuatu di situ cuma tawaran palsu. */
 .saring-cip.sepi{opacity:.4}
 .saring-cip.nyala .saring-angka{color:var(--a)}
 /* Reset dibedakan: dia satu-satunya cip di baris ini yang MENGHAPUS keadaan,
@@ -891,17 +917,8 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    Gallery, bukan menyaring di tempat - memakai bentuk yang sama. Tidak ada
    yang harus dipelajari ulang, dan satu-satunya cip yang membawa pergi
    terlihat berbeda SEBELUM diketuk. */
-.saring-cip.reset,.saring-cip.pintu,.saring-cip.kamera,
-.saring-cip.note{border-style:dashed}
-/* Note beraksen sejak diam, sama seperti kamera: dua-duanya MENGHASILKAN
-   sesuatu, dan yang menghasilkan pantas kelihatan berbeda dari yang cuma
-   menyaring atau menghapus. */
-.saring-cip.note{color:var(--a)}
+.saring-cip.reset,.saring-cip.pintu{border-style:dashed}
 .saring-cip.pintu{color:var(--a)}
-/* Kameranya beraksen sejak diam: dia satu-satunya cip di baris ini yang
-   MENGHASILKAN sesuatu, dan yang menghasilkan pantas kelihatan berbeda dari
-   yang cuma menyaring atau menghapus. */
-.saring-cip.kamera{color:var(--a)}
 .saring-cip.reset:active{color:var(--bahaya);border-color:var(--bahaya)}
 .saring-cip.nyala{
   border-color:transparent;color:var(--a);font-weight:700;

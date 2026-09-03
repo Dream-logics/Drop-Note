@@ -14,6 +14,22 @@
     { "src": "ikon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "ikon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
+  "shortcuts": [
+    {
+      "name": "Tulis catatan baru",
+      "short_name": "Tulis",
+      "description": "Langsung ke layar tulis, tanpa memilih folder dulu.",
+      "url": "./?aksi=tulis",
+      "icons": [{ "src": "ikon-tulis-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Ambil foto",
+      "short_name": "Kamera",
+      "description": "Langsung memotret; fotonya masuk Gallery sendiri.",
+      "url": "./?aksi=kamera",
+      "icons": [{ "src": "ikon-kamera-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
   "share_target": {
     "action": "./bagikan",
     "method": "POST",
