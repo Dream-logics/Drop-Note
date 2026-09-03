@@ -1092,6 +1092,12 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     begitu dibaca - kalau tidak, satu kali muat ulang atau
                     tombol Kembali menjalankan perbuatannya lagi, dan yang
                     lahir catatan kosong kedua yang tidak pernah diminta.
+                    MANIFESTNYA DILAYANI DARI JARINGAN DULU (sw.js), dan cuma
+                    dia: Android membacanya SEKALI waktu ikonnya dipasang, lalu
+                    mencetak WebAPK yang isinya tidak berubah lagi. Kalau yang
+                    terbaca salinan lama dari singgahan, shortcut-nya tidak
+                    pernah ada - dan memasang ulang berapa kali pun tidak
+                    menolong, karena yang dibaca ulang salinan yang sama.
                     iOS tidak mendukung ini sama sekali.
                     JALAN PINTAS TULIS: ke layar tulis LANGSUNG, tanpa mampir
                     ke daftar folder.
@@ -1189,7 +1195,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (899 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (901 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
