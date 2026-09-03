@@ -891,7 +891,12 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    Gallery, bukan menyaring di tempat - memakai bentuk yang sama. Tidak ada
    yang harus dipelajari ulang, dan satu-satunya cip yang membawa pergi
    terlihat berbeda SEBELUM diketuk. */
-.saring-cip.reset,.saring-cip.pintu,.saring-cip.kamera{border-style:dashed}
+.saring-cip.reset,.saring-cip.pintu,.saring-cip.kamera,
+.saring-cip.note{border-style:dashed}
+/* Note beraksen sejak diam, sama seperti kamera: dua-duanya MENGHASILKAN
+   sesuatu, dan yang menghasilkan pantas kelihatan berbeda dari yang cuma
+   menyaring atau menghapus. */
+.saring-cip.note{color:var(--a)}
 .saring-cip.pintu{color:var(--a)}
 /* Kameranya beraksen sejak diam: dia satu-satunya cip di baris ini yang
    MENGHASILKAN sesuatu, dan yang menghasilkan pantas kelihatan berbeda dari

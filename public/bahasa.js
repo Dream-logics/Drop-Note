@@ -43,6 +43,7 @@
     'Jadikan tugas': 'Make it a task',
     'Mode AI': 'AI mode',
     'Kamera': 'Camera',
+    'Tulis': 'Write',
     'Berkas': 'File',
     'Gambar': 'Image',
     'Daftar': 'List',

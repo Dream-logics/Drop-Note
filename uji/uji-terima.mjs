@@ -3254,17 +3254,22 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
      kanan bawah. */
   const semuaJenis = await hal.evaluate(() =>
     TAlur.jenisSaringUji().map((j) => j[0]));
-  cek('barisnya lengkap: semua, teks, gambar, berkas, link, pin, reset, kamera',
+  cek('barisnya lengkap: semua, teks, gambar, berkas, link, pin, reset, tulis, kamera',
       JSON.stringify(semuaJenis) ===
         JSON.stringify(['*semua', 'teks', 'gambar', 'berkas', 'tautan', '*pin',
-                        '*reset', '*kamera']),
+                        '*reset', '*note', '*kamera']),
       JSON.stringify(semuaJenis));
   /* KAMERA PALING KANAN, sesudah Reset - ujung yang paling dekat jempol, untuk
      hal yang paling sering dilakukan di aplikasi ini. Keduanya bukan saringan:
      mereka tidak punya angka dan tidak pernah menyala. */
-  cek('kameranya paling kanan, resetnya tepat di sebelahnya',
+  /* KAMERA TETAP PALING KANAN walau jalan pintas Tulis datang belakangan.
+     Ujung itu punya pemiliknya - memotret yang paling sering dilakukan di
+     aplikasi ini - dan menggesernya demi tombol yang lebih jarang dipakai
+     berarti membayar gerakan tersering untuk yang lebih jarang. */
+  cek('kameranya tetap paling kanan, Tulis menyelip di kiri­nya',
       semuaJenis[semuaJenis.length - 1] === '*kamera' &&
-      semuaJenis[semuaJenis.length - 2] === '*reset');
+      semuaJenis[semuaJenis.length - 2] === '*note' &&
+      semuaJenis[semuaJenis.length - 3] === '*reset');
 
   /* BAWAANNYA TEKS, bukan semua. Hasil yang langsung berisi dinding gambar
      memenuhi layar sebelum satu judul pun sempat terbaca; gambar dicari
@@ -3507,8 +3512,8 @@ console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan')
     const atas = anak.map((n) => Math.round(n.getBoundingClientRect().top));
     return { baris: new Set(atas).size, jumlah: anak.length };
   });
-  cek('delapan cip muat dalam satu baris',
-      saringSebaris.baris === 1 && saringSebaris.jumlah === 8,
+  cek('sembilan cip muat dalam satu baris',
+      saringSebaris.baris === 1 && saringSebaris.jumlah === 9,
       JSON.stringify(saringSebaris));
 
   const muatLebar = await hal.evaluate(() => {
@@ -5972,6 +5977,47 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
   /* Dia bukan saringan: tidak punya angka, dan tidak pernah menyala. */
   cek('dan dia bukan saringan — tanpa angka, tidak pernah menyala',
       (await hal.locator('#saring-cip [data-jenis="*kamera"] .saring-angka').count()) === 0);
+
+  /* ===== JALAN PINTAS TULIS: PASANGAN KAMERA =====
+     Lewat pintu Note kamu mendarat di daftar folder, dan yang tergambar di
+     situ pertanyaan "mau ditaruh di mana?" sebelum satu huruf pun sempat
+     diketik - padahal yang mendesak justru kalimatnya. Jadi cip ini membuka
+     layar tulis LANGSUNG, tanpa folder. */
+  cek('cip Tulis menyelip antara Reset dan kamera',
+      await hal.evaluate(() => {
+        const n = document.querySelector('#saring-cip [data-jenis="*note"]');
+        const k = document.querySelector('#saring-cip [data-jenis="*kamera"]');
+        const r = document.querySelector('#saring-cip [data-jenis="*reset"]');
+        if (!n || !k || !r) return false;
+        return n.getBoundingClientRect().left > r.getBoundingClientRect().left &&
+               n.getBoundingClientRect().left < k.getBoundingClientRect().left;
+      }) === true);
+  cek('dan dia bukan saringan juga — tanpa angka',
+      (await hal.locator('#saring-cip [data-jenis="*note"] .saring-angka').count()) === 0);
+
+  await hal.click('#saring-cip [data-jenis="*note"]');
+  await hal.waitForTimeout(400);
+  cek('mengetuknya langsung membuka layar tulis, bukan daftar folder',
+      (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-catat',
+      await hal.evaluate(() => document.querySelector('.layar.aktif').id));
+  /* JUDULNYA KOSONG, dan itu seluruh gunanya: menagih alamat sebelum
+     kalimatnya ada persis pertanyaan yang bikin catatan itu tidak jadi
+     ditulis. Alamatnya masih bisa dipilih kapan saja sesudahnya. */
+  cek('dan judulnya dibiarkan kosong, tidak diisi folder mana pun',
+      (await hal.inputValue('#catat-judul')) === '',
+      await hal.inputValue('#catat-judul'));
+  await hal.fill('#catat-judul', 'Catatan lewat jalan pintas');
+  await hal.fill('#catat-isi', 'Ditulis tanpa memilih folder dulu.');
+  await hal.click('#b-simpan');
+  await hal.waitForTimeout(500);
+  cek('yang ditulis dari sini tersimpan sebagai tulisan, tanpa folder',
+      await hal.evaluate(() => TAlur.semuaEntri().some((e) =>
+        e.judul === 'Catatan lewat jalan pintas' && e.tulisan && !e.folder)),
+      JSON.stringify(await hal.evaluate(() => TAlur.semuaEntri()
+        .filter((e) => e.judul === 'Catatan lewat jalan pintas')
+        .map((e) => ({ tulisan: !!e.tulisan, folder: e.folder || '' })))));
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(300);
 
   const sblmKamera = await hal.evaluate(() => TAlur.semuaEntri()
     .filter((e) => e.jenis === 'gambar' && !e.pensiun).length);

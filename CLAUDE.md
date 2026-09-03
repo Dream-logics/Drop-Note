@@ -1071,6 +1071,16 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     Drop di luar. EMPAT ikon waktu diam, TIGA waktu mengetik:
                     ikon AI pergi di mode Drop begitu ada yang diketik, klip
                     dan Todo pergi di mode AI.
+                    CIP TULIS DI KIRI KAMERA, sesudah Reset: jalan pintas ke
+                    layar tulis LANGSUNG, tanpa mampir ke daftar folder.
+                    Lewat pintu Note kamu mendarat di daftar folder dulu, dan
+                    yang tergambar di situ pertanyaan "mau ditaruh di mana?"
+                    sebelum satu huruf pun sempat diketik - padahal yang
+                    mendesak kalimatnya. Foldernya DIKOSONGKAN dengan sengaja,
+                    dan folder layar Note tidak ikut disentuh: ini lewat, bukan
+                    pindah rumah. Kamera TETAP paling kanan - ujung itu punya
+                    pemiliknya, dan menggesernya demi tombol yang lebih jarang
+                    berarti membayar gerakan tersering untuk yang lebih jarang.
                     CIP KAMERA DI BARIS CIP, DI KANAN RESET - ujung yang paling
                     dekat jempol. SESI YANG MASIH HIDUP DIWAKILI SATU
                     BADGE DI CIPNYA ('.cip-sesi'), kosakata yang sama dengan
@@ -1157,7 +1167,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (889 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (894 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
