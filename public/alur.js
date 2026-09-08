@@ -300,6 +300,12 @@
 
   function tampilkanLayar(id) {
     if (layarSaat === 'l-catat' && id !== 'l-catat') simpanCatat();
+    /* MENINGGALKAN LAYARNYA MENANDAI HITUNGANNYA SELESAI, sama dengan menekan
+       C - dan wajib DI SINI, sebelum layarSaat berganti di bawah. Tanpa ini,
+       yang mengetik satu hitungan lalu pindah pintu kehilangannya tanpa jejak,
+       dan riwayat yang bolong justru waktu kamu paling butuh lebih buruk
+       daripada tidak ada riwayat sama sekali. */
+    if (layarSaat === 'l-hitung' && id !== 'l-hitung') catatRiwayat();
     ['l-mulai', 'l-utama', 'l-tulis', 'l-tugas', 'l-note', 'l-galeri', 'l-hitung',
      'l-catat', 'l-setelan'].forEach(function (x) {
       $('#' + x).classList.toggle('aktif', x === id);
@@ -322,6 +328,7 @@
     if (id === 'l-galeri') gambarGaleri();
     if (id === 'l-hitung') {
       gambarPapanHitung();
+      gambarRiwayatHitung();
       hitungUlang();
     }
     /* Digambar ulang tiap kali layarnya tampil, bukan cuma waktu gerigi di
@@ -6209,19 +6216,111 @@
     }).join('');
   }
 
+  /* ===== RIWAYAT =====
+     DI MEMORI SAJA, DAN ITU JAWABAN DARI RISETNYA - bukan kemalasan.
+     Yang dilakukan kalkulator lain: iOS tidak punya riwayat sama sekali; Casio
+     ilmiah punya penyangga ulang yang hilang begitu dimatikan; Windows
+     menyimpannya per sesi lalu membuangnya waktu ditutup. Cuma kalkulator
+     Google yang menyimpannya selamanya - dan dia satu-satunya yang butuh
+     tombol "Hapus riwayat", persis karena isinya jadi timbunan.
+
+     Umur pakai riwayat hitung diukur MENIT, bukan hari: yang ditanyakan
+     "tadi berapa?", dan itu ditanyakan di meja yang sama, di pekerjaan yang
+     sama. Angka yang masih menempel besok pagi bukan kabar lagi - aturan yang
+     sama dengan fotoSesi. Dan yang benar-benar layak disimpan sudah punya
+     rumahnya: Drop.
+
+     Jadi: mati waktu dimuat ulang, dibatasi RIWAYAT_MAKS baris, dan tetap
+     punya tombol buang - saluran keluar tidak boleh cuma "tutup aplikasinya". */
+  var RIWAYAT_MAKS = 20;
+  var riwayatHitung = [];
+
+  /* SATU HITUNGAN DICATAT WAKTU KAMU BERALIH DARI DIA, bukan tiap ketukan.
+     Hasilnya di sini terhitung sejak huruf pertama, jadi "1", "12", "12×",
+     "12×3" semuanya keadaan yang sah - mencatat semuanya berarti riwayat yang
+     isinya sembilan bayangan dari satu hitungan. Yang menandai selesai ketukan
+     yang sudah kamu lakukan sendiri: menekan C ("sudah, ganti") atau
+     meninggalkan layarnya. Tidak ada tombol "=" yang ditambahkan untuk itu -
+     ketukan baru untuk sesuatu yang sudah tersirat adalah ongkos keputusan,
+     dan itu yang paling mahal di aplikasi ini. */
+  function catatRiwayat() {
+    var isian = $('#hitung-ketik');
+    if (!isian) return;
+    var teks = isian.textContent.trim();
+    if (!teks) return;
+    var r = THitung.hitung(teks);
+    /* Yang belum sah tidak dicatat: setengah kalimat bukan hitungan. Begitu
+       juga hitungan yang isinya cuma angka telanjang - "36" tanpa operasi
+       tidak menjawab pertanyaan apa pun kalau dibaca besok. */
+    if (!r.ok || !/[+\-−×÷^!%]|\bsin|\bcos|\btan|\bln|\blog|√/.test(teks)) return;
+    /* Yang persis sama dengan yang teratas tidak ditulis dua kali: masuk lalu
+       keluar lagi dari layarnya adalah gerakan yang wajar, dan tiap kalinya
+       menggandakan baris yang sama. */
+    if (riwayatHitung.length && riwayatHitung[0].op === teks) return;
+    riwayatHitung.unshift({ op: teks, nilai: r.teks });
+    if (riwayatHitung.length > RIWAYAT_MAKS) riwayatHitung.length = RIWAYAT_MAKS;
+    gambarRiwayatHitung();
+  }
+
+  function gambarRiwayatHitung() {
+    var w = $('#hitung-riwayat');
+    if (!w) return;
+    if (!riwayatHitung.length) { w.classList.add('sembunyi'); w.innerHTML = ''; return; }
+    w.classList.remove('sembunyi');
+    w.innerHTML =
+      '<div class="riwayat-kepala"><span>Riwayat</span>' +
+      '<button class="riwayat-buang" id="b-riwayat-buang">Bersihkan</button></div>' +
+      riwayatHitung.map(function (r, i) {
+        return '<button class="riwayat-baris" data-riwayat="' + i + '">' +
+               '<span class="riwayat-op" data-asli>' + H(r.op) + '</span>' +
+               '<span class="riwayat-nilai" data-asli>' + H(r.nilai) + '</span>' +
+               '</button>';
+      }).join('');
+  }
+
+  /* MENGETUK BARIS MENGEMBALIKAN OPERASINYA, bukan hasilnya. Yang paling
+     sering dimau sesudah menoleh ke riwayat "yang tadi itu, tapi angkanya
+     beda" - dan itu cuma bisa dijawab kalau yang kembali kalimatnya, yang
+     tinggal disunting ekornya. Hasilnya sendiri sudah bisa disalin dari
+     tombolnya. Yang sedang diketik dicatat dulu supaya tidak hilang tanpa
+     jejak. */
+  function pakaiRiwayat(i) {
+    var r = riwayatHitung[i];
+    var isian = $('#hitung-ketik');
+    if (!r || !isian) return;
+    catatRiwayat();
+    isian.textContent = r.op;
+    hitungUlang();
+    isian.scrollLeft = isian.scrollWidth;
+  }
+
   function hitungUlang() {
     var isian = $('#hitung-ketik');
     var hasil = $('#hitung-hasil');
+    var salinTbl = $('#b-hitung-salin');
     if (!isian || !hasil) return;
     var teks = isian.textContent.trim();
-    if (!teks) { hasil.textContent = ''; hasil.classList.remove('galat'); return; }
-    var r = THitung.hitung(teks);
+    var r = teks ? THitung.hitung(teks) : null;
     /* GALATNYA TIDAK DITULIS SELAMA MENGETIK. Setengah kalimat memang belum
        sah - "2+" itu keadaan normal di tengah mengetik, bukan kekeliruan -
        dan pesan merah yang berkedip di tiap ketukan mengajari mata untuk
        berhenti membacanya sama sekali. */
     hasil.classList.toggle('galat', false);
-    hasil.textContent = r.ok ? '= ' + r.teks : '';
+    hasil.textContent = r && r.ok ? '= ' + r.teks : '';
+    /* Salinnya ikut hasilnya, bukan ikut layarnya: selama belum ada angka,
+       tidak ada yang bisa disalin. */
+    if (salinTbl) salinTbl.classList.toggle('sembunyi', !(r && r.ok));
+  }
+
+  /* Yang disalin ANGKANYA SAJA, tanpa "=" dan tanpa kalimatnya. Yang menekan
+     salin sedang menempelkannya ke tempat lain - kolom harga, chat, kotak
+     isian - dan di sana "= 36" adalah dua karakter yang harus dihapus lagi. */
+  function salinHasilHitung() {
+    var isian = $('#hitung-ketik');
+    if (!isian) return;
+    var r = THitung.hitung(isian.textContent.trim());
+    if (!r.ok) return;
+    salin(r.teks);
   }
 
   /* TIDAK ADA focus() DI SINI, dan itu bukan kelalaian. Tampilannya bukan
@@ -6231,7 +6330,10 @@
   function ketukHitung(tombol) {
     var isian = $('#hitung-ketik');
     if (!isian) return;
-    if (tombol === 'C') { isian.textContent = ''; hitungUlang(); return; }
+    /* C itu "sudah, ganti" - dan itu satu-satunya kata yang jarinya ucapkan
+       untuk menandai satu hitungan selesai. Jadi di situ dia dicatat, bukan
+       lewat tombol baru. */
+    if (tombol === 'C') { catatRiwayat(); isian.textContent = ''; hitungUlang(); return; }
     if (tombol === '⌫') {
       isian.textContent = isian.textContent.slice(0, -1);
       hitungUlang();
@@ -6459,6 +6561,16 @@
     $('#hitung-tombol').addEventListener('click', function (ev) {
       var b = ev.target.closest('[data-hitung]');
       if (b) ketukHitung(b.getAttribute('data-hitung'));
+    });
+    $('#b-hitung-salin').addEventListener('click', salinHasilHitung);
+    $('#hitung-riwayat').addEventListener('click', function (ev) {
+      if (ev.target.closest('#b-riwayat-buang')) {
+        riwayatHitung = [];
+        gambarRiwayatHitung();
+        return;
+      }
+      var b = ev.target.closest('[data-riwayat]');
+      if (b) pakaiRiwayat(+b.getAttribute('data-riwayat'));
     });
     document.addEventListener('keydown', ketikHitung);
 
