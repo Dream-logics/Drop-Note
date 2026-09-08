@@ -1230,6 +1230,53 @@ public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
                     'keydown' di tingkat dokumen yang DIPAGARI layarSaat ===
                     'l-hitung' - tanpa pagar itu dia menelan ketikan yang
                     dimaksudkan kotak pencarian.
+                    RIWAYATNYA DI MEMORI SAJA, dan itu jawaban dari risetnya -
+                    bukan kemalasan. Yang dilakukan kalkulator lain: iOS tidak
+                    punya riwayat sama sekali, Casio ilmiah punya penyangga
+                    ulang yang hilang begitu dimatikan, Windows menyimpannya
+                    per sesi lalu membuangnya waktu ditutup. Cuma kalkulator
+                    Google yang menyimpannya selamanya - dan dia satu-satunya
+                    yang butuh tombol "Hapus riwayat", persis karena isinya jadi
+                    timbunan. Umur pakai riwayat hitung diukur MENIT: yang
+                    ditanyakan "tadi berapa?", dan itu ditanyakan di meja yang
+                    sama, di pekerjaan yang sama. Angka yang masih menempel
+                    besok pagi bukan kabar lagi - aturan yang sama dengan
+                    fotoSesi - dan yang benar-benar layak disimpan sudah punya
+                    rumahnya: Drop. Jadi mati waktu dimuat ulang, dibatasi
+                    RIWAYAT_MAKS (20), tetap punya tombol Bersihkan (saluran
+                    keluar tidak boleh cuma "tutup aplikasinya"), dan TIDAK
+                    PERNAH ikut setelan maupun cadangan.
+                    DICATAT WAKTU KAMU BERALIH DARI SATU HITUNGAN, bukan tiap
+                    ketukan: hasilnya terhitung sejak huruf pertama, jadi "1",
+                    "12", "12×", "12×3" semuanya keadaan yang sah - mencatat
+                    semuanya berarti riwayat berisi sembilan bayangan dari satu
+                    hitungan. Yang menandai selesai ketukan yang sudah kamu
+                    lakukan sendiri: menekan C ("sudah, ganti") atau
+                    meninggalkan layarnya (di tampilkanLayar, WAJIB sebelum
+                    layarSaat berganti). Tidak ada tombol "=" yang ditambahkan
+                    untuk itu - ketukan baru untuk sesuatu yang sudah tersirat
+                    adalah ongkos keputusan, dan itu yang paling mahal di
+                    aplikasi ini. Angka telanjang tanpa operasi TIDAK dicatat:
+                    "36" sendirian tidak menjawab pertanyaan apa pun kalau
+                    dibaca lagi nanti.
+                    MENGETUK BARISNYA MENGEMBALIKAN OPERASINYA, BUKAN HASILNYA.
+                    Yang paling sering dimau sesudah menoleh ke riwayat "yang
+                    tadi itu, tapi angkanya beda", dan itu cuma bisa dijawab
+                    kalau yang kembali kalimatnya - yang tinggal disunting
+                    ekornya. Hasilnya sendiri sudah punya tombol salinnya.
+                    SALINNYA MENYALIN ANGKANYA SAJA, tanpa "=" dan tanpa
+                    kalimatnya: yang menekannya sedang menempelkannya ke kolom
+                    harga atau ke chat, dan di sana "= 36" adalah dua karakter
+                    yang harus dihapus lagi. Tombolnya di KIRI hasilnya (yang
+                    rata kanan supaya angkanya terbaca berderet) dan
+                    disembunyikan selama belum ada hasil.
+                    SATU BINGKAI UNTUK SELURUHNYA ('.hitung-badan'): layar,
+                    riwayat, dan papan tombol di dalam satu kotak. Dulu cuma
+                    layarnya yang berbingkai dan papan tombolnya berdiri lepas
+                    di atas halaman - yang terbaca dua benda yang kebetulan
+                    bertetangga, bukan satu alat. Yang di dalamnya berhenti
+                    berbingkai sendiri: kotak di dalam kotak menggandakan garis,
+                    dan yang dibayar lebar isinya di layar yang paling sempit.
 public/alur.js      BARIS PINTUNYA MILIK PEMAKAINYA ('pintuUtama' di setelan,
                     diatur di bagian Menu paling atas Setelan). Enam pintu
                     tidak muat sebaris di HP, dan yang tidak muat dipotong
@@ -1281,7 +1328,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (946 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (957 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

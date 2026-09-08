@@ -7712,6 +7712,102 @@ console.log('\nkalkulator ilmiah');
      ketukan mengajari mata berhenti membacanya sama sekali. */
   cek('dan setengah kalimat tidak dijawab dengan galat merah',
       (await hal.textContent('#hitung-hasil')) === '');
+
+  /* SALIN HASILNYA. Yang disalin ANGKANYA SAJA, tanpa "=" dan tanpa
+     kalimatnya: yang menekannya sedang menempelkannya ke kolom harga atau ke
+     chat, dan di sana "= 36" adalah dua karakter yang harus dihapus lagi. */
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  cek('tombol salin tidak digambar selama belum ada hasil',
+      await hal.locator('#b-hitung-salin').isHidden());
+  await hal.keyboard.type('12*3');
+  await hal.waitForTimeout(250);
+  cek('dan dia muncul begitu hasilnya ada',
+      await hal.locator('#b-hitung-salin').isVisible());
+  await hal.evaluate(() => {
+    window.__salinUji = '';
+    navigator.clipboard.writeText = (t) => { window.__salinUji = t; return Promise.resolve(); };
+  });
+  await hal.click('#b-hitung-salin');
+  await hal.waitForTimeout(250);
+  cek('yang disalin angkanya saja, tanpa "=" dan tanpa kalimatnya',
+      (await hal.evaluate(() => window.__salinUji)) === '36',
+      await hal.evaluate(() => window.__salinUji));
+
+  /* RIWAYAT. Dicatat waktu kamu BERALIH dari satu hitungan - menekan C atau
+     meninggalkan layarnya - bukan tiap ketukan: hasilnya di sini terhitung
+     sejak huruf pertama, jadi mencatat tiap keadaan berarti riwayat berisi
+     sembilan bayangan dari satu hitungan. */
+  /* Dibersihkan dulu: ketukan C di uji-uji sebelum ini sudah menandai
+     hitungannya selesai juga - itu memang perilakunya yang benar. */
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.waitForTimeout(200);
+  if (await hal.locator('#b-riwayat-buang').isVisible()) {
+    await hal.click('#b-riwayat-buang');
+    await hal.waitForTimeout(200);
+  }
+  cek('riwayatnya tidak digambar selama belum ada yang selesai',
+      await hal.locator('#hitung-riwayat').isHidden());
+  await hal.keyboard.type('12*3');
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.waitForTimeout(250);
+  cek('menekan C menandai hitungannya selesai, dan barisnya muncul',
+      (await hal.locator('#hitung-riwayat .riwayat-baris').count()) === 1 &&
+      (await hal.locator('#hitung-riwayat .riwayat-op').first().textContent()) === '12×3' &&
+      (await hal.locator('#hitung-riwayat .riwayat-nilai').first().textContent()) === '36',
+      await hal.textContent('#hitung-riwayat'));
+  /* Angka telanjang tidak dicatat: "36" tanpa operasi tidak menjawab
+     pertanyaan apa pun kalau dibaca lagi nanti. */
+  await hal.keyboard.type('99');
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.waitForTimeout(250);
+  cek('angka telanjang tanpa operasi tidak ikut dicatat',
+      (await hal.locator('#hitung-riwayat .riwayat-baris').count()) === 1,
+      String(await hal.locator('#hitung-riwayat .riwayat-baris').count()));
+  /* Meninggalkan layarnya menandai selesai juga - tanpa itu, yang mengetik
+     satu hitungan lalu pindah pintu kehilangannya tanpa jejak. */
+  await hal.keyboard.type('5+5');
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(250);
+  await hal.evaluate(() => TAlur.keLayarUji('l-hitung'));
+  await hal.waitForTimeout(300);
+  cek('meninggalkan layarnya ikut menandai hitungannya selesai',
+      (await hal.locator('#hitung-riwayat .riwayat-baris').count()) === 2 &&
+      (await hal.locator('#hitung-riwayat .riwayat-op').first().textContent()) === '5+5',
+      String(await hal.locator('#hitung-riwayat .riwayat-baris').count()));
+  /* Yang kembali OPERASINYA, bukan hasilnya: yang paling sering dimau sesudah
+     menoleh ke riwayat "yang tadi itu, tapi angkanya beda", dan itu cuma bisa
+     dijawab kalau yang kembali kalimatnya. */
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.locator('#hitung-riwayat .riwayat-baris').first().click();
+  await hal.waitForTimeout(250);
+  cek('mengetuk barisnya mengembalikan operasinya, bukan hasilnya',
+      (await hal.textContent('#hitung-ketik')) === '5+5' &&
+      (await hal.textContent('#hitung-hasil')).indexOf('10') >= 0,
+      await hal.textContent('#hitung-ketik'));
+  /* Saluran keluarnya tidak boleh cuma "tutup aplikasinya". */
+  await hal.click('#b-riwayat-buang');
+  await hal.waitForTimeout(250);
+  cek('dan riwayatnya punya tombol buang sendiri',
+      await hal.locator('#hitung-riwayat').isHidden());
+  /* DI MEMORI SAJA - umur pakai riwayat hitung diukur menit, bukan hari, dan
+     yang benar-benar layak disimpan sudah punya rumahnya di Drop. */
+  cek('riwayatnya tidak pernah ditulis ke setelan',
+      !/setel\w*\(\s*['"]riwayat/i.test(
+        fs.readFileSync(path.join(AKAR, 'alur.js'), 'utf8')));
+
+  /* SATU KOTAK UNTUK SELURUH KALKULATORNYA: layar, riwayat, dan papan
+     tombolnya di dalam satu bingkai, jadi yang terbaca satu alat - bukan tiga
+     blok yang kebetulan bertetangga. */
+  cek('layar, riwayat, dan papan tombolnya duduk di satu bingkai',
+      await hal.evaluate(() => {
+        const b = document.querySelector('#l-hitung .hitung-badan');
+        if (!b) return false;
+        return !!b.querySelector('#hitung-riwayat') &&
+               !!b.querySelector('.hitung-layar') &&
+               !!b.querySelector('#hitung-tombol') &&
+               getComputedStyle(b).borderTopWidth !== '0px';
+      }));
+
   await hal.click('#hitung-tombol [data-hitung="C"]');
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(250);

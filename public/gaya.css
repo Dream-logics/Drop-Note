@@ -1704,10 +1704,26 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    letak "7" tidak boleh menemukannya bergeser karena baris fungsinya kebetulan
    lebih panjang hari ini. Tingginya ikut membagi sisa ruang, jadi di jendela
    pendek tombolnya memendek - bukan tergulir keluar layar. */
-.hitung-layar{
-  background:var(--p);border:1px solid var(--l);border-radius:14px;
-  padding:12px 14px;margin-bottom:10px;
+/* BINGKAI SATU BENDA. Layar + riwayat + papan tombol duduk di dalam satu
+   kotak, jadi yang terbaca satu alat - bukan tiga blok yang kebetulan
+   bertetangga. Yang di dalamnya berhenti berbingkai sendiri (layarnya cuma
+   dibedakan alas dan satu garis bawah): kotak di dalam kotak menggandakan
+   garis dan yang dibayar lebar isinya, di layar yang paling sempit. */
+.hitung-badan{
+  display:flex;flex-direction:column;flex:1;min-height:0;
+  background:var(--p);border:1px solid var(--l);border-radius:16px;
+  padding:10px;gap:10px;
 }
+.hitung-layar{
+  background:var(--g);border-radius:12px;
+  padding:10px 12px;flex:none;
+}
+/* Hasil dan tombol salinnya sebaris: tombolnya bukan penghuni baris sendiri -
+   satu baris tambahan untuk satu ikon adalah tinggi yang dibayar papan
+   tombolnya. */
+.hitung-baris-hasil{display:flex;align-items:center;gap:8px}
+.hitung-salin{flex:none;width:36px;height:36px;color:var(--m)}
+.hitung-baris-hasil .hitung-hasil{flex:1;min-width:0}
 /* Bukan kotak isian - lihat index.html. Digulir mendatar sendiri supaya
    ekornya selalu terlihat: yang baru diketuk itu yang paling dicari mata. */
 .hitung-ketik{
@@ -1744,6 +1760,44 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 .hit-tbl.f{color:var(--m);font-size:15px}
 .hit-tbl.o{color:var(--a);font-size:20px}
 .hit-tbl.x{color:var(--a)}
+
+/* ===== RIWAYAT HITUNG =====
+   Tingginya DIBATASI dan digulir sendiri. Riwayat yang tumbuh ke bawah tanpa
+   batas mendorong papan tombolnya keluar layar - dan papan tombol yang harus
+   digulir dulu sebelum bisa diketuk membatalkan seluruh gunanya kalkulator. */
+.hitung-riwayat{
+  flex:none;max-height:118px;overflow-y:auto;
+  border-bottom:1px solid var(--l);padding-bottom:6px;
+}
+.riwayat-kepala{
+  display:flex;align-items:center;gap:8px;
+  font-size:11.5px;color:var(--m);padding:0 2px 2px;
+}
+.riwayat-kepala span{flex:1}
+/* Bergaris putus-putus: di aplikasi ini kosakata itu sudah berarti "jalan
+   pintas, bukan keadaan" - sama dengan Reset dan "+ Folder". */
+.riwayat-buang{
+  flex:none;border:1px dashed var(--l);background:none;color:var(--m);
+  border-radius:8px;padding:2px 8px;font-size:11.5px;cursor:pointer;
+}
+/* SATU BARIS SATU HITUNGAN, dan seluruh barisnya sasaran sentuh: yang dicari
+   jari waktu menoleh ke riwayat cuma "yang tadi itu" - bukan bagian tertentu
+   dari barisnya. */
+.riwayat-baris{
+  display:flex;align-items:baseline;gap:10px;width:100%;
+  border:0;background:none;cursor:pointer;text-align:left;
+  padding:5px 2px;border-radius:8px;
+}
+.riwayat-baris:active{background:var(--g)}
+.riwayat-op{
+  flex:1;min-width:0;font-size:12.5px;color:var(--m);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.riwayat-nilai{
+  flex:none;max-width:52%;font-size:14px;font-weight:600;color:var(--i);
+  font-variant-numeric:tabular-nums;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
 
 /* ===== MENU TOOLS =====
    Melayang di atas baris pintunya, bukan layar penuh: yang dibuka cuma daftar

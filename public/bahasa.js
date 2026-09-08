@@ -182,7 +182,12 @@
     'Tulis apa saja…': 'Write anything…',
     'Simpan': 'Save',
     'Salin seluruh tulisan': 'Copy the whole note',
+    'Salin hasil': 'Copy result',
     'Riwayat': 'History',
+    /* "Bersihkan", bukan "Hapus": yang dibuang riwayat yang memang tidak
+       pernah disimpan, dan kata yang sama dengan menghapus catatan bikin
+       jarinya ragu di tombol yang sebenarnya tidak berakibat apa-apa. */
+    'Bersihkan': 'Clear',
     'Kembali': 'Back',
     'Tutup': 'Close',
     'tersimpan': 'saved',
