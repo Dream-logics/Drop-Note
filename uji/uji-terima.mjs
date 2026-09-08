@@ -7581,6 +7581,58 @@ console.log('\nnama cuma kulit');
       /gemini-3\.5-flash-lite/.test(fs.readFileSync(path.join(AKAR, 'bawaan.js'), 'utf8')));
 }
 
+console.log('\nseperempat layar di desktop');
+{
+  /* Aplikasi ini kolom 620px setinggi layar - bentuk HP, dan itu bentuk yang
+     benar. Konsekuensinya di monitor 2560px dia satu kolom sempit dengan
+     hampir seribu piksel kosong di kiri dan kanan.
+
+     Manifest TIDAK BISA menentukan ukuran jendela; yang ada cuma resizeTo(),
+     dan itu pun boleh ditolak. Yang diuji di sini PENJAGANYA - kapan dia
+     boleh mencoba sama sekali - karena itu yang bisa salah tanpa terlihat. */
+  const ukur = (setelan, layar, mode) => hal.evaluate(([st, l, m]) => {
+    const s0 = Object.getOwnPropertyDescriptor(window, 'screen');
+    const mm = window.matchMedia;
+    try {
+      Object.defineProperty(window, 'screen', { value: l, configurable: true });
+      window.matchMedia = (q) => ({ matches: q.indexOf(m) >= 0 });
+      return TAlur.ukuranJendelaUji(st);
+    } finally {
+      if (s0) Object.defineProperty(window, 'screen', s0);
+      window.matchMedia = mm;
+    }
+  }, [setelan, layar, mode]);
+
+  const BESAR = { availWidth: 1920, availHeight: 1080 };
+  cek('di jendela terpasang yang lebar, ukurannya separuh kali separuh',
+      JSON.stringify(await ukur({}, BESAR, 'standalone')) ===
+        JSON.stringify({ lebar: 960, tinggi: 640 }),
+      JSON.stringify(await ukur({}, BESAR, 'standalone')));
+  /* 1080/2 = 540, dan itu terlalu pendek untuk dok yang menempel di bawah -
+     jadi tingginya punya lantai 640. */
+  cek('tingginya punya lantai, tidak ikut mengecil sampai doknya terjepit',
+      (await ukur({}, { availWidth: 1280, availHeight: 800 }, 'standalone')).tinggi === 640);
+  /* Lebarnya berlantai 680: di situ kolom 620px plus jarak tepinya muat pas,
+     jadi ruang kosongnya memang hilang - bukan sekadar jendelanya mengecil. */
+  cek('dan lebarnya berlantai 680, selebar kolomnya plus tepi',
+      (await ukur({}, { availWidth: 1100, availHeight: 900 }, 'standalone')).lebar === 680);
+
+  /* SEKALI SEUMUR PEMASANGAN. Kalau tiap pembukaan, dia membatalkan ukuran
+     yang kamu atur sendiri kemarin - dan jendela yang melompat balik tiap
+     kali dibuka jauh lebih menjengkelkan daripada jendela yang kebesaran
+     sekali. */
+  cek('sekali saja: yang sudah pernah diatur tidak diatur lagi',
+      (await ukur({ jendelaDiatur: 1 }, BESAR, 'standalone')) === null);
+  /* Di tab biasa resizeTo() mengubah jendela peramban yang isinya bukan cuma
+     aplikasi ini - dan itu jauh melampaui yang diminta. */
+  cek('tidak pernah menyentuh jendela peramban biasa',
+      (await ukur({}, BESAR, 'browser')) === null);
+  /* Di HP tidak ada yang perlu diatur, dan layar kecil tidak punya ruang
+     untuk dibagi dua. */
+  cek('dan tidak pernah jalan di layar kecil',
+      (await ukur({}, { availWidth: 412, availHeight: 915 }, 'standalone')) === null);
+}
+
 console.log('\nshortcut layar home Android');
 {
   /* Manifest 'shortcuts' membuat Android menaruh "Tulis" dan "Kamera" di menu
