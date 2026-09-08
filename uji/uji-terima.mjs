@@ -7935,6 +7935,62 @@ console.log('\nkalkulator ilmiah');
   cek('papan klip yang ditolak DIKATAKAN, tidak didiamkan',
       (await hal.textContent('#pesan')).length > 0,
       await hal.textContent('#pesan'));
+  /* JALAN KEDUA, dan dia yang sebenarnya selalu jalan: readText() minta izin
+     dan boleh ditolak, sementara Ctrl+V dan "Tempel" dari menu tekan-lama
+     tidak minta izin apa pun - dia mengirim event 'paste' dengan isinya sudah
+     menempel. */
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.waitForTimeout(200);
+  await hal.evaluate(() => {
+    const ev = new Event('paste', { bubbles: true, cancelable: true });
+    ev.clipboardData = { getData: () => '48*2' };
+    document.dispatchEvent(ev);
+  });
+  await hal.waitForTimeout(300);
+  cek('tempel bawaan sistem tetap masuk walau izin papan klip ditolak',
+      (await hal.textContent('#hitung-ketik')) === '48×2' &&
+      (await hal.textContent('#hitung-hasil')).indexOf('96') >= 0,
+      await hal.textContent('#hitung-ketik'));
+
+  /* GEROMBOLAN SUNTING NUMPANG DI SUDUT KIRI ATAS layarnya, tidak mengambil
+     satu baris pun: yang dibaca mata di kotak ini angkanya, dan angkanya rata
+     kanan - jadi sudut kiri atas memang kosong. Baris tombol sendiri di bawah
+     hasil memakan tinggi dari papan tombol DAN menaruh empat kotak abu-abu
+     tepat di jalur baca. */
+  cek('sunting numpang di sudut kiri atas, tidak mengambil satu baris pun',
+      await hal.evaluate(() => {
+        const g = document.querySelector('.hitung-sunting');
+        const l = document.querySelector('.hitung-layar');
+        if (!g || !l) return false;
+        const rg = g.getBoundingClientRect(), rl = l.getBoundingClientRect();
+        return getComputedStyle(g).position === 'absolute' &&
+               rg.left - rl.left < 20 && rg.top - rl.top < 20 &&
+               rg.height <= 30;
+      }));
+  /* MIKRO, dan itu satu-satunya tempat di aplikasi ini yang melanggar sasaran
+     sentuh 44px - dengan sengaja, karena keempatnya punya jalan lain yang
+     lebih besar. */
+  cek('tombolnya mikro, dan angkanya tidak tertimpa',
+      await hal.evaluate(() => {
+        const b = document.querySelector('.hit-sunting');
+        const k = document.querySelector('#hitung-ketik');
+        return b.getBoundingClientRect().width <= 30 &&
+               parseFloat(getComputedStyle(k).paddingLeft) >=
+                 document.querySelector('.hitung-sunting').getBoundingClientRect().width;
+      }));
+  /* Karet 2px setinggi satu em di antara angka 22px tidak terbaca sebagai
+     karet di layar HP - dia terbaca sebagai cacat rendering, dan begitu dia
+     tidak terlihat, tombol panah di sebelahnya jadi tombol yang "tidak
+     melakukan apa-apa". Itu keluhan lapangannya. */
+  await hal.keyboard.type('7');
+  await hal.waitForTimeout(200);
+  cek('karetnya cukup tebal dan tinggi untuk terlihat di layar HP',
+      await hal.evaluate(() => {
+        const k = document.querySelector('.hitung-karet');
+        if (!k) return false;
+        const r = k.getBoundingClientRect();
+        return r.width >= 3 && r.height >= 24;
+      }));
 
   /* KONVERTERNYA DI LAYAR YANG SAMA, di ruang kosong di bawah papan tombol:
      yang menghitung gaya baut juga yang harus menerjemahkan lbf·ft dari
@@ -8141,6 +8197,20 @@ console.log('\nshortcut layar home Android');
      terbaca berarti aplikasinya berhenti bisa dipasang sama sekali. */
   cek('tapi tetap jatuh ke singgahan waktu jaringannya mati',
       /\.catch\(function \(\) \{[\s\S]{0,120}caches\.match\(permintaan\)/.test(kodeSw));
+  /* SATU MUATAN SELALU SATU GENERASI, dan ini menutup cacat yang menghasilkan
+     laporan lapangan yang tidak masuk akal ("tombolnya ada tapi tidak
+     berfungsi", "kotaknya tidak berbingkai"). Halamannya dulu jaringan-dulu
+     sementara gaya.css dan alur.js singgahan-dulu, jadi TIAP TERBITAN BARU
+     sekali: index.html versi BARU dengan gaya dan kode versi LAMA - karena
+     service worker barunya belum selesai memasang waktu berkas-berkas itu
+     diminta. Yang tergambar markup baru tanpa gayanya, dan tombol baru yang
+     tidak punya satu pun penangan. Itu bukan singgahan basi yang hilang
+     sendiri sesudah refresh; itu satu muatan berisi dua generasi. */
+  cek('halamannya dilayani dari singgahan dulu, sama dengan sisa kerangkanya',
+      /permintaan\.mode === 'navigate'\) \{[\s\S]{0,160}?caches\.match\('\.\/index\.html'\)/.test(kodeSw),
+      'navigate harus singgahan-dulu supaya satu muatan tidak berisi dua generasi');
+  cek('dan tetap jatuh ke jaringan kalau singgahannya belum ada',
+      /caches\.match\('\.\/index\.html'\)[\s\S]{0,160}?fetch\(permintaan\)/.test(kodeSw));
 
   const halS = await konteks.newPage();
   halS.on('pageerror', (e) => galat.push('[shortcut] ' + e.message));

@@ -24,7 +24,7 @@
    singgahan yang baru, HP yang sudah memasang aplikasinya akan terus
    memakai versi lama SELAMANYA - terbitan baru tidak akan pernah sampai.
    'activate' membuang singgahan bernama lain, jadi menaikkannya sudah cukup. */
-var SINGGAH = 'singgahan-v131';
+var SINGGAH = 'singgahan-v132';
 var KERANGKA = [
   './', './index.html', './gaya.css',
   './bawaan.js', './bahasa.js', './hitung.js', './simpan.js', './otak.js', './awan.js', './pelabel.js',
@@ -139,13 +139,29 @@ self.addEventListener('fetch', function (ev) {
   }
   if (permintaan.method !== 'GET' || alamat.origin !== self.location.origin) return;
 
-  /* Halaman: coba jaringan dulu supaya versi baru terpasang, tapi jatuh ke
-     singgahan begitu ada masalah sekecil apa pun. */
+  /* HALAMANNYA DARI SINGGAHAN DULU, SAMA DENGAN SISANYA - dan ini perbaikan
+     atas cacat yang menghasilkan laporan lapangan yang tidak masuk akal
+     ("tombolnya ada tapi tidak berfungsi", "kotaknya tidak berbingkai").
+
+     Dulu halamannya jaringan-dulu sementara gaya.css dan alur.js
+     singgahan-dulu. Akibatnya TIAP TERBITAN BARU, sekali: index.html yang
+     terambil versi BARU, sementara gaya dan kodenya masih versi LAMA dari
+     singgahan - karena service worker yang baru belum selesai memasang waktu
+     berkas-berkas itu diminta. Yang tergambar markup baru tanpa gayanya, dan
+     tombol baru yang tidak punya satu pun penangan. Itu bukan "singgahan
+     basi" yang hilang sendiri sesudah refresh: itu SATU MUATAN YANG ISINYA
+     DUA GENERASI, dan yang melihatnya melaporkannya sebagai fitur yang rusak.
+
+     Sekarang satu muatan selalu satu generasi. Ongkosnya disebut: terbitan
+     baru butuh SATU pembukaan lagi sebelum terlihat (yang pertama memasang
+     service worker barunya, yang kedua memakainya). Terbitan yang telat satu
+     pembukaan jauh lebih murah daripada terbitan yang sampai dalam keadaan
+     rusak. */
   if (permintaan.mode === 'navigate') {
     ev.respondWith(
-      fetch(permintaan).catch(function () {
-        return caches.match('./index.html').then(function (r) {
-          return r || new Response('Tidak ada sinyal', { status: 503 });
+      caches.match('./index.html').then(function (r) {
+        return r || fetch(permintaan).catch(function () {
+          return new Response('Tidak ada sinyal', { status: 503 });
         });
       })
     );

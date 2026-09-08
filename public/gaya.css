@@ -1716,33 +1716,41 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 }
 .hitung-layar{
   background:var(--g);border-radius:12px;
-  padding:10px 12px;flex:none;
+  padding:10px 12px;flex:none;position:relative;
 }
-/* Baris suntingnya di bawah hasil, bukan di sebelahnya: empat tombol di
-   samping angka mendorong angkanya - dan angka yang terpotong di kalkulator
-   adalah satu-satunya hal yang tidak boleh terpotong. */
+/* NUMPANG DI SUDUT KIRI ATAS, tidak mengambil satu baris pun. Yang dibaca
+   mata di kotak ini angkanya, dan angkanya rata kanan - jadi sudut kiri atas
+   memang kosong. Baris tombol sendiri di bawah hasil memakan tinggi dari papan
+   tombol DAN menaruh empat kotak abu-abu tepat di jalur baca.
+   MIKRO (26px), satu-satunya tempat di aplikasi ini yang melanggar sasaran
+   sentuh 44px, dengan sengaja: keempatnya jalan pintas yang punya jalan lain
+   yang lebih besar - ketuk layarnya untuk menaruh karet, papan ketik untuk
+   menempel. Yang tidak boleh mengecil tombol yang tidak punya jalan lain. */
 .hitung-sunting{
-  display:flex;align-items:center;gap:6px;
-  margin-top:6px;padding-top:6px;border-top:1px solid var(--l);
+  position:absolute;top:8px;left:10px;
+  display:flex;align-items:center;gap:4px;
 }
-.hitung-sela{flex:1}
 .hit-sunting{
   flex:none;display:flex;align-items:center;justify-content:center;
-  width:38px;height:34px;padding:0;border-radius:9px;cursor:pointer;
+  width:26px;height:26px;padding:0;border-radius:7px;cursor:pointer;
   border:1px solid var(--l);background:var(--p);color:var(--m);
-  font-size:14px;line-height:1;
+  font-size:10px;line-height:1;
 }
-.hit-sunting:active{background:var(--g)}
-.hit-sunting .ik{width:17px;height:17px}
+.hit-sunting:active{background:var(--g);color:var(--a)}
+.hit-sunting .ik{width:13px;height:13px}
 
 /* KARETNYA DIGAMBAR SENDIRI, bukan milik kotak isian - kotak isian sudah
    dibuang karena autofill. Yang dibayar: satu <span> per huruf supaya
    ketukannya bisa ditebak jatuh di sela mana. Yang didapat: menyunting angka
    di tengah kalimat tanpa mengetik ulang seluruhnya, dan itu satu-satunya
    keluhan yang tersisa dari kalkulator ini. */
+/* TEBAL DAN PENUH, bukan garis rambut. Karet 2px setinggi satu em di antara
+   angka 22px tidak terbaca sebagai karet di layar HP - dia terbaca sebagai
+   cacat rendering, dan begitu dia tidak terlihat, tombol panah di sebelahnya
+   jadi tombol yang "tidak melakukan apa-apa". Itu keluhan lapangannya. */
 .hitung-karet{
-  display:inline-block;width:2px;height:1em;vertical-align:-0.13em;
-  background:var(--a);margin:0 -1px;
+  display:inline-block;width:3px;height:1.15em;vertical-align:-0.22em;
+  background:var(--a);border-radius:2px;margin:0 1px;
   animation:karet-kedip 1.05s step-end infinite;
 }
 @keyframes karet-kedip{50%{opacity:0}}
@@ -1755,10 +1763,14 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    ekornya selalu terlihat: yang baru diketuk itu yang paling dicari mata. */
 .hitung-ketik{
   width:100%;color:var(--i);
-  font-size:22px;padding:2px 0;min-height:30px;
+  font-size:22px;min-height:30px;
   font-variant-numeric:tabular-nums;
   text-align:right;white-space:nowrap;overflow-x:auto;
   scrollbar-width:none;-ms-overflow-style:none;
+  /* Kirinya dikosongkan untuk gerombolan mikro yang duduk di situ; kanannya
+     2px supaya karet di ujung kalimat tidak terpotong tepi kotak yang
+     menggulir - karet yang terpotong sama saja dengan karet yang tidak ada. */
+  padding:2px 2px 2px 122px;
 }
 .hitung-ketik::-webkit-scrollbar{display:none}
 /* Hasilnya lebih besar daripada yang diketik, dan itu bukan hiasan: yang
