@@ -534,8 +534,16 @@
        barusan kamu tekan - dan begitu satu ketukan meleset, tidak ada satu
        pun cara mengetahuinya kecuali menghitung ulang dari nol. -->
   <div class="hitung-layar">
-    <input id="hitung-ketik" class="hitung-ketik" inputmode="text"
-           autocomplete="off" spellcheck="false" placeholder="0" data-asli>
+    <!-- BUKAN <input>, dan itu perbaikan atas cacat yang tidak pernah
+         terpikir: Chrome menganggap kotak isian mana pun layak diisikan
+         simpanan autofill-nya, dan tiap ketukan angka memfokuskan kotaknya
+         lagi - jadi tiap angka memanggil daftar sandi dan Client ID Google
+         yang panjang itu. 'autocomplete=off' tidak menghentikannya; Chrome
+         memang boleh mengabaikannya. Yang menghentikannya cuma berhenti jadi
+         kotak isian sama sekali.
+         Papan tombolnya yang jadi satu-satunya jalan masuk di HP; papan ketik
+         fisik tetap jalan lewat penangan keydown di alur.js. -->
+    <div id="hitung-ketik" class="hitung-ketik" data-asli></div>
     <div class="hitung-hasil" id="hitung-hasil" data-asli></div>
   </div>
   <div class="hitung-tombol" id="hitung-tombol"></div>

@@ -501,6 +501,24 @@
      Menutup begitu satu dipilih, dan menutup juga waktu kamu mengetuk di luar
      - menu yang tetap terbuka sesudah dipakai adalah satu ketukan tambahan
      untuk membereskan sesuatu yang tidak kamu minta. */
+  /* TURUN DARI TOMBOLNYA, bukan menempel di tepi atas layar. Menu yang lahir
+     di ujung atas HP tidak menunjuk apa pun - dia terbaca sebagai lapisan lain
+     yang kebetulan muncul, dan matanya harus mencari sendiri hubungannya
+     dengan tombol yang barusan diketuk. Letaknya diukur dari tombolnya waktu
+     dibuka, bukan dipatok di CSS: baris pintunya bisa berpindah tinggi
+     (ikonnya naik di bawah 480px), dan angka yang ditebak sekali akan meleset
+     di layar yang lain. */
+  function letakkanMenuAlat(menu) {
+    var tombol = $('.layar.aktif [data-tab-ke="' + PINTU_ALAT + '"]');
+    if (!tombol) return;
+    var r = tombol.getBoundingClientRect();
+    menu.style.top = Math.round(r.bottom + 6) + 'px';
+    /* Dipatok dari KANAN: tombol Tools duduk di ujung kanan baris, dan menu
+       yang tumbuh ke kanan dari situ keluar layar. */
+    menu.style.right = Math.max(8, Math.round(global.innerWidth - r.right)) + 'px';
+    menu.style.left = 'auto';
+  }
+
   function bukaMenuAlat() {
     var lapis = $('#alat-lapis');
     var menu = $('#alat-menu');
@@ -513,6 +531,7 @@
              '<span>' + H(t[1]) + '</span></button>';
     }).join('');
     lapis.classList.remove('sembunyi');
+    letakkanMenuAlat(menu);
   }
 
   function tutupMenuAlat() {
@@ -6194,7 +6213,7 @@
     var isian = $('#hitung-ketik');
     var hasil = $('#hitung-hasil');
     if (!isian || !hasil) return;
-    var teks = isian.value.trim();
+    var teks = isian.textContent.trim();
     if (!teks) { hasil.textContent = ''; hasil.classList.remove('galat'); return; }
     var r = THitung.hitung(teks);
     /* GALATNYA TIDAK DITULIS SELAMA MENGETIK. Setengah kalimat memang belum
@@ -6205,14 +6224,17 @@
     hasil.textContent = r.ok ? '= ' + r.teks : '';
   }
 
+  /* TIDAK ADA focus() DI SINI, dan itu bukan kelalaian. Tampilannya bukan
+     kotak isian lagi justru supaya Chrome berhenti menawarkan simpanan
+     autofill-nya - memfokuskan apa pun sesudah tiap ketukan angka adalah cara
+     memanggil kembali daftar itu. */
   function ketukHitung(tombol) {
     var isian = $('#hitung-ketik');
     if (!isian) return;
-    if (tombol === 'C') { isian.value = ''; hitungUlang(); isian.focus(); return; }
+    if (tombol === 'C') { isian.textContent = ''; hitungUlang(); return; }
     if (tombol === '⌫') {
-      isian.value = isian.value.slice(0, -1);
+      isian.textContent = isian.textContent.slice(0, -1);
       hitungUlang();
-      isian.focus();
       return;
     }
     /* Fungsi selalu membawa kurung bukanya sendiri: yang mengetuk "sin"
@@ -6221,9 +6243,38 @@
     var sisip = tombol;
     if (tombol === 'sin' || tombol === 'cos' || tombol === 'tan' ||
         tombol === 'ln' || tombol === 'log' || tombol === '√') sisip = tombol + '(';
-    isian.value += sisip;
+    isian.textContent += sisip;
     hitungUlang();
-    isian.focus();
+    /* Ekornya selalu terlihat: yang baru diketuk itu yang paling dicari mata,
+       dan angka yang menghilang ke kanan terbaca sebagai ketukan yang tidak
+       masuk. */
+    isian.scrollLeft = isian.scrollWidth;
+  }
+
+  /* PAPAN KETIK FISIK TETAP JALAN. Di desktop yang paling wajar mengetik
+     angkanya, bukan mengarahkan tetikus ke tombol - dan karena tampilannya
+     bukan kotak isian lagi, satu-satunya cara mendengarnya di tingkat
+     dokumen. Cuma waktu layar kalkulatornya memang terbuka: penangan yang
+     mendengar di layar lain akan menelan ketikan yang dimaksudkan kotak
+     pencarian. */
+  var HITUNG_TOMBOL_KETIK = {
+    '*': '×', 'x': '×', 'X': '×', '/': '÷', '-': '−', '.': ','
+  };
+
+  function ketikHitung(ev) {
+    if (layarSaat !== 'l-hitung') return;
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    var k = ev.key;
+    if (k === 'Backspace') { ev.preventDefault(); ketukHitung('⌫'); return; }
+    if (k === 'Escape' || k === 'Delete') { ev.preventDefault(); ketukHitung('C'); return; }
+    /* Enter tidak melakukan apa-apa dan itu memang benar: hasilnya sudah
+       terhitung sejak ketukan pertama, jadi "=" tidak punya pekerjaan. */
+    if (k === 'Enter' || k === '=') { ev.preventDefault(); return; }
+    if (k.length !== 1) return;
+    var c = HITUNG_TOMBOL_KETIK[k] || k;
+    if (!/^[0-9,()+\-−×÷^%!.]$/.test(c)) return;
+    ev.preventDefault();
+    ketukHitung(c);
   }
 
   /* ===== SEPEREMPAT LAYAR DI DESKTOP, SEKALI SAJA =====
@@ -6409,7 +6460,7 @@
       var b = ev.target.closest('[data-hitung]');
       if (b) ketukHitung(b.getAttribute('data-hitung'));
     });
-    $('#hitung-ketik').addEventListener('input', hitungUlang);
+    document.addEventListener('keydown', ketikHitung);
 
     $('#b-pintas-tulis').addEventListener('click', function () {
       /* Foldernya DIKOSONGKAN dengan sengaja, dan itu bukan kekurangan -

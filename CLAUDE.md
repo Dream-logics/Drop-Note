@@ -1217,6 +1217,19 @@ public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
                     diuji tanpa membuka satu layar pun; kalkulator yang salah
                     hitung adalah cacat yang paling tidak mungkin ketahuan dari
                     melihat layarnya.
+                    TAMPILANNYA BUKAN <input>, DAN ITU BUKAN SELERA. Dulu dia
+                    kotak isian dan tiap ketukan angka memanggil focus() -
+                    akibatnya Chrome menawarkan simpanan autofill-nya di atas
+                    papan tombol, dan yang muncul di layar pemakainya Client ID
+                    Google sepanjang empat puluh karakter, tiap kali dia
+                    mengetuk "7". autocomplete="off" TIDAK MENOLONG: Chrome
+                    mengabaikannya untuk tawaran simpanan sendiri. Jadi
+                    tampilannya <div> ber-textContent, dan tidak ada satu pun
+                    focus() di jalur ketukan. Konsekuensinya papan ketik FISIK
+                    berhenti terdengar sendiri, dan itu dibayar penangan
+                    'keydown' di tingkat dokumen yang DIPAGARI layarSaat ===
+                    'l-hitung' - tanpa pagar itu dia menelan ketikan yang
+                    dimaksudkan kotak pencarian.
 public/alur.js      BARIS PINTUNYA MILIK PEMAKAINYA ('pintuUtama' di setelan,
                     diatur di bagian Menu paling atas Setelan). Enam pintu
                     tidak muat sebaris di HP, dan yang tidak muat dipotong
@@ -1239,6 +1252,17 @@ public/alur.js      BARIS PINTUNYA MILIK PEMAKAINYA ('pintuUtama' di setelan,
                     keTab ikut benar). Cuma digambar kalau memang ada isinya:
                     pintu yang membuka menu kosong menjanjikan sesuatu lalu
                     tidak memberi apa-apa.
+                    MENUNYA TURUN DARI TOMBOLNYA, bukan menempel di tepi atas
+                    layar (letakkanMenuAlat, dipanggil tiap kali dibuka).
+                    Menu yang lahir di ujung atas HP tidak menunjuk apa pun -
+                    dia terbaca sebagai lapisan lain yang kebetulan muncul, dan
+                    matanya harus mencari sendiri hubungannya dengan tombol yang
+                    barusan diketuk. Letaknya DIUKUR waktu dibuka, bukan dipatok
+                    di CSS: baris pintunya berubah tinggi di bawah 480px (ikon
+                    naik ke atas nama), jadi angka yang ditebak sekali akan
+                    meleset di layar yang lain. Dipatok dari KANAN - tombol
+                    Tools duduk di ujung kanan baris, dan menu yang tumbuh ke
+                    kanan dari situ keluar layar.
 public/sw.js        service worker — singgahan kerangka + penerima "Bagikan"
 public/manifest.webmanifest   supaya bisa dipasang di HP
 uji/uji-terima.mjs            uji terima (Playwright)
@@ -1257,7 +1281,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (943 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (946 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
