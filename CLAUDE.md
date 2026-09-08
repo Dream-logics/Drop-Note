@@ -1277,6 +1277,85 @@ public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
                     bertetangga, bukan satu alat. Yang di dalamnya berhenti
                     berbingkai sendiri: kotak di dalam kotak menggandakan garis,
                     dan yang dibayar lebar isinya di layar yang paling sempit.
+                    KARETNYA DIGAMBAR SENDIRI ('hitungTeks' + 'hitungKaret' di
+                    alur.js; layarnya cuma cerminannya). Tampilannya bukan
+                    kotak isian, jadi dia tidak punya karet bawaan - dan tanpa
+                    karet, satu angka salah di tengah
+                    "25+36×6+69×3+63+56+65" berarti mengetik ulang dua puluh
+                    ketukan untuk membetulkan satu. Itu keluhan lapangannya,
+                    apa adanya. TIAP HURUF JADI <span data-i>: mengetuk
+                    layarnya untuk menaruh karet adalah gerakan pertama yang
+                    dicoba jari, jauh sebelum dia mencari tombol panah, dan
+                    ketukan cuma bisa ditebak jatuh di sela mana kalau tiap
+                    huruf punya kotaknya sendiri. Paruh kiri = sebelum, paruh
+                    kanan = sesudah, sama dengan tiap kotak teks di mana pun.
+                    Panah ◀ ▶ tetap ada untuk jari yang meleset satu huruf.
+                    '⌫' menghapus yang di KIRI karet, bukan di ujung kalimat.
+                    TEMPEL MEMBERSIHKAN, BUKAN MENOLAK: angka yang disalin dari
+                    mana pun datang membawa "Rp", spasi ribuan, dan satuan di
+                    ekornya, dan menolak seluruhnya karena satu karakter
+                    berarti mengetik ulang - persis pekerjaan yang mau dihapus
+                    tombolnya. TITIKNYA DIBACA DESIMAL, TIDAK PERNAH PEMISAH
+                    RIBUAN, dan itu keputusan yang harus disebut karena
+                    kelihatannya keliru: "Rp 1.250" masuk sebagai "1,250".
+                    Sebabnya "3.141" dan "1.250" bentuknya sama persis - tidak
+                    ada aturan yang membedakannya tanpa menebak, dan menebak
+                    berarti kadang-kadang membuang ketelitian tanpa satu tanda
+                    pun di layar. Yang dipilih kekeliruan yang KELIHATAN.
+                    Papan klip yang ditolak peramban DIKATAKAN; tombol yang
+                    diam waktu ditekan terbaca sebagai aplikasi yang rusak.
+public/hitung.js    (lanjutan) KONVERSI SATUAN ('SATUAN' + 'konversi'), di
+                    ruang kosong di bawah papan tombol. Yang menghitung gaya
+                    baut juga yang harus menerjemahkan lbf·ft dari katalog ke
+                    N·m; dua aplikasi untuk satu pekerjaan berarti angkanya
+                    disalin lewat kepala, dan angka yang lewat kepala adalah
+                    angka yang bisa salah.
+                    ENAM BELAS KATEGORI, dan isinya bukan daftar lengkap segala
+                    satuan yang pernah ada - tiap baris yang tidak pernah
+                    dipilih adalah baris yang harus dilewati mata sebelum
+                    sampai ke yang dicari. Yang menentukan isinya soal yang
+                    benar-benar muncul di teknik mesin & fisika: kekuatan bahan
+                    (Pa/MPa/psi/kgf/cm²), baut dan poros (N·m/kgf·m/lbf·ft),
+                    motor dan pompa (kW/hp/PS, L/min/GPM/CFM), getaran
+                    (Hz/rpm/rad/s), dan gambar kerja yang datang dalam inci
+                    sementara mesinnya metrik. N/mm² ditulis terpisah walau dia
+                    MPa persis: yang membacanya di gambar kerja menulisnya
+                    begitu, dan satuan yang tidak ada di daftar terbaca sebagai
+                    "tidak didukung", bukan "cari nama lainnya".
+                    BENTUKNYA [nama, faktor, geseran]; geseran ada CUMA untuk
+                    suhu, dan dia yang membedakan konversi suhu dari semua yang
+                    lain - mengalikan saja menghasilkan 0°C = 0°F, jawaban yang
+                    salah dan kelihatan masuk akal. Basis suhunya KELVIN, bukan
+                    Celsius: kalau Celsius, tiap satuan lain harus membawa
+                    geserannya sendiri dan yang pertama salah tanda tidak akan
+                    ketahuan sampai ada yang mengonversi °F ke K.
+                    LEWAT BASIS, SELALU - tidak ada tabel pasangan. Tabel
+                    pasangan untuk dua belas satuan tekanan berisi seratus tiga
+                    puluh dua angka, dan satu saja yang salah ketik tidak akan
+                    pernah ketahuan kecuali oleh yang kebetulan memakainya.
+                    Satuan di luar kategorinya DITOLAK, bukan dijawab nol.
+                    HASILNYA HIDUP, tidak ada tombol "Konversi" - sama dengan
+                    kalkulatornya sendiri. "→ Hitung" MENGIRIM hasilnya ke
+                    karet kalkulator (titik jadi koma, karena mesinnya membaca
+                    koma), dan itu yang membedakannya dari konverter mana pun
+                    di toko aplikasi: hasil konversi hampir tidak pernah
+                    jawaban akhirnya - dia angka yang mau dikalikan luas atau
+                    dibagi jumlah baut. Ganti kategori MELEPAS pasangan
+                    satuannya: "psi" tidak punya arti di Torsi, dan daftar yang
+                    menyisakan pilihan lama akan diam-diam mengonversi yang
+                    bukan-bukan. Bawaannya dua yang PERTAMA di tiap kategori,
+                    dan urutannya disusun begitu (psi→MPa, lbf·ft→N·m,
+                    rpm→rad/s). Kategorinya diingat ('konversiKategori', TIDAK
+                    ikut sinkron); yang mengurus poros membuka Torsi tiap hari.
+                    NAMA KATEGORINYA diterjemahkan, LAMBANG SATUANNYA tidak
+                    (data-asli cuma di dua daftar satuan, bukan di daftar
+                    kategori) - psi tetap psi di bahasa mana pun.
+                    Isian nilainya type=number, dan itu disengaja sesudah cacat
+                    autofill di layar kalkulatornya: Chrome menawarkan simpanan
+                    teksnya pada kotak isian teks, tidak pada kotak angka.
+                    Penangan keydown kalkulatornya PULANG kalau yang aktif
+                    INPUT/SELECT - tanpa itu, angka yang diketik di konverter
+                    ikut mendarat di kalkulatornya.
 public/alur.js      BARIS PINTUNYA MILIK PEMAKAINYA ('pintuUtama' di setelan,
                     diatur di bagian Menu paling atas Setelan). Enam pintu
                     tidak muat sebaris di HP, dan yang tidak muat dipotong
@@ -1328,7 +1407,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (957 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (987 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

@@ -1718,12 +1718,39 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
   background:var(--g);border-radius:12px;
   padding:10px 12px;flex:none;
 }
-/* Hasil dan tombol salinnya sebaris: tombolnya bukan penghuni baris sendiri -
-   satu baris tambahan untuk satu ikon adalah tinggi yang dibayar papan
-   tombolnya. */
-.hitung-baris-hasil{display:flex;align-items:center;gap:8px}
-.hitung-salin{flex:none;width:36px;height:36px;color:var(--m)}
-.hitung-baris-hasil .hitung-hasil{flex:1;min-width:0}
+/* Baris suntingnya di bawah hasil, bukan di sebelahnya: empat tombol di
+   samping angka mendorong angkanya - dan angka yang terpotong di kalkulator
+   adalah satu-satunya hal yang tidak boleh terpotong. */
+.hitung-sunting{
+  display:flex;align-items:center;gap:6px;
+  margin-top:6px;padding-top:6px;border-top:1px solid var(--l);
+}
+.hitung-sela{flex:1}
+.hit-sunting{
+  flex:none;display:flex;align-items:center;justify-content:center;
+  width:38px;height:34px;padding:0;border-radius:9px;cursor:pointer;
+  border:1px solid var(--l);background:var(--p);color:var(--m);
+  font-size:14px;line-height:1;
+}
+.hit-sunting:active{background:var(--g)}
+.hit-sunting .ik{width:17px;height:17px}
+
+/* KARETNYA DIGAMBAR SENDIRI, bukan milik kotak isian - kotak isian sudah
+   dibuang karena autofill. Yang dibayar: satu <span> per huruf supaya
+   ketukannya bisa ditebak jatuh di sela mana. Yang didapat: menyunting angka
+   di tengah kalimat tanpa mengetik ulang seluruhnya, dan itu satu-satunya
+   keluhan yang tersisa dari kalkulator ini. */
+.hitung-karet{
+  display:inline-block;width:2px;height:1em;vertical-align:-0.13em;
+  background:var(--a);margin:0 -1px;
+  animation:karet-kedip 1.05s step-end infinite;
+}
+@keyframes karet-kedip{50%{opacity:0}}
+/* Tiap huruf sasaran sentuh sendiri, jadi ruangnya sedikit dilebarkan -
+   angka yang berdempetan bikin ketukan jatuh di sela sebelahnya, dan karet
+   yang mendarat satu huruf meleset lebih menjengkelkan daripada tidak bisa
+   digeser sama sekali. */
+.hitung-ketik span[data-i]{padding:0 .5px;cursor:text}
 /* Bukan kotak isian - lihat index.html. Digulir mendatar sendiri supaya
    ekornya selalu terlihat: yang baru diketuk itu yang paling dicari mata. */
 .hitung-ketik{
@@ -1797,6 +1824,71 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
   flex:none;max-width:52%;font-size:14px;font-weight:600;color:var(--i);
   font-variant-numeric:tabular-nums;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+/* ===== KONVERSI SATUAN =====
+   Bingkainya sama dengan kalkulatornya - dua alat di satu layar, satu bahasa
+   rupa. Yang membedakan cuma dia TIDAK ikut memanjang: papan tombol yang
+   berebut tinggi dengan konverter berarti tombol angkanya memendek tiap kali
+   daftar satuannya bertambah. */
+.konv-badan{
+  flex:none;margin-top:10px;
+  background:var(--p);border:1px solid var(--l);border-radius:16px;
+  padding:10px;
+}
+.konv-kepala{
+  display:flex;align-items:center;gap:8px;
+  font-size:11.5px;color:var(--m);margin-bottom:8px;
+}
+.konv-kepala span{flex:none}
+.konv-kat{
+  flex:1;min-width:0;height:34px;padding:0 8px;
+  border:1px solid var(--l);border-radius:9px;
+  background:var(--p);color:var(--i);font-size:13.5px;font-weight:600;
+}
+.konv-baris{display:flex;align-items:center;gap:8px}
+/* Angka masuk dan angka keluar HARUS setinggi dan serupa satu sama lain:
+   yang di bawah jawaban dari yang di atas, dan dua bentuk yang berbeda
+   terbaca sebagai dua isian yang dua-duanya menunggu diisi. */
+.konv-nilai,.konv-hasil{
+  flex:1;min-width:0;height:42px;padding:0 10px;
+  border:1px solid var(--l);border-radius:10px;background:var(--g);
+  color:var(--i);font-size:17px;font-weight:600;
+  font-variant-numeric:tabular-nums;
+  display:flex;align-items:center;
+}
+.konv-nilai{-moz-appearance:textfield}
+.konv-nilai::-webkit-outer-spin-button,
+.konv-nilai::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+/* Hasilnya beraksen dan tidak bisa diketik: yang membedakan "jawaban" dari
+   "pertanyaan" di dua kotak yang bentuknya sama. */
+.konv-hasil{
+  color:var(--a);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.konv-satuan{
+  flex:none;width:118px;height:42px;padding:0 6px;
+  border:1px solid var(--l);border-radius:10px;
+  background:var(--p);color:var(--i);font-size:14px;
+}
+.konv-tukar-baris{display:flex;justify-content:center;padding:2px 0}
+.konv-tukar{
+  width:34px;height:26px;padding:0;border-radius:8px;cursor:pointer;
+  border:1px solid var(--l);background:var(--p);color:var(--m);
+  font-size:14px;line-height:1;
+}
+.konv-tukar:active{background:var(--g)}
+.konv-aksi{display:flex;align-items:center;gap:8px;margin-top:8px}
+/* Bergaris putus-putus: kosakata yang di aplikasi ini sudah berarti "jalan
+   pintas, bukan keadaan" - sama dengan Reset dan "+ Folder". */
+.konv-kirim{
+  flex:1;height:36px;border-radius:10px;cursor:pointer;
+  border:1px dashed var(--l);background:none;color:var(--m);
+  font-size:13px;font-weight:600;
+}
+.konv-kirim:active{background:var(--g)}
+@media (max-width:400px){
+  .konv-satuan{width:100px;font-size:13px}
 }
 
 /* ===== MENU TOOLS =====

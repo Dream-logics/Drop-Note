@@ -184,6 +184,36 @@
     'Salin seluruh tulisan': 'Copy the whole note',
     'Salin hasil': 'Copy result',
     'Riwayat': 'History',
+    'Tempel dari papan klip': 'Paste from clipboard',
+    'Geser ke kiri': 'Move left',
+    'Geser ke kanan': 'Move right',
+    'Peramban ini tidak mengizinkan tempel': 'This browser does not allow pasting',
+    'Tidak bisa membaca papan klip': 'Cannot read the clipboard',
+    'Tidak ada angka di papan klip': 'No numbers on the clipboard',
+    /* NAMA KATEGORINYA diterjemahkan, LAMBANG SATUANNYA tidak - psi tetap psi
+       di bahasa mana pun, dan menerjemahkannya berarti mengarang satuan yang
+       tidak ada di gambar kerja mana pun. Itu sebabnya cuma daftar kategori
+       yang lepas dari data-asli. */
+    'Konversi satuan': 'Unit conversion',
+    'Tukar satuannya': 'Swap the units',
+    'Salin hasil konversi': 'Copy the conversion result',
+    'Masuk ke kalkulator': 'Sent to the calculator',
+    '→ Hitung': '→ Calculator',
+    'Panjang': 'Length',
+    'Luas': 'Area',
+    'Massa': 'Mass',
+    'Gaya': 'Force',
+    'Tekanan': 'Pressure',
+    'Torsi': 'Torque',
+    'Energi': 'Energy',
+    'Daya': 'Power',
+    'Suhu': 'Temperature',
+    'Kecepatan': 'Speed',
+    'Putaran': 'Rotation',
+    'Sudut': 'Angle',
+    'Debit': 'Flow rate',
+    'Massa jenis': 'Density',
+    'Waktu': 'Time',
     /* "Bersihkan", bukan "Hapus": yang dibuang riwayat yang memang tidak
        pernah disimpan, dan kata yang sama dengan menghapus catatan bikin
        jarinya ragu di tombol yang sebenarnya tidak berakibat apa-apa. */
