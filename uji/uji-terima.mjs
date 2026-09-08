@@ -7665,6 +7665,40 @@ console.log('\nkalkulator ilmiah');
   await tolak('abc');
   await tolak('');
 
+  /* KONVERSI SATUAN - diuji di mesinnya, tanpa DOM. Faktor yang meleset tidak
+     pernah kelihatan dari melihat layarnya; yang kelihatan cuma angka yang
+     masuk akal dan salah. */
+  const konv = async (kat, dari, ke, v) =>
+    await hal.evaluate(([k, d, s, n]) => THitung.konversi(k, d, s, n).nilai,
+                       [kat, dari, ke, v]);
+  const dekat = (a, b) => Math.abs(a - b) <= Math.abs(b) * 1e-9 + 1e-12;
+  const cekKonv = async (kat, dari, ke, v, harap) => {
+    const r = await konv(kat, dari, ke, v);
+    cek('  ' + v + ' ' + dari + ' = ' + harap + ' ' + ke, dekat(r, harap), String(r));
+  };
+  /* Suhu SATU-SATUNYA yang bergeser, dan itu yang paling gampang salah:
+     mengalikan saja menghasilkan 0°C = 0°F, jawaban yang salah dan kelihatan
+     masuk akal. -40 titik temu keduanya - kalau geserannya keliru, dia yang
+     pertama meleset. */
+  await cekKonv('Suhu', '°C', '°F', 100, 212);
+  await cekKonv('Suhu', '°C', '°F', 0, 32);
+  await cekKonv('Suhu', '°F', '°C', -40, -40);
+  await cekKonv('Suhu', '°C', 'K', 25, 298.15);
+  /* Yang benar-benar dipakai teknik mesin sehari-hari. */
+  await cekKonv('Tekanan', 'psi', 'MPa', 500, 3.447378646584);
+  await cekKonv('Tekanan', 'MPa', 'N/mm²', 250, 250);
+  await cekKonv('Tekanan', 'kgf/cm²', 'bar', 1, 0.980665);
+  await cekKonv('Torsi', 'lbf·ft', 'N·m', 100, 135.58179483314);
+  await cekKonv('Daya', 'PS', 'kW', 1, 0.73549875);
+  await cekKonv('Putaran', 'Hz', 'rpm', 50, 3000);
+  await cekKonv('Panjang', 'in', 'mm', 1, 25.4);
+  await cekKonv('Massa jenis', 'g/cm³', 'kg/m³', 7.85, 7850);
+  /* Satuan yang bukan milik kategorinya DITOLAK, bukan dijawab nol: "psi" di
+     kategori Torsi adalah pertanyaan yang tidak punya jawaban, dan angka yang
+     keluar dari pertanyaan begitu tidak akan pernah dicurigai. */
+  cek('satuan di luar kategorinya ditolak, bukan dijawab angka',
+      !(await hal.evaluate(() => THitung.konversi('Torsi', 'psi', 'N·m', 1).ok)));
+
   /* Layarnya: hasilnya dihitung TIAP KETUKAN, bukan menunggu "=". */
   await hal.evaluate(() => TAlur.keLayarUji('l-hitung'));
   await hal.waitForTimeout(300);
@@ -7807,6 +7841,155 @@ console.log('\nkalkulator ilmiah');
                !!b.querySelector('#hitung-tombol') &&
                getComputedStyle(b).borderTopWidth !== '0px';
       }));
+
+  /* MENYUNTING DI TENGAH KALIMAT. Keluhan lapangannya persis ini:
+     "25+36×6+69×3+63+56+65" dengan satu angka salah, dan tanpa karet
+     satu-satunya jalan mengetik ulang dua puluh ketukan untuk membetulkan
+     satu. */
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.keyboard.type('25+36*6');
+  await hal.waitForTimeout(250);
+  cek('karetnya digambar sendiri - tampilannya tetap bukan kotak isian',
+      (await hal.locator('#hitung-ketik .hitung-karet').count()) === 1 &&
+      (await hal.evaluate(() =>
+        document.querySelector('#hitung-ketik').tagName)) !== 'INPUT');
+  /* Tiap huruf sasaran sentuh sendiri: menaruh karet dengan mengetuk layarnya
+     itu gerakan pertama yang dicoba jari, jauh sebelum dia mencari panah. */
+  cek('tiap huruf punya sasarannya sendiri untuk diketuk',
+      (await hal.locator('#hitung-ketik span[data-i]').count()) === 7);
+  await hal.keyboard.press('ArrowLeft');
+  await hal.keyboard.press('ArrowLeft');
+  await hal.keyboard.press('ArrowLeft');
+  await hal.waitForTimeout(150);
+  await hal.keyboard.press('Backspace');
+  await hal.waitForTimeout(200);
+  cek('Backspace menghapus yang di KIRI karet, bukan di ujung kalimat',
+      (await hal.textContent('#hitung-ketik')) === '25+6×6',
+      await hal.textContent('#hitung-ketik'));
+  await hal.keyboard.type('9');
+  await hal.waitForTimeout(200);
+  cek('dan yang diketik menyisip di karet, bukan menempel di ekor',
+      (await hal.textContent('#hitung-ketik')) === '25+96×6' &&
+      (await hal.textContent('#hitung-hasil')).indexOf('601') >= 0,
+      await hal.textContent('#hitung-ketik') + ' / ' + await hal.textContent('#hitung-hasil'));
+  /* Mengetuk hurufnya menaruh karet di situ - paruh kiri sebelum, paruh kanan
+     sesudah, sama dengan tiap kotak teks di mana pun. */
+  await hal.locator('#hitung-ketik span[data-i="0"]').click({ position: { x: 1, y: 5 } });
+  await hal.waitForTimeout(150);
+  await hal.keyboard.type('1');
+  await hal.waitForTimeout(200);
+  cek('mengetuk hurufnya memindahkan karet ke situ',
+      (await hal.textContent('#hitung-ketik')) === '125+96×6',
+      await hal.textContent('#hitung-ketik'));
+  /* Panahnya tetap ada untuk jari yang meleset satu huruf - dua arah. */
+  await hal.click('#l-hitung [data-karet="1"]');
+  await hal.click('#l-hitung [data-karet="1"]');
+  await hal.waitForTimeout(150);
+  await hal.keyboard.type('7');
+  await hal.waitForTimeout(200);
+  cek('dan tombol panahnya menggeser karet satu huruf',
+      (await hal.textContent('#hitung-ketik')) === '1257+96×6',
+      await hal.textContent('#hitung-ketik'));
+  await hal.click('#l-hitung [data-karet="-1"]');
+  await hal.waitForTimeout(150);
+  await hal.keyboard.press('Backspace');
+  await hal.waitForTimeout(200);
+  cek('dan yang ke kiri juga',
+      (await hal.textContent('#hitung-ketik')) === '127+96×6',
+      await hal.textContent('#hitung-ketik'));
+
+  /* TEMPEL. Yang ditempel DIBERSIHKAN, bukan ditolak: angka yang disalin dari
+     mana pun datang membawa "Rp", spasi ribuan, dan satuan di ekornya, dan
+     menolak seluruhnya karena satu karakter berarti mengetik ulang - persis
+     pekerjaan yang mau dihapus tombol ini. */
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.evaluate(() => {
+    navigator.clipboard.readText = () => Promise.resolve('total: 1250 x 4 kg');
+  });
+  await hal.click('#b-hitung-tempel');
+  await hal.waitForTimeout(300);
+  cek('tempel membersihkan yang tidak punya arti, bukan menolaknya',
+      (await hal.textContent('#hitung-ketik')) === '1250×4' &&
+      (await hal.textContent('#hitung-hasil')).indexOf('5000') >= 0,
+      await hal.textContent('#hitung-ketik') + ' / ' + await hal.textContent('#hitung-hasil'));
+  /* TITIK YANG DITEMPEL DIBACA DESIMAL, tidak pernah pemisah ribuan - dan itu
+     keputusan, bukan kelalaian. "3.141" dan "1.250" bentuknya sama persis,
+     jadi menebak mana yang ribuan berarti kadang-kadang membuang ketelitian
+     tanpa satu tanda pun di layar. Yang dipilih kekeliruan yang KELIHATAN:
+     "1,250" tertulis di layar dan bisa dibetulkan; 3141 yang lahir dari 3.141
+     tidak pernah dicurigai. */
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.evaluate(() => {
+    navigator.clipboard.readText = () => Promise.resolve('3.141');
+  });
+  await hal.click('#b-hitung-tempel');
+  await hal.waitForTimeout(300);
+  cek('titik yang ditempel dibaca desimal, bukan pemisah ribuan',
+      (await hal.textContent('#hitung-hasil')).indexOf('3.141') >= 0,
+      await hal.textContent('#hitung-hasil'));
+  await hal.evaluate(() => {
+    navigator.clipboard.readText = () => Promise.reject(new Error('ditolak'));
+  });
+  await hal.click('#b-hitung-tempel');
+  await hal.waitForTimeout(400);
+  cek('papan klip yang ditolak DIKATAKAN, tidak didiamkan',
+      (await hal.textContent('#pesan')).length > 0,
+      await hal.textContent('#pesan'));
+
+  /* KONVERTERNYA DI LAYAR YANG SAMA, di ruang kosong di bawah papan tombol:
+     yang menghitung gaya baut juga yang harus menerjemahkan lbf·ft dari
+     katalog, dan dua aplikasi untuk satu pekerjaan berarti angkanya disalin
+     lewat kepala. */
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.selectOption('#konv-kat', 'Tekanan');
+  await hal.waitForTimeout(250);
+  await hal.selectOption('#konv-dari', 'psi');
+  await hal.selectOption('#konv-ke', 'MPa');
+  await hal.fill('#konv-nilai', '500');
+  await hal.waitForTimeout(250);
+  /* Hasilnya HIDUP, tidak ada tombol "Konversi" - sama dengan kalkulatornya
+     sendiri: tombol yang wajib ditekan untuk sesuatu yang sudah bisa dihitung
+     cuma menunda jawabannya. */
+  cek('hasilnya muncul tanpa menekan tombol konversi',
+      (await hal.textContent('#konv-hasil')).indexOf('3.4473') === 0,
+      await hal.textContent('#konv-hasil'));
+  await hal.click('#b-konv-tukar');
+  await hal.waitForTimeout(250);
+  cek('tukar membalik pasangannya, bukan mengosongkannya',
+      (await hal.inputValue('#konv-dari')) === 'MPa' &&
+      (await hal.inputValue('#konv-ke')) === 'psi',
+      await hal.inputValue('#konv-dari') + '->' + await hal.inputValue('#konv-ke'));
+  /* KE KALKULATOR - ini yang membedakannya dari konverter mana pun di toko
+     aplikasi: hasil konversi hampir tidak pernah jawaban akhirnya. */
+  await hal.click('#b-konv-tukar');
+  await hal.waitForTimeout(200);
+  await hal.click('#b-konv-hitung');
+  await hal.waitForTimeout(300);
+  cek('hasilnya bisa dikirim ke kalkulator, tanpa diketik ulang',
+      (await hal.textContent('#hitung-ketik')).indexOf('3,4473') === 0,
+      await hal.textContent('#hitung-ketik'));
+  /* Titiknya jadi koma: mesinnya membaca koma, dan angka bertitik yang
+     dilempar ke situ berhenti jadi angka. */
+  cek('dan angkanya masih terbaca mesinnya sesudah dikirim',
+      (await hal.textContent('#hitung-hasil')).indexOf('3.4473') > 0,
+      await hal.textContent('#hitung-hasil'));
+  /* Ganti kategori MELEPAS pasangannya: "psi" tidak punya arti di Torsi, dan
+     daftar yang menyisakan pilihan lama akan diam-diam mengonversi yang
+     bukan-bukan. */
+  await hal.selectOption('#konv-kat', 'Torsi');
+  await hal.waitForTimeout(250);
+  cek('ganti kategori melepas pasangan satuan yang lama',
+      (await hal.inputValue('#konv-dari')) === 'N·m' &&
+      (await hal.inputValue('#konv-ke')) === 'kN·m',
+      await hal.inputValue('#konv-dari') + '->' + await hal.inputValue('#konv-ke'));
+  cek('dan kategorinya diingat supaya tidak dipilih ulang tiap hari',
+      (await hal.evaluate(() => TSimpan.setelan('konversiKategori'))) === 'Torsi');
+  /* Kategorinya diterjemahkan, LAMBANG SATUANNYA tidak - psi tetap psi di
+     bahasa mana pun, dan menerjemahkannya berarti mengarang satuan yang tidak
+     ada di gambar kerja mana pun. */
+  cek('lambang satuannya tidak pernah ikut diterjemahkan',
+      (await hal.locator('#konv-dari').getAttribute('data-asli')) !== null &&
+      (await hal.locator('#konv-kat').getAttribute('data-asli')) === null);
 
   await hal.click('#hitung-tombol [data-hitung="C"]');
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));

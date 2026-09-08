@@ -554,19 +554,71 @@
            Papan tombolnya yang jadi satu-satunya jalan masuk di HP; papan
            ketik fisik tetap jalan lewat penangan keydown di alur.js. -->
       <div id="hitung-ketik" class="hitung-ketik" data-asli></div>
-      <div class="hitung-baris-hasil">
-        <!-- Salinnya di KIRI, bukan di kanan: hasilnya rata kanan supaya
-             angkanya terbaca berderet, dan tombol di sisi itu mendorong
-             angkanya masuk. Disembunyikan waktu belum ada hasil - tombol salin
-             yang menyalin kekosongan cuma berbohong sekali lalu berhenti
-             dipercaya. -->
-        <button class="ikon-btn hitung-salin sembunyi" id="b-hitung-salin" aria-label="Salin hasil">
+      <div class="hitung-hasil" id="hitung-hasil" data-asli></div>
+      <!-- BARIS SUNTING, dan dia bukan hiasan: tanpa panah dan tempel, satu
+           angka yang salah di tengah kalimat panjang berarti mengetik ulang
+           seluruhnya. Dipisah dari papan tombol karena pekerjaannya beda -
+           papan tombol MENAMBAH, baris ini MEMINDAHKAN dan MENGAMBIL.
+           Salinnya di ujung KANAN, ujung yang paling dekat jempol. -->
+      <div class="hitung-sunting">
+        <button class="hit-sunting" data-karet="-1" aria-label="Geser ke kiri">◀</button>
+        <button class="hit-sunting" data-karet="1" aria-label="Geser ke kanan">▶</button>
+        <button class="hit-sunting" id="b-hitung-tempel" aria-label="Tempel dari papan klip">
+          <svg viewBox="0 0 24 24" class="ik"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/></svg>
+        </button>
+        <span class="hitung-sela"></span>
+        <button class="hit-sunting sembunyi" id="b-hitung-salin" aria-label="Salin hasil">
           <svg viewBox="0 0 24 24" class="ik"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
         </button>
-        <div class="hitung-hasil" id="hitung-hasil" data-asli></div>
       </div>
     </div>
     <div class="hitung-tombol" id="hitung-tombol"></div>
+  </div>
+
+  <!-- KONVERSI SATUAN. Ruang kosong di bawah papan tombol dipakai oleh alat
+       yang dibuka orang yang sama di menit yang sama: yang menghitung gaya
+       baut juga yang harus menerjemahkan lbf·ft dari katalog ke N·m. Dua
+       aplikasi untuk satu pekerjaan berarti angkanya disalin lewat kepala,
+       dan angka yang lewat kepala adalah angka yang bisa salah.
+       Hasilnya hidup - tidak ada tombol "Konversi", sama dengan kalkulatornya
+       sendiri: tombol yang wajib ditekan untuk sesuatu yang sudah bisa
+       dihitung cuma menunda jawabannya. -->
+  <div class="konv-badan" id="konv-badan">
+    <div class="konv-kepala">
+      <span>Konversi satuan</span>
+      <select class="konv-kat" id="konv-kat"></select>
+    </div>
+    <div class="konv-baris">
+      <!-- type=number, dan itu disengaja sesudah cacat autofill di layar
+           kalkulatornya: Chrome menawarkan simpanan teksnya pada kotak isian
+           teks, tidak pada kotak angka. Papan ketik HP-nya ikut jadi papan
+           angka, yang memang satu-satunya yang dimasukkan ke sini. -->
+      <input class="konv-nilai" id="konv-nilai" type="number" inputmode="decimal"
+             step="any" autocomplete="off" name="konv-nilai" data-asli>
+      <select class="konv-satuan" id="konv-dari" data-asli></select>
+    </div>
+    <!-- TUKAR duduk di antara dua barisnya, bukan di kepala: yang dibalik
+         pasangannya, dan tombol yang jauh dari yang dibaliknya harus dicari
+         dulu tiap kali. -->
+    <div class="konv-tukar-baris">
+      <button class="konv-tukar" id="b-konv-tukar" aria-label="Tukar satuannya">⇅</button>
+    </div>
+    <div class="konv-baris">
+      <div class="konv-hasil" id="konv-hasil" data-asli></div>
+      <select class="konv-satuan" id="konv-ke" data-asli></select>
+    </div>
+    <div class="konv-aksi">
+      <!-- KE KALKULATOR, dan ini yang membedakannya dari konverter mana pun
+           di toko aplikasi: hasil konversi hampir tidak pernah jawaban
+           akhirnya - dia angka yang mau dikalikan luas, dibagi jumlah baut,
+           atau dijumlahkan. Menyalinnya lalu mengetiknya ulang di kotak
+           sebelah adalah dua langkah untuk satu angka yang sudah ada di
+           layar. -->
+      <button class="konv-kirim" id="b-konv-hitung">→ Hitung</button>
+      <button class="hit-sunting" id="b-konv-salin" aria-label="Salin hasil konversi">
+        <svg viewBox="0 0 24 24" class="ik"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+      </button>
+    </div>
   </div>
 </section>
 

@@ -329,7 +329,9 @@
     if (id === 'l-hitung') {
       gambarPapanHitung();
       gambarRiwayatHitung();
+      gambarKetik();
       hitungUlang();
+      gambarKonversi();
     }
     /* Digambar ulang tiap kali layarnya tampil, bukan cuma waktu gerigi di
        kepala diketuk: sampai ke sini lewat tombol Kembali - atau lewat jalur
@@ -6216,6 +6218,72 @@
     }).join('');
   }
 
+  /* ===== KARET SENDIRI =====
+     Tampilannya bukan kotak isian (lihat cacat autofill di index.html), jadi
+     dia tidak punya karet bawaan - dan tanpa karet, satu angka yang salah di
+     tengah "25+36×6+69×3+63" berarti mengetik ulang enam belas ketukan untuk
+     membetulkan satu. Jadi karetnya digambar sendiri: teksnya tinggal di
+     'hitungTeks', letak karetnya di 'hitungKaret', dan layarnya cuma
+     cerminannya.
+     Tiap huruf jadi <span> supaya KETUKAN DI LAYAR bisa menaruh karet di
+     tempat yang diketuk - itu gerakan pertama yang dicoba jari, jauh sebelum
+     dia mencari tombol panah. Panahnya tetap ada untuk yang meleset satu
+     huruf. */
+  var hitungTeks = '';
+  var hitungKaret = 0;
+
+  function gambarKetik() {
+    var w = $('#hitung-ketik');
+    if (!w) return;
+    var isi = '';
+    for (var i = 0; i < hitungTeks.length; i++) {
+      if (i === hitungKaret) isi += '<span class="hitung-karet"></span>';
+      isi += '<span data-i="' + i + '">' + H(hitungTeks[i]) + '</span>';
+    }
+    if (hitungKaret >= hitungTeks.length) isi += '<span class="hitung-karet"></span>';
+    w.innerHTML = isi;
+    /* Yang baru diketuk itu yang paling dicari mata, dan angka yang menghilang
+       ke kanan terbaca sebagai ketukan yang tidak masuk. */
+    w.scrollLeft = w.scrollWidth;
+  }
+
+  function setKetik(teks, karet) {
+    hitungTeks = teks;
+    hitungKaret = Math.max(0, Math.min(karet == null ? teks.length : karet, teks.length));
+    gambarKetik();
+    hitungUlang();
+  }
+
+  function sisipKetik(teks) {
+    setKetik(
+      hitungTeks.slice(0, hitungKaret) + teks + hitungTeks.slice(hitungKaret),
+      hitungKaret + teks.length
+    );
+  }
+
+  function geserKaret(arah) {
+    hitungKaret = Math.max(0, Math.min(hitungKaret + arah, hitungTeks.length));
+    gambarKetik();
+  }
+
+  /* Ketukan di paruh KANAN satu huruf menaruh karet SESUDAHnya. Membagi dua
+     itu yang dilakukan tiap kotak teks di mana pun, jadi jarinya sudah tahu
+     tanpa diberi tahu - dan tanpa pembagian itu, menaruh karet di ujung
+     kalimat jadi mustahil. */
+  function ketukKetik(ev) {
+    var s = ev.target.closest('[data-i]');
+    if (!s) {
+      /* Di luar hurufnya - ruang kosong sesudah kalimatnya. */
+      hitungKaret = hitungTeks.length;
+      gambarKetik();
+      return;
+    }
+    var r = s.getBoundingClientRect();
+    var i = +s.getAttribute('data-i');
+    hitungKaret = ev.clientX > r.left + r.width / 2 ? i + 1 : i;
+    gambarKetik();
+  }
+
   /* ===== RIWAYAT =====
      DI MEMORI SAJA, DAN ITU JAWABAN DARI RISETNYA - bukan kemalasan.
      Yang dilakukan kalkulator lain: iOS tidak punya riwayat sama sekali; Casio
@@ -6244,9 +6312,7 @@
      ketukan baru untuk sesuatu yang sudah tersirat adalah ongkos keputusan,
      dan itu yang paling mahal di aplikasi ini. */
   function catatRiwayat() {
-    var isian = $('#hitung-ketik');
-    if (!isian) return;
-    var teks = isian.textContent.trim();
+    var teks = hitungTeks.trim();
     if (!teks) return;
     var r = THitung.hitung(teks);
     /* Yang belum sah tidak dicatat: setengah kalimat bukan hitungan. Begitu
@@ -6286,20 +6352,16 @@
      jejak. */
   function pakaiRiwayat(i) {
     var r = riwayatHitung[i];
-    var isian = $('#hitung-ketik');
-    if (!r || !isian) return;
+    if (!r) return;
     catatRiwayat();
-    isian.textContent = r.op;
-    hitungUlang();
-    isian.scrollLeft = isian.scrollWidth;
+    setKetik(r.op, r.op.length);
   }
 
   function hitungUlang() {
-    var isian = $('#hitung-ketik');
     var hasil = $('#hitung-hasil');
     var salinTbl = $('#b-hitung-salin');
-    if (!isian || !hasil) return;
-    var teks = isian.textContent.trim();
+    if (!hasil) return;
+    var teks = hitungTeks.trim();
     var r = teks ? THitung.hitung(teks) : null;
     /* GALATNYA TIDAK DITULIS SELAMA MENGETIK. Setengah kalimat memang belum
        sah - "2+" itu keadaan normal di tengah mengetik, bukan kekeliruan -
@@ -6316,9 +6378,7 @@
      salin sedang menempelkannya ke tempat lain - kolom harga, chat, kotak
      isian - dan di sana "= 36" adalah dua karakter yang harus dihapus lagi. */
   function salinHasilHitung() {
-    var isian = $('#hitung-ketik');
-    if (!isian) return;
-    var r = THitung.hitung(isian.textContent.trim());
+    var r = THitung.hitung(hitungTeks.trim());
     if (!r.ok) return;
     salin(r.teks);
   }
@@ -6328,15 +6388,18 @@
      autofill-nya - memfokuskan apa pun sesudah tiap ketukan angka adalah cara
      memanggil kembali daftar itu. */
   function ketukHitung(tombol) {
-    var isian = $('#hitung-ketik');
-    if (!isian) return;
     /* C itu "sudah, ganti" - dan itu satu-satunya kata yang jarinya ucapkan
        untuk menandai satu hitungan selesai. Jadi di situ dia dicatat, bukan
        lewat tombol baru. */
-    if (tombol === 'C') { catatRiwayat(); isian.textContent = ''; hitungUlang(); return; }
+    if (tombol === 'C') { catatRiwayat(); setKetik('', 0); return; }
+    /* Menghapus yang di KIRI karet, bukan yang di ujung kalimat - itu yang
+       dilakukan Backspace di mana pun, dan tombol yang bertindak lain dari
+       kembarannya di papan ketik cuma bisa dipelajari dengan kehilangan
+       sesuatu dulu. */
     if (tombol === '⌫') {
-      isian.textContent = isian.textContent.slice(0, -1);
-      hitungUlang();
+      if (!hitungKaret) return;
+      setKetik(hitungTeks.slice(0, hitungKaret - 1) + hitungTeks.slice(hitungKaret),
+               hitungKaret - 1);
       return;
     }
     /* Fungsi selalu membawa kurung bukanya sendiri: yang mengetuk "sin"
@@ -6345,12 +6408,7 @@
     var sisip = tombol;
     if (tombol === 'sin' || tombol === 'cos' || tombol === 'tan' ||
         tombol === 'ln' || tombol === 'log' || tombol === '√') sisip = tombol + '(';
-    isian.textContent += sisip;
-    hitungUlang();
-    /* Ekornya selalu terlihat: yang baru diketuk itu yang paling dicari mata,
-       dan angka yang menghilang ke kanan terbaca sebagai ketukan yang tidak
-       masuk. */
-    isian.scrollLeft = isian.scrollWidth;
+    sisipKetik(sisip);
   }
 
   /* PAPAN KETIK FISIK TETAP JALAN. Di desktop yang paling wajar mengetik
@@ -6365,10 +6423,26 @@
 
   function ketikHitung(ev) {
     if (layarSaat !== 'l-hitung') return;
+    /* Isian konverternya kotak isian sungguhan: yang mengetik di situ tidak
+       boleh angkanya ikut mendarat di kalkulatornya. */
+    var f = document.activeElement;
+    if (f && (f.tagName === 'INPUT' || f.tagName === 'SELECT')) return;
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     var k = ev.key;
+    if (k === 'ArrowLeft') { ev.preventDefault(); geserKaret(-1); return; }
+    if (k === 'ArrowRight') { ev.preventDefault(); geserKaret(1); return; }
+    if (k === 'Home') { ev.preventDefault(); setKetik(hitungTeks, 0); return; }
+    if (k === 'End') { ev.preventDefault(); setKetik(hitungTeks, hitungTeks.length); return; }
     if (k === 'Backspace') { ev.preventDefault(); ketukHitung('⌫'); return; }
-    if (k === 'Escape' || k === 'Delete') { ev.preventDefault(); ketukHitung('C'); return; }
+    if (k === 'Delete') {
+      ev.preventDefault();
+      if (hitungKaret < hitungTeks.length) {
+        setKetik(hitungTeks.slice(0, hitungKaret) + hitungTeks.slice(hitungKaret + 1),
+                 hitungKaret);
+      }
+      return;
+    }
+    if (k === 'Escape') { ev.preventDefault(); ketukHitung('C'); return; }
     /* Enter tidak melakukan apa-apa dan itu memang benar: hasilnya sudah
        terhitung sejak ketukan pertama, jadi "=" tidak punya pekerjaan. */
     if (k === 'Enter' || k === '=') { ev.preventDefault(); return; }
@@ -6377,6 +6451,119 @@
     if (!/^[0-9,()+\-−×÷^%!.]$/.test(c)) return;
     ev.preventDefault();
     ketukHitung(c);
+  }
+
+  /* ===== TEMPEL =====
+     Yang ditempel DIBERSIHKAN, bukan ditolak. Angka yang disalin dari mana pun
+     datang membawa bawaannya: spasi ribuan, "Rp", satuan di ekornya, tanda
+     kutip dari spreadsheet. Menolak seluruhnya karena satu karakter berarti
+     yang menempel harus mengetik ulang - persis pekerjaan yang mau dihapus
+     tombol ini. Yang dibuang cuma yang tidak punya arti di sini; yang
+     tersisa masuk apa adanya di karet.
+     Bintang dan garis miring diterjemahkan ke lambang layar ini, sama dengan
+     papan ketik fisiknya - yang menyalin "12*3" dari chat memaksudkan kali.
+
+     TITIKNYA DIBACA DESIMAL, TIDAK PERNAH PEMISAH RIBUAN, dan itu keputusan
+     yang harus disebut karena kelihatannya keliru: yang menempel "Rp 1.250"
+     mendapat "1,250". Sebabnya "3.141" dan "1.250" bentuknya sama persis -
+     tidak ada aturan yang membedakan keduanya tanpa menebak, dan menebak
+     berarti kadang-kadang membuang ketelitian tanpa satu tanda pun di layar.
+     Yang dipilih kekeliruan yang KELIHATAN: "1,250" tertulis di layar dan
+     tinggal dibetulkan satu ketukan; 3141 yang lahir dari 3.141 tidak pernah
+     dicurigai siapa pun. */
+  function bersihkanTempel(teks) {
+    var keluar = '';
+    for (var i = 0; i < teks.length; i++) {
+      var c = HITUNG_TOMBOL_KETIK[teks[i]] || teks[i];
+      if (/^[0-9,()+−×÷^%!]$/.test(c)) keluar += c;
+    }
+    return keluar;
+  }
+
+  function tempelHitung() {
+    /* Papan klip cuma boleh dibaca atas permintaan yang terlihat, dan
+       peramban boleh menolaknya. Yang ditolak DIKATAKAN - tombol yang diam
+       waktu ditekan terbaca sebagai aplikasi yang rusak. */
+    if (!navigator.clipboard || !navigator.clipboard.readText) {
+      pesan('Peramban ini tidak mengizinkan tempel');
+      return;
+    }
+    navigator.clipboard.readText().then(function (t) {
+      var bersih = bersihkanTempel(String(t || ''));
+      if (!bersih) { pesan('Tidak ada angka di papan klip'); return; }
+      sisipKetik(bersih);
+    }, function () {
+      pesan('Tidak bisa membaca papan klip');
+    });
+  }
+
+  /* ===== KONVERSI SATUAN =====
+     Kategorinya DIINGAT ('konversiKategori'), dan cuma itu. Yang memakai ini
+     tiap hari memakai satu-dua kategori yang sama - yang mengurus poros
+     membuka Torsi, yang mengurus bejana membuka Tekanan - jadi menyuruhnya
+     memilih ulang tiap kali membuka layarnya adalah ketukan yang jawabannya
+     sudah diketahui. Tidak ikut sinkron: satuan yang dipakai di bengkel bukan
+     satuan yang dipakai di meja, dan setelan tampilan tidak pernah menular
+     antar-perangkat di aplikasi ini. */
+  var konvKat = '';
+  var konvDari = '';
+  var konvKe = '';
+
+  function gambarKonversi() {
+    var pKat = $('#konv-kat');
+    var pDari = $('#konv-dari');
+    var pKe = $('#konv-ke');
+    if (!pKat || !pDari || !pKe) return;
+    var kats = THitung.kategoriSatuan();
+    if (kats.indexOf(konvKat) < 0) konvKat = kats[0];
+    pKat.innerHTML = kats.map(function (k) {
+      return '<option value="' + H(k) + '"' + (k === konvKat ? ' selected' : '') +
+             '>' + H(k) + '</option>';
+    }).join('');
+    var unit = THitung.SATUAN[konvKat] || [];
+    var nama = unit.map(function (u) { return u[0]; });
+    /* Bawaannya dua yang PERTAMA, dan urutan tiap kategori disusun begitu:
+       yang paling sering diterjemahkan duduk di dua baris teratas (psi->MPa,
+       lbf·ft->N·m, rpm->rad/s), jadi kategori yang benar hampir selalu sudah
+       benar pasangannya. */
+    if (nama.indexOf(konvDari) < 0) konvDari = nama[0];
+    if (nama.indexOf(konvKe) < 0) konvKe = nama[1] || nama[0];
+    function pilihan(dipilih) {
+      return nama.map(function (n) {
+        return '<option value="' + H(n) + '"' + (n === dipilih ? ' selected' : '') +
+               '>' + H(n) + '</option>';
+      }).join('');
+    }
+    pDari.innerHTML = pilihan(konvDari);
+    pKe.innerHTML = pilihan(konvKe);
+    konversiUlang();
+  }
+
+  function konversiUlang() {
+    var isian = $('#konv-nilai');
+    var hasil = $('#konv-hasil');
+    if (!isian || !hasil) return;
+    var teks = isian.value.trim();
+    if (!teks) { hasil.textContent = ''; return; }
+    var r = THitung.konversi(konvKat, konvDari, konvKe, Number(teks));
+    hasil.textContent = r.ok ? r.teks : '';
+  }
+
+  function konversiHasil() {
+    var isian = $('#konv-nilai');
+    if (!isian || !isian.value.trim()) return null;
+    var r = THitung.konversi(konvKat, konvDari, konvKe, Number(isian.value));
+    return r.ok ? r.teks : null;
+  }
+
+  /* Titik desimalnya ditukar koma waktu masuk kalkulator: mesinnya membaca
+     koma (lihat hitung.js), dan angka bertitik yang dilempar ke situ berhenti
+     jadi angka. */
+  function konversiKeHitung() {
+    var t = konversiHasil();
+    if (t === null) return;
+    sisipKetik(t.replace('.', ','));
+    pesan('Masuk ke kalkulator');
   }
 
   /* ===== SEPEREMPAT LAYAR DI DESKTOP, SEKALI SAJA =====
@@ -6563,6 +6750,42 @@
       if (b) ketukHitung(b.getAttribute('data-hitung'));
     });
     $('#b-hitung-salin').addEventListener('click', salinHasilHitung);
+    $('#b-hitung-tempel').addEventListener('click', tempelHitung);
+    $('#hitung-ketik').addEventListener('click', ketukKetik);
+    $('.hitung-sunting').addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-karet]');
+      if (b) geserKaret(+b.getAttribute('data-karet'));
+    });
+    $('#konv-kat').addEventListener('change', function () {
+      konvKat = this.value;
+      /* Pasangannya dilepas, bukan dipertahankan: "psi" tidak punya arti di
+         kategori Torsi, dan daftar yang menyisakan pilihan dari kategori lama
+         akan diam-diam mengonversi yang bukan-bukan. */
+      konvDari = '';
+      konvKe = '';
+      simpanSetelan('konversiKategori', konvKat);
+      gambarKonversi();
+    });
+    $('#konv-dari').addEventListener('change', function () {
+      konvDari = this.value;
+      konversiUlang();
+    });
+    $('#konv-ke').addEventListener('change', function () {
+      konvKe = this.value;
+      konversiUlang();
+    });
+    $('#konv-nilai').addEventListener('input', konversiUlang);
+    $('#b-konv-tukar').addEventListener('click', function () {
+      var t = konvDari;
+      konvDari = konvKe;
+      konvKe = t;
+      gambarKonversi();
+    });
+    $('#b-konv-hitung').addEventListener('click', konversiKeHitung);
+    $('#b-konv-salin').addEventListener('click', function () {
+      var t = konversiHasil();
+      if (t !== null) salin(t);
+    });
     $('#hitung-riwayat').addEventListener('click', function (ev) {
       if (ev.target.closest('#b-riwayat-buang')) {
         riwayatHitung = [];
@@ -7431,6 +7654,7 @@
       muatAlbum(setelanSaat);
       muatLengket(setelanSaat);
       if (setelanSaat.gayaGaleri) gayaGaleri = setelanSaat.gayaGaleri;
+      if (setelanSaat.konversiKategori) konvKat = setelanSaat.konversiKategori;
       /* Temanya dipasang SEBELUM apa pun digambar - kalau sesudah, warnanya
          berkedip dari teal ke pilihanmu tiap kali aplikasinya dibuka. */
       temaSaat = setelanSaat.tema || 'teal';

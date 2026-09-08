@@ -258,5 +258,133 @@
     catch (e) { return { ok: false, pesan: e.message }; }
   }
 
-  global.THitung = { hitung: hitung, nilai: nilai, rapikan: rapikan };
+  /* ===== KONVERSI SATUAN =====
+     Yang dipakai mahasiswa teknik mesin & fisika dan yang memakainya seharian
+     di lapangan - bukan daftar lengkap segala satuan yang pernah ada. Daftar
+     panjang bukan kemurahan hati: tiap baris yang tidak pernah dipilih adalah
+     satu baris yang harus dilewati mata sebelum sampai ke yang dicari.
+
+     Yang menentukan isinya soal yang benar-benar muncul: kekuatan bahan
+     (Pa/MPa/psi/kgf/cm²), baut dan poros (N·m/kgf·m/lbf·ft), motor dan pompa
+     (kW/hp/PS, L/min/GPM/CFM), getaran (Hz/rpm/rad/s), dan gambar kerja yang
+     datang dalam inci sementara mesinnya metrik.
+     N/mm² ditulis terpisah walau dia MPa persis: yang membacanya di gambar
+     kerja menulisnya begitu, dan satuan yang tidak ada di daftar terbaca
+     sebagai "tidak didukung", bukan "cari nama lainnya".
+
+     BENTUKNYA [nama, faktor, geseran]: nilai dasar = angka*faktor + geseran.
+     Geseran ada CUMA untuk suhu, dan dia yang membedakan konversi suhu dari
+     semua yang lain - mengalikan saja menghasilkan 0°C = 0°F, jawaban yang
+     salah dan kelihatan masuk akal. */
+  var SATUAN = {
+    'Panjang': [
+      ['m', 1], ['cm', 0.01], ['mm', 0.001], ['km', 1000], ['µm', 1e-6],
+      ['in', 0.0254], ['ft', 0.3048], ['yd', 0.9144], ['mi', 1609.344],
+      ['thou', 0.0000254]
+    ],
+    'Luas': [
+      ['m²', 1], ['cm²', 1e-4], ['mm²', 1e-6], ['km²', 1e6],
+      ['in²', 0.00064516], ['ft²', 0.09290304], ['ha', 10000],
+      ['acre', 4046.8564224]
+    ],
+    'Volume': [
+      ['m³', 1], ['L', 0.001], ['mL', 1e-6], ['cm³', 1e-6], ['mm³', 1e-9],
+      ['in³', 1.6387064e-5], ['ft³', 0.028316846592],
+      ['gal (US)', 0.003785411784], ['gal (UK)', 0.00454609]
+    ],
+    'Massa': [
+      ['kg', 1], ['g', 0.001], ['mg', 1e-6], ['t', 1000],
+      ['lb', 0.45359237], ['oz', 0.028349523125], ['slug', 14.5939029372]
+    ],
+    'Gaya': [
+      ['N', 1], ['kN', 1000], ['MN', 1e6], ['kgf', 9.80665],
+      ['lbf', 4.4482216152605], ['kip', 4448.2216152605], ['dyn', 1e-5]
+    ],
+    'Tekanan': [
+      ['Pa', 1], ['kPa', 1000], ['MPa', 1e6], ['N/mm²', 1e6],
+      ['bar', 100000], ['mbar', 100], ['psi', 6894.757293168],
+      ['ksi', 6894757.293168], ['kgf/cm²', 98066.5], ['atm', 101325],
+      ['mmHg', 133.322387415], ['mH₂O', 9806.65]
+    ],
+    'Torsi': [
+      ['N·m', 1], ['kN·m', 1000], ['kgf·m', 9.80665], ['kgf·cm', 0.0980665],
+      ['lbf·ft', 1.3558179483314], ['lbf·in', 0.1129848290276],
+      ['oz·in', 0.0070615518333]
+    ],
+    'Energi': [
+      ['J', 1], ['kJ', 1000], ['MJ', 1e6], ['cal', 4.184], ['kcal', 4184],
+      ['Wh', 3600], ['kWh', 3.6e6], ['BTU', 1055.05585262],
+      ['ft·lbf', 1.3558179483314], ['eV', 1.602176634e-19]
+    ],
+    'Daya': [
+      ['W', 1], ['kW', 1000], ['MW', 1e6], ['hp', 745.6998715823],
+      ['PS', 735.49875], ['BTU/h', 0.29307107017],
+      ['kcal/h', 1.1622222222], ['ft·lbf/s', 1.3558179483314]
+    ],
+    /* Suhu satu-satunya yang bergeser, dan basisnya KELVIN - bukan Celsius.
+       Kalau basisnya Celsius, tiap satuan lain harus membawa geserannya
+       sendiri terhadap Celsius, dan yang pertama salah tanda tidak akan
+       ketahuan sampai ada yang mengonversi °F ke K. */
+    'Suhu': [
+      ['°C', 1, 273.15], ['K', 1, 0], ['°F', 0.5555555555556, 255.3722222222],
+      ['°R', 0.5555555555556, 0]
+    ],
+    'Kecepatan': [
+      ['m/s', 1], ['km/h', 0.2777777777778], ['mm/s', 0.001],
+      ['ft/s', 0.3048], ['mph', 0.44704], ['knot', 0.5144444444444]
+    ],
+    'Putaran': [
+      ['rpm', 0.1047197551197], ['rad/s', 1], ['Hz', 6.283185307179586],
+      ['°/s', 0.0174532925199433]
+    ],
+    'Sudut': [
+      ['°', 0.0174532925199433], ['rad', 1], ['grad', 0.0157079632679490],
+      ['mrad', 0.001], ['arcmin', 2.908882086657216e-4],
+      ['arcsec', 4.84813681109536e-6]
+    ],
+    'Debit': [
+      ['L/min', 1.6666666666667e-5], ['L/s', 0.001], ['m³/h', 2.7777777777778e-4],
+      ['m³/s', 1], ['GPM (US)', 6.30901964e-5], ['CFM', 4.719474432e-4],
+      ['ft³/s', 0.028316846592]
+    ],
+    'Massa jenis': [
+      ['kg/m³', 1], ['g/cm³', 1000], ['kg/L', 1000],
+      ['lb/ft³', 16.018463373960], ['lb/in³', 27679.904710203]
+    ],
+    'Waktu': [
+      ['s', 1], ['ms', 0.001], ['µs', 1e-6], ['min', 60], ['h', 3600],
+      ['d', 86400], ['wk', 604800]
+    ]
+  };
+
+  function kategoriSatuan() {
+    return Object.keys(SATUAN);
+  }
+
+  function cariSatuan(kat, nama) {
+    var d = SATUAN[kat];
+    if (!d) return null;
+    for (var i = 0; i < d.length; i++) if (d[i][0] === nama) return d[i];
+    return null;
+  }
+
+  /* Lewat basis, selalu - tidak ada tabel pasangan. Tabel pasangan untuk
+     dua belas satuan tekanan berisi seratus tiga puluh dua angka, dan satu
+     saja yang salah ketik tidak akan pernah ketahuan kecuali oleh yang
+     kebetulan memakai pasangan itu. */
+  function konversi(kat, dari, ke, angka) {
+    var a = cariSatuan(kat, dari);
+    var b = cariSatuan(kat, ke);
+    if (!a || !b || typeof angka !== 'number' || !isFinite(angka)) {
+      return { ok: false };
+    }
+    var dasar = angka * a[1] + (a[2] || 0);
+    var hasil = (dasar - (b[2] || 0)) / b[1];
+    return { ok: true, nilai: hasil, teks: rapikan(hasil) };
+  }
+
+  global.THitung = {
+    hitung: hitung, nilai: nilai, rapikan: rapikan,
+    SATUAN: SATUAN, kategoriSatuan: kategoriSatuan, konversi: konversi
+  };
 })(window);
