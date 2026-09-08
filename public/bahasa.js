@@ -186,6 +186,8 @@
     'Riwayat': 'History',
     'Tempel dari papan klip': 'Paste from clipboard',
     'Riwayat hitungan': 'Calculation history',
+    'Belum ada riwayat — tekan C untuk menyimpan hitungan':
+      'No history yet — press C to keep a calculation',
     'Ketuk untuk kirim ke kalkulator': 'Tap to send to the calculator',
     'Papan klip tertutup — tekan lama lalu Tempel': 'Clipboard blocked — long-press, then Paste',
     'Tidak ada angka di papan klip': 'No numbers on the clipboard',

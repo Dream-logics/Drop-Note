@@ -544,35 +544,21 @@
          apa-apa. -->
     <div class="hitung-riwayat sembunyi" id="hitung-riwayat"></div>
     <div class="hitung-layar">
-      <!-- BUKAN <input>, dan itu perbaikan atas cacat yang tidak pernah
-           terpikir: Chrome menganggap kotak isian mana pun layak diisikan
-           simpanan autofill-nya, dan tiap ketukan angka memfokuskan kotaknya
-           lagi - jadi tiap angka memanggil daftar sandi dan Client ID Google
-           yang panjang itu. 'autocomplete=off' tidak menghentikannya; Chrome
-           memang boleh mengabaikannya. Yang menghentikannya cuma berhenti jadi
-           kotak isian sama sekali.
-           Papan tombolnya yang jadi satu-satunya jalan masuk di HP; papan
-           ketik fisik tetap jalan lewat penangan keydown di alur.js. -->
-      <div id="hitung-ketik" class="hitung-ketik" data-asli></div>
-      <div class="hitung-hasil" id="hitung-hasil" data-asli></div>
-      <!-- TINGGAL DUA: tempel dan salin. Panah ◀ ▶ DIBUANG - dia menjawab
-           pertanyaan yang sudah dijawab lebih baik oleh mengetuk angkanya
-           langsung, dan dua tombol yang mengerjakan satu hal berarti yang
-           satu selalu terbaca sebagai "untuk apa ini?".
-           NUMPANG DI SUDUT KIRI ATAS: yang dibaca mata di kotak ini ANGKANYA,
-           dan angkanya rata kanan, jadi sudut kiri atas memang kosong.
-           MIKRO (22px), satu-satunya tempat di aplikasi ini yang melanggar
-           sasaran sentuh 44px - dengan sengaja: keduanya jalan pintas yang
-           punya jalan lain (papan ketik untuk tempel, riwayat untuk angka
-           yang sudah pernah dihitung). Yang tidak boleh mengecil tombol yang
-           tidak punya jalan lain. -->
+      <!-- LAJUR TEGAK DI KIRI, bukan menumpang di atas angkanya. Dulu dia
+           dipatok absolute dan angkanya dikasih padding-left - dan itu KELIRU
+           untuk kotak yang MENGGULIR: paddingnya ikut tergulir bersama isinya,
+           jadi begitu kalimatnya lebih panjang dari layar, ekornya lewat di
+           BAWAH tombolnya. Yang terbaca angka yang tertimpa ikon.
+           Tegak, bukan mendatar: yang dibayar cuma 22px lebar - sementara
+           bertiga mendatar memakan 74px dari lebar yang justru dibutuhkan
+           angka panjang. -->
       <div class="hitung-sunting">
-        <!-- Riwayat TERTUTUP sampai diminta: yang dibuka orang di layar ini
-             kalkulatornya, bukan catatan hitungannya - dan panel yang selalu
-             terbuka merampas tinggi dari papan tombol untuk sesuatu yang
-             dilihat sekali dari sepuluh kali. Tombolnya sendiri cuma digambar
-             kalau memang ada isinya. -->
-        <button class="hit-sunting sembunyi" id="b-hitung-riwayat" aria-label="Riwayat hitungan">
+        <!-- Riwayat SELALU ADA, walau kosong - dan itu perbaikan: dulu
+             tombolnya cuma digambar kalau isinya ada, jadi yang belum pernah
+             menekan C tidak pernah tahu riwayatnya ada sama sekali. Waktu
+             kosong dia menjawab dengan cara mengisinya, dan itu satu-satunya
+             tempat aturan "C menandai satu hitungan selesai" bisa terbaca. -->
+        <button class="hit-sunting" id="b-hitung-riwayat" aria-label="Riwayat hitungan">
           <svg viewBox="0 0 24 24" class="ik"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
         </button>
         <button class="hit-sunting" id="b-hitung-tempel" aria-label="Tempel dari papan klip">
@@ -581,6 +567,19 @@
         <button class="hit-sunting sembunyi" id="b-hitung-salin" aria-label="Salin hasil">
           <svg viewBox="0 0 24 24" class="ik"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
         </button>
+      </div>
+      <div class="hitung-teks">
+        <!-- BUKAN <input>, dan itu perbaikan atas cacat yang tidak pernah
+             terpikir: Chrome menganggap kotak isian mana pun layak diisikan
+             simpanan autofill-nya, dan tiap ketukan angka memfokuskan kotaknya
+             lagi - jadi tiap angka memanggil daftar sandi dan Client ID Google
+             yang panjang itu. 'autocomplete=off' tidak menghentikannya; Chrome
+             memang boleh mengabaikannya. Yang menghentikannya cuma berhenti
+             jadi kotak isian sama sekali.
+             Papan tombolnya yang jadi satu-satunya jalan masuk di HP; papan
+             ketik fisik tetap jalan lewat penangan keydown di alur.js. -->
+        <div id="hitung-ketik" class="hitung-ketik" data-asli></div>
+        <div class="hitung-hasil" id="hitung-hasil" data-asli></div>
       </div>
     </div>
     <div class="hitung-tombol" id="hitung-tombol"></div>

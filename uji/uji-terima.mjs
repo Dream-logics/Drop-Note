@@ -7780,23 +7780,36 @@ console.log('\nkalkulator ilmiah');
   /* Ketukan C di uji-uji sebelum ini sudah menandai hitungannya selesai juga -
      itu memang perilakunya yang benar, jadi isinya dibersihkan dulu lewat
      panelnya (yang sekarang tertutup sampai diminta). */
-  if (await hal.locator('#b-hitung-riwayat').isVisible()) {
-    await hal.click('#b-hitung-riwayat');
-    await hal.waitForTimeout(200);
+  await hal.click('#b-hitung-riwayat');
+  await hal.waitForTimeout(200);
+  if (await hal.locator('#b-riwayat-buang').isVisible()) {
     await hal.click('#b-riwayat-buang');
     await hal.waitForTimeout(200);
   }
-  cek('riwayatnya tertutup, dan tombolnya pun belum ada waktu isinya kosong',
-      (await hal.locator('#hitung-riwayat').isHidden()) &&
-      (await hal.locator('#b-hitung-riwayat').isHidden()));
+  /* TOMBOLNYA SELALU ADA, walau riwayatnya kosong. Dulu dia ikut hilang, dan
+     akibatnya yang belum pernah menekan C tidak pernah tahu riwayatnya ada
+     sama sekali - fitur yang cuma muncul sesudah kamu kebetulan memakainya
+     tidak akan pernah ditemukan. Itu keluhan yang masuk. */
+  cek('tombol riwayatnya tetap ada walau isinya kosong',
+      await hal.locator('#b-hitung-riwayat').isVisible());
+  cek('dan panelnya tertutup selama belum ada yang selesai',
+      await hal.locator('#hitung-riwayat').isHidden());
+  /* Kosong bukan alasan untuk diam: yang menekannya sedang bertanya "apa
+     ini?", dan jawaban yang benar bukan panel kosong tapi cara mengisinya -
+     satu-satunya tempat aturan "C menandai satu hitungan selesai" terbaca. */
+  await hal.click('#b-hitung-riwayat');
+  await hal.waitForTimeout(300);
+  cek('waktu kosong dia menjawab dengan cara mengisinya, bukan panel kosong',
+      /tekan C|press C/i.test(await hal.textContent('#pesan')) &&
+      (await hal.locator('#hitung-riwayat').isHidden()),
+      await hal.textContent('#pesan'));
   /* Dibersihkan dulu: ketukan C di uji-uji sebelum ini sudah menandai
      hitungannya selesai juga - itu memang perilakunya yang benar. */
   await hal.keyboard.type('12*3');
   await hal.click('#hitung-tombol [data-hitung="C"]');
   await hal.waitForTimeout(250);
-  cek('sesudah ada isinya, tombolnya muncul - panelnya tetap tertutup',
-      (await hal.locator('#b-hitung-riwayat').isVisible()) &&
-      (await hal.locator('#hitung-riwayat').isHidden()));
+  cek('sesudah ada isinya, panelnya tetap tertutup sampai diminta',
+      await hal.locator('#hitung-riwayat').isHidden());
   await hal.click('#b-hitung-riwayat');
   await hal.waitForTimeout(250);
   /* KABAR BAHWA BARISNYA BISA DIKETUK: baris riwayat kelihatan seperti
@@ -7844,8 +7857,7 @@ console.log('\nkalkulator ilmiah');
   await hal.click('#b-riwayat-buang');
   await hal.waitForTimeout(250);
   cek('dan riwayatnya punya tombol buang sendiri',
-      (await hal.locator('#hitung-riwayat').isHidden()) &&
-      (await hal.locator('#b-hitung-riwayat').isHidden()));
+      await hal.locator('#hitung-riwayat').isHidden());
   /* DI MEMORI SAJA - umur pakai riwayat hitung diukur menit, bukan hari, dan
      yang benar-benar layak disimpan sudah punya rumahnya di Drop. */
   cek('riwayatnya tidak pernah ditulis ke setelan',
@@ -7967,32 +7979,44 @@ console.log('\nkalkulator ilmiah');
       (await hal.textContent('#hitung-hasil')).indexOf('96') >= 0,
       await hal.textContent('#hitung-ketik'));
 
-  /* GEROMBOLAN SUNTING NUMPANG DI SUDUT KIRI ATAS layarnya, tidak mengambil
-     satu baris pun: yang dibaca mata di kotak ini angkanya, dan angkanya rata
-     kanan - jadi sudut kiri atas memang kosong. Baris tombol sendiri di bawah
-     hasil memakan tinggi dari papan tombol DAN menaruh empat kotak abu-abu
-     tepat di jalur baca. */
-  cek('sunting numpang di sudut kiri atas, tidak mengambil satu baris pun',
+  /* LAJURNYA TEGAK DI KIRI, di dalam kotaknya dan di LUAR teks yang menggulir.
+     Tegak, bukan mendatar: yang dibayar cuma 22px lebar, sementara bertiga
+     mendatar memakan 74px dari lebar yang justru dibutuhkan angka panjang.
+     Dan tidak mengambil satu baris pun - baris tombol sendiri di bawah hasil
+     memakan tinggi dari papan tombolnya. */
+  cek('lajur suntingnya tegak di kiri, sempit, dan tidak memakan satu baris',
       await hal.evaluate(() => {
         const g = document.querySelector('.hitung-sunting');
         const l = document.querySelector('.hitung-layar');
-        if (!g || !l) return false;
+        const t = document.querySelector('.hitung-teks');
+        if (!g || !l || !t) return false;
         const rg = g.getBoundingClientRect(), rl = l.getBoundingClientRect();
-        return getComputedStyle(g).position === 'absolute' &&
+        const rt = t.getBoundingClientRect();
+        return rg.width <= 30 &&
                rg.left - rl.left < 20 && rg.top - rl.top < 20 &&
-               rg.height <= 30;
+               rt.left >= rg.right &&
+               rg.bottom <= rl.bottom + 1;
       }));
   /* MIKRO, dan itu satu-satunya tempat di aplikasi ini yang melanggar sasaran
-     sentuh 44px - dengan sengaja, karena keempatnya punya jalan lain yang
+     sentuh 44px - dengan sengaja, karena ketiganya punya jalan lain yang
      lebih besar. */
-  cek('tombolnya mikro, dan angkanya tidak tertimpa',
+  /* LAJURNYA DI LUAR KOTAK YANG MENGGULIR, dan itu satu-satunya bentuk yang
+     benar. Dulu tombolnya dipatok absolute di atas teksnya dan teksnya dikasih
+     padding-left - padding itu ikut TERGULIR bersama isinya, jadi begitu
+     kalimatnya lebih panjang dari layar, ekornya lewat di bawah tombolnya.
+     Yang terbaca angka yang tertimpa ikon, dan itu keluhan yang masuk. */
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.keyboard.type('12*6*56*56*5*65*25*45');
+  await hal.waitForTimeout(300);
+  cek('tombolnya mikro, dan angka sepanjang apa pun tidak pernah tertimpa',
       await hal.evaluate(() => {
-        const b = document.querySelector('.hit-sunting');
-        const k = document.querySelector('#hitung-ketik');
-        return b.getBoundingClientRect().width <= 30 &&
-               parseFloat(getComputedStyle(k).paddingLeft) >=
-                 document.querySelector('.hitung-sunting').getBoundingClientRect().width;
+        const b = document.querySelector('.hit-sunting').getBoundingClientRect();
+        const lajur = document.querySelector('.hitung-sunting').getBoundingClientRect();
+        const teks = document.querySelector('#hitung-ketik').getBoundingClientRect();
+        return b.width <= 30 && teks.left >= lajur.right;
       }));
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.waitForTimeout(200);
   /* Karet 2px setinggi satu em di antara angka 22px tidak terbaca sebagai
      karet di layar HP - dia terbaca sebagai cacat rendering, dan begitu dia
      tidak terlihat, tombol panah di sebelahnya jadi tombol yang "tidak

@@ -6338,9 +6338,12 @@
     var w = $('#hitung-riwayat');
     var tbl = $('#b-hitung-riwayat');
     if (!w) return;
-    /* Tombolnya ikut hilang waktu riwayatnya kosong: tombol yang membuka panel
-       kosong menjanjikan sesuatu lalu tidak memberi apa-apa. */
-    if (tbl) tbl.classList.toggle('sembunyi', !riwayatHitung.length);
+    /* TOMBOLNYA SELALU ADA, walau riwayatnya kosong. Dulu dia ikut hilang, dan
+       akibatnya yang belum pernah menekan C tidak pernah tahu riwayatnya ada
+       sama sekali - fitur yang cuma muncul sesudah kamu kebetulan memakainya
+       tidak akan pernah ditemukan. Waktu kosong dia menjawab dengan cara
+       MENGISINYA (lihat penangannya), dan itu satu-satunya tempat aturan "C
+       menandai satu hitungan selesai" bisa terbaca. */
     if (tbl) tbl.classList.toggle('nyala', riwayatBuka && !!riwayatHitung.length);
     if (!riwayatHitung.length || !riwayatBuka) {
       w.classList.add('sembunyi');
@@ -6794,6 +6797,13 @@
     $('#b-hitung-salin').addEventListener('click', salinHasilHitung);
     $('#b-hitung-tempel').addEventListener('click', tempelHitung);
     $('#b-hitung-riwayat').addEventListener('click', function () {
+      /* Kosong bukan alasan untuk diam: yang menekannya sedang bertanya "apa
+         ini?", dan jawaban yang benar bukan panel kosong tapi cara
+         mengisinya. */
+      if (!riwayatHitung.length) {
+        pesan('Belum ada riwayat — tekan C untuk menyimpan hitungan');
+        return;
+      }
       riwayatBuka = !riwayatBuka;
       gambarRiwayatHitung();
     });

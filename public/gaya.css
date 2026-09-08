@@ -1727,10 +1727,14 @@ body:has(.layar.pas-layar.aktif){height:var(--tampak, 100%);overflow:hidden}
   background:var(--p);border:1px solid var(--l);border-radius:16px;
   padding:10px;gap:10px;
 }
+/* Lajur tombolnya di KIRI, teksnya di kanan - dua kolom, bukan satu kotak
+   dengan tombol yang mengambang di atasnya. */
 .hitung-layar{
   background:var(--g);border-radius:12px;
-  padding:10px 12px;flex:none;position:relative;
+  padding:10px 12px;flex:none;
+  display:flex;align-items:flex-start;gap:8px;
 }
+.hitung-teks{flex:1;min-width:0}
 /* NUMPANG DI SUDUT KIRI ATAS, tidak mengambil satu baris pun. Yang dibaca
    mata di kotak ini angkanya, dan angkanya rata kanan - jadi sudut kiri atas
    memang kosong. Baris tombol sendiri di bawah hasil memakan tinggi dari papan
@@ -1739,9 +1743,14 @@ body:has(.layar.pas-layar.aktif){height:var(--tampak, 100%);overflow:hidden}
    sentuh 44px, dengan sengaja: keempatnya jalan pintas yang punya jalan lain
    yang lebih besar - ketuk layarnya untuk menaruh karet, papan ketik untuk
    menempel. Yang tidak boleh mengecil tombol yang tidak punya jalan lain. */
+/* TEGAK, DAN DI LUAR KOTAK YANG MENGGULIR. Dulu dia dipatok absolute di atas
+   teksnya dan teksnya dikasih padding-left - dan itu keliru untuk kotak yang
+   menggulir mendatar: paddingnya ikut tergulir bersama isinya, jadi begitu
+   kalimatnya lebih panjang dari layar, ekornya lewat di BAWAH tombolnya.
+   Tegak, bukan mendatar: yang dibayar cuma 22px lebar, sementara bertiga
+   mendatar memakan 74px dari lebar yang justru dibutuhkan angka panjang. */
 .hitung-sunting{
-  position:absolute;top:9px;left:10px;
-  display:flex;align-items:center;gap:4px;
+  flex:none;display:flex;flex-direction:column;gap:4px;
 }
 /* Panah ◀ ▶ DIBUANG: mengetuk angkanya langsung menaruh karet di tempat yang
    diketuk, dan itu satu gerakan untuk sesuatu yang panahnya kerjakan dalam
@@ -1791,10 +1800,9 @@ body:has(.layar.pas-layar.aktif){height:var(--tampak, 100%);overflow:hidden}
   font-variant-numeric:tabular-nums;
   text-align:right;white-space:nowrap;overflow-x:auto;
   scrollbar-width:none;-ms-overflow-style:none;
-  /* Kirinya dikosongkan untuk gerombolan mikro yang duduk di situ; kanannya
-     2px supaya karet di ujung kalimat tidak terpotong tepi kotak yang
+  /* Kanannya 2px supaya karet di ujung kalimat tidak terpotong tepi kotak yang
      menggulir - karet yang terpotong sama saja dengan karet yang tidak ada. */
-  padding:2px 2px 2px 80px;
+  padding:2px 2px;
 }
 .hitung-ketik::-webkit-scrollbar{display:none}
 /* Hasilnya lebih besar daripada yang diketik, dan itu bukan hiasan: yang
