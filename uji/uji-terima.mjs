@@ -7682,8 +7682,31 @@ console.log('\nkalkulator ilmiah');
   await hal.click('#hitung-tombol [data-hitung="sin"]');
   await hal.waitForTimeout(150);
   cek('tombol fungsi membawa kurung bukanya sendiri',
-      (await hal.inputValue('#hitung-ketik')) === 'sin(',
-      await hal.inputValue('#hitung-ketik'));
+      (await hal.textContent('#hitung-ketik')) === 'sin(',
+      await hal.textContent('#hitung-ketik'));
+  /* TAMPILANNYA BUKAN KOTAK ISIAN, dan itu perbaikan atas cacat yang tidak
+     pernah terpikir: Chrome menganggap kotak isian mana pun layak diisikan
+     simpanan autofill-nya, dan tiap ketukan angka memfokuskannya lagi - jadi
+     tiap angka memanggil daftar sandi dan Client ID Google yang panjang.
+     'autocomplete=off' tidak menghentikannya; Chrome memang boleh
+     mengabaikannya. */
+  cek('tampilannya bukan kotak isian, jadi autofill tidak punya pintu masuk',
+      (await hal.evaluate(() =>
+        document.querySelector('#hitung-ketik').tagName)) !== 'INPUT');
+  /* Papan ketik fisik tetap jalan: di desktop yang paling wajar mengetik
+     angkanya, bukan mengarahkan tetikus ke tombol. */
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.keyboard.type('12*3');
+  await hal.waitForTimeout(250);
+  cek('papan ketik fisik tetap bisa dipakai',
+      (await hal.textContent('#hitung-ketik')) === '12×3' &&
+      (await hal.textContent('#hitung-hasil')).indexOf('36') >= 0,
+      await hal.textContent('#hitung-ketik') + ' / ' + await hal.textContent('#hitung-hasil'));
+  await hal.keyboard.press('Backspace');
+  await hal.waitForTimeout(200);
+  cek('dan Backspace menghapus satu, bukan semuanya',
+      (await hal.textContent('#hitung-ketik')) === '12×',
+      await hal.textContent('#hitung-ketik'));
   /* Setengah kalimat memang belum sah - "sin(" itu keadaan normal di tengah
      mengetik, bukan kekeliruan - dan pesan merah yang berkedip di tiap
      ketukan mengajari mata berhenti membacanya sama sekali. */

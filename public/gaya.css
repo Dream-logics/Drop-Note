@@ -1708,11 +1708,16 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
   background:var(--p);border:1px solid var(--l);border-radius:14px;
   padding:12px 14px;margin-bottom:10px;
 }
+/* Bukan kotak isian - lihat index.html. Digulir mendatar sendiri supaya
+   ekornya selalu terlihat: yang baru diketuk itu yang paling dicari mata. */
 .hitung-ketik{
-  width:100%;border:0;background:none;color:var(--i);
-  font-size:22px;padding:2px 0;outline:none;
+  width:100%;color:var(--i);
+  font-size:22px;padding:2px 0;min-height:30px;
   font-variant-numeric:tabular-nums;
+  text-align:right;white-space:nowrap;overflow-x:auto;
+  scrollbar-width:none;-ms-overflow-style:none;
 }
+.hitung-ketik::-webkit-scrollbar{display:none}
 /* Hasilnya lebih besar daripada yang diketik, dan itu bukan hiasan: yang
    dicari mata sesudah menekan tombol terakhir adalah angkanya, bukan
    kalimatnya. */
@@ -1745,12 +1750,15 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    dua-tiga baris, dan layar penuh untuk tiga baris terbaca sebagai perpindahan
    yang harus dibatalkan lagi. */
 .alat-lapis{position:fixed;inset:0;z-index:38;background:rgba(0,0,0,.18)}
+/* Letaknya diukur dari tombol Tools waktu dibuka (letakkanMenuAlat), bukan
+   dipatok di sini: baris pintunya berpindah tinggi di bawah 480px, dan angka
+   yang ditebak sekali akan meleset di layar yang lain. */
 .alat-menu{
-  position:absolute;top:0;left:0;right:0;
-  max-width:620px;margin:0 auto;
-  background:var(--p);border-radius:0 0 16px 16px;
-  box-shadow:0 6px 22px rgba(0,0,0,.14);
-  padding:8px;
+  position:absolute;top:0;right:8px;
+  min-width:190px;max-width:calc(100% - 16px);
+  background:var(--p);border:1px solid var(--l);border-radius:14px;
+  box-shadow:0 8px 26px rgba(0,0,0,.16);
+  padding:6px;
 }
 .alat-baris{
   display:flex;align-items:center;gap:11px;width:100%;
