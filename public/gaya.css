@@ -1697,3 +1697,80 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
   word-break:break-all;color:var(--i);
 }
+
+
+/* ===== KALKULATOR =====
+   Papan tombolnya lima kolom TETAP, bukan mengikuti isi: jari yang sudah hafal
+   letak "7" tidak boleh menemukannya bergeser karena baris fungsinya kebetulan
+   lebih panjang hari ini. Tingginya ikut membagi sisa ruang, jadi di jendela
+   pendek tombolnya memendek - bukan tergulir keluar layar. */
+.hitung-layar{
+  background:var(--p);border:1px solid var(--l);border-radius:14px;
+  padding:12px 14px;margin-bottom:10px;
+}
+.hitung-ketik{
+  width:100%;border:0;background:none;color:var(--i);
+  font-size:22px;padding:2px 0;outline:none;
+  font-variant-numeric:tabular-nums;
+}
+/* Hasilnya lebih besar daripada yang diketik, dan itu bukan hiasan: yang
+   dicari mata sesudah menekan tombol terakhir adalah angkanya, bukan
+   kalimatnya. */
+.hitung-hasil{
+  min-height:34px;text-align:right;color:var(--a);
+  font-size:27px;font-weight:700;line-height:34px;
+  font-variant-numeric:tabular-nums;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.hitung-tombol{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:7px;
+  flex:1;min-height:0;align-content:start;
+}
+.hit-tbl{
+  display:flex;align-items:center;justify-content:center;
+  min-height:46px;padding:0;border-radius:12px;cursor:pointer;
+  border:1px solid var(--l);background:var(--p);color:var(--i);
+  font-size:17px;font-weight:600;
+}
+.hit-tbl:active{background:var(--g)}
+/* Tiga keluarga, tiga rupa - dan pembedanya PEKERJAANNYA, bukan warna yang
+   dipilih supaya ramai: angka (bawaan), fungsi (redup, dia bukan yang dicari
+   mata), operator dan penghapus (beraksen, dia yang mengubah keadaan). */
+.hit-tbl.f{color:var(--m);font-size:15px}
+.hit-tbl.o{color:var(--a);font-size:20px}
+.hit-tbl.x{color:var(--a)}
+
+/* ===== MENU TOOLS =====
+   Melayang di atas baris pintunya, bukan layar penuh: yang dibuka cuma daftar
+   dua-tiga baris, dan layar penuh untuk tiga baris terbaca sebagai perpindahan
+   yang harus dibatalkan lagi. */
+.alat-lapis{position:fixed;inset:0;z-index:38;background:rgba(0,0,0,.18)}
+.alat-menu{
+  position:absolute;top:0;left:0;right:0;
+  max-width:620px;margin:0 auto;
+  background:var(--p);border-radius:0 0 16px 16px;
+  box-shadow:0 6px 22px rgba(0,0,0,.14);
+  padding:8px;
+}
+.alat-baris{
+  display:flex;align-items:center;gap:11px;width:100%;
+  min-height:48px;padding:0 12px;border:0;border-radius:11px;
+  background:none;color:var(--i);font-size:15px;cursor:pointer;text-align:left;
+}
+.alat-baris:active{background:var(--g)}
+.alat-baris .ik{width:19px;height:19px;color:var(--m);flex:0 0 auto}
+
+/* ===== PEMILIH PINTU DI SETELAN =====
+   Satu baris per pintu, dua keadaan. Bentuk yang sempat terpikir - dua daftar
+   bersebelahan yang isinya diseret - butuh ruang dua kali lipat dan menuntut
+   gerakan yang di HP paling sering meleset. */
+.pintu-atur{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+.pintu-baris{display:flex;align-items:center;gap:10px;min-height:44px}
+.pintu-baris .ik{width:18px;height:18px;color:var(--m);flex:0 0 auto}
+.pintu-nama{flex:1;min-width:0;font-size:14px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pintu-pilih{display:flex;gap:5px;flex:0 0 auto}
+.pintu-pilih .cip{padding:6px 11px;font-size:12px}
+/* Disebut terang-terangan, bukan didiamkan: baris yang kelihatan bisa diketuk
+   tapi diam waktu ditekan terbaca sebagai aplikasi yang rusak. */
+.pintu-kunci{flex:0 0 auto;font-size:11.5px;color:var(--m)}

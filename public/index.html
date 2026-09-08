@@ -518,6 +518,29 @@
 </section>
 
 <!-- ===================== LAYAR SETELAN ===================== -->
+<!-- KALKULATOR ILMIAH. Dia tidak menyimpan apa pun dan tidak ikut pencarian -
+     dia ALAT, bukan timbunan, dan itu sebabnya dia tinggal di balik pintu
+     Tools bersama alat lain. Menaruhnya sederajat dengan Drop dan Gallery
+     berarti pintu yang dipakai sekali seminggu memakan lebar yang dibutuhkan
+     pintu yang dipakai sepuluh kali sehari. -->
+<section class="layar" id="l-hitung">
+  <header class="atas">
+    <div class="merek" data-merek>Cortex Space</div>
+  </header>
+  <div class="tab-baris" data-tab></div>
+
+  <!-- Yang diketik TETAP TERLIHAT di atas hasilnya. Kalkulator yang cuma
+       memperlihatkan angka terakhir memaksa kamu mengingat sendiri apa yang
+       barusan kamu tekan - dan begitu satu ketukan meleset, tidak ada satu
+       pun cara mengetahuinya kecuali menghitung ulang dari nol. -->
+  <div class="hitung-layar">
+    <input id="hitung-ketik" class="hitung-ketik" inputmode="text"
+           autocomplete="off" spellcheck="false" placeholder="0" data-asli>
+    <div class="hitung-hasil" id="hitung-hasil" data-asli></div>
+  </div>
+  <div class="hitung-tombol" id="hitung-tombol"></div>
+</section>
+
 <section class="layar" id="l-setelan">
   <header class="atas rapat">
     <button class="ikon-btn" data-kembali aria-label="Kembali">
@@ -527,6 +550,15 @@
   </header>
   <div class="gulung" id="setelan-isi"></div>
 </section>
+
+<!-- MENU TOOLS. Pintu yang isinya PINTU LAIN, bukan layar sendiri: alat yang
+     jarang dipakai tidak pantas memakan satu slot di baris pintu, tapi juga
+     tidak pantas disembunyikan di Setelan. Lapisannya tipis dan menutup
+     begitu satu dipilih - menu yang tetap terbuka sesudah dipakai adalah
+     satu ketukan tambahan untuk membereskan sesuatu yang tidak kamu minta. -->
+<div class="alat-lapis sembunyi" id="alat-lapis">
+  <div class="alat-menu" id="alat-menu"></div>
+</div>
 
 <!-- Pratinjau gambar. Menyentuh sebuah gambar hampir selalu berarti "aku mau
      LIHAT ini", bukan "aku mau menyuntingnya" - dan petak kecil memang terlalu
@@ -610,6 +642,7 @@
 
 <script src="bawaan.js"></script>
 <script src="bahasa.js"></script>
+<script src="hitung.js"></script>
 <script src="simpan.js"></script>
 <script src="otak.js"></script>
 <script src="awan.js"></script>
