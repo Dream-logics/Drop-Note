@@ -7771,19 +7771,41 @@ console.log('\nkalkulator ilmiah');
      meninggalkan layarnya - bukan tiap ketukan: hasilnya di sini terhitung
      sejak huruf pertama, jadi mencatat tiap keadaan berarti riwayat berisi
      sembilan bayangan dari satu hitungan. */
-  /* Dibersihkan dulu: ketukan C di uji-uji sebelum ini sudah menandai
-     hitungannya selesai juga - itu memang perilakunya yang benar. */
+  /* RIWAYATNYA TERTUTUP SAMPAI DIMINTA: yang dibuka orang di layar ini
+     kalkulatornya, bukan catatan hitungannya - dan panel yang selalu terbuka
+     merampas tinggi dari papan tombol untuk sesuatu yang dilihat sekali dari
+     sepuluh kali. */
   await hal.click('#hitung-tombol [data-hitung="C"]');
   await hal.waitForTimeout(200);
-  if (await hal.locator('#b-riwayat-buang').isVisible()) {
+  /* Ketukan C di uji-uji sebelum ini sudah menandai hitungannya selesai juga -
+     itu memang perilakunya yang benar, jadi isinya dibersihkan dulu lewat
+     panelnya (yang sekarang tertutup sampai diminta). */
+  if (await hal.locator('#b-hitung-riwayat').isVisible()) {
+    await hal.click('#b-hitung-riwayat');
+    await hal.waitForTimeout(200);
     await hal.click('#b-riwayat-buang');
     await hal.waitForTimeout(200);
   }
-  cek('riwayatnya tidak digambar selama belum ada yang selesai',
-      await hal.locator('#hitung-riwayat').isHidden());
+  cek('riwayatnya tertutup, dan tombolnya pun belum ada waktu isinya kosong',
+      (await hal.locator('#hitung-riwayat').isHidden()) &&
+      (await hal.locator('#b-hitung-riwayat').isHidden()));
+  /* Dibersihkan dulu: ketukan C di uji-uji sebelum ini sudah menandai
+     hitungannya selesai juga - itu memang perilakunya yang benar. */
   await hal.keyboard.type('12*3');
   await hal.click('#hitung-tombol [data-hitung="C"]');
   await hal.waitForTimeout(250);
+  cek('sesudah ada isinya, tombolnya muncul - panelnya tetap tertutup',
+      (await hal.locator('#b-hitung-riwayat').isVisible()) &&
+      (await hal.locator('#hitung-riwayat').isHidden()));
+  await hal.click('#b-hitung-riwayat');
+  await hal.waitForTimeout(250);
+  /* KABAR BAHWA BARISNYA BISA DIKETUK: baris riwayat kelihatan seperti
+     catatan, bukan seperti tombol, dan yang tidak pernah mencobanya tidak
+     akan pernah menemukannya. */
+  cek('yang dibuka menyebut sendiri bahwa barisnya bisa diketuk',
+      /kirim ke kalkulator|send to the calculator/i.test(
+        await hal.textContent('#hitung-riwayat .riwayat-kepala')),
+      await hal.textContent('#hitung-riwayat .riwayat-kepala'));
   cek('menekan C menandai hitungannya selesai, dan barisnya muncul',
       (await hal.locator('#hitung-riwayat .riwayat-baris').count()) === 1 &&
       (await hal.locator('#hitung-riwayat .riwayat-op').first().textContent()) === '12×3' &&
@@ -7822,7 +7844,8 @@ console.log('\nkalkulator ilmiah');
   await hal.click('#b-riwayat-buang');
   await hal.waitForTimeout(250);
   cek('dan riwayatnya punya tombol buang sendiri',
-      await hal.locator('#hitung-riwayat').isHidden());
+      (await hal.locator('#hitung-riwayat').isHidden()) &&
+      (await hal.locator('#b-hitung-riwayat').isHidden()));
   /* DI MEMORI SAJA - umur pakai riwayat hitung diukur menit, bukan hari, dan
      yang benar-benar layak disimpan sudah punya rumahnya di Drop. */
   cek('riwayatnya tidak pernah ditulis ke setelan',
@@ -7881,22 +7904,14 @@ console.log('\nkalkulator ilmiah');
   cek('mengetuk hurufnya memindahkan karet ke situ',
       (await hal.textContent('#hitung-ketik')) === '125+96×6',
       await hal.textContent('#hitung-ketik'));
-  /* Panahnya tetap ada untuk jari yang meleset satu huruf - dua arah. */
-  await hal.click('#l-hitung [data-karet="1"]');
-  await hal.click('#l-hitung [data-karet="1"]');
-  await hal.waitForTimeout(150);
-  await hal.keyboard.type('7');
-  await hal.waitForTimeout(200);
-  cek('dan tombol panahnya menggeser karet satu huruf',
-      (await hal.textContent('#hitung-ketik')) === '1257+96×6',
-      await hal.textContent('#hitung-ketik'));
-  await hal.click('#l-hitung [data-karet="-1"]');
-  await hal.waitForTimeout(150);
-  await hal.keyboard.press('Backspace');
-  await hal.waitForTimeout(200);
-  cek('dan yang ke kiri juga',
-      (await hal.textContent('#hitung-ketik')) === '127+96×6',
-      await hal.textContent('#hitung-ketik'));
+  /* PANAH ◀ ▶ SUDAH DIBUANG. Mengetuk angkanya langsung menaruh karet di
+     tempat yang diketuk - satu gerakan untuk sesuatu yang panahnya kerjakan
+     dalam lima, dan dua tombol yang mengerjakan satu hal berarti yang satu
+     selalu terbaca sebagai "untuk apa ini?". Itu keluhan yang masuk. */
+  cek('panah geser karet sudah tidak ada lagi di layarnya',
+      (await hal.locator('#l-hitung [data-karet]').count()) === 0);
+  cek('yang tersisa di sudutnya cuma riwayat, tempel, dan salin',
+      (await hal.locator('.hitung-sunting .hit-sunting').count()) === 3);
 
   /* TEMPEL. Yang ditempel DIBERSIHKAN, bukan ditolak: angka yang disalin dari
      mana pun datang membawa "Rp", spasi ribuan, dan satuan di ekornya, dan
@@ -7991,6 +8006,33 @@ console.log('\nkalkulator ilmiah');
         const r = k.getBoundingClientRect();
         return r.width >= 3 && r.height >= 24;
       }));
+
+  /* LAYARNYA HARUS PAS, TIDAK PERNAH MELUBER. Kalkulator itu satu alat yang
+     dipandang UTUH: papan tombolnya tidak berarti apa-apa kalau separuhnya di
+     bawah lipatan, dan konverter yang harus digulir dulu sebelum kelihatan
+     sama saja dengan konverter yang tidak ada. Dulu di HP 360x640 dia meluber
+     167px, di tablet rebah 33px. */
+  for (const [lw, lh, sebut] of [[360, 640, 'HP kecil'], [412, 915, 'HP besar'],
+                                 [768, 1024, 'tablet tegak'], [1024, 768, 'tablet rebah']]) {
+    await hal.setViewportSize({ width: lw, height: lh });
+    await hal.waitForTimeout(300);
+    const luber = await hal.evaluate(() =>
+      document.documentElement.scrollHeight - window.innerHeight);
+    cek('  pas di ' + sebut + ' (' + lw + 'x' + lh + '), tanpa meluber',
+        luber <= 0, 'luber ' + luber + 'px');
+  }
+  /* Papan tombolnya yang MENYUSUT dan MELAR, bukan yang terpotong - dan
+     lantainya dijaga supaya tetap bisa ditekan jempol. */
+  await hal.setViewportSize({ width: 360, height: 640 });
+  await hal.waitForTimeout(300);
+  cek('di layar terpendek pun tombolnya masih bisa ditekan, dan konverternya terlihat',
+      await hal.evaluate(() => {
+        const t = document.querySelector('.hit-tbl').getBoundingClientRect();
+        const k = document.querySelector('.konv-badan').getBoundingClientRect();
+        return t.height >= 36 && k.top < window.innerHeight;
+      }));
+  await hal.setViewportSize({ width: 412, height: 915 });
+  await hal.waitForTimeout(300);
 
   /* KONVERTERNYA DI LAYAR YANG SAMA, di ruang kosong di bawah papan tombol:
      yang menghitung gaya baut juga yang harus menerjemahkan lbf·ft dari

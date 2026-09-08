@@ -6302,6 +6302,12 @@
      punya tombol buang - saluran keluar tidak boleh cuma "tutup aplikasinya". */
   var RIWAYAT_MAKS = 20;
   var riwayatHitung = [];
+  /* TERTUTUP SAMPAI DIMINTA. Yang dibuka orang di layar ini kalkulatornya,
+     bukan catatan hitungannya - dan panel yang selalu terbuka merampas tinggi
+     dari papan tombol untuk sesuatu yang dilihat sekali dari sepuluh kali.
+     Keadaan, bukan setelan: menutup aplikasinya menutupnya lagi, sama dengan
+     isinya sendiri. */
+  var riwayatBuka = false;
 
   /* SATU HITUNGAN DICATAT WAKTU KAMU BERALIH DARI DIA, bukan tiap ketukan.
      Hasilnya di sini terhitung sejak huruf pertama, jadi "1", "12", "12×",
@@ -6330,11 +6336,25 @@
 
   function gambarRiwayatHitung() {
     var w = $('#hitung-riwayat');
+    var tbl = $('#b-hitung-riwayat');
     if (!w) return;
-    if (!riwayatHitung.length) { w.classList.add('sembunyi'); w.innerHTML = ''; return; }
+    /* Tombolnya ikut hilang waktu riwayatnya kosong: tombol yang membuka panel
+       kosong menjanjikan sesuatu lalu tidak memberi apa-apa. */
+    if (tbl) tbl.classList.toggle('sembunyi', !riwayatHitung.length);
+    if (tbl) tbl.classList.toggle('nyala', riwayatBuka && !!riwayatHitung.length);
+    if (!riwayatHitung.length || !riwayatBuka) {
+      w.classList.add('sembunyi');
+      w.innerHTML = '';
+      return;
+    }
     w.classList.remove('sembunyi');
     w.innerHTML =
-      '<div class="riwayat-kepala"><span>Riwayat</span>' +
+      /* Kabar bahwa barisnya bisa diketuk, dan dia yang menggantikan label
+         "Riwayat": baris riwayat kelihatan seperti catatan, bukan seperti
+         tombol, dan yang tidak pernah mencobanya tidak akan pernah
+         menemukannya. Namanya sendiri tidak perlu disebut - barisnya sudah
+         berisi hitungan yang jelas-jelas sudah lewat. */
+      '<div class="riwayat-kepala"><span>Ketuk untuk kirim ke kalkulator</span>' +
       '<button class="riwayat-buang" id="b-riwayat-buang">Bersihkan</button></div>' +
       riwayatHitung.map(function (r, i) {
         return '<button class="riwayat-baris" data-riwayat="' + i + '">' +
@@ -6773,11 +6793,11 @@
     });
     $('#b-hitung-salin').addEventListener('click', salinHasilHitung);
     $('#b-hitung-tempel').addEventListener('click', tempelHitung);
-    $('#hitung-ketik').addEventListener('click', ketukKetik);
-    $('.hitung-sunting').addEventListener('click', function (ev) {
-      var b = ev.target.closest('[data-karet]');
-      if (b) geserKaret(+b.getAttribute('data-karet'));
+    $('#b-hitung-riwayat').addEventListener('click', function () {
+      riwayatBuka = !riwayatBuka;
+      gambarRiwayatHitung();
     });
+    $('#hitung-ketik').addEventListener('click', ketukKetik);
     $('#konv-kat').addEventListener('change', function () {
       konvKat = this.value;
       /* Pasangannya dilepas, bukan dipertahankan: "psi" tidak punya arti di
@@ -6811,6 +6831,10 @@
     $('#hitung-riwayat').addEventListener('click', function (ev) {
       if (ev.target.closest('#b-riwayat-buang')) {
         riwayatHitung = [];
+        /* Ikut MENUTUP, bukan cuma mengosongkan: "Bersihkan" dibaca sebagai
+           "sudah, selesai dengan ini", dan panel yang membuka dirinya sendiri
+           lagi di hitungan berikutnya membatalkan yang barusan diminta. */
+        riwayatBuka = false;
         gambarRiwayatHitung();
         return;
       }

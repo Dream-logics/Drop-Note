@@ -523,7 +523,7 @@
      Tools bersama alat lain. Menaruhnya sederajat dengan Drop dan Gallery
      berarti pintu yang dipakai sekali seminggu memakan lebar yang dibutuhkan
      pintu yang dipakai sepuluh kali sehari. -->
-<section class="layar" id="l-hitung">
+<section class="layar pas-layar" id="l-hitung">
   <header class="atas">
     <div class="merek" data-merek>Cortex Space</div>
   </header>
@@ -555,19 +555,26 @@
            ketik fisik tetap jalan lewat penangan keydown di alur.js. -->
       <div id="hitung-ketik" class="hitung-ketik" data-asli></div>
       <div class="hitung-hasil" id="hitung-hasil" data-asli></div>
-      <!-- SUNTING NUMPANG DI SUDUT KIRI ATAS, dan itu bukan selera: yang
-           dibaca mata di kotak ini ANGKANYA, dan angkanya rata kanan. Baris
-           tombol sendiri di bawah hasil memakan tinggi dari papan tombol dan
-           menaruh empat kotak abu-abu tepat di jalur baca. Di sudut kiri atas
-           dia duduk di ruang yang memang kosong.
-           MIKRO (26px), dan itu satu-satunya tempat di aplikasi ini yang
-           melanggar sasaran sentuh 44px - dengan sengaja: keempatnya jalan
-           pintas, dan tiap satu punya jalan lain yang lebih besar (ketuk
-           layarnya untuk karet, papan ketik untuk tempel). Yang tidak boleh
-           mengecil tombol yang tidak punya jalan lain. -->
+      <!-- TINGGAL DUA: tempel dan salin. Panah ◀ ▶ DIBUANG - dia menjawab
+           pertanyaan yang sudah dijawab lebih baik oleh mengetuk angkanya
+           langsung, dan dua tombol yang mengerjakan satu hal berarti yang
+           satu selalu terbaca sebagai "untuk apa ini?".
+           NUMPANG DI SUDUT KIRI ATAS: yang dibaca mata di kotak ini ANGKANYA,
+           dan angkanya rata kanan, jadi sudut kiri atas memang kosong.
+           MIKRO (22px), satu-satunya tempat di aplikasi ini yang melanggar
+           sasaran sentuh 44px - dengan sengaja: keduanya jalan pintas yang
+           punya jalan lain (papan ketik untuk tempel, riwayat untuk angka
+           yang sudah pernah dihitung). Yang tidak boleh mengecil tombol yang
+           tidak punya jalan lain. -->
       <div class="hitung-sunting">
-        <button class="hit-sunting" data-karet="-1" aria-label="Geser ke kiri">◀</button>
-        <button class="hit-sunting" data-karet="1" aria-label="Geser ke kanan">▶</button>
+        <!-- Riwayat TERTUTUP sampai diminta: yang dibuka orang di layar ini
+             kalkulatornya, bukan catatan hitungannya - dan panel yang selalu
+             terbuka merampas tinggi dari papan tombol untuk sesuatu yang
+             dilihat sekali dari sepuluh kali. Tombolnya sendiri cuma digambar
+             kalau memang ada isinya. -->
+        <button class="hit-sunting sembunyi" id="b-hitung-riwayat" aria-label="Riwayat hitungan">
+          <svg viewBox="0 0 24 24" class="ik"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </button>
         <button class="hit-sunting" id="b-hitung-tempel" aria-label="Tempel dari papan klip">
           <svg viewBox="0 0 24 24" class="ik"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/></svg>
         </button>
@@ -591,6 +598,14 @@
     <div class="konv-kepala">
       <span>Konversi satuan</span>
       <select class="konv-kat" id="konv-kat"></select>
+      <!-- Salin duduk di KOLOM KANAN yang sama dengan tukar dan kirim - satu
+           lajur untuk tindakan, jadi ketiganya sejajar dan tidak ada baris
+           tambahan yang lahir untuk satu ikon. Yang disalin hasil
+           konversinya: angka yang mau ditempel ke chat atau kolom harga tidak
+           selalu angka yang mau dihitung lagi. -->
+      <button class="konv-sisi kepala" id="b-konv-salin" aria-label="Salin hasil konversi">
+        <svg viewBox="0 0 24 24" class="ik"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+      </button>
     </div>
     <div class="konv-baris">
       <!-- type=number, dan itu disengaja sesudah cacat autofill di layar
@@ -600,28 +615,22 @@
       <input class="konv-nilai" id="konv-nilai" type="number" inputmode="decimal"
              step="any" autocomplete="off" name="konv-nilai" data-asli>
       <select class="konv-satuan" id="konv-dari" data-asli></select>
-    </div>
-    <!-- TUKAR duduk di antara dua barisnya, bukan di kepala: yang dibalik
-         pasangannya, dan tombol yang jauh dari yang dibaliknya harus dicari
-         dulu tiap kali. -->
-    <div class="konv-tukar-baris">
-      <button class="konv-tukar" id="b-konv-tukar" aria-label="Tukar satuannya">⇅</button>
+      <!-- TUKAR duduk sebaris dengan satuan asalnya, bukan di baris sendiri:
+           satu baris untuk satu ikon adalah tinggi yang dibayar papan
+           tombolnya, dan yang dibalik pasangannya - jadi tempatnya memang di
+           antara kedua satuan. -->
+      <button class="konv-sisi" id="b-konv-tukar" aria-label="Tukar satuannya">⇅</button>
     </div>
     <div class="konv-baris">
       <div class="konv-hasil" id="konv-hasil" data-asli></div>
       <select class="konv-satuan" id="konv-ke" data-asli></select>
-    </div>
-    <div class="konv-aksi">
       <!-- KE KALKULATOR, dan ini yang membedakannya dari konverter mana pun
            di toko aplikasi: hasil konversi hampir tidak pernah jawaban
            akhirnya - dia angka yang mau dikalikan luas, dibagi jumlah baut,
-           atau dijumlahkan. Menyalinnya lalu mengetiknya ulang di kotak
-           sebelah adalah dua langkah untuk satu angka yang sudah ada di
-           layar. -->
-      <button class="konv-kirim" id="b-konv-hitung">→ Hitung</button>
-      <button class="hit-sunting" id="b-konv-salin" aria-label="Salin hasil konversi">
-        <svg viewBox="0 0 24 24" class="ik"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-      </button>
+           atau dijumlahkan. Duduk sebaris dengan HASILNYA, karena hasil itu
+           yang dikirimnya. Tombol salin sendiri sudah dibuang: angkanya
+           tinggal dikirim ke kalkulator, dan salin sudah ada di sana. -->
+      <button class="konv-sisi kirim" id="b-konv-hitung" aria-label="Kirim ke kalkulator">→</button>
     </div>
   </div>
 </section>

@@ -185,8 +185,8 @@
     'Salin hasil': 'Copy result',
     'Riwayat': 'History',
     'Tempel dari papan klip': 'Paste from clipboard',
-    'Geser ke kiri': 'Move left',
-    'Geser ke kanan': 'Move right',
+    'Riwayat hitungan': 'Calculation history',
+    'Ketuk untuk kirim ke kalkulator': 'Tap to send to the calculator',
     'Papan klip tertutup — tekan lama lalu Tempel': 'Clipboard blocked — long-press, then Paste',
     'Tidak ada angka di papan klip': 'No numbers on the clipboard',
     /* NAMA KATEGORINYA diterjemahkan, LAMBANG SATUANNYA tidak - psi tetap psi
@@ -195,9 +195,9 @@
        yang lepas dari data-asli. */
     'Konversi satuan': 'Unit conversion',
     'Tukar satuannya': 'Swap the units',
+    'Kirim ke kalkulator': 'Send to the calculator',
     'Salin hasil konversi': 'Copy the conversion result',
     'Masuk ke kalkulator': 'Sent to the calculator',
-    '→ Hitung': '→ Calculator',
     'Panjang': 'Length',
     'Luas': 'Area',
     'Massa': 'Mass',
