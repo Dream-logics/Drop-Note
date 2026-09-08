@@ -1291,6 +1291,27 @@ public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
                     kanan = sesudah, sama dengan tiap kotak teks di mana pun.
                     Panah ◀ ▶ tetap ada untuk jari yang meleset satu huruf.
                     '⌫' menghapus yang di KIRI karet, bukan di ujung kalimat.
+                    KARETNYA HARUS TEBAL (3px, 1.15em). Yang pertama 2px
+                    setinggi satu em, dan di antara angka 22px di layar HP dia
+                    tidak terbaca sebagai karet - dia terbaca sebagai cacat
+                    rendering. Akibatnya bukan cuma karetnya: begitu dia tidak
+                    terlihat, tombol panah di sebelahnya jadi tombol yang
+                    "tidak melakukan apa-apa", dan itu keluhan yang masuk.
+                    Kanan '.hitung-ketik' dikasih 2px supaya karet di ujung
+                    kalimat tidak terpotong tepi kotak yang menggulir.
+                    GEROMBOLAN SUNTINGNYA NUMPANG DI SUDUT KIRI ATAS layarnya
+                    (absolute), tidak mengambil satu baris pun, dan MIKRO
+                    (26px). Dulu dia baris sendiri di bawah hasil: memakan
+                    tinggi dari papan tombol DAN menaruh empat kotak abu-abu
+                    tepat di jalur baca angkanya. Yang dibaca mata di kotak itu
+                    angkanya, dan angkanya rata kanan - jadi sudut kiri atas
+                    memang kosong; '.hitung-ketik' dapat padding-left selebar
+                    gerombolannya supaya angka panjang tidak menyelinap di
+                    bawahnya. 26px itu SATU-SATUNYA tempat di aplikasi ini yang
+                    melanggar sasaran sentuh 44px, dan itu disengaja: keempatnya
+                    jalan pintas yang punya jalan lain yang lebih besar (ketuk
+                    layarnya untuk karet, papan ketik untuk tempel). Yang tidak
+                    boleh mengecil tombol yang tidak punya jalan lain.
                     TEMPEL MEMBERSIHKAN, BUKAN MENOLAK: angka yang disalin dari
                     mana pun datang membawa "Rp", spasi ribuan, dan satuan di
                     ekornya, dan menolak seluruhnya karena satu karakter
@@ -1302,8 +1323,19 @@ public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
                     ada aturan yang membedakannya tanpa menebak, dan menebak
                     berarti kadang-kadang membuang ketelitian tanpa satu tanda
                     pun di layar. Yang dipilih kekeliruan yang KELIHATAN.
-                    Papan klip yang ditolak peramban DIKATAKAN; tombol yang
-                    diam waktu ditekan terbaca sebagai aplikasi yang rusak.
+                    Papan klip yang ditolak peramban DIKATAKAN BESERTA JALAN
+                    KELUARNYA ("tekan lama lalu Tempel"): tombol yang diam
+                    waktu ditekan terbaca sebagai aplikasi yang rusak, dan
+                    "gagal" tanpa jalan keluar sama saja diamnya.
+                    ADA JALAN KEDUA, dan dia yang sebenarnya selalu jalan:
+                    penangan 'paste' di tingkat dokumen (tempelSistem).
+                    readText() minta izin dan di PWA Android penolakannya
+                    biasa, bukan kekecualian - sementara Ctrl+V dan "Tempel"
+                    dari menu tekan-lama tidak minta izin apa pun, dia langsung
+                    mengirim event 'paste' dengan isinya sudah menempel.
+                    Didengar di tingkat dokumen karena tidak ada kotak isian
+                    yang bisa difokuskan di layar ini, dan PULANG kalau yang
+                    aktif INPUT/TEXTAREA.
 public/hitung.js    (lanjutan) KONVERSI SATUAN ('SATUAN' + 'konversi'), di
                     ruang kosong di bawah papan tombol. Yang menghitung gaya
                     baut juga yang harus menerjemahkan lbf·ft dari katalog ke
@@ -1389,7 +1421,27 @@ public/alur.js      BARIS PINTUNYA MILIK PEMAKAINYA ('pintuUtama' di setelan,
                     meleset di layar yang lain. Dipatok dari KANAN - tombol
                     Tools duduk di ujung kanan baris, dan menu yang tumbuh ke
                     kanan dari situ keluar layar.
-public/sw.js        service worker — singgahan kerangka + penerima "Bagikan"
+public/sw.js        service worker — singgahan kerangka + penerima "Bagikan".
+                    SATU MUATAN SELALU SATU GENERASI, dan itu perbaikan atas
+                    cacat yang menghasilkan laporan lapangan yang tidak masuk
+                    akal: "tombolnya ada tapi tidak berfungsi", "kotaknya tidak
+                    berbingkai". Halamannya dulu JARINGAN-DULU sementara
+                    gaya.css dan alur.js SINGGAHAN-DULU. Akibatnya tiap
+                    terbitan baru, sekali: index.html yang terambil versi BARU,
+                    gaya dan kodenya masih versi LAMA dari singgahan - karena
+                    service worker yang baru belum selesai memasang waktu
+                    berkas-berkas itu diminta. Yang tergambar markup baru tanpa
+                    gayanya, dan tombol baru yang tidak punya satu pun
+                    penangan. Itu BUKAN singgahan basi yang hilang sendiri
+                    sesudah refresh; itu satu muatan yang isinya dua generasi,
+                    dan yang melihatnya melaporkannya sebagai fitur yang rusak.
+                    Sekarang halamannya singgahan-dulu juga. Ongkosnya harus
+                    disebut: terbitan baru butuh SATU pembukaan lagi sebelum
+                    terlihat (yang pertama memasang service worker barunya,
+                    yang kedua memakainya). Terbitan yang telat satu pembukaan
+                    jauh lebih murah daripada terbitan yang sampai dalam
+                    keadaan rusak. Manifest tetap jaringan-dulu, dan dia
+                    satu-satunya - alasannya di berkasnya sendiri.
 public/manifest.webmanifest   supaya bisa dipasang di HP
 uji/uji-terima.mjs            uji terima (Playwright)
 uji/palsu-google.mjs          tiruan Drive+Sheets di memori untuk uji
@@ -1407,7 +1459,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (987 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (993 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

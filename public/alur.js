@@ -6480,21 +6480,43 @@
     return keluar;
   }
 
+  function terimaTempel(mentah) {
+    var bersih = bersihkanTempel(String(mentah || ''));
+    if (!bersih) { pesan('Tidak ada angka di papan klip'); return false; }
+    sisipKetik(bersih);
+    return true;
+  }
+
   function tempelHitung() {
     /* Papan klip cuma boleh dibaca atas permintaan yang terlihat, dan
-       peramban boleh menolaknya. Yang ditolak DIKATAKAN - tombol yang diam
-       waktu ditekan terbaca sebagai aplikasi yang rusak. */
+       peramban BOLEH MENOLAKNYA - di PWA Android penolakan itu biasa, bukan
+       kekecualian. Yang ditolak dikatakan apa adanya beserta jalan keluarnya:
+       tombol yang diam waktu ditekan terbaca sebagai aplikasi yang rusak, dan
+       "gagal" tanpa jalan keluar sama saja diamnya. */
     if (!navigator.clipboard || !navigator.clipboard.readText) {
-      pesan('Peramban ini tidak mengizinkan tempel');
+      pesan('Papan klip tertutup — tekan lama lalu Tempel');
       return;
     }
     navigator.clipboard.readText().then(function (t) {
-      var bersih = bersihkanTempel(String(t || ''));
-      if (!bersih) { pesan('Tidak ada angka di papan klip'); return; }
-      sisipKetik(bersih);
+      terimaTempel(t);
     }, function () {
-      pesan('Tidak bisa membaca papan klip');
+      pesan('Papan klip tertutup — tekan lama lalu Tempel');
     });
+  }
+
+  /* JALAN KEDUA, dan dia yang sebenarnya selalu jalan: tempel BAWAAN sistem.
+     readText() minta izin dan boleh ditolak, sementara Ctrl+V dan "Tempel"
+     dari menu tekan-lama tidak minta izin apa pun - dia mengirim event 'paste'
+     dengan isinya sudah menempel. Didengar di tingkat dokumen karena tidak ada
+     kotak isian yang bisa difokuskan di layar ini. */
+  function tempelSistem(ev) {
+    if (layarSaat !== 'l-hitung') return;
+    var f = document.activeElement;
+    if (f && (f.tagName === 'INPUT' || f.tagName === 'TEXTAREA')) return;
+    var d = ev.clipboardData || global.clipboardData;
+    if (!d) return;
+    ev.preventDefault();
+    terimaTempel(d.getData('text'));
   }
 
   /* ===== KONVERSI SATUAN =====
@@ -6796,6 +6818,7 @@
       if (b) pakaiRiwayat(+b.getAttribute('data-riwayat'));
     });
     document.addEventListener('keydown', ketikHitung);
+    document.addEventListener('paste', tempelSistem);
 
     $('#b-pintas-tulis').addEventListener('click', function () {
       /* Foldernya DIKOSONGKAN dengan sengaja, dan itu bukan kekurangan -

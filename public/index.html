@@ -555,18 +555,22 @@
            ketik fisik tetap jalan lewat penangan keydown di alur.js. -->
       <div id="hitung-ketik" class="hitung-ketik" data-asli></div>
       <div class="hitung-hasil" id="hitung-hasil" data-asli></div>
-      <!-- BARIS SUNTING, dan dia bukan hiasan: tanpa panah dan tempel, satu
-           angka yang salah di tengah kalimat panjang berarti mengetik ulang
-           seluruhnya. Dipisah dari papan tombol karena pekerjaannya beda -
-           papan tombol MENAMBAH, baris ini MEMINDAHKAN dan MENGAMBIL.
-           Salinnya di ujung KANAN, ujung yang paling dekat jempol. -->
+      <!-- SUNTING NUMPANG DI SUDUT KIRI ATAS, dan itu bukan selera: yang
+           dibaca mata di kotak ini ANGKANYA, dan angkanya rata kanan. Baris
+           tombol sendiri di bawah hasil memakan tinggi dari papan tombol dan
+           menaruh empat kotak abu-abu tepat di jalur baca. Di sudut kiri atas
+           dia duduk di ruang yang memang kosong.
+           MIKRO (26px), dan itu satu-satunya tempat di aplikasi ini yang
+           melanggar sasaran sentuh 44px - dengan sengaja: keempatnya jalan
+           pintas, dan tiap satu punya jalan lain yang lebih besar (ketuk
+           layarnya untuk karet, papan ketik untuk tempel). Yang tidak boleh
+           mengecil tombol yang tidak punya jalan lain. -->
       <div class="hitung-sunting">
         <button class="hit-sunting" data-karet="-1" aria-label="Geser ke kiri">◀</button>
         <button class="hit-sunting" data-karet="1" aria-label="Geser ke kanan">▶</button>
         <button class="hit-sunting" id="b-hitung-tempel" aria-label="Tempel dari papan klip">
           <svg viewBox="0 0 24 24" class="ik"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/></svg>
         </button>
-        <span class="hitung-sela"></span>
         <button class="hit-sunting sembunyi" id="b-hitung-salin" aria-label="Salin hasil">
           <svg viewBox="0 0 24 24" class="ik"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
         </button>

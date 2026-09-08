@@ -187,8 +187,7 @@
     'Tempel dari papan klip': 'Paste from clipboard',
     'Geser ke kiri': 'Move left',
     'Geser ke kanan': 'Move right',
-    'Peramban ini tidak mengizinkan tempel': 'This browser does not allow pasting',
-    'Tidak bisa membaca papan klip': 'Cannot read the clipboard',
+    'Papan klip tertutup — tekan lama lalu Tempel': 'Clipboard blocked — long-press, then Paste',
     'Tidak ada angka di papan klip': 'No numbers on the clipboard',
     /* NAMA KATEGORINYA diterjemahkan, LAMBANG SATUANNYA tidak - psi tetap psi
        di bahasa mana pun, dan menerjemahkannya berarti mengarang satuan yang
