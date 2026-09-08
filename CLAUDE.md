@@ -1246,6 +1246,22 @@ public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
                     RIWAYAT_MAKS (20), tetap punya tombol Bersihkan (saluran
                     keluar tidak boleh cuma "tutup aplikasinya"), dan TIDAK
                     PERNAH ikut setelan maupun cadangan.
+                    PANELNYA TERTUTUP SAMPAI DIMINTA ('riwayatBuka', keadaan -
+                    bukan setelan). Yang dibuka orang di layar ini
+                    kalkulatornya, bukan catatan hitungannya, dan panel yang
+                    selalu terbuka merampas tinggi dari papan tombol untuk
+                    sesuatu yang dilihat sekali dari sepuluh kali. Tombol jamnya
+                    cuma digambar kalau memang ada isinya - tombol yang membuka
+                    panel kosong menjanjikan sesuatu lalu tidak memberi apa-apa.
+                    "Bersihkan" ikut MENUTUP, bukan cuma mengosongkan: dia
+                    dibaca sebagai "sudah, selesai dengan ini", dan panel yang
+                    membuka dirinya sendiri lagi di hitungan berikutnya
+                    membatalkan yang barusan diminta.
+                    KEPALANYA MENYEBUT SENDIRI BAHWA BARISNYA BISA DIKETUK
+                    ("Ketuk untuk kirim ke kalkulator"), dan kalimat itu
+                    MENGGANTIKAN label "Riwayat": baris riwayat kelihatan
+                    seperti catatan, bukan seperti tombol, dan yang tidak
+                    pernah mencobanya tidak akan pernah menemukannya.
                     DICATAT WAKTU KAMU BERALIH DARI SATU HITUNGAN, bukan tiap
                     ketukan: hasilnya terhitung sejak huruf pertama, jadi "1",
                     "12", "12×", "12×3" semuanya keadaan yang sah - mencatat
@@ -1289,7 +1305,12 @@ public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
                     ketukan cuma bisa ditebak jatuh di sela mana kalau tiap
                     huruf punya kotaknya sendiri. Paruh kiri = sebelum, paruh
                     kanan = sesudah, sama dengan tiap kotak teks di mana pun.
-                    Panah ◀ ▶ tetap ada untuk jari yang meleset satu huruf.
+                    PANAH ◀ ▶ SUDAH DIBUANG dan jangan dikembalikan: mengetuk
+                    angkanya langsung menaruh karet di tempat yang diketuk -
+                    satu gerakan untuk sesuatu yang panahnya kerjakan dalam
+                    lima. Dua tombol yang mengerjakan satu hal berarti yang
+                    satu selalu terbaca sebagai "untuk apa ini?", dan itu
+                    keluhan yang masuk. Panah papan ketik fisik tetap jalan.
                     '⌫' menghapus yang di KIRI karet, bukan di ujung kalimat.
                     KARETNYA HARUS TEBAL (3px, 1.15em). Yang pertama 2px
                     setinggi satu em, dan di antara angka 22px di layar HP dia
@@ -1301,7 +1322,8 @@ public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
                     kalimat tidak terpotong tepi kotak yang menggulir.
                     GEROMBOLAN SUNTINGNYA NUMPANG DI SUDUT KIRI ATAS layarnya
                     (absolute), tidak mengambil satu baris pun, dan MIKRO
-                    (26px). Dulu dia baris sendiri di bawah hasil: memakan
+                    (22px). Isinya TIGA: riwayat, tempel, salin. Dulu dia
+                    baris sendiri di bawah hasil: memakan
                     tinggi dari papan tombol DAN menaruh empat kotak abu-abu
                     tepat di jalur baca angkanya. Yang dibaca mata di kotak itu
                     angkanya, dan angkanya rata kanan - jadi sudut kiri atas
@@ -1336,6 +1358,25 @@ public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
                     Didengar di tingkat dokumen karena tidak ada kotak isian
                     yang bisa difokuskan di layar ini, dan PULANG kalau yang
                     aktif INPUT/TEXTAREA.
+public/hitung.js    (lanjutan) LAYAR KALKULATORNYA DIPATOK KE TINGGI YANG
+                    TERLIHAT ('.pas-layar' + '--tampak', dari visualViewport -
+                    lihat pasangTinggiTampak di alur.js). Kalkulator itu satu
+                    alat yang dipandang UTUH: papan tombolnya tidak berarti
+                    apa-apa kalau separuhnya di bawah lipatan, dan konverter
+                    yang harus digulir dulu sebelum kelihatan sama saja dengan
+                    konverter yang tidak ada. Dulu layarnya tumbuh apa adanya
+                    dan halamannya menggulir - di HP 360x640 meluber 167px, di
+                    tablet rebah 33px. BUKAN 100vh: di HP, 100vh memasukkan
+                    bilah alamat yang sedang tersembunyi, jadi yang "pas" di
+                    sana tetap terpotong di bawah.
+                    YANG MENGALAH BERURUTAN: konverter menyusut duluan dan
+                    menggulir di dalam kotaknya sendiri (dia dipakai beberapa
+                    kali sehari), lalu riwayat (max-height ikut 16vh), baru
+                    papan tombolnya - barisnya '1fr' jadi tombolnya MENYUSUT di
+                    layar pendek dan MELAR di layar tinggi (38-58px). Lantainya
+                    38px, bukan 44px, dan kompromi itu harus disebut: yang 44px
+                    memaksa konverternya keluar layar seluruhnya di 360x640,
+                    dan tombol yang tidak terlihat sasaran sentuhnya nol.
 public/hitung.js    (lanjutan) KONVERSI SATUAN ('SATUAN' + 'konversi'), di
                     ruang kosong di bawah papan tombol. Yang menghitung gaya
                     baut juga yang harus menerjemahkan lbf·ft dari katalog ke
@@ -1366,6 +1407,14 @@ public/hitung.js    (lanjutan) KONVERSI SATUAN ('SATUAN' + 'konversi'), di
                     puluh dua angka, dan satu saja yang salah ketik tidak akan
                     pernah ketahuan kecuali oleh yang kebetulan memakainya.
                     Satuan di luar kategorinya DITOLAK, bukan dijawab nol.
+                    TIGA BARIS, DENGAN SATU LAJUR TINDAKAN DI KANANNYA
+                    (salin - tukar - kirim, sejajar). Dulu lima baris: baris
+                    tukar sendiri dan baris aksi sendiri, dan dua baris untuk
+                    dua ikon adalah tinggi yang dibayar papan tombolnya. Tukar
+                    duduk sebaris dengan satuan ASAL karena yang dibaliknya
+                    pasangannya; kirim sebaris dengan HASIL karena hasil itu
+                    yang dikirimnya. Di bawah 380px label "Konversi satuan"
+                    hilang - nama kategorinya sendiri sudah menyebutkannya.
                     HASILNYA HIDUP, tidak ada tombol "Konversi" - sama dengan
                     kalkulatornya sendiri. "→ Hitung" MENGIRIM hasilnya ke
                     karet kalkulator (titik jadi koma, karena mesinnya membaca
@@ -1459,7 +1508,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (993 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (1000 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
