@@ -1092,6 +1092,25 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     begitu dibaca - kalau tidak, satu kali muat ulang atau
                     tombol Kembali menjalankan perbuatannya lagi, dan yang
                     lahir catatan kosong kedua yang tidak pernah diminta.
+                    SEPEREMPAT LAYAR DI DESKTOP, SEKALI SEUMUR PEMASANGAN
+                    ('jendelaDiatur'). Aplikasi ini kolom 620px setinggi layar
+                    - bentuk HP, dan itu bentuk yang benar: baris teks yang
+                    lebih lebar berhenti nyaman dibaca. Konsekuensinya di
+                    monitor 2560px dia kolom sempit dengan hampir seribu piksel
+                    kosong di kiri dan kanan, dan yang terbaca bukan "aplikasi
+                    mungil" tapi "aplikasi yang belum jadi". MANIFEST TIDAK BISA
+                    menentukan ukuran jendela - tidak ada bidangnya, dan browser
+                    mengabaikan yang dikarang; yang ada cuma resizeTo(), dan itu
+                    pun boleh ditolak. Jadi ini USAHA, bukan jaminan. Lebarnya
+                    berlantai 680 (kolom 620 plus tepinya, jadi ruang kosongnya
+                    memang hilang) dan tingginya 640 (di bawah itu doknya
+                    terjepit). SEKALI SAJA, dan dicatat SEBELUM dicoba: kalau
+                    tiap pembukaan, dia membatalkan ukuran yang diatur sendiri
+                    kemarin - jendela yang melompat balik tiap kali dibuka jauh
+                    lebih menjengkelkan daripada jendela yang kebesaran sekali.
+                    Cuma di jendela TERPASANG dan layar >=900px: di tab biasa
+                    resizeTo() mengubah jendela peramban yang isinya bukan cuma
+                    aplikasi ini.
                     MANIFESTNYA DILAYANI DARI JARINGAN DULU (sw.js), dan cuma
                     dia: Android membacanya SEKALI waktu ikonnya dipasang, lalu
                     mencetak WebAPK yang isinya tidak berubah lagi. Kalau yang
@@ -1195,7 +1214,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (901 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (907 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

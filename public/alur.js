@@ -5983,6 +5983,61 @@
 
   /* ===================== bagikan & pemasangan ===================== */
 
+  /* ===== SEPEREMPAT LAYAR DI DESKTOP, SEKALI SAJA =====
+     Aplikasi ini kolom setinggi layar selebar 620px - bentuk HP, dan itu
+     bentuk yang benar: baris teks yang lebih lebar dari itu berhenti nyaman
+     dibaca. Konsekuensinya di monitor 2560px dia satu kolom sempit dengan
+     hampir seribu piksel kosong di kiri dan kanan, dan yang terbaca bukan
+     "aplikasi mungil" tapi "aplikasi yang belum jadi".
+
+     Manifest TIDAK BISA menentukan ukuran jendela - tidak ada bidangnya, dan
+     browser mengabaikan yang dikarang. Yang ada cuma resizeTo(), dan itu pun
+     boleh ditolak. Jadi ini USAHA, bukan jaminan; kalau ditolak, tidak ada
+     yang rusak dan Chrome tetap mengingat ukuran terakhir yang kamu atur
+     sendiri.
+
+     SEKALI SEUMUR PEMASANGAN ('jendelaDiatur'). Kalau tiap pembukaan, dia
+     membatalkan ukuran yang kamu atur sendiri kemarin - dan jendela yang
+     melompat balik tiap kali dibuka jauh lebih menjengkelkan daripada jendela
+     yang kebesaran sekali.
+
+     Cuma di jendela aplikasi TERPASANG, dan cuma di layar besar: di tab
+     biasa resizeTo() mengubah jendela peramban yang isinya bukan cuma ini,
+     dan di HP tidak ada yang perlu diatur. */
+  function ukuranJendelaAwal(setelan) {
+    if (setelan && setelan.jendelaDiatur) return null;
+    var s = global.screen;
+    if (!s || !s.availWidth || s.availWidth < 900) return null;
+    var terpasang = false;
+    try {
+      terpasang = global.matchMedia('(display-mode: standalone)').matches ||
+                  global.matchMedia('(display-mode: window-controls-overlay)').matches;
+    } catch (e) { terpasang = false; }
+    if (!terpasang) return null;
+    /* Lebarnya tidak boleh di bawah 680: di situ kolom 620px plus jarak
+       tepinya masih muat pas, jadi ruang kosong yang dikeluhkan memang hilang
+       - bukan sekadar jendelanya yang mengecil. */
+    return {
+      lebar: Math.max(680, Math.round(s.availWidth / 2)),
+      tinggi: Math.max(640, Math.round(s.availHeight / 2))
+    };
+  }
+
+  function setelJendelaAwal(setelan) {
+    var u = ukuranJendelaAwal(setelan);
+    if (!u) return;
+    /* Dicatat DULU, sebelum dicoba: kalau browsernya menolak, mencobanya lagi
+       tiap pembukaan tidak akan pernah berhasil - yang didapat cuma satu
+       panggilan sia-sia seumur hidup aplikasinya. */
+    TSimpan.setel('jendelaDiatur', 1);
+    setelan.jendelaDiatur = 1;
+    try {
+      global.resizeTo(u.lebar, u.tinggi);
+      global.moveTo(Math.round((global.screen.availWidth - u.lebar) / 2),
+                    Math.round((global.screen.availHeight - u.tinggi) / 2));
+    } catch (e) { /* ditolak peramban; ukuran terakhirnya tetap berlaku */ }
+  }
+
   /* ===== SHORTCUT DARI LAYAR HOME ANDROID =====
      Manifest 'shortcuts' membuat Android menaruh "Tulis" dan "Kamera" di menu
      tekan-lama ikon Cortex - dan tiap shortcut itu bisa diseret keluar jadi
@@ -6980,6 +7035,9 @@
       gambarCipRuang();
       gambarCipSaring();
       jalankanAksiAlamat();
+      /* Sesudah layarnya tergambar, bukan sebelum: aturan yang sama dengan
+         semua pekerjaan pembukaan lain di sini. */
+      setelJendelaAwal(setelanSaat);
       /* Bilah sesinya ikut digambar di pembukaan: sesi kemarin yang masih
          berumur kurang dari sejam tetap berlaku, dan yang tidak terlihat di
          pembukaan berarti jepretan pertama hari ini mewarisi sudut pandang
@@ -7047,6 +7105,7 @@
     /* Dua kait uji untuk mengukur tinggi baris cip dengan dan tanpa badge
        sesinya - satu-satunya cara membuktikan bahwa badge itu memang tidak
        menambah tinggi, bukan cuma kelihatan begitu. */
+    ukuranJendelaUji: ukuranJendelaAwal,
     pakaiLengketUji: pakaiLengket,
     muatLengketUji: function () {
       return TSimpan.semuaSetelan().then(function (s) {
