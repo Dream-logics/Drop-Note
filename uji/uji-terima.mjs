@@ -1315,7 +1315,7 @@ console.log('\nlima pintu di kepala, dan layar Note');
      baru. */
   const wadahTab = (html.match(/class="tab-baris" data-tab></g) || []).length;
   cek('baris tabnya wadah kosong di HTML, diisi dari alur.js',
-      wadahTab === 5, String(wadahTab));
+      wadahTab === 6, String(wadahTab));
 
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(250);
@@ -1327,14 +1327,36 @@ console.log('\nlima pintu di kepala, dan layar Note');
      menulis mendarat di gudang lalu mengira aplikasinya tidak bisa menulis.
      Gallery paling kanan karena dia yang paling baru dan paling khusus - satu
      jenis benda saja. */
-  cek('lima pintu: Drop, Note, To Do, Storage, Gallery', tab.length === 5 &&
+  cek('empat pintu utama plus Tools: Drop, Note, To Do, Gallery, Tools',
+      tab.length === 5 &&
       /^Drop/.test(tab[0]) && /^Note/.test(tab[1]) &&
-      /^To Do/.test(tab[2]) && /^Storage/.test(tab[3]) &&
-      /^Gallery/.test(tab[4]), tab.join('|'));
+      /^To Do/.test(tab[2]) && /^Gallery/.test(tab[3]) &&
+      /^Tools/.test(tab[4]), tab.join('|'));
+  /* TOOLS BUKAN LAYAR - dia menu. Storage dan Calculator tinggal di baliknya:
+     alat dan gudang yang dibuka sekali seminggu tidak pantas memakan lebar
+     yang dibutuhkan pintu yang dibuka sepuluh kali sehari. */
+  await hal.click('#l-utama [data-tab-ke="l-alat"]');
+  await hal.waitForTimeout(250);
+  const isiAlat = await hal.locator('#alat-menu .alat-baris').allTextContents();
+  cek('Tools membuka menu berisi Storage dan Calculator',
+      isiAlat.length === 2 && isiAlat.indexOf('Storage') >= 0 &&
+      isiAlat.indexOf('Calculator') >= 0, isiAlat.join('|'));
+  /* Menutup begitu satu dipilih: menu yang tetap terbuka sesudah dipakai
+     adalah satu ketukan tambahan untuk membereskan sesuatu yang tidak
+     diminta. */
+  await hal.click('#alat-menu [data-alat-ke="l-note"]');
+  await hal.waitForTimeout(350);
+  cek('memilih satu membawanya ke layarnya, dan menunya menutup',
+      (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-note' &&
+      (await hal.locator('#alat-lapis').isHidden()));
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(250);
   cek('yang sedang dibuka ditandai',
       (await hal.locator('#l-utama [data-tab] .tab.nyala').textContent()).indexOf('Drop') === 0);
 
-  await hal.click('#l-utama [data-tab-ke="l-note"]');
+  await hal.click('#l-utama [data-tab-ke="l-alat"]');
+  await hal.waitForTimeout(200);
+  await hal.click('#alat-menu [data-alat-ke="l-note"]');
   await hal.waitForSelector('#l-note.aktif');
   cek('Note punya layarnya sendiri', await hal.locator('#l-note').isVisible());
 
@@ -4885,9 +4907,9 @@ console.log('\nbahasa: Inggris bawaannya, dan tidak ada kalimat yang terlewat');
   /* NAMA PINTU TIDAK IKUT DITERJEMAHKAN. Itu nama tempat, bukan kalimat - dan
      nama tempat yang berganti bahasa membuat jarimu harus belajar ulang. */
   const pintu = await halEn.locator('#l-utama [data-tab] .tab').allInnerTexts();
-  cek('nama pintu tetap Drop, Note, To Do, Storage, Gallery',
+  cek('nama pintu tetap Drop, Note, To Do, Gallery, Tools',
       JSON.stringify(pintu.map((x) => x.trim())) ===
-        JSON.stringify(['Drop', 'Note', 'To Do', 'Storage', 'Gallery']),
+        JSON.stringify(['Drop', 'Note', 'To Do', 'Gallery', 'Tools']),
       JSON.stringify(pintu));
 
   /* Kalimat layar - di HTML maupun yang digambar dari JS - benar-benar
@@ -5043,7 +5065,7 @@ console.log('\nbahasa: Inggris bawaannya, dan tidak ada kalimat yang terlewat');
   cek('dan nama pintunya tetap sama di kedua bahasa',
       JSON.stringify((await halEn.locator('#l-utama [data-tab] .tab').allInnerTexts())
         .map((x) => x.trim())) ===
-        JSON.stringify(['Drop', 'Note', 'To Do', 'Storage', 'Gallery']));
+        JSON.stringify(['Drop', 'Note', 'To Do', 'Gallery', 'Tools']));
   cek('tidak ada galat JavaScript di jalur bahasa', galatEn.length === 0, galatEn.join(' | '));
   await halEn.close();
 }
@@ -5284,7 +5306,9 @@ console.log('\njari sungguhan: tekan lama di layar sentuh, sampai foldernya bena
     await halJ.waitForTimeout(350);
   };
 
-  await halJ.click('#l-utama [data-tab-ke="l-note"]');
+  await halJ.click('#l-utama [data-tab-ke="l-alat"]');
+  await halJ.waitForTimeout(200);
+  await halJ.click('#alat-menu [data-alat-ke="l-note"]');
   await halJ.waitForTimeout(500);
   await tahan('#note-isi [data-note-folder="JariKat"]');
   cek('menahan folder dengan jari yang bergetar tetap memilihnya',
@@ -5364,7 +5388,7 @@ console.log('\nGallery: pintu kelima untuk timbunan yang paling besar');
     .map((x) => x.trim());
   cek('pintunya lima, dan yang kelima Gallery',
       JSON.stringify(pintu) ===
-      JSON.stringify(['Drop', 'Note', 'To Do', 'Storage', 'Gallery']),
+      JSON.stringify(['Drop', 'Note', 'To Do', 'Gallery', 'Tools']),
       JSON.stringify(pintu));
 
   /* LIMA PINTU BERARTI IKONNYA PERGI DI HP. Empat masih muat bersama ikonnya
@@ -7581,6 +7605,157 @@ console.log('\nnama cuma kulit');
       /gemini-3\.5-flash-lite/.test(fs.readFileSync(path.join(AKAR, 'bawaan.js'), 'utf8')));
 }
 
+console.log('\nkalkulator ilmiah');
+{
+  /* BUKAN eval(), dan itu bukan kehati-hatian berlebihan: eval menjalankan apa
+     pun yang bentuknya JavaScript, dan yang mengetik di sini duduk di halaman
+     yang sama dengan seluruh catatannya. */
+  /* Komentarnya dibuang dulu: berkas itu MENJELASKAN kenapa eval tidak
+     dipakai, jadi kata itu memang ada di situ - dan uji yang tertipu oleh
+     penjelasannya sendiri tidak menjaga apa pun. */
+  const kodeHitung = fs.readFileSync(path.join(AKAR, 'hitung.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  cek('tidak memakai eval sama sekali',
+      !/\beval\s*\(/.test(kodeHitung) && !/new\s+Function/.test(kodeHitung),
+      (kodeHitung.match(/.{0,40}eval.{0,40}/) || [''])[0]);
+
+  const hit = (e) => hal.evaluate((x) => THitung.hitung(x), e);
+  const benar = async (ekspresi, harus) => {
+    const r = await hit(ekspresi);
+    cek('  ' + ekspresi + ' = ' + harus, r.ok && r.teks === harus,
+        r.ok ? r.teks : r.pesan);
+  };
+  /* Urutan operasi, ikatan pangkat ke KANAN, minus di depan sebagai tanda -
+     tiga hal yang salahnya tidak pernah kelihatan sebagai galat, cuma sebagai
+     angka yang meleset. Dan angka yang meleset diam-diam lebih buruk daripada
+     kalkulator yang menolak menghitung. */
+  await benar('2+3*4', '14');
+  await benar('(2+3)*4', '20');
+  await benar('2^3^2', '512');
+  await benar('-2^2', '-4');
+  await benar('3^-2', '0.111111111111');
+  /* Perkalian tersirat: yang mengetik cepat memang menuliskannya begitu. */
+  await benar('2(3+4)', '14');
+  await benar('3sin30', '1.5');
+  /* Derajat, bukan radian: yang mengetik "sin 30" di sela pekerjaan
+     memaksudkan tiga puluh derajat. */
+  await benar('sin30', '0.5');
+  await benar('cos60', '0.5');
+  await benar('tan45', '1');
+  await benar('asin 0.5', '30');
+  await benar('√9', '3');
+  await benar('log100', '2');
+  await benar('5!', '120');
+  /* Koma desimal: papan angka Indonesia menulis desimal dengan koma, dan
+     menolaknya berarti kalkulator yang salah menurut negaranya sendiri. */
+  await benar('1,5+1,5', '3');
+  await benar('2×3', '6');
+  await benar('10÷4', '2.5');
+  /* Cacat kalkulator desimal yang pasti dilihat orang: 0.1+0.2 yang menjawab
+     0.30000000000000004. */
+  await benar('0.1+0.2', '0.3');
+
+  const tolak = async (ekspresi) => {
+    const r = await hit(ekspresi);
+    cek('  ditolak: ' + JSON.stringify(ekspresi), !r.ok, r.ok ? r.teks : '');
+  };
+  await tolak('2+');
+  await tolak('(2+3');
+  await tolak('2))');
+  await tolak('abc');
+  await tolak('');
+
+  /* Layarnya: hasilnya dihitung TIAP KETUKAN, bukan menunggu "=". */
+  await hal.evaluate(() => TAlur.keLayarUji('l-hitung'));
+  await hal.waitForTimeout(300);
+  await hal.click('#hitung-tombol [data-hitung="7"]');
+  await hal.click('#hitung-tombol [data-hitung="×"]');
+  await hal.click('#hitung-tombol [data-hitung="6"]');
+  await hal.waitForTimeout(250);
+  cek('hasilnya muncul tanpa menekan sama dengan',
+      (await hal.textContent('#hitung-hasil')).indexOf('42') >= 0,
+      await hal.textContent('#hitung-hasil'));
+  /* Fungsi membawa kurung bukanya sendiri: yang mengetuk "sin" memaksudkan
+     sin dari sesuatu, dan menyuruhnya mengetuk "(" lagi adalah satu ketukan
+     untuk sesuatu yang sudah pasti. */
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.click('#hitung-tombol [data-hitung="sin"]');
+  await hal.waitForTimeout(150);
+  cek('tombol fungsi membawa kurung bukanya sendiri',
+      (await hal.inputValue('#hitung-ketik')) === 'sin(',
+      await hal.inputValue('#hitung-ketik'));
+  /* Setengah kalimat memang belum sah - "sin(" itu keadaan normal di tengah
+     mengetik, bukan kekeliruan - dan pesan merah yang berkedip di tiap
+     ketukan mengajari mata berhenti membacanya sama sekali. */
+  cek('dan setengah kalimat tidak dijawab dengan galat merah',
+      (await hal.textContent('#hitung-hasil')) === '');
+  await hal.click('#hitung-tombol [data-hitung="C"]');
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(250);
+}
+
+console.log('\npemilih pintu di Setelan');
+{
+  /* Enam pintu tidak muat sebaris di HP, dan yang tidak muat dipotong browser
+     di tempat yang tidak kamu pilih. Yang benar: pemakainya yang memutuskan
+     mana yang layak memakan lebar layar - cuma dia yang tahu mana yang dibuka
+     sepuluh kali sehari. Yang tidak dipilih TIDAK HILANG, dia pindah ke balik
+     Tools; yang berubah cuma berapa ketukan untuk sampai ke sana. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-setelan'));
+  await hal.waitForTimeout(350);
+  cek('tiap pintu punya barisnya sendiri di Setelan',
+      (await hal.locator('#pintu-atur .pintu-baris').count()) === 6,
+      String(await hal.locator('#pintu-atur .pintu-baris').count()));
+  /* Drop tidak punya pilihan, dan barisnya menyebut alasannya: baris yang
+     kelihatan bisa diketuk tapi diam waktu ditekan lebih buruk daripada baris
+     yang terang-terangan berkata "yang ini memang tidak bisa". */
+  cek('Drop tidak bisa dipindah, dan itu disebut terang-terangan',
+      (await hal.locator('#pintu-atur [data-pintu="l-utama"]').count()) === 0 &&
+      (await hal.locator('#pintu-atur .pintu-kunci').count()) === 1);
+
+  /* Dibaca dari KEADAANNYA, bukan dari baris pintu di layar mana pun: layar
+     Setelan sendiri tidak punya baris pintu, dan menebak layar lain yang
+     kebetulan masih tergambar membuat uji ini gagal karena alasan yang tidak
+     ada hubungannya dengan yang diuji. */
+  const utamaKini = () => hal.evaluate(() => TAlur.pintuUtamaUji());
+  const alatKini = () => hal.evaluate(() => TAlur.pintuAlatUji());
+
+  await hal.click('#pintu-atur [data-pintu="l-hitung"][data-ke="utama"]');
+  await hal.waitForTimeout(350);
+  const naik = await utamaKini();
+  cek('memindahkan Calculator ke Utama menaikkannya ke baris pintu',
+      naik.indexOf('l-hitung') >= 0, naik.join('|'));
+  /* Urutannya mengikuti katalog, bukan urutan pengetukan: baris pintu yang
+     susunannya berubah mengikuti kapan kamu memilihnya berarti jari tidak
+     pernah hafal tempatnya. */
+  cek('dan urutannya mengikuti katalog, bukan urutan pengetukan',
+      naik.indexOf('l-galeri') < naik.indexOf('l-hitung'), naik.join('|'));
+
+  /* Batasnya disebut, bukan didiamkan: tombol yang tidak melakukan apa pun
+     terbaca sebagai aplikasi yang rusak, bukan sebagai batas yang disengaja. */
+  await hal.evaluate(() => { document.querySelector('#pesan').textContent = ''; });
+  await hal.click('#pintu-atur [data-pintu="l-note"][data-ke="utama"]');
+  await hal.waitForTimeout(400);
+  cek('yang keenam ditolak, dan penolakannya berbunyi',
+      (await utamaKini()).length === 5 &&
+      (await hal.innerText('#pesan')).length > 0,
+      (await utamaKini()).join('|') + ' / ' + await hal.innerText('#pesan'));
+
+  await hal.click('#pintu-atur [data-pintu="l-hitung"][data-ke="alat"]');
+  await hal.waitForTimeout(350);
+  cek('mengembalikannya ke Tools memulangkan barisnya seperti semula',
+      (await utamaKini()).indexOf('l-hitung') < 0 &&
+      (await alatKini()).indexOf('l-hitung') >= 0,
+      (await utamaKini()).join('|'));
+  /* Pilihannya ikut disimpan: baris pintu yang kembali ke bawaan tiap kali
+     aplikasinya dibuka berarti pilihan itu tidak pernah benar-benar dibuat. */
+  cek('dan pilihannya tersimpan, bukan cuma di layar',
+      JSON.parse(await hal.evaluate(() => TSimpan.setelan('pintuUtama')))
+        .indexOf('l-hitung') < 0);
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(250);
+}
+
 console.log('\nseperempat layar di desktop');
 {
   /* Aplikasi ini kolom 620px setinggi layar - bentuk HP, dan itu bentuk yang
@@ -7604,18 +7779,22 @@ console.log('\nseperempat layar di desktop');
   }, [setelan, layar, mode]);
 
   const BESAR = { availWidth: 1920, availHeight: 1080 };
-  cek('di jendela terpasang yang lebar, ukurannya separuh kali separuh',
+  /* BENTUK KOLOM: setinggi layar, selebar yang dibutuhkan isinya dan tidak
+     lebih. Jendela yang tingginya separuh menggantung di tengah layar seperti
+     dialog yang lupa ditutup - dan aplikasi ini bukan dialog, dia tempat yang
+     dibiarkan terbuka di samping pekerjaan lain. */
+  cek('di jendela terpasang, bentuknya kolom setinggi layar penuh',
       JSON.stringify(await ukur({}, BESAR, 'standalone')) ===
-        JSON.stringify({ lebar: 960, tinggi: 640 }),
+        JSON.stringify({ lebar: 680, tinggi: 1080, kiri: 0, atas: 0 }),
       JSON.stringify(await ukur({}, BESAR, 'standalone')));
-  /* 1080/2 = 540, dan itu terlalu pendek untuk dok yang menempel di bawah -
-     jadi tingginya punya lantai 640. */
-  cek('tingginya punya lantai, tidak ikut mengecil sampai doknya terjepit',
-      (await ukur({}, { availWidth: 1280, availHeight: 800 }, 'standalone')).tinggi === 640);
-  /* Lebarnya berlantai 680: di situ kolom 620px plus jarak tepinya muat pas,
-     jadi ruang kosongnya memang hilang - bukan sekadar jendelanya mengecil. */
-  cek('dan lebarnya berlantai 680, selebar kolomnya plus tepi',
-      (await ukur({}, { availWidth: 1100, availHeight: 900 }, 'standalone')).lebar === 680);
+  /* 680 itu lebar minimumnya, bukan pilihan: di situ kolom 620px plus jarak
+     tepinya muat pas. Lebih sempit isinya yang dikorbankan, lebih lebar cuma
+     menambah ruang kosong yang justru dikeluhkan. */
+  cek('lebarnya tetap 680 di layar mana pun — itu minimum isinya',
+      (await ukur({}, { availWidth: 1280, availHeight: 800 }, 'standalone')).lebar === 680 &&
+      (await ukur({}, { availWidth: 3440, availHeight: 1440 }, 'standalone')).lebar === 680);
+  cek('dan tingginya selalu setinggi layar yang tersedia',
+      (await ukur({}, { availWidth: 1280, availHeight: 800 }, 'standalone')).tinggi === 800);
 
   /* SEKALI SEUMUR PEMASANGAN. Kalau tiap pembukaan, dia membatalkan ukuran
      yang kamu atur sendiri kemarin - dan jendela yang melompat balik tiap

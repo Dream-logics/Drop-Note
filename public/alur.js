@@ -300,7 +300,7 @@
 
   function tampilkanLayar(id) {
     if (layarSaat === 'l-catat' && id !== 'l-catat') simpanCatat();
-    ['l-mulai', 'l-utama', 'l-tulis', 'l-tugas', 'l-note', 'l-galeri',
+    ['l-mulai', 'l-utama', 'l-tulis', 'l-tugas', 'l-note', 'l-galeri', 'l-hitung',
      'l-catat', 'l-setelan'].forEach(function (x) {
       $('#' + x).classList.toggle('aktif', x === id);
     });
@@ -320,6 +320,16 @@
     if (id === 'l-tulis') gambarTulis();
     if (id === 'l-note') gambarNote();
     if (id === 'l-galeri') gambarGaleri();
+    if (id === 'l-hitung') {
+      gambarPapanHitung();
+      hitungUlang();
+    }
+    /* Digambar ulang tiap kali layarnya tampil, bukan cuma waktu gerigi di
+       kepala diketuk: sampai ke sini lewat tombol Kembali - atau lewat jalur
+       mana pun yang bukan gerigi - memperlihatkan setelan yang tergambar
+       entah kapan, dan setelan basi terbaca sebagai setelan yang tidak
+       tersimpan. */
+    if (id === 'l-setelan') gambarSetelan();
     gambarTab();
     global.scrollTo(0, 0);
   }
@@ -401,8 +411,60 @@
        Gunung, BUKAN ikon kamera. Kameranya tindakan - dia tombol di layar itu;
        yang di kepala TEMPAT, dan tempat foto adalah gambarnya, bukan alat
        pengambilnya. */
-    ['l-galeri', 'Gallery', '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-5 5-2-2-6 6"/>']
+    ['l-galeri', 'Gallery', '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-5 5-2-2-6 6"/>'],
+    /* ALAT, BUKAN TIMBUNAN. Kalkulator tidak menyimpan apa pun, tidak ikut
+       pencarian, dan tidak pernah dikirim ke AI - dia dipakai lalu selesai.
+       Itu sebabnya dia tinggal di balik pintu Tools: pintu yang dipakai
+       sekali seminggu tidak pantas memakan lebar yang dibutuhkan pintu yang
+       dipakai sepuluh kali sehari. */
+    ['l-hitung', 'Calculator', '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8"/><path d="M8 11h2"/><path d="M12 11h2"/><path d="M16 11h0.01"/><path d="M8 15h2"/><path d="M12 15h2"/><path d="M16 15v4"/><path d="M8 19h6"/>']
   ];
+
+  /* ===== BARIS PINTUNYA MILIK PEMAKAINYA =====
+     Enam pintu tidak muat sebaris di HP, dan yang tidak muat akan dipotong
+     browser di tempat yang tidak kamu pilih. Tapi yang keenam bukan berarti
+     harus dibuang - yang benar: pemakainya yang memutuskan mana yang layak
+     memakan lebar layar, karena cuma dia yang tahu mana yang dibuka sepuluh
+     kali sehari.
+
+     Yang tidak dipilih tidak hilang; dia pindah ke balik pintu Tools. Jadi
+     ini BUKAN "sembunyikan fitur" - tidak ada yang berkurang, yang berubah
+     cuma berapa ketukan untuk sampai ke sana.
+
+     DROP TIDAK BISA DIPINDAH. Dia jalan masuknya, dan aturan nomor satu
+     menuntut jalan masuk yang tidak pernah butuh dua ketukan. */
+  var PINTU_TETAP = 'l-utama';
+  var UTAMA_MAKS = 5;
+  var UTAMA_AWAL = ['l-utama', 'l-tulis', 'l-tugas', 'l-galeri'];
+  var PINTU_ALAT = 'l-alat';
+
+  function pintuUtama() {
+    var pilih = setelanSaat && setelanSaat.pintuUtama;
+    var daftar;
+    try { daftar = pilih ? JSON.parse(pilih) : null; } catch (e) { daftar = null; }
+    if (!Array.isArray(daftar) || !daftar.length) daftar = UTAMA_AWAL.slice();
+    /* Disaring terhadap katalognya, bukan dipercaya apa adanya: pintu yang
+       suatu hari dibuang dari TAB akan tertinggal di setelan pemakainya, dan
+       tombol yang menuju layar yang tidak ada tidak pernah bergalat - dia
+       cuma diam waktu diketuk. */
+    daftar = daftar.filter(function (id) {
+      return TAB.some(function (t) { return t[0] === id; });
+    });
+    if (daftar.indexOf(PINTU_TETAP) < 0) daftar.unshift(PINTU_TETAP);
+    return daftar.slice(0, UTAMA_MAKS);
+  }
+
+  function pintuAlat() {
+    var utama = pintuUtama();
+    return TAB.filter(function (t) { return utama.indexOf(t[0]) < 0; })
+              .map(function (t) { return t[0]; });
+  }
+
+  function pintuDari(id) {
+    var k = null;
+    TAB.forEach(function (t) { if (t[0] === id) k = t; });
+    return k;
+  }
 
   /* LENCANA ANGKA DI PINTU TO DO DIBUANG, dan jangan dikembalikan. Dia
      memberitahu ada 15 tugas belum selesai - dan itu bukan kabar, itu tagihan
@@ -410,14 +472,52 @@
      nol berhenti menggerakkan apa pun dan mulai membebani; yang benar-benar
      perlu dilihat sudah punya penandanya sendiri, dan cuma pada barisnya:
      titik "belum dibaca" dan tanggal yang lewat. */
+  var IKON_ALAT = '<path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4z"/>';
+
+  function tombolTab(id, nyala, ikon, nama) {
+    return '<button class="tab' + (nyala ? ' nyala' : '') +
+           '" data-tab-ke="' + id + '">' +
+           '<svg viewBox="0 0 24 24" class="ik">' + ikon + '</svg>' +
+           H(nama) + '</button>';
+  }
+
   function gambarTab() {
-    var isi = TAB.map(function (t) {
-      return '<button class="tab' + (layarSaat === t[0] ? ' nyala' : '') +
-             '" data-tab-ke="' + t[0] + '">' +
-             '<svg viewBox="0 0 24 24" class="ik">' + t[2] + '</svg>' +
-             H(t[1]) + '</button>';
+    var utama = pintuUtama();
+    var alat = pintuAlat();
+    var isi = utama.map(function (id) {
+      var t = pintuDari(id);
+      return t ? tombolTab(id, layarSaat === id, t[2], t[1]) : '';
     }).join('');
+    /* Pintu Tools cuma digambar kalau memang ada isinya. Pintu yang membuka
+       menu kosong lebih buruk daripada tidak ada pintunya: dia menjanjikan
+       sesuatu lalu tidak memberi apa-apa. */
+    if (alat.length) {
+      isi += tombolTab(PINTU_ALAT, alat.indexOf(layarSaat) >= 0, IKON_ALAT, 'Tools');
+    }
     $$('[data-tab]').forEach(function (n) { n.innerHTML = isi; });
+  }
+
+  /* ===== MENU TOOLS =====
+     Menutup begitu satu dipilih, dan menutup juga waktu kamu mengetuk di luar
+     - menu yang tetap terbuka sesudah dipakai adalah satu ketukan tambahan
+     untuk membereskan sesuatu yang tidak kamu minta. */
+  function bukaMenuAlat() {
+    var lapis = $('#alat-lapis');
+    var menu = $('#alat-menu');
+    if (!lapis || !menu) return;
+    menu.innerHTML = pintuAlat().map(function (id) {
+      var t = pintuDari(id);
+      if (!t) return '';
+      return '<button class="alat-baris" data-alat-ke="' + id + '">' +
+             '<svg viewBox="0 0 24 24" class="ik">' + t[2] + '</svg>' +
+             '<span>' + H(t[1]) + '</span></button>';
+    }).join('');
+    lapis.classList.remove('sembunyi');
+  }
+
+  function tutupMenuAlat() {
+    var lapis = $('#alat-lapis');
+    if (lapis) lapis.classList.add('sembunyi');
   }
 
   /* ===================== GESER ANTAR PINTU =====================
@@ -540,6 +640,10 @@
   }
 
   function keTab(id) {
+    /* Tools BUKAN layar - dia menu. Ditangani di sini, bukan di penangan
+       kliknya, supaya jalur mana pun yang memanggil keTab ikut benar. */
+    if (id === PINTU_ALAT) { bukaMenuAlat(); return; }
+
     /* Pintu ITU pintu, titik. Dulu menekan pintu Drop yang sedang terbuka
        membuka laci cara-cara memasukkan, dan itu keliru dua kali: satu tombol
        yang berarti dua hal tergantung kamu sedang di mana, dan laci yang
@@ -5189,14 +5293,80 @@
     return Math.floor(lalu / 86400000) + ' hari lalu';
   }
 
+  /* ===== PEMILIH PINTU =====
+     SATU BARIS PER PINTU, dua keadaan, tidak ada yang lain. Bentuk yang
+     sempat terpikir - dua daftar bersebelahan yang isinya diseret - butuh
+     ruang dua kali lipat dan menuntut gerakan yang di HP paling sering
+     meleset. Yang ini menjawab pertanyaannya apa adanya: "pintu ini di baris
+     atas, atau di dalam Tools?"
+
+     Drop TIDAK PUNYA PILIHAN dan barisnya menyebut alasannya. Baris yang
+     kelihatan bisa diketuk tapi diam waktu ditekan lebih buruk daripada baris
+     yang terang-terangan berkata "yang ini memang tidak bisa". */
+  function pintuHtml() {
+    var utama = pintuUtama();
+    return [
+      '<div class="set-bagian">Menu</div>',
+      '<div class="set-kotak">',
+      /* TANPA <b> DI TENGAH KALIMAT, dan tanpa angka yang disisipkan: lapisan
+         bahasa menukar per SIMPUL TEKS, jadi satu penebalan memecah kalimat
+         ini jadi lima potong yang tidak satu pun ada di kamusnya. */
+      '<div class="set-ket">Yang di Utama duduk di baris pintu; sisanya masuk ke Tools. Maksimal lima di baris utama.</div>',
+      '<div class="pintu-atur" id="pintu-atur">',
+      TAB.map(function (t) {
+        var di = utama.indexOf(t[0]) >= 0;
+        var kunci = t[0] === PINTU_TETAP;
+        return '<div class="pintu-baris">' +
+          '<svg viewBox="0 0 24 24" class="ik">' + t[2] + '</svg>' +
+          '<span class="pintu-nama">' + H(t[1]) + '</span>' +
+          (kunci
+            ? '<span class="pintu-kunci">Selalu utama</span>'
+            : '<span class="pintu-pilih">' +
+              '<button class="cip' + (di ? ' nyala' : '') + '" data-pintu="' + t[0] + '" data-ke="utama">Utama</button>' +
+              '<button class="cip' + (di ? '' : ' nyala') + '" data-pintu="' + t[0] + '" data-ke="alat">Tools</button>' +
+              '</span>') +
+          '</div>';
+      }).join(''),
+      '</div></div>'
+    ].join('');
+  }
+
+  function taruhPintu(id, ke) {
+    if (id === PINTU_TETAP) return;
+    var utama = pintuUtama();
+    var di = utama.indexOf(id);
+    if (ke === 'utama' && di < 0) {
+      /* Batasnya disebut, bukan didiamkan: tombol yang tidak melakukan apa pun
+         terbaca sebagai aplikasi yang rusak, bukan sebagai batas yang
+         disengaja. */
+      if (utama.length >= UTAMA_MAKS) {
+        pesan('Baris utama penuh — pindahkan satu ke Tools dulu');
+        return;
+      }
+      utama.push(id);
+    } else if (ke === 'alat' && di >= 0) {
+      utama.splice(di, 1);
+    } else return;
+    /* Urutannya mengikuti katalog, bukan urutan pengetukan: baris pintu yang
+       susunannya berubah-ubah mengikuti kapan kamu memilihnya berarti jari
+       tidak pernah hafal tempatnya. */
+    var urut = TAB.map(function (t) { return t[0]; })
+                  .filter(function (x) { return utama.indexOf(x) >= 0; });
+    simpanSetelan('pintuUtama', JSON.stringify(urut)).then(function () {
+      gambarTab();
+      gambarSetelan();
+    });
+  }
+
   function gambarSetelan() {
     var s = setelanSaat;
     var mode = s.modeAI || 'mati';
     var tersambung = !!s.sheetId;
 
     $('#setelan-isi').innerHTML = [
-      /* Cadangan ditaruh paling atas dengan sengaja: ini satu-satunya bagian
-         yang menjawab "kalau HP-nya hilang, hilang juga semuanya?" */
+      pintuHtml(),
+      /* Cadangan ditaruh sesudah pintu: ini satu-satunya bagian yang menjawab
+         "kalau HP-nya hilang, hilang juga semuanya?" */
       '<div class="set-bagian">Brankas</div>',
       '<div class="set-kotak">',
       '<div class="set-judul">' + (tersambung ? 'Tersambung ke Drive-mu' : 'Belum tersambung') + '</div>',
@@ -5601,6 +5771,15 @@
       global.open('https://docs.google.com/spreadsheets/d/' + setelanSaat.sheetId + '/edit', '_blank', 'noopener');
     });
 
+    /* Dipasang di wadahnya, bukan di tiap tombol: bagian ini digambar ulang
+       tiap kali satu pintu dipindah, dan penangan yang dipasang per tombol
+       ikut mati bersama tombol yang dibuangnya. */
+    var atur = $('#pintu-atur');
+    if (atur) atur.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-pintu]');
+      if (b) taruhPintu(b.getAttribute('data-pintu'), b.getAttribute('data-ke'));
+    });
+
     $$('#set-cadangan .cip').forEach(function (b) {
       b.addEventListener('click', function () {
         simpanSetelan('cadanganNyala', b.getAttribute('data-cadangan') === 'nyala').then(gambarSetelan);
@@ -5983,6 +6162,70 @@
 
   /* ===================== bagikan & pemasangan ===================== */
 
+  /* ===== KALKULATOR =====
+     Papan tombolnya PERSEGI dan tetap, bukan mengikuti isi: jari yang sudah
+     hafal letak "7" tidak boleh menemukannya bergeser karena baris fungsinya
+     kebetulan lebih panjang hari ini.
+
+     Yang diketik tetap terlihat di atas hasilnya, dan hasilnya dihitung TIAP
+     KETUKAN - bukan menunggu "=". Kalkulator yang cuma menjawab di akhir
+     memaksa kamu menyelesaikan seluruh kalimat sebelum tahu ada yang salah di
+     ketukan ketiga, dan yang salah di ketukan ketiga cuma bisa dibetulkan
+     dengan mengulang semuanya. */
+  var TOMBOL_HITUNG = [
+    ['sin', 'f'], ['cos', 'f'], ['tan', 'f'], ['√', 'f'], ['^', 'f'],
+    ['ln', 'f'], ['log', 'f'], ['(', 'f'], [')', 'f'], ['!', 'f'],
+    ['π', 'f'], ['7', ''], ['8', ''], ['9', ''], ['÷', 'o'],
+    ['e', 'f'], ['4', ''], ['5', ''], ['6', ''], ['×', 'o'],
+    ['%', 'f'], ['1', ''], ['2', ''], ['3', ''], ['−', 'o'],
+    ['C', 'x'], ['0', ''], [',', ''], ['⌫', 'x'], ['+', 'o']
+  ];
+
+  function gambarPapanHitung() {
+    var w = $('#hitung-tombol');
+    if (!w) return;
+    w.innerHTML = TOMBOL_HITUNG.map(function (t) {
+      return '<button class="hit-tbl' + (t[1] ? ' ' + t[1] : '') +
+             '" data-hitung="' + H(t[0]) + '" data-asli>' + H(t[0]) + '</button>';
+    }).join('');
+  }
+
+  function hitungUlang() {
+    var isian = $('#hitung-ketik');
+    var hasil = $('#hitung-hasil');
+    if (!isian || !hasil) return;
+    var teks = isian.value.trim();
+    if (!teks) { hasil.textContent = ''; hasil.classList.remove('galat'); return; }
+    var r = THitung.hitung(teks);
+    /* GALATNYA TIDAK DITULIS SELAMA MENGETIK. Setengah kalimat memang belum
+       sah - "2+" itu keadaan normal di tengah mengetik, bukan kekeliruan -
+       dan pesan merah yang berkedip di tiap ketukan mengajari mata untuk
+       berhenti membacanya sama sekali. */
+    hasil.classList.toggle('galat', false);
+    hasil.textContent = r.ok ? '= ' + r.teks : '';
+  }
+
+  function ketukHitung(tombol) {
+    var isian = $('#hitung-ketik');
+    if (!isian) return;
+    if (tombol === 'C') { isian.value = ''; hitungUlang(); isian.focus(); return; }
+    if (tombol === '⌫') {
+      isian.value = isian.value.slice(0, -1);
+      hitungUlang();
+      isian.focus();
+      return;
+    }
+    /* Fungsi selalu membawa kurung bukanya sendiri: yang mengetuk "sin"
+       memaksudkan sin dari sesuatu, dan menyuruhnya mengetuk "(" lagi adalah
+       satu ketukan untuk sesuatu yang sudah pasti. */
+    var sisip = tombol;
+    if (tombol === 'sin' || tombol === 'cos' || tombol === 'tan' ||
+        tombol === 'ln' || tombol === 'log' || tombol === '√') sisip = tombol + '(';
+    isian.value += sisip;
+    hitungUlang();
+    isian.focus();
+  }
+
   /* ===== SEPEREMPAT LAYAR DI DESKTOP, SEKALI SAJA =====
      Aplikasi ini kolom setinggi layar selebar 620px - bentuk HP, dan itu
      bentuk yang benar: baris teks yang lebih lebar dari itu berhenti nyaman
@@ -6014,13 +6257,15 @@
                   global.matchMedia('(display-mode: window-controls-overlay)').matches;
     } catch (e) { terpasang = false; }
     if (!terpasang) return null;
-    /* Lebarnya tidak boleh di bawah 680: di situ kolom 620px plus jarak
-       tepinya masih muat pas, jadi ruang kosong yang dikeluhkan memang hilang
-       - bukan sekadar jendelanya yang mengecil. */
-    return {
-      lebar: Math.max(680, Math.round(s.availWidth / 2)),
-      tinggi: Math.max(640, Math.round(s.availHeight / 2))
-    };
+    /* SETINGGI LAYAR, SESEMPIT MUNGKIN. Jendela yang tingginya separuh
+       menggantung di tengah layar seperti dialog yang lupa ditutup - dan
+       aplikasi ini bukan dialog, dia tempat yang dibiarkan terbuka di samping
+       pekerjaan lain. Yang benar bentuk KOLOM: setinggi layar, selebar yang
+       dibutuhkan isinya dan tidak lebih.
+       680 itu lebar minimumnya, bukan pilihan: di situ kolom 620px plus jarak
+       tepinya muat pas. Lebih sempit dari itu isinya yang dikorbankan, lebih
+       lebar cuma menambah ruang kosong yang justru dikeluhkan. */
+    return { lebar: 680, tinggi: s.availHeight, kiri: 0, atas: 0 };
   }
 
   function setelJendelaAwal(setelan) {
@@ -6032,9 +6277,11 @@
     TSimpan.setel('jendelaDiatur', 1);
     setelan.jendelaDiatur = 1;
     try {
+      /* DIPINDAH DULU, BARU DIUKUR. Jendela yang sudah terlanjur lebar di
+         tengah layar akan terpotong tepi kanan kalau diukur lebih dulu, dan
+         yang tersisa jendela yang sebagian di luar layar. */
+      global.moveTo(u.kiri, u.atas);
       global.resizeTo(u.lebar, u.tinggi);
-      global.moveTo(Math.round((global.screen.availWidth - u.lebar) / 2),
-                    Math.round((global.screen.availHeight - u.tinggi) / 2));
     } catch (e) { /* ditolak peramban; ukuran terakhirnya tetap berlaku */ }
   }
 
@@ -6150,6 +6397,20 @@
        mendarat di daftar folder, dan yang tergambar di situ pertanyaan "mau
        ditaruh di mana?" sebelum satu huruf pun sempat diketik - padahal yang
        mendesak justru kalimatnya. */
+    /* Lapisannya sendiri yang mendengar: ketukan di luar menunya menutupnya,
+       dan itu jalan keluar yang tidak perlu dicari - sama dengan lapisan lain
+       di aplikasi ini. */
+    $('#alat-lapis').addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-alat-ke]');
+      tutupMenuAlat();
+      if (b) keTab(b.getAttribute('data-alat-ke'));
+    });
+    $('#hitung-tombol').addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-hitung]');
+      if (b) ketukHitung(b.getAttribute('data-hitung'));
+    });
+    $('#hitung-ketik').addEventListener('input', hitungUlang);
+
     $('#b-pintas-tulis').addEventListener('click', function () {
       /* Foldernya DIKOSONGKAN dengan sengaja, dan itu bukan kekurangan -
          itu seluruh gunanya. Alamatnya masih bisa dipilih kapan saja sesudah
@@ -7106,6 +7367,8 @@
        sesinya - satu-satunya cara membuktikan bahwa badge itu memang tidak
        menambah tinggi, bukan cuma kelihatan begitu. */
     ukuranJendelaUji: ukuranJendelaAwal,
+    pintuUtamaUji: pintuUtama,
+    pintuAlatUji: pintuAlat,
     pakaiLengketUji: pakaiLengket,
     muatLengketUji: function () {
       return TSimpan.semuaSetelan().then(function (s) {

@@ -1101,10 +1101,14 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     mungil" tapi "aplikasi yang belum jadi". MANIFEST TIDAK BISA
                     menentukan ukuran jendela - tidak ada bidangnya, dan browser
                     mengabaikan yang dikarang; yang ada cuma resizeTo(), dan itu
-                    pun boleh ditolak. Jadi ini USAHA, bukan jaminan. Lebarnya
-                    berlantai 680 (kolom 620 plus tepinya, jadi ruang kosongnya
-                    memang hilang) dan tingginya 640 (di bawah itu doknya
-                    terjepit). SEKALI SAJA, dan dicatat SEBELUM dicoba: kalau
+                    pun boleh ditolak. Jadi ini USAHA, bukan jaminan. BENTUKNYA
+                    KOLOM: setinggi layar penuh, dipatok ke tepi kiri, selebar
+                    680 - kolom 620 plus tepinya, dan itu minimumnya bukan
+                    pilihan. Jendela yang tingginya separuh menggantung di
+                    tengah layar seperti dialog yang lupa ditutup, dan aplikasi
+                    ini bukan dialog: dia tempat yang dibiarkan terbuka di
+                    samping pekerjaan lain. Dipindah DULU baru diukur - jendela
+                    lebar yang diukur lebih dulu terpotong tepi kanan. SEKALI SAJA, dan dicatat SEBELUM dicoba: kalau
                     tiap pembukaan, dia membatalkan ukuran yang diatur sendiri
                     kemarin - jendela yang melompat balik tiap kali dibuka jauh
                     lebih menjengkelkan daripada jendela yang kebesaran sekali.
@@ -1196,6 +1200,45 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     di luar "N tersimpan", dan di luar bahan pelabelan AI.
                     Yang layak jadi timbunan masuk lewat tombol Drop di tiap
                     jawaban - satu ketukan, bukan otomatis
+public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
+                    apa pun yang bentuknya JavaScript, dan yang mengetik di
+                    situ duduk di halaman yang sama dengan seluruh catatannya -
+                    satu tempelan dari luar yang kebetulan masuk ke kotak itu
+                    jadi kode yang berjalan penuh. Penguraiannya ditulis
+                    sendiri (shunting-yard), dan sebagai bonus dia mengerti
+                    yang JavaScript sendiri tidak: "2(3+4)", koma desimal, dan
+                    pangkat yang mengikat KE KANAN (2^3^2 = 512).
+                    Sudutnya DERAJAT, bukan radian: yang mengetik "sin 30" di
+                    sela pekerjaan memaksudkan tiga puluh derajat; radian itu
+                    jawaban benar untuk pertanyaan yang tidak diajukan.
+                    Hasilnya dibulatkan ke 12 angka - itu yang menutup
+                    0.1+0.2 = 0.30000000000000004, cacat yang pasti dilihat
+                    orang. BERDIRI SENDIRI TANPA DOM, jadi seluruhnya bisa
+                    diuji tanpa membuka satu layar pun; kalkulator yang salah
+                    hitung adalah cacat yang paling tidak mungkin ketahuan dari
+                    melihat layarnya.
+public/alur.js      BARIS PINTUNYA MILIK PEMAKAINYA ('pintuUtama' di setelan,
+                    diatur di bagian Menu paling atas Setelan). Enam pintu
+                    tidak muat sebaris di HP, dan yang tidak muat dipotong
+                    browser di tempat yang tidak kamu pilih - tapi yang keenam
+                    tidak pantas dibuang: cuma pemakainya yang tahu mana yang
+                    dibuka sepuluh kali sehari. Yang tidak dipilih TIDAK
+                    HILANG, dia pindah ke balik pintu TOOLS; yang berubah cuma
+                    berapa ketukan untuk sampai ke sana. Maksimal UTAMA_MAKS
+                    (5) di baris utama, dan yang keenam DITOLAK DENGAN SUARA -
+                    tombol yang tidak melakukan apa pun terbaca sebagai
+                    aplikasi yang rusak, bukan sebagai batas yang disengaja.
+                    DROP TIDAK BISA DIPINDAH dan barisnya menyebut alasannya:
+                    dia jalan masuknya, dan aturan nomor satu menuntut jalan
+                    masuk yang tidak pernah butuh dua ketukan. Urutan barisnya
+                    mengikuti KATALOG (TAB), bukan urutan pengetukan - baris
+                    yang susunannya berubah mengikuti kapan kamu memilihnya
+                    berarti jari tidak pernah hafal tempatnya.
+                    TOOLS BUKAN LAYAR, dia menu (ditangani di keTab, bukan di
+                    penangan kliknya, supaya jalur mana pun yang memanggil
+                    keTab ikut benar). Cuma digambar kalau memang ada isinya:
+                    pintu yang membuka menu kosong menjanjikan sesuatu lalu
+                    tidak memberi apa-apa.
 public/sw.js        service worker — singgahan kerangka + penerima "Bagikan"
 public/manifest.webmanifest   supaya bisa dipasang di HP
 uji/uji-terima.mjs            uji terima (Playwright)
@@ -1214,7 +1257,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (907 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (943 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

@@ -44,6 +44,12 @@
     'Mode AI': 'AI mode',
     'Kamera': 'Camera',
     'Akhiri sesi kamera': 'End camera session',
+    'Menu': 'Menu',
+    'Utama': 'Main',
+    'Selalu utama': 'Always main',
+    'Yang di Utama duduk di baris pintu; sisanya masuk ke Tools. Maksimal lima di baris utama.':
+      'What sits in Main gets a spot in the door row; the rest goes into Tools. Five at most in the main row.',
+    'Baris utama penuh — pindahkan satu ke Tools dulu': 'Main row is full — move one to Tools first',
     'Berkas': 'File',
     'Gambar': 'Image',
     'Daftar': 'List',
