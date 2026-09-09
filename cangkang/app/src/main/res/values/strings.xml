@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SATU-SATUNYA tempat nama aplikasi ditulis di sisi Android - aturan yang sama
+  dengan bawaan.js di aplikasi webnya. Kode Kotlin membacanya lewat
+  R.string.nama_app dan tidak pernah menuliskannya sendiri.
+-->
+<resources>
+    <string name="nama_app">Cortex Space</string>
+
+    <!-- Huruf di dalam bulatannya. Bukan nama penuh: bulatan 56dp cuma muat
+         satu huruf, dan nama yang dipotong terbaca sebagai teks rusak. -->
+    <string name="huruf_bulatan">C</string>
+
+    <string name="mulai_alasan">Bulatan melayang di atas aplikasi lain. Diketuk sekali, catatanmu terbuka setengah layar — tanpa pulang ke layar depan, tanpa usapan yang harus dilatih.\n\nAndroid menuntut satu izin untuk ini: menampilkan di atas aplikasi lain.</string>
+
+    <string name="tbl_nyalakan">Nyalakan bulatan</string>
+    <string name="tbl_matikan">Matikan</string>
+    <string name="tbl_kecil">–</string>
+    <string name="tbl_tutup">✕</string>
+
+    <string name="tarik_untuk_ukur">Tarik untuk mengubah tinggi</string>
+
+    <string name="kabar_judul">Bulatan menyala</string>
+    <string name="kabar_isi">Ketuk bulatannya untuk membuka catatan.</string>
+
+    <string name="kabar_izin">Izin "tampilkan di atas aplikasi lain" belum diberikan.</string>
+    <string name="kabar_nyala">Menyala. Bulatannya bisa diseret ke mana saja; menempel sendiri ke tepi terdekat. Ada juga ubinnya di Setelan Cepat.</string>
+    <string name="kabar_mati">Mati.</string>
+</resources>

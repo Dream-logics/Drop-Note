@@ -1564,6 +1564,68 @@ public/sw.js        service worker — singgahan kerangka + penerima "Bagikan".
 public/manifest.webmanifest   supaya bisa dipasang di HP
 uji/uji-terima.mjs            uji terima (Playwright)
 uji/palsu-google.mjs          tiruan Drive+Sheets di memori untuk uji
+cangkang/           APK Android TIPIS, dan tipisnya itu aturannya: dia TIDAK
+                    punya satu pun fitur sendiri. Isinya WebView yang memuat
+                    aplikasi web yang SUDAH TERBIT; yang ditambahkan cuma tiga
+                    hal yang memang tidak bisa dilakukan halaman web -
+                    menggambar di atas aplikasi lain, bertahan sesudah restart,
+                    dan satu ubin Setelan Cepat. Begitu dia mulai menumbuhkan
+                    layar sendiri, jadi dua basis kode untuk satu aplikasi, dan
+                    yang di Android selalu yang lebih miskin.
+                    LAHIR DARI SATU KELUHAN LAPANGAN, bukan dari keinginan
+                    punya aplikasi native: memanggil catatan sambil melihat
+                    aplikasi lain butuh pulang ke layar depan. Semua jalan
+                    bawaan Samsung sudah dicoba dan semuanya BENTUKNYA GESEKAN -
+                    laci Edge panel yang tipis (5-6 usapan baru kena), usapan
+                    diagonal dari sudut (10-12 kali gagal, yang muncul justru
+                    bilah notifikasi). Gerakan yang harus dilatih bukan jalan
+                    pintas. Bulatan melayang menggantinya dengan SASARAN yang
+                    diam di tempat.
+                    SYSTEM_ALERT_WINDOW, bukan Bubbles API: Bubbles di Android
+                    11+ dikunci untuk percakapan (wajib sharing shortcut +
+                    MessagingStyle + Person) dan aplikasi catatan tidak akan
+                    pernah memenuhi syaratnya. Ini juga satu-satunya yang jalan
+                    lintas merek; iOS tidak punya padanannya sama sekali.
+                    ALAMATNYA DIMUAT DARI JARINGAN, tidak dibungkus ke dalam
+                    APK (Alamat.kt, satu-satunya tempat alamatnya ditulis).
+                    Aplikasi webnya disunting hampir tiap hari; kalau isinya
+                    ikut dibungkus, satu baris CSS menuntut APK baru yang harus
+                    dipasang tangan. Muatan pertama butuh sinyal, sesudah itu
+                    service worker-nya yang bekerja.
+                    WEBVIEW-NYA TIDAK PERNAH DIHANCURKAN waktu dikecilkan -
+                    yang dilepas cuma pemasangannya di layar. Tulisan yang belum
+                    di-drop tinggal di DOM, dan menghancurkannya berarti kalimat
+                    setengah jadi hilang tiap kali kamu menoleh ke aplikasi
+                    sebelah: persis kejadian yang bikin cangkang ini ada.
+                    Tombol Kembali MENGECILKAN, tidak menutup, karena alasan
+                    yang sama.
+                    PANELNYA DIPATOK DI ATAS, bukan di bawah: papan ketik naik
+                    dari bawah, dan jendela yang duduk di sana tertimpa atau
+                    terdorong keluar layar. Bulatannya bawaannya di bawah tengah
+                    dan menempel ke tepi terdekat - yang berhenti di dekat tepi
+                    atas akan menarik bilah notifikasi waktu diseret, dan yang
+                    berhenti di tengah menutupi isi aplikasi di bawahnya.
+                    Panelnya BUKAN NOT_FOCUSABLE (tanpa fokus papan ketik tidak
+                    pernah muncul, dan jendela yang tidak bisa diketik
+                    membatalkan seluruh gunanya); bulatannya NOT_FOCUSABLE
+                    supaya tidak menelan papan ketik aplikasi di bawahnya.
+                    BELUM ADA SINKRON GOOGLE DI DALAMNYA, dan itu bukan yang
+                    belum sempat dikerjakan: Google MENOLAK OAuth di dalam
+                    WebView (disallowed_useragent, sejak 2021), jadi
+                    penyimpanannya masih terpisah dari PWA yang terpasang.
+                    Jembatan tokennya lewat Play Services, menyusul.
+                    APK-NYA DIBANGUN DI CI (.github/workflows/cangkang.yml),
+                    dan itu wajib disebut: lingkungan tempat kodenya ditulis
+                    tidak punya Android SDK sama sekali, jadi tidak ada satu
+                    baris pun di sini yang pernah dikompilasi sebelum didorong.
+                    Varian DEBUG, karena debug ditandatangani kunci bawaan dan
+                    langsung bisa dipasang.
+                    Nama paketnya ('id.dreamlogics.cangkang') TIDAK menyebut
+                    merek - aturan yang sama dengan nama basis data: nama paket
+                    tidak pernah bisa diubah sesudah dipasang, jadi yang
+                    menyebut merek akan berbohong begitu mereknya berganti, dan
+                    menggantinya berarti pemasangan baru. Nama aplikasinya cuma
+                    di res/values/strings.xml, satu tempat.
 docs/RANCANGAN.md   alasan di balik rancangannya
 docs/PROPOSAL-V2.md rencana bertahap yang sedang dikerjakan
 docs/GOOGLE.md      satu langkah pembuat: OAuth Client ID

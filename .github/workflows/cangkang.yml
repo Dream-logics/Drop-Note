@@ -1,0 +1,43 @@
+# Membangun APK cangkang Android.
+#
+# Ini satu-satunya tempat APK-nya pernah dikompilasi: lingkungan tempat
+# kodenya ditulis tidak punya Android SDK sama sekali. Jadi CI yang jadi
+# kompilatornya, dan hasilnya diunduh dari halaman Actions lalu dipasang tangan.
+#
+# Yang dibangun varian DEBUG, dan itu disengaja: debug ditandatangani kunci
+# bawaan Android jadi APK-nya langsung bisa dipasang, sementara release yang
+# tidak ditandatangani ditolak pemasangannya tanpa satu pesan yang berguna.
+name: Cangkang
+
+on:
+  push:
+    paths:
+      - 'cangkang/**'
+      - '.github/workflows/cangkang.yml'
+  workflow_dispatch:      # tombol "Run workflow" kalau mau APK baru tanpa suntingan
+
+permissions:
+  contents: read
+
+jobs:
+  bangun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Bangun APK
+        working-directory: cangkang
+        run: ./gradlew --no-daemon assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cangkang-apk
+          path: cangkang/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
