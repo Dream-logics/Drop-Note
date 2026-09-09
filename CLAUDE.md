@@ -1609,6 +1609,22 @@ cangkang/           APK Android TIPIS, dan tipisnya itu aturannya: dia TIDAK
                     pernah muncul, dan jendela yang tidak bisa diketik
                     membatalkan seluruh gunanya); bulatannya NOT_FOCUSABLE
                     supaya tidak menelan papan ketik aplikasi di bawahnya.
+                    PANELNYA WAJIB MINTA FLAG_HARDWARE_ACCELERATED SENDIRI, dan
+                    ini kekeliruan yang paling mahal di sini: jendela yang
+                    dibuat sebuah LAYANAN tidak mewarisi akselerasi dari mana
+                    pun - yang mewarisinya jendela milik Activity, dari temanya.
+                    WebView tanpa akselerasi menggambar PUTIH POLOS. Halamannya
+                    benar-benar termuat, tidak ada satu pun galat di log, dan
+                    tidak ada apa pun di layar; yang dilaporkan "aplikasinya
+                    kosong sesudah pemasangan yang susah payah".
+                    KARENA ITU PETAK PUTIH TIDAK PERNAH DIBIARKAN DIAM: ada satu
+                    baris kabar yang menumpang di atas WebView-nya - "Memuat…"
+                    lalu pesan galatnya kalau bingkai utamanya gagal, dan
+                    ketukan di kabarnya memuat ulang. Aturan yang sama dengan
+                    petak gambar kosong di sinkron.js: laporan yang SALAH
+                    tentang keadaan yang BENAR lebih buruk daripada galat, karena
+                    dia menyuruh orang memasang ulang padahal yang kurang cuma
+                    sinyal.
                     BELUM ADA SINKRON GOOGLE DI DALAMNYA, dan itu bukan yang
                     belum sempat dikerjakan: Google MENOLAK OAuth di dalam
                     WebView (disallowed_useragent, sejak 2021), jadi

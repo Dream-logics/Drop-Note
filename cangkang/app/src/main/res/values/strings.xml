@@ -26,4 +26,9 @@
     <string name="kabar_izin">Izin "tampilkan di atas aplikasi lain" belum diberikan.</string>
     <string name="kabar_nyala">Menyala. Bulatannya bisa diseret ke mana saja; menempel sendiri ke tepi terdekat. Ada juga ubinnya di Setelan Cepat.</string>
     <string name="kabar_mati">Mati.</string>
+
+    <!-- Petak putih polos tidak pernah dibiarkan bicara sendiri: dia terbaca
+         sebagai "aplikasinya rusak", padahal yang kurang mungkin cuma sinyal. -->
+    <string name="muat_jalan">Memuat…</string>
+    <string name="muat_galat">Gagal memuat: %1$s\n\nKetuk untuk mencoba lagi.</string>
 </resources>

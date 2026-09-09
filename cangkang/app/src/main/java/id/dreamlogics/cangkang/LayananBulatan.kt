@@ -10,6 +10,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.graphics.drawable.Icon
 import android.os.Build
@@ -23,8 +24,11 @@ import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.view.ContextThemeWrapper
@@ -42,6 +46,10 @@ class LayananBulatan : Service() {
     private var panel: View? = null
     private var pPanel: WindowManager.LayoutParams? = null
     private var web: WebView? = null
+
+    private var kabarMuat: TextView? = null
+    private var galatMuat: String? = null
+    private var sudahMuat = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -179,7 +187,16 @@ class LayananBulatan : Service() {
             // BUKAN NOT_FOCUSABLE: tanpa fokus, papan ketik tidak pernah muncul
             // dan jendela ini jadi jendela yang tidak bisa diketik - persis
             // satu-satunya hal yang diminta darinya.
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            //
+            // HARDWARE_ACCELERATED WAJIB DISEBUT SENDIRI, dan ini kekeliruan
+            // yang paling mahal di berkas ini: jendela yang dibuat sebuah
+            // LAYANAN tidak mewarisi akselerasi dari mana pun (yang mewarisinya
+            // jendela milik Activity, dari temanya). WebView tanpa akselerasi
+            // menggambar PUTIH POLOS - halamannya benar-benar dimuat, tidak ada
+            // satu pun galat, cuma tidak pernah sampai ke layar. Yang terbaca
+            // "aplikasinya kosong sesudah pemasangan yang susah payah".
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             PixelFormat.TRANSLUCENT
         )
         p.gravity = Gravity.TOP or Gravity.START
@@ -253,9 +270,41 @@ class LayananBulatan : Service() {
             )
         )
 
-        val w = ambilWeb()
+        // WebView-nya ditumpuk dengan satu baris kabar. Petak putih polos itu
+        // laporan yang SALAH tentang keadaan yang benar - dia menyuruh orang
+        // memasang ulang, padahal yang kurang mungkin cuma sinyal. Kabarnya
+        // pergi sendiri begitu halamannya benar-benar tergambar.
+        val tumpuk = FrameLayout(konteks)
+        tumpuk.addView(
+            ambilWeb(),
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+        kabarMuat = TextView(konteks).apply {
+            textSize = 14f
+            gravity = Gravity.CENTER
+            setTextColor(0xFF6B6B66.toInt())
+            val t = (16 * d.density).toInt()
+            setPadding(t, t, t, t)
+            setBackgroundColor(0xFFF5F5F3.toInt())
+            // Ketukan di kabarnya MEMUAT ULANG: yang membacanya sedang menunggu
+            // sesuatu terjadi, dan pesan yang tidak punya jalan keluar sama
+            // diamnya dengan petak putih tadi.
+            setOnClickListener { web?.loadUrl(ALAMAT) }
+        }
+        tumpuk.addView(
+            kabarMuat,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+        perbaruiKabar()
+
         akar.addView(
-            w,
+            tumpuk,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
             )
@@ -340,7 +389,28 @@ class LayananBulatan : Service() {
             loadWithOverviewMode = false
         }
         WebView.setWebContentsDebuggingEnabled(true)
-        w.webViewClient = WebViewClient()
+        w.webViewClient = object : WebViewClient() {
+            override fun onPageStarted(v: WebView?, url: String?, ikon: Bitmap?) {
+                galatMuat = null
+                perbaruiKabar()
+            }
+
+            override fun onReceivedError(
+                v: WebView, permintaan: WebResourceRequest, galat: WebResourceError
+            ) {
+                // Cuma bingkai UTAMA. Satu gambar yang gagal diambil bukan
+                // alasan menutupi halaman yang sebenarnya sudah tergambar.
+                if (!permintaan.isForMainFrame) return
+                galatMuat = galat.description?.toString()
+                sudahMuat = false
+                perbaruiKabar()
+            }
+
+            override fun onPageFinished(v: WebView?, url: String?) {
+                if (galatMuat == null) sudahMuat = true
+                perbaruiKabar()
+            }
+        }
         w.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(req: PermissionRequest) {
                 // Kamera di dalam WebView minta izinnya dua kali: sekali ke
@@ -355,6 +425,21 @@ class LayananBulatan : Service() {
     private fun muat() {
         val w = web ?: return
         if (w.url == null) w.loadUrl(ALAMAT)
+    }
+
+    private fun perbaruiKabar() {
+        val t = kabarMuat ?: return
+        when {
+            galatMuat != null -> {
+                t.text = getString(R.string.muat_galat, galatMuat)
+                t.visibility = View.VISIBLE
+            }
+            sudahMuat -> t.visibility = View.GONE
+            else -> {
+                t.text = getString(R.string.muat_jalan)
+                t.visibility = View.VISIBLE
+            }
+        }
     }
 
     /* ---------- kabar ---------- */
