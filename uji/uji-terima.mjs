@@ -8300,6 +8300,49 @@ console.log('\njendela pendek: Cortex sebagai jendela melayang');
   cek('dan nama aplikasinya kembali',
       await halP.locator('#merek').isVisible());
   await halP.close();
+
+  /* LAYAR TULIS DI JENDELA SEPEREMPAT LAYAR. Badan tulisannya punya
+     'min-height:300px' yang tidak pernah menyusut - di jendela 230px dia
+     meluber 298px, hampir dua kali tinggi jendelanya, dan yang terpotong
+     justru badan tulisannya sendiri. Layar menulis yang badannya terpotong
+     tidak bisa dipakai menulis sama sekali. */
+  const halT = await konteks.newPage();
+  halT.on('pageerror', (e) => galat.push('[tulis pendek] ' + e.message));
+  await halT.setViewportSize({ width: 360, height: 230 });
+  await halT.goto(alamat + '?aksi=tulis');
+  await halT.waitForFunction(() => window.TAlur);
+  await halT.waitForTimeout(500);
+  const utuh = (s) => halT.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return r.top >= 0 && r.bottom <= window.innerHeight + 1;
+  }, s);
+  cek('layar tulis pun tidak meluber di jendela seperempat layar',
+      (await halT.evaluate(() =>
+        document.documentElement.scrollHeight - window.innerHeight)) <= 0);
+  /* TIDAK ADA SATU PUN YANG DIBUANG: kembali, tersimpan, riwayat, gembok,
+     buang, dan Simpan. Jendela kecil yang isinya beda dari jendela besar
+     adalah aplikasi kedua yang harus dihafal jarinya. */
+  cek('judul, badan tulisan, dan Simpan semuanya utuh',
+      (await utuh('#catat-judul')) && (await utuh('#catat-isi')) &&
+      (await utuh('#b-simpan')));
+  cek('dan tombol di kepalanya tidak ada yang dibuang',
+      (await utuh('#b-riwayat')) && (await utuh('#b-gembok')) &&
+      (await utuh('#b-buang')));
+  /* Badannya harus benar-benar bisa diketik, bukan cuma "ada": batas 300px
+     yang tidak menyusut menyisakan 8px, dan 8px bukan tempat menulis. */
+  cek('badan tulisannya masih menyisakan ruang untuk mengetik',
+      (await halT.evaluate(() =>
+        Math.round(document.querySelector('#catat-isi').getBoundingClientRect().height))) >= 35);
+  /* Di layar penuh batas 300px-nya TETAP: dia yang memberi ruang tulis kesan
+     luas walau tulisannya baru satu baris. */
+  await halT.setViewportSize({ width: 412, height: 915 });
+  await halT.waitForTimeout(400);
+  cek('di layar penuh badannya kembali lapang seperti semula',
+      (await halT.evaluate(() =>
+        Math.round(document.querySelector('#catat-isi').getBoundingClientRect().height))) >= 300);
+  await halT.close();
 }
 
 console.log('\nshortcut layar home Android');

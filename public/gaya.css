@@ -2032,4 +2032,43 @@ body:has(.layar.pas-layar.aktif){height:var(--tampak, 100%);overflow:hidden}
   /* Harus ikut naik bersama tinggiKotakMaks() di alur.js - kalau cuma satu
      yang naik, yang satunya lagi yang jadi batas sebenarnya, diam-diam. */
   .kotak{max-height:220px}
+
+  /* LAYAR TULIS IKUT DIPATOK, dan di sini dia yang paling parah: badan
+     tulisannya punya 'min-height:300px' yang tidak pernah menyusut, jadi di
+     jendela 230px dia meluber 298px - hampir dua kali tinggi jendelanya.
+     Yang terpotong justru badan tulisannya sendiri, dan layar menulis yang
+     badannya terpotong tidak bisa dipakai menulis sama sekali.
+     Batas 300px itu benar di layar penuh (dia yang memberi ruang tulis
+     kesan luas walau tulisannya baru satu baris) - jadi yang dilepas cuma di
+     jendela pendek, bukan seluruhnya. */
+  #l-catat.aktif{height:var(--tampak, 100dvh);min-height:0;overflow:hidden}
+  .catat-isi{min-height:0;margin-top:8px}
+  /* Tombol Simpan tidak boleh ikut menyusut: dia yang membayar keraguan
+     "apakah tulisanku aman", dan itu justru paling terasa di jendela sempit. */
+  .catat-dok{flex:none}
+}
+/* Dipatok CUMA di jendela pendek: di layar penuh layar tulis memang boleh
+   tumbuh apa adanya, dan mematoknya di sana mengubah perilaku yang sudah
+   benar tanpa ada yang memintanya. */
+@media (max-height: 560px) {
+  body:has(#l-catat.aktif){height:var(--tampak, 100%);overflow:hidden}
+}
+
+/* ===== JENDELA SANGAT PENDEK =====
+   Seperempat layar HP. Di sini yang tersisa untuk badan tulisan tinggal
+   sisa-sisa, jadi tiap piksel jarak dihitung: judulnya mengecil, jaraknya
+   dirapatkan, doknya menipis.
+   YANG TIDAK DIBUANG SATU PUN: tombol kembali, kabar tersimpan, riwayat,
+   gembok, buang, dan tombol Simpan. Jendela kecil yang isinya beda dari
+   jendela besar adalah aplikasi kedua yang harus dihafal jarinya - dan yang
+   dihemat cuma beberapa piksel, sementara yang dibayar hafalan. */
+@media (max-height: 360px) {
+  .layar{
+    padding:calc(env(safe-area-inset-top) + 5px) 10px calc(env(safe-area-inset-bottom) + 5px);
+  }
+  .atas, .atas.rapat{margin-bottom:4px}
+  .catat-judul{font-size:17px;padding:1px 0}
+  .catat-isi{margin-top:4px}
+  .catat-dok{padding:5px 0 calc(env(safe-area-inset-bottom) + 4px);margin-top:5px}
+  .catat-dok .tbl.simpan{padding:8px 12px}
 }

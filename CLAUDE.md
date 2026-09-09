@@ -1519,6 +1519,27 @@ public/gaya.css     (lanjutan) JENDELA PENDEK (@media max-height:560px, DI EKOR
                     kedua: jendela melayang ukurannya diseret jari, jadi angka
                     apa pun yang ditebak akan salah di ukuran yang tidak
                     ditebak.
+                    LAYAR TULIS ('l-catat') IKUT DIPATOK, dan di sana cacatnya
+                    paling parah: '.catat-isi' punya 'min-height:300px' yang
+                    tidak pernah menyusut, jadi di jendela 230px dia meluber
+                    298px - hampir dua kali tinggi jendelanya - dan yang
+                    terpotong justru badan tulisannya sendiri. Layar menulis
+                    yang badannya terpotong tidak bisa dipakai menulis sama
+                    sekali. Batas 300px itu BENAR di layar penuh (dia yang
+                    memberi ruang tulis kesan luas walau tulisannya baru satu
+                    baris), jadi yang dilepas cuma di jendela pendek.
+                    ADA TIER KEDUA di 360px ('jendela sangat pendek', seperempat
+                    layar HP): judul mengecil, jarak dirapatkan, dok menipis -
+                    tanpa itu badan tulisannya tinggal 8px, dan 8px bukan
+                    tempat menulis. Sesudah dirapatkan: 43px di 230px, 113px di
+                    300px. TIDAK ADA SATU TOMBOL PUN YANG DIBUANG di kedua tier
+                    - kembali, tersimpan, riwayat, gembok, buang, Simpan
+                    semuanya tetap. Yang dihemat kalau membuangnya cuma
+                    beberapa piksel; yang dibayar hafalan jarinya.
+                    'body:has(#l-catat.aktif)' dipatok CUMA di dalam media
+                    query - di layar penuh layar tulis memang boleh tumbuh apa
+                    adanya, dan mematoknya di sana mengubah perilaku yang sudah
+                    benar tanpa ada yang memintanya.
 public/sw.js        service worker — singgahan kerangka + penerima "Bagikan".
                     SATU MUATAN SELALU SATU GENERASI, dan itu perbaikan atas
                     cacat yang menghasilkan laporan lapangan yang tidak masuk
@@ -1557,7 +1578,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (1009 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (1014 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
