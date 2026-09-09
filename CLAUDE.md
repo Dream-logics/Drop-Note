@@ -1564,78 +1564,68 @@ public/sw.js        service worker — singgahan kerangka + penerima "Bagikan".
 public/manifest.webmanifest   supaya bisa dipasang di HP
 uji/uji-terima.mjs            uji terima (Playwright)
 uji/palsu-google.mjs          tiruan Drive+Sheets di memori untuk uji
-cangkang/           APK Android TIPIS, dan tipisnya itu aturannya: dia TIDAK
-                    punya satu pun fitur sendiri. Isinya WebView yang memuat
-                    aplikasi web yang SUDAH TERBIT; yang ditambahkan cuma tiga
-                    hal yang memang tidak bisa dilakukan halaman web -
-                    menggambar di atas aplikasi lain, bertahan sesudah restart,
-                    dan satu ubin Setelan Cepat. Begitu dia mulai menumbuhkan
-                    layar sendiri, jadi dua basis kode untuk satu aplikasi, dan
-                    yang di Android selalu yang lebih miskin.
-                    LAHIR DARI SATU KELUHAN LAPANGAN, bukan dari keinginan
-                    punya aplikasi native: memanggil catatan sambil melihat
-                    aplikasi lain butuh pulang ke layar depan. Semua jalan
-                    bawaan Samsung sudah dicoba dan semuanya BENTUKNYA GESEKAN -
-                    laci Edge panel yang tipis (5-6 usapan baru kena), usapan
-                    diagonal dari sudut (10-12 kali gagal, yang muncul justru
-                    bilah notifikasi). Gerakan yang harus dilatih bukan jalan
-                    pintas. Bulatan melayang menggantinya dengan SASARAN yang
-                    diam di tempat.
+cangkang/           APK Android TIPIS, dan tipisnya itu aturannya. Isinya SATU
+                    bulatan melayang dan SATU kotak tulis; dia tidak menampung
+                    catatan, tidak mencari, dan tidak pernah jadi aplikasi
+                    kedua. Begitu dia menumbuhkan layar sendiri, jadi dua basis
+                    kode untuk satu aplikasi, dan yang di Android selalu yang
+                    lebih miskin.
+                    LAHIR DARI SATU KELUHAN LAPANGAN: memanggil catatan sambil
+                    melihat aplikasi lain butuh pulang ke layar depan. Semua
+                    jalan bawaan Samsung sudah dicoba dan semuanya BENTUKNYA
+                    GESEKAN - laci Edge panel yang tipis (5-6 usapan baru kena),
+                    usapan diagonal dari sudut (10-12 kali gagal, yang muncul
+                    justru bilah notifikasi, sampai kulit jempolnya panas).
+                    Gerakan yang harus dilatih bukan jalan pintas. Bulatan
+                    melayang menggantinya dengan SASARAN yang diam di tempat.
                     SYSTEM_ALERT_WINDOW, bukan Bubbles API: Bubbles di Android
                     11+ dikunci untuk percakapan (wajib sharing shortcut +
                     MessagingStyle + Person) dan aplikasi catatan tidak akan
                     pernah memenuhi syaratnya. Ini juga satu-satunya yang jalan
                     lintas merek; iOS tidak punya padanannya sama sekali.
-                    ALAMATNYA DIMUAT DARI JARINGAN, tidak dibungkus ke dalam
-                    APK (Alamat.kt, satu-satunya tempat alamatnya ditulis).
-                    Aplikasi webnya disunting hampir tiap hari; kalau isinya
-                    ikut dibungkus, satu baris CSS menuntut APK baru yang harus
-                    dipasang tangan. Muatan pertama butuh sinyal, sesudah itu
-                    service worker-nya yang bekerja.
-                    WEBVIEW-NYA TIDAK PERNAH DIHANCURKAN waktu dikecilkan -
-                    yang dilepas cuma pemasangannya di layar. Tulisan yang belum
-                    di-drop tinggal di DOM, dan menghancurkannya berarti kalimat
-                    setengah jadi hilang tiap kali kamu menoleh ke aplikasi
-                    sebelah: persis kejadian yang bikin cangkang ini ada.
-                    Tombol Kembali MENGECILKAN, tidak menutup, karena alasan
-                    yang sama.
-                    PANELNYA DIPATOK DI ATAS, bukan di bawah: papan ketik naik
+                    TIDAK ADA WEBVIEW DI DALAMNYA, DAN ITU BEKAS LUKA. Dua
+                    terbitan pertama memuat aplikasi webnya di WebView dan
+                    dua-duanya sampai ke HP sebagai PETAK PUTIH POLOS: kepala,
+                    tombol, dan teksnya tergambar semua - cuma WebView-nya yang
+                    tidak. Tebakan pertama (akselerasi perangkat keras: jendela
+                    milik LAYANAN tidak mewarisinya dari mana pun, dan WebView
+                    tanpa akselerasi memang menggambar kosong) tidak
+                    menyembuhkannya. Yang mahal bukan cacatnya, tapi ONGKOS
+                    MEMBUKTIKANNYA: tidak ada Android SDK di sini, jadi tiap
+                    tebakan dibayar pemakainya dengan satu pemasangan tangan.
+                    Jadi yang dipilih bentuk yang tidak punya bagian rewel sama
+                    sekali - EditText biasa, yang sudah terbukti tergambar di
+                    layar yang sama. JANGAN kembalikan WebView-nya tanpa
+                    perangkat sungguhan untuk mengujinya.
+                    SALURAN KELUARNYA "Kirim", lewat tombol Bagikan Android ke
+                    share_target aplikasi webnya - jalur yang sudah ada dan
+                    sudah teruji. Itu yang menjaga kotak ini tetap SCRATCHPAD,
+                    bukan timbunan kedua: dua jalur masuk yang menghasilkan dua
+                    tumpukan adalah cara tercepat membuat satu timbunan jadi dua
+                    yang tidak pernah bertemu. "Salin" duduk paling kanan karena
+                    itu yang paling sering ditekan - yang ditulis di sini hampir
+                    selalu berakhir ditempelkan ke jendela obrolan sebelah.
+                    NASKAHNYA DISIMPAN TIAP KETUKAN ke setelan, bukan cuma di
+                    memori: yang membunuh kalimat setengah jadi bukan tombol
+                    silang, tapi sistem yang membersihkan memori diam-diam waktu
+                    kamu sedang membaca aplikasi sebelah.
+                    KOTAKNYA DIPATOK DI ATAS, bukan di bawah: papan ketik naik
                     dari bawah, dan jendela yang duduk di sana tertimpa atau
-                    terdorong keluar layar. Bulatannya bawaannya di bawah tengah
-                    dan menempel ke tepi terdekat - yang berhenti di dekat tepi
-                    atas akan menarik bilah notifikasi waktu diseret, dan yang
-                    berhenti di tengah menutupi isi aplikasi di bawahnya.
-                    Panelnya BUKAN NOT_FOCUSABLE (tanpa fokus papan ketik tidak
-                    pernah muncul, dan jendela yang tidak bisa diketik
-                    membatalkan seluruh gunanya); bulatannya NOT_FOCUSABLE
-                    supaya tidak menelan papan ketik aplikasi di bawahnya.
-                    PANELNYA WAJIB MINTA FLAG_HARDWARE_ACCELERATED SENDIRI, dan
-                    ini kekeliruan yang paling mahal di sini: jendela yang
-                    dibuat sebuah LAYANAN tidak mewarisi akselerasi dari mana
-                    pun - yang mewarisinya jendela milik Activity, dari temanya.
-                    WebView tanpa akselerasi menggambar PUTIH POLOS. Halamannya
-                    benar-benar termuat, tidak ada satu pun galat di log, dan
-                    tidak ada apa pun di layar; yang dilaporkan "aplikasinya
-                    kosong sesudah pemasangan yang susah payah".
-                    KARENA ITU PETAK PUTIH TIDAK PERNAH DIBIARKAN DIAM: ada satu
-                    baris kabar yang menumpang di atas WebView-nya - "Memuat…"
-                    lalu pesan galatnya kalau bingkai utamanya gagal, dan
-                    ketukan di kabarnya memuat ulang. Aturan yang sama dengan
-                    petak gambar kosong di sinkron.js: laporan yang SALAH
-                    tentang keadaan yang BENAR lebih buruk daripada galat, karena
-                    dia menyuruh orang memasang ulang padahal yang kurang cuma
-                    sinyal.
-                    BELUM ADA SINKRON GOOGLE DI DALAMNYA, dan itu bukan yang
-                    belum sempat dikerjakan: Google MENOLAK OAuth di dalam
-                    WebView (disallowed_useragent, sejak 2021), jadi
-                    penyimpanannya masih terpisah dari PWA yang terpasang.
-                    Jembatan tokennya lewat Play Services, menyusul.
-                    APK-NYA DIBANGUN DI CI (.github/workflows/cangkang.yml),
-                    dan itu wajib disebut: lingkungan tempat kodenya ditulis
-                    tidak punya Android SDK sama sekali, jadi tidak ada satu
-                    baris pun di sini yang pernah dikompilasi sebelum didorong.
-                    Varian DEBUG, karena debug ditandatangani kunci bawaan dan
-                    langsung bisa dipasang.
+                    terdorong keluar layar. Tingginya diseret dari kepalanya dan
+                    diingat. Bulatannya bawaannya di bawah tengah dan menempel
+                    ke tepi terdekat - yang berhenti di dekat tepi atas akan
+                    menarik bilah notifikasi waktu diseret, dan yang berhenti di
+                    tengah menutupi isi aplikasi di bawahnya.
+                    Kotaknya BUKAN NOT_FOCUSABLE (tanpa fokus papan ketik tidak
+                    pernah muncul); bulatannya NOT_FOCUSABLE supaya tidak
+                    menelan papan ketik aplikasi di bawahnya.
+                    Tombol Kembali MENGECILKAN, tidak menutup.
+                    APK-NYA DIBANGUN DI CI (.github/workflows/cangkang.yml) dan
+                    ditempel ke rilis bertag TETAP 'cangkang', jadi alamat
+                    unduhnya tidak pernah berganti - artefak Actions bentuknya
+                    zip dan menuntut masuk akun, dua hambatan untuk sesuatu yang
+                    dipasang dari HP. Varian DEBUG, karena debug ditandatangani
+                    kunci bawaan dan langsung bisa dipasang.
                     Nama paketnya ('id.dreamlogics.cangkang') TIDAK menyebut
                     merek - aturan yang sama dengan nama basis data: nama paket
                     tidak pernah bisa diubah sesudah dipasang, jadi yang

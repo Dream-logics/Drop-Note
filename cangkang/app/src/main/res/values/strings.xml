@@ -11,7 +11,7 @@
          satu huruf, dan nama yang dipotong terbaca sebagai teks rusak. -->
     <string name="huruf_bulatan">C</string>
 
-    <string name="mulai_alasan">Bulatan melayang di atas aplikasi lain. Diketuk sekali, catatanmu terbuka setengah layar — tanpa pulang ke layar depan, tanpa usapan yang harus dilatih.\n\nAndroid menuntut satu izin untuk ini: menampilkan di atas aplikasi lain.</string>
+    <string name="mulai_alasan">Bulatan melayang di atas aplikasi lain. Diketuk sekali, kotak tulis terbuka setengah layar — tanpa pulang ke layar depan, tanpa usapan yang harus dilatih. Isinya disalin, atau dikirim ke Cortex lewat tombol Bagikan.\n\nAndroid menuntut satu izin untuk ini: menampilkan di atas aplikasi lain.</string>
 
     <string name="tbl_nyalakan">Nyalakan bulatan</string>
     <string name="tbl_matikan">Matikan</string>
@@ -27,8 +27,9 @@
     <string name="kabar_nyala">Menyala. Bulatannya bisa diseret ke mana saja; menempel sendiri ke tepi terdekat. Ada juga ubinnya di Setelan Cepat.</string>
     <string name="kabar_mati">Mati.</string>
 
-    <!-- Petak putih polos tidak pernah dibiarkan bicara sendiri: dia terbaca
-         sebagai "aplikasinya rusak", padahal yang kurang mungkin cuma sinyal. -->
-    <string name="muat_jalan">Memuat…</string>
-    <string name="muat_galat">Gagal memuat: %1$s\n\nKetuk untuk mencoba lagi.</string>
+    <string name="tulis_hint">Tulis di sini…</string>
+    <string name="tbl_salin">Salin</string>
+    <string name="tbl_kirim">Kirim</string>
+    <string name="tbl_bersihkan">Bersihkan</string>
+    <string name="kabar_salin">Tersalin</string>
 </resources>

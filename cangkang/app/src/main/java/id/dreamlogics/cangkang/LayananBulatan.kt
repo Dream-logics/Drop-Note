@@ -1,4 +1,4 @@
-/* ===== LayananBulatan — bulatan melayang + jendela yang dibukanya ===== */
+/* ===== LayananBulatan — bulatan melayang + kotak tulis yang dibukanya ===== */
 
 package id.dreamlogics.cangkang
 
@@ -7,30 +7,28 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
-import android.webkit.PermissionRequest
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceError
-import android.webkit.WebResourceRequest
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.FrameLayout
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.view.ContextThemeWrapper
 import kotlin.math.abs
 
@@ -41,15 +39,10 @@ class LayananBulatan : Service() {
     private lateinit var konteks: Context
 
     private var bulatan: View? = null
-    private var pBulatan: WindowManager.LayoutParams? = null
 
     private var panel: View? = null
     private var pPanel: WindowManager.LayoutParams? = null
-    private var web: WebView? = null
-
-    private var kabarMuat: TextView? = null
-    private var galatMuat: String? = null
-    private var sudahMuat = false
+    private var ketik: EditText? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -57,7 +50,7 @@ class LayananBulatan : Service() {
         super.onCreate()
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
         pref = getSharedPreferences(PREF, Context.MODE_PRIVATE)
-        // WebView menolak konteks tanpa tema; layanan tidak punya satu pun.
+        // Layanan tidak punya tema; beberapa widget menolak konteks tanpa tema.
         konteks = ContextThemeWrapper(this, R.style.Tema)
         mulaiLatarDepan()
         pasangBulatan()
@@ -79,10 +72,9 @@ class LayananBulatan : Service() {
     }
 
     override fun onDestroy() {
+        simpanNaskah()
         lepas(panel)
         lepas(bulatan)
-        web?.destroy()
-        web = null
         super.onDestroy()
     }
 
@@ -122,7 +114,6 @@ class LayananBulatan : Service() {
         v.setOnTouchListener(SeretBulatan(p, sisi))
         wm.addView(v, p)
         bulatan = v
-        pBulatan = p
     }
 
     /** Seret memindahkan; ketuk singkat membuka. Dua gerakan, satu sasaran. */
@@ -172,7 +163,7 @@ class LayananBulatan : Service() {
         }
     }
 
-    /* ---------- jendela ---------- */
+    /* ---------- kotak tulis ---------- */
 
     private fun bukaPanel() {
         if (panel != null) return
@@ -185,18 +176,8 @@ class LayananBulatan : Service() {
             tinggiPanel(),
             TYPE_LAPISAN,
             // BUKAN NOT_FOCUSABLE: tanpa fokus, papan ketik tidak pernah muncul
-            // dan jendela ini jadi jendela yang tidak bisa diketik - persis
-            // satu-satunya hal yang diminta darinya.
-            //
-            // HARDWARE_ACCELERATED WAJIB DISEBUT SENDIRI, dan ini kekeliruan
-            // yang paling mahal di berkas ini: jendela yang dibuat sebuah
-            // LAYANAN tidak mewarisi akselerasi dari mana pun (yang mewarisinya
-            // jendela milik Activity, dari temanya). WebView tanpa akselerasi
-            // menggambar PUTIH POLOS - halamannya benar-benar dimuat, tidak ada
-            // satu pun galat, cuma tidak pernah sampai ke layar. Yang terbaca
-            // "aplikasinya kosong sesudah pemasangan yang susah payah".
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+            // dan kotak yang tidak bisa diketik membatalkan seluruh gunanya.
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT
         )
         p.gravity = Gravity.TOP or Gravity.START
@@ -209,13 +190,14 @@ class LayananBulatan : Service() {
         wm.addView(isi, p)
         panel = isi
         pPanel = p
-        isi.requestFocus()
-        muat()
+        ketik?.requestFocus()
     }
 
     private fun kecilkan() {
+        simpanNaskah()
         lepas(panel)
         panel = null
+        ketik = null
         bulatan?.visibility = View.VISIBLE
     }
 
@@ -232,87 +214,45 @@ class LayananBulatan : Service() {
             isFocusableInTouchMode = true
         }
 
-        val kepala = LinearLayout(konteks).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setBackgroundResource(R.drawable.kepala_alas)
-        }
+        akar.addView(susunKepala(), LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, (38 * d.density).toInt()
+        ))
 
-        val judul = TextView(konteks).apply {
-            // Namanya cuma dibaca dari strings.xml, tidak pernah ditulis di
-            // dalam kode - aturan yang sama dengan bawaan.js di aplikasi web.
-            text = getString(R.string.tarik_untuk_ukur)
-            textSize = 12f
-            setTextColor(0xFF6B6B66.toInt())
-            setPadding((14 * d.density).toInt(), 0, 0, 0)
-        }
-        kepala.addView(
-            judul,
-            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        )
-        // Menyeret kepalanya mengubah tinggi jendelanya. Ukuran yang benar cuma
-        // diketahui waktu dipakai - papan ketik yang berbeda dan aplikasi yang
-        // dilihat di sebelahnya berbeda tiap kali - jadi angka apa pun yang
-        // dipatok akan salah di pemakaian yang tidak ditebak.
-        kepala.setOnTouchListener(SeretUkur())
-
-        kepala.addView(tombol(R.string.tbl_kecil) { kecilkan() })
-        kepala.addView(tombol(R.string.tbl_tutup) {
-            pref.edit().putBoolean(PREF_NYALA, false).apply()
-            stopSelf()
-        })
-
-        akar.addView(
-            kepala,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                (38 * d.density).toInt()
-            )
-        )
-
-        // WebView-nya ditumpuk dengan satu baris kabar. Petak putih polos itu
-        // laporan yang SALAH tentang keadaan yang benar - dia menyuruh orang
-        // memasang ulang, padahal yang kurang mungkin cuma sinyal. Kabarnya
-        // pergi sendiri begitu halamannya benar-benar tergambar.
-        val tumpuk = FrameLayout(konteks)
-        tumpuk.addView(
-            ambilWeb(),
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        )
-        kabarMuat = TextView(konteks).apply {
-            textSize = 14f
-            gravity = Gravity.CENTER
-            setTextColor(0xFF6B6B66.toInt())
-            val t = (16 * d.density).toInt()
+        val e = EditText(konteks).apply {
+            setText(pref.getString(PREF_NASKAH, "") ?: "")
+            setSelection(text.length)
+            hint = getString(R.string.tulis_hint)
+            gravity = Gravity.TOP or Gravity.START
+            textSize = 16f
+            setTextColor(0xFF33322E.toInt())
+            setHintTextColor(0xFF9A9A93.toInt())
+            setBackgroundColor(0x00000000)
+            val t = (14 * d.density).toInt()
             setPadding(t, t, t, t)
-            setBackgroundColor(0xFFF5F5F3.toInt())
-            // Ketukan di kabarnya MEMUAT ULANG: yang membacanya sedang menunggu
-            // sesuatu terjadi, dan pesan yang tidak punya jalan keluar sama
-            // diamnya dengan petak putih tadi.
-            setOnClickListener { web?.loadUrl(ALAMAT) }
+            // Naskahnya disimpan tiap ketukan, bukan waktu ditutup: yang dilawan
+            // di sini bukan tombol silang, tapi sistem yang membunuh prosesnya
+            // diam-diam waktu memori sempit - dan kalimat yang hilang begitu
+            // tidak pernah kamu curigai sampai kamu membukanya lagi.
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+                override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    pref.edit().putString(PREF_NASKAH, s?.toString() ?: "").apply()
+                }
+            })
         }
-        tumpuk.addView(
-            kabarMuat,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        )
-        perbaruiKabar()
+        ketik = e
+        akar.addView(e, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+        ))
 
-        akar.addView(
-            tumpuk,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
-            )
-        )
+        akar.addView(susunDok(), LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ))
 
         // Tombol Kembali HP mengecilkan, tidak menutup: jendela yang lenyap
-        // waktu tombol Kembali ditekan membuang tulisan yang sedang diketik,
-        // dan itu tidak bisa dibatalkan.
+        // waktu tombol Kembali ditekan membuang tulisan yang sedang diketik.
         akar.setOnKeyListener { _, kode, ev ->
             if (kode == KeyEvent.KEYCODE_BACK && ev.action == KeyEvent.ACTION_UP) {
                 kecilkan(); true
@@ -321,28 +261,79 @@ class LayananBulatan : Service() {
         return akar
     }
 
+    private fun susunKepala(): View {
+        val d = resources.displayMetrics
+        val kepala = LinearLayout(konteks).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setBackgroundResource(R.drawable.kepala_alas)
+        }
+        kepala.addView(
+            TextView(konteks).apply {
+                text = getString(R.string.tarik_untuk_ukur)
+                textSize = 12f
+                setTextColor(0xFF6B6B66.toInt())
+                setPadding((14 * d.density).toInt(), 0, 0, 0)
+            },
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        )
+        // Menyeret kepalanya mengubah tinggi jendelanya. Ukuran yang benar cuma
+        // diketahui waktu dipakai - papan ketik dan aplikasi yang dilihat di
+        // sebelahnya berbeda tiap kali - jadi angka apa pun yang dipatok akan
+        // salah di pemakaian yang tidak ditebak.
+        kepala.setOnTouchListener(SeretUkur())
+        kepala.addView(tombolIkon(R.string.tbl_kecil) { kecilkan() })
+        kepala.addView(tombolIkon(R.string.tbl_tutup) {
+            pref.edit().putBoolean(PREF_NYALA, false).apply()
+            stopSelf()
+        })
+        return kepala
+    }
+
+    /**
+     * Baris tombolnya dibaca dari KANAN - jempol kanan bertumpu di sudut kanan
+     * bawah - jadi yang paling sering ditekan duduk paling kanan. Di sini itu
+     * Salin: yang ditulis di kotak ini hampir selalu berakhir ditempelkan ke
+     * jendela obrolan sebelah. "Bersihkan" duduk paling jauh, karena dia
+     * satu-satunya yang tidak bisa dibatalkan.
+     */
+    private fun susunDok(): View {
+        val d = resources.displayMetrics
+        val dok = LinearLayout(konteks).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            val t = (8 * d.density).toInt()
+            setPadding(t, t, t, t)
+        }
+        dok.addView(tombolTeks(R.string.tbl_bersihkan) {
+            ketik?.setText("")
+            pref.edit().putString(PREF_NASKAH, "").apply()
+        })
+        dok.addView(View(konteks), LinearLayout.LayoutParams(0, 1, 1f))
+        dok.addView(tombolTeks(R.string.tbl_kirim) { kirim() })
+        dok.addView(tombolTeks(R.string.tbl_salin) { salin() })
+        return dok
+    }
+
     private inner class SeretUkur : View.OnTouchListener {
         private var t0 = 0
         private var jariY = 0f
 
         override fun onTouch(v: View, e: MotionEvent): Boolean {
             val p = pPanel ?: return false
+            val layar = resources.displayMetrics.heightPixels
             when (e.action) {
                 MotionEvent.ACTION_DOWN -> {
                     t0 = p.height; jariY = e.rawY; return true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    val layar = resources.displayMetrics.heightPixels
                     p.height = (t0 + (e.rawY - jariY)).toInt()
                         .coerceIn((layar * TINGGI_MIN).toInt(), (layar * TINGGI_MAKS).toInt())
                     panel?.let { wm.updateViewLayout(it, p) }
                     return true
                 }
                 MotionEvent.ACTION_UP -> {
-                    val layar = resources.displayMetrics.heightPixels
-                    pref.edit()
-                        .putFloat(PREF_TINGGI, p.height.toFloat() / layar)
-                        .apply()
+                    pref.edit().putFloat(PREF_TINGGI, p.height.toFloat() / layar).apply()
                     return true
                 }
             }
@@ -350,96 +341,76 @@ class LayananBulatan : Service() {
         }
     }
 
-    private fun tombol(teks: Int, kerja: () -> Unit): TextView {
+    private fun tombolIkon(teks: Int, kerja: () -> Unit): TextView {
         val d = resources.displayMetrics
         return TextView(konteks).apply {
             text = getString(teks)
             textSize = 16f
             gravity = Gravity.CENTER
             setTextColor(0xFF33322E.toInt())
-            // 44px sasaran sentuh, aturan yang sama dengan aplikasi webnya.
+            // 44dp sasaran sentuh, aturan yang sama dengan aplikasi webnya.
             val sisi = (44 * d.density).toInt()
             layoutParams = LinearLayout.LayoutParams(sisi, sisi)
             setOnClickListener { kerja() }
         }
     }
 
-    /* ---------- web ---------- */
+    private fun tombolTeks(teks: Int, kerja: () -> Unit): TextView {
+        val d = resources.displayMetrics
+        return TextView(konteks).apply {
+            text = getString(teks)
+            textSize = 15f
+            gravity = Gravity.CENTER
+            setTextColor(0xFF33322E.toInt())
+            setBackgroundResource(R.drawable.tombol_alas)
+            val x = (16 * d.density).toInt()
+            val y = (11 * d.density).toInt()
+            setPadding(x, y, x, y)
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            lp.leftMargin = (6 * d.density).toInt()
+            layoutParams = lp
+            setOnClickListener { kerja() }
+        }
+    }
+
+    /* ---------- perbuatan ---------- */
+
+    private fun naskah(): String = ketik?.text?.toString() ?: ""
+
+    private fun simpanNaskah() {
+        val e = ketik ?: return
+        pref.edit().putString(PREF_NASKAH, e.text.toString()).apply()
+    }
+
+    private fun salin() {
+        val teks = naskah()
+        if (teks.isBlank()) return
+        val papan = getSystemService(ClipboardManager::class.java)
+        papan.setPrimaryClip(ClipData.newPlainText(getString(R.string.nama_app), teks))
+        Toast.makeText(this, getString(R.string.kabar_salin), Toast.LENGTH_SHORT).show()
+    }
 
     /**
-     * WebView-nya HIDUP TERUS, bahkan waktu jendelanya dikecilkan. Yang dilepas
-     * cuma pemasangannya di layar. Sebabnya satu: tulisan yang belum di-drop
-     * tinggal di DOM, dan menghancurkan WebView-nya berarti kalimat setengah
-     * jadi hilang tiap kali kamu menoleh ke aplikasi sebelah - persis kejadian
-     * yang bikin cangkang ini dibuat.
+     * Kirim memakai tombol Bagikan Android, dan itu disengaja: aplikasi webnya
+     * sudah punya penerima "Bagikan" yang teruji (share_target di manifest-nya),
+     * jadi yang ditulis di sini mendarat di timbunan yang SAMA. Dua jalur masuk
+     * yang menghasilkan dua tumpukan adalah cara tercepat membuat satu timbunan
+     * jadi dua yang tidak pernah bertemu.
      */
-    private fun ambilWeb(): WebView {
-        web?.let { lama ->
-            (lama.parent as? android.view.ViewGroup)?.removeView(lama)
-            return lama
+    private fun kirim() {
+        val teks = naskah()
+        if (teks.isBlank()) return
+        val i = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, teks)
         }
-        val w = WebView(konteks)
-        w.settings.apply {
-            javaScriptEnabled = true
-            // IndexedDB-nya seluruh aplikasi bergantung pada ini.
-            domStorageEnabled = true
-            databaseEnabled = true
-            mediaPlaybackRequiresUserGesture = false
-            useWideViewPort = true
-            loadWithOverviewMode = false
-        }
-        WebView.setWebContentsDebuggingEnabled(true)
-        w.webViewClient = object : WebViewClient() {
-            override fun onPageStarted(v: WebView?, url: String?, ikon: Bitmap?) {
-                galatMuat = null
-                perbaruiKabar()
-            }
-
-            override fun onReceivedError(
-                v: WebView, permintaan: WebResourceRequest, galat: WebResourceError
-            ) {
-                // Cuma bingkai UTAMA. Satu gambar yang gagal diambil bukan
-                // alasan menutupi halaman yang sebenarnya sudah tergambar.
-                if (!permintaan.isForMainFrame) return
-                galatMuat = galat.description?.toString()
-                sudahMuat = false
-                perbaruiKabar()
-            }
-
-            override fun onPageFinished(v: WebView?, url: String?) {
-                if (galatMuat == null) sudahMuat = true
-                perbaruiKabar()
-            }
-        }
-        w.webChromeClient = object : WebChromeClient() {
-            override fun onPermissionRequest(req: PermissionRequest) {
-                // Kamera di dalam WebView minta izinnya dua kali: sekali ke
-                // Android (dilakukan LayarMulai) dan sekali ke halamannya.
-                req.grant(req.resources)
-            }
-        }
-        web = w
-        return w
-    }
-
-    private fun muat() {
-        val w = web ?: return
-        if (w.url == null) w.loadUrl(ALAMAT)
-    }
-
-    private fun perbaruiKabar() {
-        val t = kabarMuat ?: return
-        when {
-            galatMuat != null -> {
-                t.text = getString(R.string.muat_galat, galatMuat)
-                t.visibility = View.VISIBLE
-            }
-            sudahMuat -> t.visibility = View.GONE
-            else -> {
-                t.text = getString(R.string.muat_jalan)
-                t.visibility = View.VISIBLE
-            }
-        }
+        val pilih = Intent.createChooser(i, getString(R.string.tbl_kirim))
+        pilih.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        kecilkan()
+        startActivity(pilih)
     }
 
     /* ---------- kabar ---------- */
