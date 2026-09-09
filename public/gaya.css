@@ -1997,3 +1997,39 @@ body:has(.layar.pas-layar.aktif){height:var(--tampak, 100%);overflow:hidden}
 /* Disebut terang-terangan, bukan didiamkan: baris yang kelihatan bisa diketuk
    tapi diam waktu ditekan terbaca sebagai aplikasi yang rusak. */
 .pintu-kunci{flex:0 0 auto;font-size:11.5px;color:var(--m)}
+
+/* ===== JENDELA PENDEK =====
+   DITARUH DI EKOR BERKAS, dan itu wajib: '@media' TIDAK menambah kekhususan,
+   jadi '.kotak' di dalamnya kalah dari '.kotak' biasa yang ditulis di baris
+   yang lebih bawah. Sempat ditaruh di atas dan hasilnya kotaknya tetap 140px
+   tanpa satu galat pun - aturan yang kalah diam-diam adalah cacat CSS yang
+   paling lama tidak ketahuan.
+   Ini bukan HP kecil - ini Cortex yang dibuka sebagai JENDELA MELAYANG di atas
+   aplikasi lain (pop-up view Samsung, freeform window, split screen). Kasusnya
+   nyata dan spesifik: mengetik prompt panjang sambil membaca jawaban di
+   aplikasi sebelah, tanpa harus pulang ke home screen dulu.
+
+   Di jendela 360x420, sepertiga tingginya habis untuk nama aplikasi, jarak
+   tepi, dan kepala - dan kotak teksnya cuma kebagian tiga baris. Padahal yang
+   dibuka orang di jendela sekecil itu CUMA kotaknya; dia sudah tahu aplikasi
+   apa yang dia buka, dan nama merek di kepala tidak menjawab satu pertanyaan
+   pun.
+
+   Yang dipangkas cuma HIASAN dan JARAK. Tidak ada satu tombol pun yang hilang:
+   baris pintu tetap lima, gerigi Setelan tetap ada, hasil pencarian tetap
+   digambar - kalau ada yang dibuang, jendela pendek jadi aplikasi kedua yang
+   isinya beda, dan jarinya harus belajar dua tempat. */
+@media (max-height: 560px) {
+  .layar{
+    padding:calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 8px);
+  }
+  .atas{margin-bottom:8px}
+  .atas.rapat{margin-bottom:6px}
+  /* Namanya yang pergi, gerigi Setelannya TIDAK: yang satu hiasan, yang satu
+     satu-satunya jalan ke setelan dari layar ini. */
+  .merek{display:none}
+  .tab-baris{margin-bottom:6px}
+  /* Harus ikut naik bersama tinggiKotakMaks() di alur.js - kalau cuma satu
+     yang naik, yang satunya lagi yang jadi batas sebenarnya, diam-diam. */
+  .kotak{max-height:220px}
+}
