@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Izin bulatannya. SYSTEM_ALERT_WINDOW satu-satunya jalan yang berlaku
+         di semua merek: Bubbles API Android 11+ dikunci untuk percakapan
+         (wajib sharing shortcut + MessagingStyle + Person), dan aplikasi
+         catatan tidak pernah memenuhi syarat itu. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!-- Layanan latar depan menahan bulatannya tetap hidup. Tanpa ini sistem
+         membunuhnya begitu memori sempit, dan yang terbaca bukan "dibersihkan
+         sistem" tapi "aplikasinya hilang sendiri". -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/nama_app"
+        android:supportsRtl="true"
+        android:theme="@style/Tema">
+
+        <activity
+            android:name=".LayarMulai"
+            android:exported="true"
+            android:label="@string/nama_app">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".LayananBulatan"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="jendela melayang di atas aplikasi lain" />
+        </service>
+
+        <!-- Ubin Setelan Cepat: jalan kedua memanggil bulatannya, dan yang
+             paling pemaaf di jari - tarik bilah atas lalu satu ketukan besar.
+             Ada karena bulatannya bisa mati (ditekan silang, HP restart), dan
+             jalan satu-satunya yang mengharuskan pulang ke layar depan persis
+             friksi yang mau dihapus cangkang ini. -->
+        <service
+            android:name=".UbinCepat"
+            android:exported="true"
+            android:icon="@drawable/ikon_bulatan"
+            android:label="@string/nama_app"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name=".PenerimaNyala"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+</manifest>
