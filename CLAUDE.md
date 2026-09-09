@@ -1250,9 +1250,16 @@ public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
                     bukan setelan). Yang dibuka orang di layar ini
                     kalkulatornya, bukan catatan hitungannya, dan panel yang
                     selalu terbuka merampas tinggi dari papan tombol untuk
-                    sesuatu yang dilihat sekali dari sepuluh kali. Tombol jamnya
-                    cuma digambar kalau memang ada isinya - tombol yang membuka
-                    panel kosong menjanjikan sesuatu lalu tidak memberi apa-apa.
+                    sesuatu yang dilihat sekali dari sepuluh kali.
+                    TOMBOL JAMNYA SELALU ADA, walau riwayatnya kosong. Dulu dia
+                    ikut hilang waktu kosong, dan akibatnya yang belum pernah
+                    menekan C tidak pernah tahu riwayatnya ada sama sekali -
+                    fitur yang cuma muncul sesudah kamu kebetulan memakainya
+                    tidak akan pernah ditemukan. Waktu kosong dia menjawab
+                    dengan CARA MENGISINYA ("tekan C untuk menyimpan
+                    hitungan"), bukan dengan panel kosong: yang menekannya
+                    sedang bertanya "apa ini?", dan itu satu-satunya tempat
+                    aturan "C menandai satu hitungan selesai" bisa terbaca.
                     "Bersihkan" ikut MENUTUP, bukan cuma mengosongkan: dia
                     dibaca sebagai "sudah, selesai dengan ini", dan panel yang
                     membuka dirinya sendiri lagi di hitungan berikutnya
@@ -1320,17 +1327,25 @@ public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
                     "tidak melakukan apa-apa", dan itu keluhan yang masuk.
                     Kanan '.hitung-ketik' dikasih 2px supaya karet di ujung
                     kalimat tidak terpotong tepi kotak yang menggulir.
-                    GEROMBOLAN SUNTINGNYA NUMPANG DI SUDUT KIRI ATAS layarnya
-                    (absolute), tidak mengambil satu baris pun, dan MIKRO
-                    (22px). Isinya TIGA: riwayat, tempel, salin. Dulu dia
-                    baris sendiri di bawah hasil: memakan
+                    LAJUR SUNTINGNYA TEGAK DI KIRI, DI LUAR KOTAK YANG
+                    MENGGULIR, dan MIKRO (22px). Isinya TIGA: riwayat, tempel,
+                    salin. Dua bentuk sebelumnya dua-duanya salah. (1) Baris
+                    sendiri di bawah hasil: memakan
                     tinggi dari papan tombol DAN menaruh empat kotak abu-abu
                     tepat di jalur baca angkanya. Yang dibaca mata di kotak itu
                     angkanya, dan angkanya rata kanan - jadi sudut kiri atas
-                    memang kosong; '.hitung-ketik' dapat padding-left selebar
-                    gerombolannya supaya angka panjang tidak menyelinap di
-                    bawahnya. 26px itu SATU-SATUNYA tempat di aplikasi ini yang
-                    melanggar sasaran sentuh 44px, dan itu disengaja: keempatnya
+                    memang kosong. (2) Dipatok ABSOLUTE di atas teksnya dengan
+                    padding-left selebar gerombolannya - dan itu keliru untuk
+                    kotak yang MENGGULIR MENDATAR: paddingnya ikut tergulir
+                    bersama isinya, jadi begitu kalimatnya lebih panjang dari
+                    layar, ekornya lewat di BAWAH tombolnya. Yang terbaca angka
+                    yang tertimpa ikon, dan itu keluhan yang masuk.
+                    Sekarang dua kolom biasa: lajur tombol, lalu teksnya
+                    ('.hitung-teks'). TEGAK, bukan mendatar: yang dibayar cuma
+                    22px lebar, sementara bertiga mendatar memakan 74px dari
+                    lebar yang justru dibutuhkan angka panjang.
+                    22px itu SATU-SATUNYA tempat di aplikasi ini yang
+                    melanggar sasaran sentuh 44px, dan itu disengaja: ketiganya
                     jalan pintas yang punya jalan lain yang lebih besar (ketuk
                     layarnya untuk karet, papan ketik untuk tempel). Yang tidak
                     boleh mengecil tombol yang tidak punya jalan lain.
@@ -1508,7 +1523,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (1000 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (1002 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 
