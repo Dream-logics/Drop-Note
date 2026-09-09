@@ -1485,6 +1485,40 @@ public/alur.js      BARIS PINTUNYA MILIK PEMAKAINYA ('pintuUtama' di setelan,
                     meleset di layar yang lain. Dipatok dari KANAN - tombol
                     Tools duduk di ujung kanan baris, dan menu yang tumbuh ke
                     kanan dari situ keluar layar.
+public/gaya.css     (lanjutan) JENDELA PENDEK (@media max-height:560px, DI EKOR
+                    BERKAS). Ini bukan HP kecil - ini Cortex yang dibuka
+                    sebagai JENDELA MELAYANG di atas aplikasi lain (pop-up view
+                    Samsung, freeform, split screen). Kasusnya nyata dan
+                    spesifik: mengetik prompt panjang sambil membaca jawaban di
+                    aplikasi sebelah, tanpa pulang ke home screen dulu.
+                    Di jendela 360x420, sepertiga tingginya habis untuk nama
+                    aplikasi dan jarak tepi, dan kotaknya cuma kebagian tiga
+                    baris. Yang dipangkas CUMA HIASAN DAN JARAK: nama merek
+                    pergi (di jendela sekecil itu dia tidak menjawab satu
+                    pertanyaan pun), padding mengecil. Gerigi Setelan TETAP -
+                    dia satu-satunya jalan ke setelan dari layar itu - dan
+                    KELIMA PINTUNYA TETAP UTUH. Kalau jendela pendek membuang
+                    tombol, dia jadi aplikasi kedua yang isinya beda, dan
+                    jarinya harus belajar dua tempat.
+                    WAJIB DI EKOR BERKAS: '@media' TIDAK menambah kekhususan,
+                    jadi '.kotak' di dalamnya kalah dari '.kotak' biasa yang
+                    ditulis di baris lebih bawah. Sempat ditaruh di atas dan
+                    hasilnya kotaknya tetap 140px tanpa satu galat pun - aturan
+                    yang kalah diam-diam adalah cacat CSS yang paling lama tidak
+                    ketahuan.
+                    BATAS TUMBUH KOTAKNYA IKUT TINGGI JENDELA
+                    (tinggiKotakMaks() di alur.js, dan '.kotak{max-height}'
+                    HARUS ikut naik bersamanya - kalau cuma satu yang naik,
+                    yang satunya jadi batas sebenarnya, diam-diam). 140px benar
+                    di HP setinggi layar penuh: di situ kotak yang mengembang
+                    terus mendorong hasil pencarian keluar, dan hasil itu yang
+                    paling sering dilihat. Tapi di jendela melayang tidak ada
+                    hasil yang diperebutkan - yang dilakukan di situ MENGETIK -
+                    dan 140px di jendela 420px berarti tiga baris. Diukur dari
+                    tinggi jendelanya (40%, maks 220), bukan dipatok angka
+                    kedua: jendela melayang ukurannya diseret jari, jadi angka
+                    apa pun yang ditebak akan salah di ukuran yang tidak
+                    ditebak.
 public/sw.js        service worker — singgahan kerangka + penerima "Bagikan".
                     SATU MUATAN SELALU SATU GENERASI, dan itu perbaikan atas
                     cacat yang menghasilkan laporan lapangan yang tidak masuk
@@ -1523,7 +1557,7 @@ docs/mockup/        sumber mockup UI (3 arah; yang dipilih: B)
 bukan cuma lolos `node --check`. Empat layarnya hidup, bisa dipasang di HP,
 menerima tombol Bagikan dari aplikasi lain, dan terbuka penuh tanpa sinyal.
 
-Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (1002 lulus).
+Sebelum menyentuh kode, jalankan dulu `node uji/uji-terima.mjs` (1009 lulus).
 Kalau ada satu saja yang gagal setelah suntinganmu, kemungkinan besar yang
 bocor adalah salah satu aturan di atas — bukan sekadar uji yang rewel.
 

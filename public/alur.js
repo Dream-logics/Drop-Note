@@ -870,6 +870,24 @@
      mendorong tombol Drop keluar layar tepat saat mau ditekan. */
   var TINGGI_KOTAK_MAKS = 140;
 
+  /* DI JENDELA PENDEK BATASNYA NAIK, dan itu bukan pengecualian yang malas.
+     140px benar di HP setinggi layar penuh: di situ kotak yang mengembang
+     terus akan mendorong hasil pencarian keluar, dan hasil itu yang paling
+     sering dilihat. Tapi Cortex yang dibuka sebagai JENDELA MELAYANG di atas
+     aplikasi lain dipakai untuk satu hal saja - MENGETIK sesuatu yang panjang
+     sambil membaca aplikasi sebelah - dan di sana tidak ada hasil pencarian
+     yang sedang diperebutkan. Batas 140 di jendela 420px berarti tiga baris,
+     dan tiga baris untuk prompt yang panjang berarti kamu mengetik sambil
+     mengintip lewat celah.
+     Diukur dari tinggi jendelanya, bukan dipatok angka kedua: jendela melayang
+     ukurannya diseret jarinya, jadi angka apa pun yang kutebak akan salah di
+     ukuran yang tidak kutebak. */
+  function tinggiKotakMaks() {
+    var t = global.innerHeight || 0;
+    if (!t || t > 560) return TINGGI_KOTAK_MAKS;
+    return Math.min(220, Math.round(t * 0.40));
+  }
+
   /* ===================== TEKS BAYANGAN & GUDANG =====================
      Melengkapi nama gudang sambil diketik, di dalam kotaknya. Yang dilengkapi
      cuma nama gudang yang SUDAH ada, dan cuma di dua kata pertama - sesudah
@@ -1057,7 +1075,7 @@
     if (!k) return;
     setelIkonKotak();
     k.style.height = 'auto';
-    k.style.height = Math.min(k.scrollHeight, TINGGI_KOTAK_MAKS) + 'px';
+    k.style.height = Math.min(k.scrollHeight, tinggiKotakMaks()) + 'px';
     var b = $('#kotak-bayang');
     if (b) b.style.height = k.style.height;
   }

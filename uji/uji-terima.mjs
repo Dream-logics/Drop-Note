@@ -8236,6 +8236,72 @@ console.log('\nseperempat layar di desktop');
       (await ukur({}, { availWidth: 412, availHeight: 915 }, 'standalone')) === null);
 }
 
+console.log('\njendela pendek: Cortex sebagai jendela melayang');
+{
+  /* KASUSNYA NYATA DAN SPESIFIK: Cortex dibuka sebagai jendela melayang di
+     atas aplikasi lain (pop-up view Samsung, freeform, split screen), untuk
+     mengetik prompt panjang sambil membaca jawaban di aplikasi sebelah.
+     Di jendela 360x420 sepertiga tingginya dulu habis untuk nama aplikasi dan
+     jarak tepi, dan kotaknya cuma kebagian tiga baris. */
+  const halP = await konteks.newPage();
+  halP.on('pageerror', (e) => galat.push('[jendela pendek] ' + e.message));
+  await halP.setViewportSize({ width: 360, height: 420 });
+  await halP.goto(alamat);
+  await halP.waitForFunction(() => window.TAlur);
+  await halP.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
+  await halP.waitForTimeout(400);
+  const panjang = 'ini prompt panjang yang aku susun sambil membaca jawaban di ' +
+                  'aplikasi sebelah, isinya beberapa kalimat supaya kotaknya ' +
+                  'benar-benar sampai ke batas tumbuhnya';
+  await halP.fill('#kotak', panjang);
+  await halP.waitForTimeout(400);
+
+  cek('di jendela pendek pun tidak ada yang meluber',
+      (await halP.evaluate(() =>
+        document.documentElement.scrollHeight - window.innerHeight)) <= 0);
+  /* Yang dipangkas cuma HIASAN. Nama aplikasinya pergi - di jendela sekecil
+     itu dia tidak menjawab satu pertanyaan pun; gerigi Setelannya TIDAK,
+     karena dia satu-satunya jalan ke setelan dari layar ini. */
+  cek('nama aplikasinya pergi, gerigi Setelannya tetap',
+      (await halP.locator('#merek').isHidden()) &&
+      (await halP.locator('#b-setelan').isVisible()));
+  /* TIDAK ADA SATU PINTU PUN YANG HILANG: kalau jendela pendek membuang
+     tombol, dia jadi aplikasi kedua yang isinya beda, dan jarinya harus
+     belajar dua tempat. */
+  cek('kelima pintunya tetap utuh, tidak ada yang dibuang',
+      (await halP.locator('#l-utama [data-tab-ke]').count()) === 5);
+  /* Batas tumbuh kotaknya IKUT TINGGI JENDELA. 140px benar di HP setinggi
+     layar penuh, tapi di jendela 420px itu tiga baris - dan tiga baris untuk
+     prompt panjang berarti mengetik sambil mengintip lewat celah. */
+  const tinggiKotak = await halP.evaluate(() =>
+    Math.round(document.querySelector('#kotak').getBoundingClientRect().height));
+  cek('kotaknya boleh tumbuh lebih tinggi daripada batas layar penuh',
+      tinggiKotak > 140, tinggiKotak + 'px');
+  /* Tapi tombol Drop-nya tetap kena jempol - kotak yang mengembang terus
+     mendorong tombolnya keluar layar tepat waktu mau ditekan. */
+  cek('dan tombol Drop-nya tetap terlihat seluruhnya',
+      await halP.evaluate(() => {
+        const b = [...document.querySelectorAll('#dok button')]
+          .find((x) => /drop/i.test(x.textContent) || x.id === 'b-drop');
+        if (!b) return false;
+        const r = b.getBoundingClientRect();
+        return r.top >= 0 && r.bottom <= window.innerHeight;
+      }));
+  /* Di layar penuh batasnya TIDAK ikut naik: di situ kotak yang mengembang
+     terus mendorong hasil pencarian keluar, dan hasil itu yang paling sering
+     dilihat. */
+  await halP.setViewportSize({ width: 412, height: 915 });
+  await halP.waitForTimeout(400);
+  await halP.fill('#kotak', panjang);
+  await halP.waitForTimeout(400);
+  cek('di layar penuh batasnya kembali 140px, tidak ikut melar',
+      (await halP.evaluate(() =>
+        Math.round(document.querySelector('#kotak').getBoundingClientRect().height))) <= 140);
+  cek('dan nama aplikasinya kembali',
+      await halP.locator('#merek').isVisible());
+  await halP.close();
+}
+
 console.log('\nshortcut layar home Android');
 {
   /* Manifest 'shortcuts' membuat Android menaruh "Tulis" dan "Kamera" di menu
