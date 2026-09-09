@@ -13,14 +13,18 @@ restart, dan satu ubin di Setelan Cepat.
 ## Memasang
 
 APK-nya tidak dibangun di sini — lingkungan tempat kodenya ditulis tidak punya
-Android SDK. Yang membangun GitHub Actions:
+Android SDK. Yang membangun GitHub Actions, dan hasilnya selalu ada di satu
+alamat yang tidak pernah berganti:
 
-1. Buka tab **Actions** → alur kerja **Cangkang** → jalankan (atau tunggu
-   dorongan berikutnya yang menyentuh `cangkang/`).
-2. Unduh artefak **cangkang-apk**, buka zip-nya.
-3. Pasang APK-nya di HP (izinkan "pasang dari sumber ini" waktu ditanya).
-4. Buka aplikasinya sekali → **Nyalakan bulatan** → beri izin
+**https://github.com/Dream-logics/Drop-Note/releases/download/cangkang/cangkang.apk**
+
+1. Ketuk tautan itu di HP (tidak perlu masuk akun, bukan zip).
+2. Pasang (izinkan "pasang dari sumber ini" waktu ditanya).
+3. Buka aplikasinya sekali → **Nyalakan bulatan** → beri izin
    *"tampilkan di atas aplikasi lain"*.
+
+Tiap dorongan ke `main` yang menyentuh `cangkang/` menimpa berkas di alamat itu,
+jadi tautannya tidak pernah perlu dicari ulang.
 
 Sesudah itu layar ini tidak perlu dibuka lagi.
 
