@@ -109,10 +109,10 @@ class LayarMulai : AppCompatActivity() {
     }
 
     /**
-     * Kabar dan kamera diminta di sini, bukan waktu dibutuhkan: dialog izin
-     * cuma bisa muncul dari sebuah layar, dan bulatannya berjalan di layanan
-     * yang tidak punya satu pun. Yang diminta belakangan tidak akan pernah
-     * sempat ditanyakan.
+     * Izin kabar diminta di sini, bukan waktu dibutuhkan: dialog izin cuma bisa
+     * muncul dari sebuah layar, dan bulatannya berjalan di layanan yang tidak
+     * punya satu pun. Yang diminta belakangan tidak akan pernah sempat
+     * ditanyakan.
      */
     private fun mintaIzinRingan() {
         val kurang = mutableListOf<String>()
@@ -120,10 +120,6 @@ class LayarMulai : AppCompatActivity() {
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
         ) kurang += Manifest.permission.POST_NOTIFICATIONS
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-            != PackageManager.PERMISSION_GRANTED
-        ) kurang += Manifest.permission.CAMERA
 
         if (kurang.isNotEmpty()) ActivityCompat.requestPermissions(this, kurang.toTypedArray(), 7)
     }
