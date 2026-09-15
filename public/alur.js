@@ -5728,7 +5728,8 @@
           kotak.innerHTML = 'Rumah di Drive: <b data-asli>' +
               H(rumah ? '…' + rumah.slice(-6) : '(belum ada)') + '</b>' +
             ' · terlihat: <b data-asli id="rumah-terlihat">…</b>' +
-            '<br>Terakhir menarik: <b>' + H(waktuPanjang(s.tarikBerhasil)) + '</b>' +
+            '<br>Terakhir memeriksa: <b>' + H(waktuPanjang(s.tarikCek || s.tarikBerhasil)) + '</b>' +
+            '<br>Terakhir benar-benar menarik: <b>' + H(waktuPanjang(s.tarikBerhasil)) + '</b>' +
             '<br>Terakhir mengirim: <b>' + H(waktuPanjang(s.cadanganBerhasil)) + '</b>' +
             ' · belum terkirim: <b>' + n + '</b>' +
             (s.tarikGalat ? '<br>Tarikan terakhir gagal: ' + H(s.tarikGalat) : '') +
@@ -5806,7 +5807,18 @@
         ket.textContent = 'Mengambil catatanmu dari perangkat lain…';
         return tarikSinkron(true);
       }).then(function () {
-        return putaranCadangan();
+        /* MENDORONG SEMUANYA, bukan cuma yang di antrean. Tombol ini satu-
+           satunya jalan keluar dari keadaan yang tidak bisa dilihat dari layar
+           mana pun: batas air yang terlanjur melewati seluruh isi perangkat.
+           Di keadaan itu antreannya kosong, layarnya melapor "belum terkirim:
+           0", dan tidak ada satu baris pun yang akan pernah naik lagi. Kalau
+           tombol ini ikut menghormati batas air itu, dia cuma mengulangi
+           laporan yang salah - dan pemakainya menekannya berkali-kali sambil
+           melihat angka yang tidak pernah berubah. */
+        ket.textContent = 'Mengirim semua catatan perangkat ini…';
+        return TSinkron.putaran(setelanSaat, true, true);
+      }).then(function () {
+        return muatSemua();
       }).then(gambarSetelan, function (err) {
         ket.textContent = 'Gagal: ' + err.message;
       });
@@ -5839,7 +5851,10 @@
          dan tidak punya tanda lain. Sisanya menulis ke perangkat sendiri dan
          sudah selesai sebelum sempat diberitakan. */
       pesanJalan('Menyalin ke Drive…');
-      TSinkron.putaran(setelanSaat, true).then(function (n) {
+      /* BORONG. Tombol ini ditekan justru waktu kamu tidak percaya pada
+         angka "belum terkirim: 0" - jadi dia harus bisa membantahnya, bukan
+         mengulanginya. Batas air dorongnya diabaikan seluruhnya. */
+      TSinkron.putaran(setelanSaat, true, true).then(function (n) {
         sekarang.textContent = 'Kirim sekarang';
         pesan(n ? n + ' catatan naik ke Drive' : (setelanSaat.cadanganGalat || 'Semua sudah tersalin'));
         perbaruiStatusSetelan();

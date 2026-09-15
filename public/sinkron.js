@@ -169,9 +169,56 @@
                 .sort(function (a, b) { return (a.diubah || 0) - (b.diubah || 0); });
   }
 
-  function belumTerkirim(setelan) {
+  /* ===== BATAS AIR TIDAK PERNAH BOLEH MELEWATI YANG DIMILIKI PERANGKAT INI ====
+     Ini cacat yang paling mahal di seluruh berkas, karena dia PERMANEN dan
+     SUNYI: begitu 'cadanganSampai' terlanjur menunjuk ke waktu yang lebih baru
+     daripada entri terbaru di perangkat ini, antrean() menyaring SEMUANYA -
+     selamanya. Yang terlihat di layar justru sempurna: "belum terkirim: 0",
+     "terakhir mengirim: 1 menit lalu". Tidak ada galat, tidak ada antrean,
+     dan tidak ada satu baris pun yang akan pernah naik lagi.
+
+     Jalannya lewat JAM. Satu entri yang turun dari perangkat lain membawa
+     'diubah' dari jam perangkat ITU. Kalau jamnya maju - dan jam HP yang
+     dipakai lintas zona waktu memang bisa maju - sekali entri itu ikut
+     didorong, batas airnya melompat ke masa depan. Sejak detik itu tiap
+     catatan yang kamu tulis punya 'diubah' yang lebih KECIL daripada batas
+     airnya sendiri, jadi dia tidak pernah masuk antrean. Laptopmu penuh, HP-mu
+     kosong, dan dua-duanya melapor sinkron.
+
+     Obatnya bukan mencegah - jam perangkat lain tidak bisa kita atur - tapi
+     MEMULIHKAN DIRI: batas air yang melewati entri terbaru di sini mustahil,
+     jadi dia dianggap 0. Ongkosnya satu dorongan ulang penuh, dan tulisBaris
+     menimpa berdasarkan id, jadi tidak ada yang berganda. Mendorong sekali
+     lagi tanpa perlu jauh lebih murah daripada berhenti mendorong selamanya -
+     aturan yang sama persis dengan tarikCap. */
+  function batasDorong(setelan, semua) {
     var sejak = Number(setelan && setelan.cadanganSampai) || 0;
-    return TSimpan.semua().then(function (semua) { return antrean(semua, sejak).length; });
+    if (!sejak) return 0;
+    var puncak = 0;
+    semua.forEach(function (e) {
+      var t = Number(e.diubah) || 0;
+      if (t > puncak) puncak = t;
+    });
+    return sejak > puncak ? 0 : sejak;
+  }
+
+  /* Batas air TARIKAN dijaga dengan cara yang sama, tapi patokannya JAM
+     SEKARANG - dia menyimpan modifiedTime spreadsheet, jam servernya Google,
+     dan waktu server yang jatuh di masa depan mustahil. Toleransinya satu jam:
+     jam perangkat yang meleset beberapa menit dari jam Google itu biasa, dan
+     menolaknya karena selisih kecil berarti menarik ulang tiap kali. */
+  var MAJU_MAKS = 60 * 60 * 1000;
+
+  function batasTarik(setelan) {
+    var lalu = Number(setelan && setelan.tarikCap) || 0;
+    if (!lalu) return 0;
+    return lalu > Date.now() + MAJU_MAKS ? 0 : lalu;
+  }
+
+  function belumTerkirim(setelan) {
+    return TSimpan.semua().then(function (semua) {
+      return antrean(semua, batasDorong(setelan, semua)).length;
+    });
   }
 
   /* ------------------------------------------------------------ satu putaran */
@@ -275,7 +322,7 @@
     });
   }
 
-  function putaran(setelan, paksa) {
+  function putaran(setelan, paksa, borong) {
     if (jalan || !nyala(setelan)) return Promise.resolve(0);
     if (!paksa && (Date.now() - (Number(setelan.cadanganDicoba) || 0)) < JEDA) {
       return Promise.resolve(0);
@@ -309,7 +356,13 @@
       })
       .then(function () { return TSimpan.semua(); })
       .then(function (semua) {
-        var antre = antrean(semua, Number(setelan.cadanganSampai) || 0);
+        /* BORONG: batas airnya diabaikan seluruhnya, semua didorong ulang.
+           Ini BUKAN 'paksa'. Paksa cuma melewati gerbang lima menit dan
+           dipakai tiap kali kamu nge-drop - kalau dia ikut mengabaikan batas
+           air, tiap satu catatan baru menyeret seluruh isi perangkat naik ke
+           Drive. Borong cuma dari tombol yang kamu tekan sendiri, dan gunanya
+           satu: memulihkan keadaan yang tidak bisa dilihat dari layar mana pun. */
+        var antre = antrean(semua, borong ? 0 : batasDorong(setelan, semua));
         if (!antre.length) return 0;
 
         var potongan = [];
@@ -323,7 +376,11 @@
           return rantai.then(function () {
             return TAwan.tulisBaris(setelan, sarang, bagian.map(pipihkan)).then(function () {
               naik += bagian.length;
-              return catat(setelan, 'cadanganSampai', bagian[bagian.length - 1].diubah || Date.now());
+              /* Yang dicatat 'diubah' entri terakhir apa adanya. JANGAN pernah
+                 Date.now() di sini: jam lokal yang lebih maju daripada entrinya
+                 sendiri adalah cara batas air ini teracuni, dan sekali teracuni
+                 dia menyaring semuanya tanpa satu pesan pun. */
+              return catat(setelan, 'cadanganSampai', Number(bagian[bagian.length - 1].diubah) || 0);
             });
           });
         }, Promise.resolve()).then(function () { return naik; });
@@ -541,7 +598,7 @@
   function tarik(setelan, paksa) {
     if (menarik || !nyala(setelan)) return Promise.resolve(0);
     menarik = true;
-    var sarang = null, ubah = 0;
+    var sarang = null, ubah = 0, lewat = false;
     return samakanRumah(setelan).then(function () {
       return rumah(setelan);
     }).then(function (r) {
@@ -571,8 +628,8 @@
          Sekarang capnya cuma diisi kalau waktunya MEMANG dari Google. Kalau
          tidak terbaca, tariknya tetap jalan dan capnya dibiarkan - lebih baik
          menarik sekali lagi tanpa perlu daripada berhenti menarik selamanya. */
-      var lalu = Number(setelan.tarikCap) || 0;
-      if (!paksa && waktu && waktu <= lalu) return 0;
+      var lalu = batasTarik(setelan);
+      if (!paksa && waktu && waktu <= lalu) { lewat = true; return 0; }
       return pulihkan(setelan).then(function (n) {
         /* Batas airnya dimajukan SESUDAH berhasil, bukan sebelum: tarikan yang
            putus di tengah harus diulang, bukan dilewati. */
@@ -585,7 +642,20 @@
          bukan "berapa yang turun" tapi "kapan terakhir dia benar-benar
          memeriksa" - dan "tidak ada yang baru" itu pemeriksaan yang berhasil,
          bukan yang gagal. */
-      return catat(setelan, 'tarikBerhasil', Date.now())
+      /* ===== DUA WAKTU, BUKAN SATU =====
+         Baris di Setelan dulu satu: "Terakhir menarik". Dia dicatat walau
+         tarikannya DILEWATI karena modifiedTime tidak berubah - dan di situlah
+         laporan palsu itu lahir: layar bilang "baru saja menarik" sementara
+         pulihkan() tidak pernah dijalankan sekali pun. Yang membacanya
+         menyimpulkan "sinkronnya jalan, berarti memang tidak ada yang dikirim
+         dari sana", padahal yang benar "aku berhenti menarik sejak entah
+         kapan".
+         Sekarang 'tarikCek' menjawab "kapan terakhir memeriksa" dan
+         'tarikBerhasil' menjawab "kapan terakhir benar-benar ada yang turun".
+         Dua pertanyaan berbeda, dan cuma yang kedua yang bisa membedakan sehat
+         dari macet. */
+      return catat(setelan, 'tarikCek', Date.now())
+        .then(function () { return lewat ? null : catat(setelan, 'tarikBerhasil', Date.now()); })
         .then(function () { return catat(setelan, 'tarikGalat', ''); })
         .then(function () { return ubah; });
     }).catch(function (err) {
