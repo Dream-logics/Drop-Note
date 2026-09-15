@@ -578,9 +578,54 @@
           }
           tulis.push(TSimpan.taruh(baru));
         });
-        return Promise.all(tulis).then(function () { return tulis.length; });
+        return Promise.all(tulis)
+          .then(function () { return cocokkanBatas(setelan, semua, baris); })
+          .then(function () { return tulis.length; });
       });
     });
+  }
+
+  /* ===== YANG DI SINI TAPI TIDAK DI TABEL, DICARI TAHU - BUKAN DIASUMSIKAN ===
+     Perbaikan sebelumnya cuma menangkap batas air yang melompat ke MASA DEPAN.
+     Yang dilaporkan berikutnya lebih licin dan lebih sering: batas airnya
+     duduk DI TENGAH - lebih baru daripada lima puluh entri lama, lebih lama
+     daripada yang baru saja diketik. Akibatnya persis seperti yang terlihat di
+     lapangan: catatan BARU menyeberang dalam hitungan detik, catatan LAMA
+     tidak akan pernah. Dan tidak ada satu pun angka di layar yang menyebutnya,
+     karena "belum terkirim" dihitung dari batas air yang sama.
+
+     Batas air itu memang cuma JANJI bahwa yang di bawahnya sudah naik. Sekali
+     janjinya meleset - putaran yang putus, rumah yang sempat pindah, entri
+     lama yang masuk lewat tarikan - tidak ada apa pun yang pernah
+     memeriksanya lagi.
+
+     Jadi diperiksa di sini, dan ongkosnya NOL panggilan tambahan: waktu
+     menarik kita sudah memegang SELURUH isi tabel dan SELURUH isi perangkat.
+     Yang lokal tapi tidak ada barisnya - atau barisnya lebih tua - berarti
+     janjinya bohong, dan batas airnya ditarik mundur sampai ke bawah yang
+     paling tua di antaranya. Putaran dorong berikutnya mengangkatnya sendiri,
+     tanpa satu tombol pun.
+
+     Mundurnya SECUKUPNYA, bukan ke nol: nol berarti seluruh isi perangkat
+     didorong ulang tiap kali ada satu entri yang tertinggal, dan di dua puluh
+     ribu entri itu ongkos harian untuk memperbaiki satu baris. */
+  function cocokkanBatas(setelan, semua, baris) {
+    var jauh = {};
+    (baris || []).forEach(function (r) {
+      if (r && r.id) jauh[String(r.id)] = Number(r.diubah) || 0;
+    });
+    var paling = 0;
+    semua.forEach(function (e) {
+      if (e.dihapus) return;
+      var t = Number(e.diubah) || 0;
+      if (!t) return;
+      var adaJauh = Object.prototype.hasOwnProperty.call(jauh, e.id);
+      if (adaJauh && jauh[e.id] >= t) return;      /* barisnya ada dan seumur */
+      if (!paling || t < paling) paling = t;
+    });
+    var sejak = Number(setelan.cadanganSampai) || 0;
+    if (!paling || sejak < paling) return Promise.resolve(false);
+    return catat(setelan, 'cadanganSampai', paling - 1).then(function () { return true; });
   }
 
   /* Tarik yang jalan sendiri. Bedanya dengan pulihkan(): dia MEMERIKSA DULU
