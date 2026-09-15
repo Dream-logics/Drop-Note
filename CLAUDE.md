@@ -751,6 +751,50 @@ public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
 public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
                     dikunci, judul & board tetap terbuka supaya masih bisa
                     ditemukan. Yang terkunci tidak pernah dikirim ke AI
+public/sinkron.js   BATAS AIR YANG TERACUNI, DAN TETAP MELAPOR SEHAT. Ini
+                    laporan lapangan yang paling telak: laptop penuh, HP
+                    kosong, RUMAHNYA SAMA (…s8lgg, terlihat 1 di dua-duanya),
+                    dan laptop menulis "belum terkirim: 0 - terakhir mengirim:
+                    1 menit lalu". Tidak ada galat, tidak ada antrean, dan
+                    tidak ada satu baris pun yang akan pernah naik lagi.
+                    Jalannya lewat JAM. Entri yang turun dari perangkat lain
+                    membawa 'diubah' dari jam perangkat ITU; kalau jamnya maju,
+                    sekali entri itu ikut didorong 'cadanganSampai' melompat ke
+                    masa depan. Sejak detik itu tiap catatan baru punya 'diubah'
+                    yang lebih KECIL daripada batas airnya sendiri, jadi
+                    antrean() menyaring semuanya - selamanya.
+                    Obatnya bukan mencegah (jam perangkat lain tidak bisa kita
+                    atur) tapi MEMULIHKAN DIRI: batasDorong() menolak batas air
+                    yang melewati entri terbaru di perangkat ini, batasTarik()
+                    menolak cap yang jatuh lebih dari sejam di masa depan -
+                    modifiedTime itu jam server, dan jam server di masa depan
+                    mustahil. Keduanya jatuh ke 0, dan ongkosnya satu putaran
+                    ulang penuh: tulisBaris menimpa berdasarkan id, jadi tidak
+                    ada yang berganda. Aturan yang sama dengan tarikCap:
+                    mendorong sekali lagi tanpa perlu jauh lebih murah daripada
+                    berhenti mendorong selamanya.
+                    'BORONG' BUKAN 'PAKSA', dan membedakannya wajib. Paksa cuma
+                    melewati gerbang lima menit dan dipakai tiap kali kamu
+                    nge-drop; kalau dia ikut mengabaikan batas air, satu catatan
+                    baru menyeret seluruh isi perangkat naik ke Drive. Borong
+                    mengabaikan batas airnya seluruhnya dan cuma dari tombol
+                    yang kamu tekan sendiri - "Kirim sekarang" dan "Hubungkan".
+                    Tombol yang ditekan justru waktu kamu tidak percaya pada
+                    angka "belum terkirim: 0" harus bisa MEMBANTAH layarnya,
+                    bukan mengulanginya.
+                    DUA WAKTU DI SETELAN, BUKAN SATU. 'tarikCek' = kapan
+                    terakhir memeriksa, 'tarikBerhasil' = kapan terakhir
+                    benar-benar ada yang turun. Dulu satu baris saja, dan dia
+                    dicatat walau tarikannya DILEWATI - di situlah laporan palsu
+                    itu lahir: "Terakhir menarik: baru saja" sementara pulihkan()
+                    tidak pernah dijalankan sekali pun.
+                    UJI TERIMANYA MENIRUKAN DUA PERANGKAT SUNGGUHAN dengan batas
+                    air yang sudah diracuni lebih dulu. Sebelum ini tidak ada
+                    satu pun uji seperti itu, dan ketiadaannya yang bikin 1014
+                    uji lulus sementara produknya gagal di tangan pemakainya -
+                    semuanya jalan di SATU peramban melawan tiruan Drive di
+                    memori. Uji yang tidak bisa gagal di tempat produknya gagal
+                    bukan jaring pengaman, dia lampu hijau.
 public/sinkron.js   TIAP TAHAP PUTARAN BERDIRI SENDIRI. Satu putaran dulu satu
                     rantai: bersihkan nisan - unggah berkas - dorong baris.
                     Satu rantai berarti satu tahap yang gagal membunuh SEMUA

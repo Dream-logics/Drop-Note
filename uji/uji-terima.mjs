@@ -7313,6 +7313,119 @@ console.log('\nsinkron empat perangkat');
   cek('dan isinya kembali bertemu',
       await punya(hal2, 'Catatan dari perangkat satu'));
 
+  /* ===== BATAS AIR YANG TERACUNI, DAN TETAP MELAPOR SEHAT =====
+     Ini keadaan yang dilaporkan di lapangan, dan yang paling tidak mungkin
+     ditebak dari layar: laptop penuh, HP kosong, RUMAHNYA SAMA, dan laptop
+     menulis "belum terkirim: 0 - terakhir mengirim: 1 menit lalu".
+
+     Sebabnya JAM. Satu entri yang turun dari perangkat lain membawa 'diubah'
+     dari jam perangkat ITU. Kalau jamnya maju, sekali entri itu ikut didorong,
+     'cadanganSampai' melompat ke masa depan. Sejak detik itu tiap catatan baru
+     punya 'diubah' yang lebih KECIL daripada batas airnya sendiri, jadi
+     antrean() menyaring semuanya - selamanya, tanpa satu galat pun.
+
+     Uji ini yang dulu tidak ada, dan ketiadaannya yang bikin 1014 uji lulus
+     sementara produknya gagal di tangan pemakainya. */
+  const MAJU = Date.now() + 40 * 24 * 60 * 60 * 1000;   /* jam yang maju 40 hari */
+  await hal.evaluate(async (t) => {
+    const s = TAlur.setelanUji();
+    await TSimpan.setel('cadanganSampai', t);
+    s.cadanganSampai = t;
+  }, MAJU);
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(300);
+  await hal.fill('#kotak', 'Catatan sesudah batas air teracuni');
+  await hal.click('#b-drop');
+  await hal.waitForTimeout(700);
+
+  cek('"belum terkirim" tidak berbohong waktu batas airnya melewati semua isi',
+      (await hal.evaluate(() => TSinkron.belumTerkirim(TAlur.setelanUji()))) > 0);
+
+  await dorong(hal);
+  await hal.waitForTimeout(500);
+  await tarik(hal2);
+  await hal2.waitForTimeout(800);
+  cek('catatan baru tetap naik walau batas air dorongnya teracuni',
+      await punya(hal2, 'Catatan sesudah batas air teracuni'));
+  cek('dan batas air yang mustahil itu dipulihkan, bukan dibiarkan',
+      (await setelanDi(hal, 'cadanganSampai')) < MAJU,
+      String(await setelanDi(hal, 'cadanganSampai')));
+
+  /* Sisi TARIK punya penyakit yang sama: 'tarikCap' menyimpan modifiedTime
+     spreadsheet - jam servernya Google - dan waktu server yang jatuh di masa
+     depan mustahil. Sekali capnya terlanjur di masa depan, tiap pemeriksaan
+     menjawab "tidak ada yang baru" dan pulihkan() tidak pernah jalan lagi. */
+  await hal2.evaluate(async (t) => {
+    const s = TAlur.setelanUji();
+    await TSimpan.setel('tarikCap', t);
+    s.tarikCap = t;
+  }, MAJU);
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(300);
+  await hal.fill('#kotak', 'Catatan sesudah cap tarik teracuni');
+  await hal.click('#b-drop');
+  await hal.waitForTimeout(700);
+  await dorong(hal);
+  await hal.waitForTimeout(500);
+  /* TIDAK dipaksa - justru tarikan biasa yang harus tetap jalan. */
+  await hal2.evaluate(() => TSinkron.tarik(TAlur.setelanUji()));
+  await hal2.waitForTimeout(800);
+  /* Dibaca dari BASIS DATA, bukan dari TAlur.semuaEntri(): tarik() menulis ke
+     IndexedDB dan tidak menyentuh salinan di memori - itu bagiannya
+     tarikSinkron() di alur.js. Membacanya dari memori berarti uji ini gagal
+     karena alasan yang tidak ada hubungannya dengan yang diujinya. */
+  cek('tarikan biasa tetap jalan walau cap tariknya menunjuk masa depan',
+      await hal2.evaluate(() => TSimpan.semua().then((a) =>
+        a.some((e) => e.judul === 'Catatan sesudah cap tarik teracuni' && !e.dihapus))));
+
+  /* ===== LAPORANNYA TIDAK BOLEH BILANG "MENARIK" WAKTU TARIKANNYA DILEWATI ==
+     Satu baris "Terakhir menarik: baru saja" dicatat walau pulihkan() tidak
+     pernah dijalankan. Yang membacanya menyimpulkan "sinkronnya sehat, berarti
+     memang tidak ada yang dikirim dari sana" - padahal yang benar "aku
+     berhenti menarik sejak entah kapan". */
+  const duaWaktu = await hal2.evaluate(async () => {
+    const s = TAlur.setelanUji();
+    await TSinkron.tarik(s, true);                  /* menarik sungguhan */
+    await TSimpan.setel('tarikBerhasil', 111);
+    s.tarikBerhasil = 111;
+    await TSinkron.tarik(s);                        /* tidak ada yang baru */
+    return {
+      cek: Number(await TSimpan.setelan('tarikCek')) || 0,
+      tarik: Number(await TSimpan.setelan('tarikBerhasil')) || 0
+    };
+  });
+  cek('pemeriksaan yang tidak menarik apa pun tetap dicatat sebagai pemeriksaan',
+      duaWaktu.cek > 111, JSON.stringify(duaWaktu));
+  cek('tapi tidak pernah mengaku sudah menarik',
+      duaWaktu.tarik === 111, JSON.stringify(duaWaktu));
+
+  /* ===== BORONG: JALAN KELUAR YANG BISA MEMBANTAH LAYARNYA SENDIRI =====
+     Tombol yang ditekan justru waktu kamu tidak percaya pada "belum terkirim:
+     0" harus bisa membantahnya, bukan mengulanginya. Jadi borong mengabaikan
+     batas air dorongnya seluruhnya.
+     'paksa' TIDAK boleh ikut begitu: dia dipakai tiap kali kamu nge-drop, dan
+     kalau dia ikut memborong, satu catatan baru menyeret seluruh isi perangkat
+     naik ke Drive. */
+  const borong = await hal.evaluate(async () => {
+    const s = TAlur.setelanUji();
+    /* Dari TSimpan.semua(), bukan TAlur.semuaEntri(): to-do menumpang di toko
+       yang sama tapi sengaja tidak pernah muncul di daftar entri, jadi puncak
+       yang dihitung dari sana selalu lebih rendah daripada yang sebenarnya. */
+    const semua = (await TSimpan.semua()).filter((e) => !e.dihapus);
+    const puncak = semua.reduce((m, e) => Math.max(m, e.diubah || 0), 0);
+    await TSimpan.setel('cadanganSampai', puncak);
+    s.cadanganSampai = puncak;
+    const biasa = await TSinkron.putaran(s, true);            /* antrean kosong */
+    await TSimpan.setel('cadanganSampai', puncak);
+    s.cadanganSampai = puncak;
+    const semuanya = await TSinkron.putaran(s, true, true);   /* borong */
+    return { biasa: biasa, semuanya: semuanya, isi: semua.length };
+  });
+  cek('dorongan biasa menghormati batas air yang masih masuk akal',
+      borong.biasa === 0, JSON.stringify(borong));
+  cek('borong mendorong ulang semuanya walau antreannya kosong',
+      borong.semuanya === borong.isi && borong.isi > 0, JSON.stringify(borong));
+
   /* ===== YANG DIHAPUS DI SATU PERANGKAT IKUT HILANG DI PERANGKAT LAIN =====
      Ini cacat yang paling sunyi: menghapus di HP membuang BARISNYA dari
      spreadsheet, lalu membuangnya dari HP. Perangkat lain yang sudah terlanjur
@@ -7394,12 +7507,18 @@ console.log('\nsinkron empat perangkat');
       /putaranCadangan\(\);\s*(\/\*[\s\S]*?\*\/\s*)?tarikSinkron\(true\);/.test(kodeAlur));
   /* Dan itu benar-benar terjadi di jalur visibilitychange, bukan cuma tertulis
      di suatu tempat. */
+  /* Yang diperiksa 'tarikCek', BUKAN 'tarikBerhasil'. Yang ditanyakan di sini
+     "apakah jalurnya memang terpasang di kembalinya layar", dan jawabannya
+     satu pemeriksaan - bukan turunnya baris baru. Dulu uji ini membaca
+     'tarikBerhasil', dan dengan begitu dia justru MENGUNCI laporan yang bohong:
+     pemeriksaan yang tidak menarik apa pun tetap dicatat sebagai "baru saja
+     menarik". */
   const tarikSaatKembali = await hal2.evaluate(async () => {
-    await TSimpan.setel('tarikBerhasil', 0);
-    TAlur.setelanUji().tarikBerhasil = 0;
+    await TSimpan.setel('tarikCek', 0);
+    TAlur.setelanUji().tarikCek = 0;
     document.dispatchEvent(new Event('visibilitychange'));
     await new Promise((r) => setTimeout(r, 1200));
-    return Number(await TSimpan.setelan('tarikBerhasil')) || 0;
+    return Number(await TSimpan.setelan('tarikCek')) || 0;
   });
   cek('dan jalurnya memang terpasang di kembalinya layar',
       tarikSaatKembali > 0, String(tarikSaatKembali));
