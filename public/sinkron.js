@@ -160,6 +160,23 @@
       /* DIBACA APA ADANYA, bukan dipaksa false. Nisan yang turun dari awan
          adalah satu-satunya cara perangkat ini tahu ada yang dihapus di
          perangkat lain. */
+      /* ===== YANG DITULIS KE TABEL WAJIB DIBACA KEMBALI DI SINI =====
+         'pin', 'albumManual', dan 'albumInduk' sudah lama ikut naik - mereka
+         ada di TAwan.KOLOM - tapi TIDAK PERNAH dibaca kembali. Akibatnya satu
+         arah dan sunyi: nilainya selamat di spreadsheet, lalu hilang tepat di
+         perangkat yang menerimanya.
+         Yang terlihat pemakainya cuma yang paling ringan: tiga catatan yang
+         dipin di HP, nol di laptop. Yang TIDAK terlihat jauh lebih mahal -
+         'albumManual' itu kunci alamat yang kamu tentukan sendiri, dan foto
+         yang tiba di perangkat lain TANPA kuncinya boleh dipindahkan AI di
+         sana. Alamat yang kamu putuskan sendiri dibatalkan diam-diam, dan
+         ketahuannya berbulan-bulan kemudian dari foto yang entah kenapa
+         pindah kamar.
+         Uji terimanya sekarang menuntut TIAP nama di KOLOM punya kunci di
+         sini, jadi kolom baru yang lupa dibaca gagal di uji, bukan di tangan
+         pemakainya. */
+      pin: benar(r.pin),
+      albumManual: benar(r.albumManual), albumInduk: r.albumInduk || '',
       dihapus: benar(r.dihapus), riwayat: urai(r.riwayat, []), thumb: ''
     };
   }

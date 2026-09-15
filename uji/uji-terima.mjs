@@ -7491,6 +7491,49 @@ console.log('\nsinkron empat perangkat');
   cek('batas airnya dibiarkan waktu semua barisnya memang sudah ada di tabel',
       tenang.sesudah === tenang.sebelum, JSON.stringify(tenang));
 
+  /* ===== YANG DITULIS KE TABEL WAJIB DIBACA KEMBALI =====
+     'pin', 'albumManual', dan 'albumInduk' sudah lama ikut naik - ketiganya
+     ada di TAwan.KOLOM - tapi mekarkan() tidak pernah membacanya kembali.
+     Arahnya satu dan sunyi: nilainya selamat di spreadsheet, lalu hilang tepat
+     di perangkat yang menerimanya.
+     Yang terlihat pemakainya cuma yang paling ringan (tiga catatan dipin di HP,
+     nol di laptop). Yang tidak terlihat jauh lebih mahal: 'albumManual' itu
+     kunci alamat yang dia tentukan sendiri, dan foto yang tiba tanpa kuncinya
+     boleh dipindahkan AI di perangkat itu.
+     Penjaganya UMUM, bukan tiga nama: tiap kolom yang ditulis harus punya
+     kuncinya di sini, jadi kolom baru yang lupa dibaca gagal di uji - bukan di
+     tangan pemakainya, berbulan-bulan kemudian. */
+  const kolomHilang = await hal.evaluate(() => {
+    const contoh = TSinkron.mekarkan({ id: 'x' });
+    return TAwan.KOLOM.filter((k) => !Object.prototype.hasOwnProperty.call(contoh, k));
+  });
+  cek('tiap kolom yang ditulis ke tabel dibaca kembali waktu menarik',
+      kolomHilang.length === 0, kolomHilang.join(', '));
+
+  await hal.evaluate(async () => {
+    const t = Date.now();
+    await TSimpan.taruh({
+      id: 'e-pin-kunci', jenis: 'gambar', judul: 'Foto yang dipin dan dikunci',
+      isi: '', kategori: '', label: [], elemen: [],
+      pin: true, albumManual: true, albumInduk: 'Business FNB',
+      album: 'Business FNB Menu Promo',
+      dibuat: t, diubah: t, dipakai: 0
+    });
+  });
+  await hal.evaluate(() => TSinkron.putaran(TAlur.setelanUji(), true, true));
+  await hal.waitForTimeout(500);
+  await tarik(hal2);
+  await hal2.waitForTimeout(800);
+  const nyampai = await hal2.evaluate(() => {
+    const e = TAlur.semuaEntri().filter((x) => x.id === 'e-pin-kunci')[0];
+    return e ? { pin: !!e.pin, kunci: !!e.albumManual, induk: e.albumInduk || '' } : null;
+  });
+  cek('pin ikut menyeberang, bukan tinggal di perangkat yang membuatnya',
+      !!nyampai && nyampai.pin === true, JSON.stringify(nyampai));
+  cek('dan kunci alamat yang kamu tentukan sendiri ikut - tanpa itu AI di sana bebas memindahkannya',
+      !!nyampai && nyampai.kunci === true && nyampai.induk === 'Business FNB',
+      JSON.stringify(nyampai));
+
   /* ===== YANG DIHAPUS DI SATU PERANGKAT IKUT HILANG DI PERANGKAT LAIN =====
      Ini cacat yang paling sunyi: menghapus di HP membuang BARISNYA dari
      spreadsheet, lalu membuangnya dari HP. Perangkat lain yang sudah terlanjur

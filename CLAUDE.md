@@ -751,6 +751,25 @@ public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
 public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
                     dikunci, judul & board tetap terbuka supaya masih bisa
                     ditemukan. Yang terkunci tidak pernah dikirim ke AI
+public/sinkron.js   YANG DITULIS KE TABEL WAJIB DIBACA KEMBALI DI mekarkan().
+                    'pin', 'albumManual', dan 'albumInduk' sudah lama ada di
+                    TAwan.KOLOM - jadi mereka ikut NAIK - tapi tidak pernah
+                    dibaca kembali. Arahnya satu dan sunyi: nilainya selamat di
+                    spreadsheet, lalu hilang tepat di perangkat yang
+                    menerimanya.
+                    Yang terlihat pemakainya cuma yang paling ringan: tiga
+                    catatan dipin di HP, nol di laptop. Yang TIDAK terlihat jauh
+                    lebih mahal - 'albumManual' itu kunci alamat yang dia
+                    tentukan sendiri, dan foto yang tiba di perangkat lain tanpa
+                    kuncinya boleh dipindahkan AI di sana. Alamat yang sudah
+                    diputuskan tangan dibatalkan diam-diam, dan ketahuannya
+                    berbulan-bulan kemudian dari foto yang entah kenapa pindah
+                    kamar.
+                    PENJAGANYA UMUM, BUKAN TIGA NAMA: uji terimanya menuntut
+                    tiap nama di KOLOM punya kuncinya di mekarkan(), jadi kolom
+                    baru yang lupa dibaca gagal di uji - bukan di tangan
+                    pemakainya. Menambah kolom berarti menyentuh DUA tempat, dan
+                    yang kedua tidak pernah bergalat kalau dilupakan.
 public/sinkron.js   BATAS AIR YANG DUDUK DI TENGAH, dan itu laporan lapangan
                     KEDUA - lebih licin daripada yang melompat ke masa depan.
                     Batas airnya lebih BARU daripada lima puluh entri lama tapi
