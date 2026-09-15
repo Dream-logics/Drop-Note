@@ -751,6 +751,32 @@ public/tugas.js     to-do berdiri sendiri: centang, penting, Hari Ini, tenggat,
 public/kunci.js     enkripsi SELEKTIF: cuma yang kamu tandai. Isi & elemen
                     dikunci, judul & board tetap terbuka supaya masih bisa
                     ditemukan. Yang terkunci tidak pernah dikirim ke AI
+public/sinkron.js   BATAS AIR YANG DUDUK DI TENGAH, dan itu laporan lapangan
+                    KEDUA - lebih licin daripada yang melompat ke masa depan.
+                    Batas airnya lebih BARU daripada lima puluh entri lama tapi
+                    lebih LAMA daripada yang baru diketik, jadi catatan BARU
+                    menyeberang dalam hitungan detik sementara catatan LAMA
+                    tidak akan pernah. Yang diukur pemakainya: laptop 59 entri,
+                    HP 7, dan satu entri uji yang baru diketik sampai seketika.
+                    batasDorong() TIDAK menangkap yang ini - dia cuma menolak
+                    batas air yang melewati SELURUH isi perangkat.
+                    Batas air itu cuma JANJI bahwa yang di bawahnya sudah naik,
+                    dan sekali janjinya meleset - putaran yang putus, rumah yang
+                    sempat pindah, entri lama yang masuk lewat tarikan - tidak
+                    ada apa pun yang pernah memeriksanya lagi.
+                    Jadi cocokkanBatas() memeriksanya di dalam pulihkan(), dan
+                    ongkosnya NOL panggilan tambahan: waktu menarik kita sudah
+                    memegang seluruh isi tabel DAN seluruh isi perangkat. Yang
+                    lokal tapi tidak ada barisnya - atau barisnya lebih tua -
+                    berarti janjinya bohong, dan batas airnya ditarik mundur
+                    sampai ke bawah yang paling tua di antaranya. Putaran dorong
+                    berikutnya mengangkatnya sendiri, tanpa satu tombol pun.
+                    MUNDURNYA SECUKUPNYA, BUKAN KE NOL: nol berarti seluruh isi
+                    perangkat didorong ulang tiap kali ada satu entri
+                    tertinggal, dan di dua puluh ribu entri itu ongkos harian
+                    untuk memperbaiki satu baris. Dan yang barisnya memang sudah
+                    ada TIDAK ikut menariknya mundur - kalau ikut, tiap tarikan
+                    mendorong ulang semuanya.
 public/sinkron.js   BATAS AIR YANG TERACUNI, DAN TETAP MELAPOR SEHAT. Ini
                     laporan lapangan yang paling telak: laptop penuh, HP
                     kosong, RUMAHNYA SAMA (…s8lgg, terlihat 1 di dua-duanya),

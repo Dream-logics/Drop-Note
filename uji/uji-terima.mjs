@@ -7426,6 +7426,71 @@ console.log('\nsinkron empat perangkat');
   cek('borong mendorong ulang semuanya walau antreannya kosong',
       borong.semuanya === borong.isi && borong.isi > 0, JSON.stringify(borong));
 
+  /* ===== BATAS AIR YANG DUDUK DI TENGAH =====
+     Ini laporan lapangan berikutnya, dan dia lebih licin daripada yang
+     melompat ke masa depan: batas airnya lebih BARU daripada lima puluh entri
+     lama, tapi lebih LAMA daripada yang baru saja diketik.
+
+     Akibatnya persis seperti yang terlihat di tangan pemakainya: catatan BARU
+     menyeberang dalam hitungan detik, catatan LAMA tidak akan pernah - laptop
+     59 entri, HP 7. Dan tidak ada satu angka pun di layar yang menyebutnya,
+     karena "belum terkirim" dihitung dari batas air yang sama.
+
+     Batas air itu memang cuma JANJI bahwa yang di bawahnya sudah naik. Sekali
+     janjinya meleset, tidak ada apa pun yang pernah memeriksanya lagi - dan
+     yang memeriksanya sekarang tarikan itu sendiri, tanpa satu panggilan
+     tambahan: waktu menarik kita sudah memegang seluruh isi tabel. */
+  const tertinggal = await hal.evaluate(async () => {
+    const s = TAlur.setelanUji();
+    const tua = Date.now() - 10 * 60 * 1000;
+    /* Ditaruh LANGSUNG ke basis data, bukan lewat tombol Drop: yang ditirukan
+       entri yang sudah lama ada di perangkat ini tapi barisnya tidak pernah
+       sampai ke tabel. */
+    await TSimpan.taruh({
+      id: 'e-tertinggal', jenis: 'teks', judul: 'Catatan lama yang tertinggal',
+      isi: '', kategori: '', label: [], elemen: [],
+      dibuat: tua, diubah: tua, dipakai: 0
+    });
+    /* Batas airnya dipatok DI ATAS entri itu tapi TIDAK di atas semuanya -
+       persis keadaan yang dilaporkan, dan sengaja tidak lebih tinggi daripada
+       entri terbaru: yang melewati semuanya sudah ditangkap batasDorong() dan
+       dipulihkan ke nol, jadi memakai Date.now() di sini justru menguji
+       perbaikan yang lain. */
+    const semua = (await TSimpan.semua()).filter((e) => !e.dihapus);
+    const tengah = semua.reduce((m, e) => Math.max(m, e.diubah || 0), 0);
+    await TSimpan.setel('cadanganSampai', tengah);
+    s.cadanganSampai = tengah;
+    return { belum: await TSinkron.belumTerkirim(s), tengah: tengah, tua: tua };
+  });
+  cek('layarnya memang berbohong: "belum terkirim" nol padahal ada yang tertinggal',
+      tertinggal.belum === 0, JSON.stringify(tertinggal));
+
+  /* Tarikannya yang mendamaikan - dan itu terjadi sendiri, bukan lewat tombol. */
+  await hal.evaluate(() => TSinkron.tarik(TAlur.setelanUji(), true));
+  await hal.waitForTimeout(600);
+  cek('tarikan mendapati janjinya meleset dan menarik batas airnya mundur',
+      (await hal.evaluate(() => TSinkron.belumTerkirim(TAlur.setelanUji()))) > 0);
+
+  await dorong(hal);
+  await hal.waitForTimeout(500);
+  await tarik(hal2);
+  await hal2.waitForTimeout(800);
+  cek('lalu catatan lama yang tertinggal akhirnya menyeberang sendiri',
+      await punya(hal2, 'Catatan lama yang tertinggal'));
+
+  /* Dan yang sudah benar-benar ada barisnya TIDAK ikut ditarik mundur: kalau
+     ikut, tiap tarikan mendorong ulang seluruh isi perangkat, dan di dua puluh
+     ribu entri itu ongkos harian untuk memperbaiki yang tidak rusak. */
+  const tenang = await hal.evaluate(async () => {
+    const s = TAlur.setelanUji();
+    await TSinkron.putaran(s, true, true);          /* semuanya naik dulu */
+    const sebelum = Number(await TSimpan.setelan('cadanganSampai')) || 0;
+    await TSinkron.tarik(s, true);                  /* lalu menarik lagi */
+    return { sebelum: sebelum, sesudah: Number(await TSimpan.setelan('cadanganSampai')) || 0 };
+  });
+  cek('batas airnya dibiarkan waktu semua barisnya memang sudah ada di tabel',
+      tenang.sesudah === tenang.sebelum, JSON.stringify(tenang));
+
   /* ===== YANG DIHAPUS DI SATU PERANGKAT IKUT HILANG DI PERANGKAT LAIN =====
      Ini cacat yang paling sunyi: menghapus di HP membuang BARISNYA dari
      spreadsheet, lalu membuangnya dari HP. Perangkat lain yang sudah terlanjur
