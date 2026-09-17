@@ -1075,15 +1075,9 @@
      jadi ikon AI yang mengalah, dan kotaknya dapat tempat justru waktu isinya
      paling panjang. Di mode AI dia tidak pernah pergi - dia satu-satunya jalan
      pulang. */
-  function setelIkonKotak() {
-    var ada = !!$('#kotak').value.trim();
-    $('#l-utama').classList.toggle('mengetik', ada && !modeAI);
-  }
-
   function setelTinggiKotak() {
     var k = $('#kotak');
     if (!k) return;
-    setelIkonKotak();
     k.style.height = 'auto';
     k.style.height = Math.min(k.scrollHeight, tinggiKotakMaks()) + 'px';
     var b = $('#kotak-bayang');
@@ -1266,7 +1260,6 @@
     $('#b-ai').setAttribute('aria-pressed', modeAI ? 'true' : 'false');
     $('#petak-ai').classList.toggle('sembunyi', !modeAI);
     tulisPlaceholder();
-    setelIkonKotak();
     if (modeAI) {
       /* Yang sedang setengah jalan ditutup dulu. Kotak isian daftar yang masih
          menganga di bawah obrolan bukan cuma berantakan - dia bikin ragu tombol

@@ -4297,9 +4297,14 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
   });
   cek('ikon AI duduk di ujung kiri kotak, seperti WhatsApp', diKiriKotak === 'ok', diKiriKotak);
 
-  /* EMPAT IKON WAKTU DIAM, TIGA WAKTU MENGETIK. Yang pergi selalu yang paling
-     tidak mungkin dipakai saat itu: orang yang sudah mengetik catatan tidak
-     sedang mau bertanya ke AI.
+  /* EMPAT IKON, DAN MEREKA TIDAK KE MANA-MANA. Dulu tiga waktu mengetik: ikon
+     AI mengalah, dengan dalih "orang yang sudah mengetik catatan tidak sedang
+     mau bertanya ke AI". Justru itu yang terbukti keliru - yang sudah mengetik
+     sesuatu PERSIS yang paling mungkin mau menanyakannya, dan itu bentuk yang
+     sudah dibuktikan WhatsApp. Laporan lapangannya apa adanya: "tombol AI
+     hilang? bukannya mau ikut ala WhatsApp?".
+     Tombol yang lenyap tepat di detik kamu mencarinya terbaca sebagai aplikasi
+     yang rusak, berapa pun bagusnya alasan di baliknya.
 
      Kamera sempat ikut di sini dan itu keliru: di antara klip dan Todo - dua
      ikon yang MEMBUKA LACI - dia tidak pernah terbaca sebagai tombol yang
@@ -4314,13 +4319,18 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
   await hal.fill('#kotak', 'sesuatu');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(200);
-  cek('tinggal tiga begitu mulai mengetik, dan yang pergi ikon AI',
-      (await ikonKotak()) === 3 &&
-      (await hal.locator('#b-ai').isHidden()), String(await ikonKotak()));
+  cek('tetap empat waktu mengetik - ikon AI tidak ke mana-mana',
+      (await ikonKotak()) === 4 &&
+      (await hal.locator('#b-ai').isVisible()), String(await ikonKotak()));
+  /* Kotak teksnya yang mengalah, dan dia tumbuh ke BAWAH - yang hilang cuma
+     beberapa karakter per baris, bukan satu kalimat pun. */
+  const lebarKotak = await hal.locator('#kotak').evaluate((n) => n.getBoundingClientRect().width);
+  cek('kotak teksnya tetap layak diketik walau ikonnya berempat',
+      lebarKotak >= 120, String(Math.round(lebarKotak)));
   await hal.fill('#kotak', '');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(200);
-  cek('dan kembali empat begitu kotaknya kosong lagi', (await ikonKotak()) === 4);
+  cek('dan tetap empat waktu kotaknya kosong lagi', (await ikonKotak()) === 4);
 
   cek('sebelum dinyalakan, obrolannya tidak kelihatan sama sekali',
       await hal.locator('#petak-ai').isHidden());

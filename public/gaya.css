@@ -1341,9 +1341,20 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 }
 .dok-bawah #b-ai .ik{width:20px;height:20px}
 .dok-bawah #b-ai.nyala{color:var(--a)}
-/* Waktu mengetik di mode Drop, ikon AI mengalah - kotaknya yang dapat
-   tempatnya, justru saat isinya paling panjang. */
-.mengetik #b-ai{display:none}
+/* IKON AI TIDAK PERNAH PERGI, dan aturan lama yang menyuruhnya mengalah waktu
+   mengetik sudah DIBATALKAN oleh alasannya sendiri. Dia dulu disembunyikan
+   dengan dalih "orang yang sudah mengetik catatan tidak sedang mau bertanya ke
+   AI" - dan justru itu yang terbukti keliru: yang sudah mengetik sesuatu
+   PERSIS yang paling mungkin mau menanyakannya. Itu bentuk yang sudah
+   dibuktikan WhatsApp, dan itu juga yang dilaporkan lapangan, apa adanya:
+   "tombol AI hilang? bukannya mau ikut ala WhatsApp?".
+   Tombol yang lenyap tepat di detik kamu mencarinya terbaca sebagai aplikasi
+   yang rusak, berapa pun bagusnya alasan di baliknya. Yang dibayar lebar kotak
+   teksnya - dan kotak itu tumbuh ke BAWAH, jadi yang hilang cuma beberapa
+   karakter per baris, bukan satu kalimat pun.
+   Kelas '.mengetik' ikut dibuang seluruhnya: kelas yang masih dipasang tiap
+   ketukan huruf tapi tidak menata apa pun membuat yang membacanya berburu
+   akibat yang tidak ada. */
 #b-drop .ik.kirim{display:none}
 .mode-ai #b-drop .ik.turun{display:none}
 .mode-ai #b-drop .ik.kirim{display:block}
