@@ -7196,9 +7196,14 @@ console.log('\narahan gambar: pendek, kontekstual, bahasamu');
       arahanDok.indexOf('DRIVER') > 0 && arahanDok.indexOf('karpet mesjid') < 0,
       String(arahanDok.length));
 
-  /* CAPTION YANG TERPOTONG HARUS BISA DIBACA. Teks yang dipotong "…" tanpa satu
-     pun cara membacanya lebih buruk daripada tidak ditampilkan sama sekali:
-     yang terbaca bukan "ringkas" tapi "ada yang disembunyikan". */
+  /* DESKRIPSI AI TIDAK DIGAMBAR DI PREVIEW, dan jangan dikembalikan.
+     Judulnya SUDAH karangan AI; menambahkan deskripsinya berarti dua kalimat
+     mesin tentang foto yang sama, dan yang kedua hampir selalu menulis ulang
+     yang pertama dengan kata yang beda tipis - itu yang dilaporkan lapangan
+     sebagai "double, dan memenuhi jendela".
+     Gunanya deskripsi MEMBUAT FOTONYA BISA DICARI, bukan dibaca: dia bahan
+     pencarian, dan di layar ini pencariannya sudah selesai. Satu gambar sudah
+     seribu kata, dan seribu kata itu sedang terpampang di belakang kartunya. */
   const PNG4 = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGP8z8Dw'
              + 'nwEJMKEL0FIQAG3+AwOfLbXbAAAAAElFTkSuQmCC';
   const binPng4 = Buffer.from(PNG4, 'base64');
@@ -7233,30 +7238,24 @@ console.log('\narahan gambar: pendek, kontekstual, bahasamu');
   await hal.waitForTimeout(450);
   await hal.locator('#galeri-isi .petak-satu').first().click();
   await hal.waitForTimeout(600);
-  cek('caption panjang menawarkan jalan untuk membacanya',
-      await hal.locator('.lihat-isi-lagi').isVisible());
-  /* Diukur dari TINGGINYA, bukan dari scrollHeight: -webkit-line-clamp memotong
-     dengan menyembunyikan barisnya, jadi scrollHeight ikut terpotong dan
-     selisihnya nol - ukuran yang kelihatan masuk akal tapi tidak pernah bisa
-     membuktikan apa pun. */
-  const tinggiRingkas = await hal.evaluate(() =>
-    document.querySelector('.lihat-isi').getBoundingClientRect().height);
-  await hal.click('.lihat-isi-lagi');
-  await hal.waitForTimeout(350);
-  const tinggiPenuh = await hal.evaluate(() =>
-    document.querySelector('.lihat-isi').getBoundingClientRect().height);
-  cek('dan captionnya memang tumbuh waktu dibuka, bukan cuma ganti kelas',
-      tinggiPenuh > tinggiRingkas + 8,
-      Math.round(tinggiRingkas) + ' -> ' + Math.round(tinggiPenuh));
-  cek('mengetuknya membuka penuh, tanpa pindah layar',
-      (await hal.evaluate(() =>
-        document.querySelector('.lihat-isi').classList.contains('penuh'))) === true &&
-      (await hal.locator('#lihat').isVisible()));
-  cek('dan previewnya tidak ikut tertutup — itu bagian dari membaca',
-      (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-galeri');
-  cek('tombolnya berubah jadi jalan pulang',
-      (await hal.innerText('.lihat-isi-lagi')) === 'Ringkas',
-      await hal.innerText('.lihat-isi-lagi'));
+  cek('deskripsi AI tidak digambar di preview',
+      (await hal.locator('#lihat-info .lihat-isi').count()) === 0 &&
+      (await hal.locator('#lihat-info .lihat-isi-lagi').count()) === 0);
+  /* Yang TETAP ada cuma yang tidak bisa dibaca dari gambarnya sendiri. */
+  const isiPreview = await hal.innerText('#lihat-info');
+  cek('judulnya tetap ada', /Caption panjang uji/.test(isiPreview), isiPreview);
+  cek('drivermu sendiri tetap ada - dia satu-satunya kalimat yang lahir dari kepalamu',
+      /bedroom interior lighting/.test(isiPreview), isiPreview);
+  cek('dan kalimat karangan AI tidak ikut sama sekali',
+      isiPreview.indexOf('cermin LED bulat') < 0, isiPreview);
+  /* Keterangannya tidak boleh memakan gambarnya - itu separuh keluhannya. */
+  const petakInfo = await hal.evaluate(() => {
+    const i = document.querySelector('#lihat-info').getBoundingClientRect();
+    return { info: i.height, jendela: window.innerHeight };
+  });
+  cek('keterangannya tidak memenuhi jendela',
+      petakInfo.info < petakInfo.jendela * 0.4,
+      Math.round(petakInfo.info) + ' / ' + Math.round(petakInfo.jendela));
   await hal.click('#b-lihat-tutup');
   await hal.waitForTimeout(350);
   await hal.fill('#galeri-cari', '');
