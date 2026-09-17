@@ -1781,7 +1781,7 @@ console.log('\narsip: geser ke kiri, bukan hapus');
     (a) => a.filter((e) => e.pensiun && !e.dihapus).length));
   cek('yang diarsipkan tidak terhapus, cuma berhenti muncul', masih >= 1, String(masih));
 
-  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.bukaSetelanUji('*'); TAlur.keLayarUji('l-setelan'); });
   await hal.waitForTimeout(200);
   cek('arsipnya bisa dilihat di Setelan',
       (await hal.locator('#arsip-daftar [data-balik]').count()) >= 1);
@@ -2246,7 +2246,7 @@ console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
   await hal.waitForFunction(() => window.TAlur);
   await pasangAI();
   await hal.waitForTimeout(600);
-  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.bukaSetelanUji('*'); TAlur.keLayarUji('l-setelan'); });
   await hal.waitForTimeout(400);
 
   cek('pohonnya digambar sebagai baris, bukan textarea',
@@ -2391,7 +2391,7 @@ console.log('\nmenu board di Setelan: pohon yang disunting, bukan kotak teks');
   await hal.reload();
   await pasangAI();
   await hal.waitForTimeout(600);
-  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.bukaSetelanUji('*'); TAlur.keLayarUji('l-setelan'); });
   await hal.waitForTimeout(300);
   await hal.click('#set-board [data-board-namai="Business"]');
   await hal.waitForTimeout(300);
@@ -2672,7 +2672,7 @@ console.log('\nteks bayangan: melengkapi nama gudang sambil diketik');
 {
   /* Gudang bertingkat dibuat lewat layar Setelan, jalur yang sama dengan yang
      dipakai orangnya - bukan lewat pintu belakang yang cuma ada di uji. */
-  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.bukaSetelanUji('*'); TAlur.keLayarUji('l-setelan'); });
   await hal.waitForTimeout(200);
   await hal.fill('#set-label',
     'Amara = amaraliving\nAmara Apps\nAmara Sales\nNgoffee = ngopi\nUltima');
@@ -2846,7 +2846,7 @@ console.log('\nteks bayangan: melengkapi nama gudang sambil diketik');
 
 console.log('\ngudang di mana saja, elemen tidak beranak, gudang tersering');
 {
-  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.bukaSetelanUji('*'); TAlur.keLayarUji('l-setelan'); });
   await hal.waitForTimeout(200);
   await hal.fill('#set-label', 'Amara\nAmara Sales\nAmara Apps\nNgoffee = ngopi\nUltima\nPS = projectspace');
   await hal.dispatchEvent('#set-label', 'change');
@@ -3060,7 +3060,7 @@ console.log('\nTodo dari layar Drop: pembedanya ACTION, bukan tenggat');
 
 console.log('\nfolder Note: alamatnya dibaca, dan bertingkat');
 {
-  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.bukaSetelanUji('*'); TAlur.keLayarUji('l-setelan'); });
   await hal.waitForTimeout(200);
   await hal.fill('#set-label', 'Amara\nAmara Sales\nAmara Apps\nNgoffee');
   await hal.dispatchEvent('#set-label', 'change');
@@ -3616,7 +3616,11 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
      untuk mencari satu tombol, dan itu keluhan lapangannya apa adanya. Yang
      merusaknya bukan panjangnya tapi RATANYA: dua belas bagian sederajat
      berarti mata tidak punya satu pun tempat untuk berhenti. */
-  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  /* Blok INI sengaja TIDAK memakai bukaSetelanUji('*'): yang diuji justru
+     keadaan mendaratnya, dan uji yang membuka semuanya lebih dulu tidak bisa
+     melihat satu pun aturan di bawah ini gagal. */
+  await hal.click('#b-setelan');
+  await hal.waitForSelector('#l-setelan.aktif');
   await hal.waitForTimeout(300);
 
   const kategori = await hal.locator('#setelan-isi > .set-lipat').count();
@@ -4909,7 +4913,7 @@ console.log('\ngeser antar pintu, papan ketik, pin, dan arsip yang bisa dikosong
   /* ARSIP BISA DIKOSONGKAN. Tanpa jalan ini arsip cuma gudang kedua yang ikut
      membengkakkan tiap cadangan selamanya - tapi menghapusnya harus kamu,
      sengaja, dari layar yang memang dibuat untuk itu. */
-  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.bukaSetelanUji('*'); TAlur.keLayarUji('l-setelan'); });
   await hal.waitForTimeout(300);
   const adaArsip = await hal.evaluate(() =>
     TAlur.semuaEntri().filter((e) => e.pensiun && !e.dihapus && e.jenis !== 'tugas').length);
@@ -4935,7 +4939,7 @@ console.log('\nfolder di layar Note: dibuat sendiri, judul terisi, dan bisa dipi
 {
   await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.fill('#kotak', '');
-  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.bukaSetelanUji('*'); TAlur.keLayarUji('l-setelan'); });
   await hal.waitForTimeout(200);
   await hal.fill('#set-label', 'Ngoffee\nAmara');
   await hal.dispatchEvent('#set-label', 'change');
@@ -5291,6 +5295,7 @@ console.log('\nbahasa: Inggris bawaannya, dan tidak ada kalimat yang terlewat');
   ]).then(() => TSimpan.semuaSetelan()).then((s) => {
     Object.keys(s).forEach(function (k) { TAlur.setelanUji()[k] = s[k]; });
     TAlur.gambarSetelan();
+    TAlur.bukaSetelanUji('*');
     TAlur.keLayarUji('l-setelan');
   }));
   /* Dibaca lewat evaluate, bukan locator: layar ini menggambar ulang sendiri
@@ -5345,7 +5350,10 @@ console.log('\nbahasa: Inggris bawaannya, dan tidak ada kalimat yang terlewat');
   const sisa = [];
   for (const l of ['l-utama', 'l-tulis', 'l-tugas', 'l-note', 'l-galeri', 'l-setelan']) {
     await halEn.evaluate((x) => {
-      if (x === 'l-setelan') TAlur.gambarSetelan();
+      /* SAPUAN BAHASA MEMBACA TEKS YANG TERGAMBAR, jadi kategori Setelan yang
+         tertutup berarti kalimat Indonesia yang tertinggal di dalamnya berhenti
+         ketahuan sama sekali - penjaga yang diam-diam berhenti menjaga. */
+      if (x === 'l-setelan') { TAlur.gambarSetelan(); TAlur.bukaSetelanUji('*'); }
       if (x === 'l-tugas') TTugas.gambar();
       TAlur.keLayarUji(x);
     }, l);
@@ -8090,7 +8098,7 @@ console.log('\nsinkron empat perangkat');
      begitu tidak akan menekannya kedua kali. Ini juga satu-satunya sentuhan
      yang pernah diminta dari perangkat baru, jadi dia harus menyelesaikan
      pekerjaannya sampai habis. */
-  await hal3.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
+  await hal3.evaluate(() => { TAlur.gambarSetelan(); TAlur.bukaSetelanUji('*'); TAlur.keLayarUji('l-setelan'); });
   await hal3.waitForTimeout(300);
   await hal3.click('#b-hubungkan');
   await hal3.waitForTimeout(2500);

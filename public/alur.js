@@ -5783,6 +5783,10 @@
      ['Bahaya']]
   ];
 
+  /* '*' membuka SEMUANYA, dan itu cuma dipakai uji terima. Bukan kemudahan:
+     sapuan bahasa membaca teks yang TERGAMBAR, jadi kategori yang tertutup
+     berarti kalimat Indonesia yang tertinggal di dalam Setelan berhenti
+     ketahuan sama sekali - penjaga yang diam-diam berhenti menjaga. */
   var setBuka = '';
 
   function lipatSetelan() {
@@ -5829,12 +5833,13 @@
 
   function blokLipat(nama, ket, daftar, bagian, awas) {
     var blok = document.createElement('div');
-    blok.className = 'set-lipat' + (awas ? ' awas' : '') + (setBuka === nama ? ' buka' : '');
+    var buka = setBuka === '*' || setBuka === nama;
+    blok.className = 'set-lipat' + (awas ? ' awas' : '') + (buka ? ' buka' : '');
 
     var tbl = document.createElement('button');
     tbl.className = 'set-lipat-kepala';
     tbl.setAttribute('data-set-lipat', nama);
-    tbl.setAttribute('aria-expanded', setBuka === nama ? 'true' : 'false');
+    tbl.setAttribute('aria-expanded', buka ? 'true' : 'false');
     tbl.innerHTML =
       '<span class="set-lipat-tubuh">' +
       '<span class="set-lipat-nama">' + H(nama) + '</span>' +
@@ -5844,7 +5849,7 @@
 
     var panel = document.createElement('div');
     panel.className = 'set-lipat-isi';
-    if (setBuka !== nama) panel.classList.add('sembunyi');
+    if (!buka) panel.classList.add('sembunyi');
     daftar.forEach(function (n) {
       var b = bagian[n];
       /* Kepala bagiannya IKUT kalau kategorinya berisi lebih dari satu - tanpa
@@ -5864,9 +5869,16 @@
        di tempat: gambarSetelan() dipanggil dari belasan tempat sesudah setelan
        berubah, dan keadaan yang cuma hidup di kelas DOM akan hilang di
        gambaran berikutnya - panel yang menutup sendiri sesudah kamu menekan
-       sesuatu di dalamnya terbaca sebagai aplikasi yang menolak disentuh. */
+       sesuatu di dalamnya terbaca sebagai aplikasi yang menolak disentuh.
+
+       DAN LEWAT gambarSetelan(), BUKAN lipatSetelan() SENDIRIAN. lipatSetelan
+       memungut kepala bagian dari tingkat atas '#setelan-isi', dan sesudah
+       lipatan pertama kepala-kepala itu sudah pindah ke dalam panel - jadi
+       panggilan keduanya tidak menemukan apa pun lalu pulang diam-diam. Yang
+       terlihat pemakainya: mengetuk kategori tidak melakukan apa-apa sama
+       sekali, tanpa satu galat pun. */
     setBuka = (setBuka === nama) ? '' : nama;
-    lipatSetelan();
+    gambarSetelan();
   }
 
   function gambarSetelan() {
@@ -8357,7 +8369,7 @@
     /* Cuma untuk uji: membuka satu kategori Setelan tanpa mencari tombolnya.
        Uji yang mengetuk tombol kategori lalu mengetuk isinya menguji
        pelipatnya berkali-kali, bukan hal yang sedang diuji. */
-    bukaSetelanUji: function (nama) { setBuka = nama || ''; lipatSetelan(); },
+    bukaSetelanUji: function (nama) { setBuka = nama || ''; gambarSetelan(); },
     kategoriSetelanUji: SET_KATEGORI,
     kartuHtmlUji: kartuHtml,
     /* Cuma untuk uji: menukar bentuk hasil tanpa lewat layar Setelan, supaya
