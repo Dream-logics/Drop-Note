@@ -356,6 +356,65 @@ button,input,textarea{font:inherit;color:inherit}
 .aksi .ik{width:15px;height:15px}
 .aksi:active{background:var(--p);opacity:1}
 .kosong{text-align:center;color:var(--m);font-size:13.5px;line-height:1.7;padding:34px 20px}
+
+/* --- tawaran tanya AI ---
+   Bergaris PUTUS-PUTUS, kosakata yang di aplikasi ini sudah berarti "jalan
+   pintas, bukan keadaan" (sama dengan Reset dan "+ Folder"). Dia memang bukan
+   hasil: menggambarnya seperti kartu hasil berarti satu baris di daftar itu
+   berbohong tentang isinya. */
+.tanya-ai{
+  display:flex;align-items:center;gap:9px;width:100%;min-height:48px;
+  margin-top:6px;padding:0 12px;border:1px dashed var(--lt);border-radius:12px;
+  background:none;color:var(--a);font:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;text-align:left;
+}
+.tanya-ai .ik{width:17px;height:17px;flex:0 0 auto}
+.tanya-ai-teks{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tanya-ai-teks b{font-weight:700}
+.tanya-ai-panah{flex:0 0 auto;opacity:.65}
+.tanya-ai:active{background:color-mix(in srgb, var(--a) 8%, transparent)}
+
+/* --- baris jemputan: yang menunggu hari ini ---
+   Daftar, bukan kartu - aturan yang sama dengan hasil pencarian. Tiga post-it
+   di lebar HP cuma punya dua nasib: petak kecil-kecil (dinding Keep, persis
+   yang dilawan aplikasi ini) atau strip yang digulir mendatar, dan yang
+   digulir mendatar menyembunyikan isinya di balik satu gerakan. */
+#petak-jemput{padding:0 2px 6px}
+.jemput-kepala{display:flex;align-items:center;gap:9px;padding-bottom:5px}
+.jemput-label{
+  font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--a);
+}
+.jemput-garis{flex:1;height:1px;background:var(--l)}
+.jemput-jumlah{font-size:11px;color:var(--m)}
+.jemput-baris{display:flex;align-items:center;gap:8px;min-height:50px;cursor:pointer}
+.jemput-baris + .jemput-baris{border-top:1px solid var(--l)}
+/* YANG PERTAMA DIBESARKAN. Tiga baris tipis menjawab pertanyaannya tapi tidak
+   menjawab keluhannya - layarnya tetap sebagian besar kosong. Yang membesar
+   cuma yang pertama: kalau ketiganya besar, tiga baris jadi tiga kartu, dan
+   tiga kartu itu dinding yang baru saja ditolak. */
+.jemput-baris.besar{min-height:62px}
+.jemput-baris.besar .jemput-judul{font-size:16.5px;font-weight:700;line-height:1.3}
+.jemput-centang{
+  width:44px;height:44px;flex:0 0 auto;margin-left:-11px;border:none;background:none;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.jemput-centang .bulat{
+  width:21px;height:21px;border:1.8px solid var(--lt);border-radius:50%;display:block;
+}
+.jemput-centang .bulat.lewat{border-color:var(--bahaya)}
+.jemput-centang:active .bulat{background:color-mix(in srgb, var(--a) 18%, transparent)}
+.jemput-judul{
+  flex:1;min-width:0;font-size:14px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.jemput-tenggat{flex:0 0 auto;font-size:11px;color:var(--m);white-space:nowrap}
+.jemput-tenggat.lewat{color:var(--bahaya);font-weight:700}
+.jemput-tenggat.penting{color:var(--a);font-weight:700}
+.jemput-lagi{
+  display:flex;align-items:center;width:100%;min-height:44px;
+  border:none;border-top:1px solid var(--l);background:none;
+  font:inherit;font-size:12.5px;font-weight:600;color:var(--m);cursor:pointer;text-align:left;
+}
 .kosong b{color:var(--i);font-weight:600}
 
 /* --- arsip di setelan --- */
@@ -789,6 +848,11 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
 #petak-hasil-depan:not(.sembunyi) ~ .tumbuh,
 #petak-ai:not(.sembunyi) ~ .tumbuh{display:none}
 .layar.dok-bawah > .tumbuh{order:4;flex:1 1 auto}
+/* Order 4 juga, dan digambar SESUDAH ganjalnya di markup - jadi ganjal yang
+   mengembang mendorongnya turun sampai menempel di atas dok, ujung yang paling
+   dekat jempol. Kalau ordernya 3 dia mendarat di bawah baris pintu dan yang
+   tergambar kepala layar, bukan tempat yang dijangkau tangan. */
+.layar.dok-bawah > #petak-jemput{order:4;flex:0 0 auto;min-height:0}
 .layar.dok-bawah > .kaki{display:none}
 /* Di posisi bawah, hasilnya jadi hal pertama sesudah baris pintu - garis dan
    jarak yang dulu memisahkannya dari kotak jadi coretan yang menggantung. */

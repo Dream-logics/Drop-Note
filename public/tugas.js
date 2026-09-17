@@ -159,14 +159,33 @@
     if (saringSaat === 'semua' || !saringSaat) {
       return pakai.sort(function (a, b) { return (b.dibuat || 0) - (a.dibuat || 0); });
     }
-    return pakai.sort(function (a, b) {
-      var ta = tertunggak(a) ? 0 : 1, tb = tertunggak(b) ? 0 : 1;
-      if (ta !== tb) return ta - tb;
-      if (!!b.penting !== !!a.penting) return b.penting ? 1 : -1;
-      var da = a.tenggat || Infinity, db = b.tenggat || Infinity;
-      if (da !== db) return da - db;
-      return (b.dibuat || 0) - (a.dibuat || 0);
-    });
+    return pakai.sort(urutMendesak);
+  }
+
+  function urutMendesak(a, b) {
+    var ta = tertunggak(a) ? 0 : 1, tb = tertunggak(b) ? 0 : 1;
+    if (ta !== tb) return ta - tb;
+    if (!!b.penting !== !!a.penting) return b.penting ? 1 : -1;
+    var da = a.tenggat || Infinity, db = b.tenggat || Infinity;
+    if (da !== db) return da - db;
+    return (b.dibuat || 0) - (a.dibuat || 0);
+  }
+
+  /* JEMPUTAN - isi baris "Hari ini" di layar depan, dan dia TIDAK boleh lewat
+     tersaring(). tersaring() membaca 'saringSaat' dan 'daftarSaat', dan itu
+     keadaan milik layar To Do: memanggilnya dari layar depan berarti membuka
+     Drop diam-diam mengganti saringan yang sedang terbuka di sana - dan yang
+     terbaca bukan "aku pernah mengubahnya" tapi "saringannya lompat sendiri".
+
+     Syarat dan urutannya dipakai BERSAMA dengan saringan "Hari ini", bukan
+     disalin: dua aturan yang mengucapkan hal yang sama akan berbeda begitu
+     salah satunya disunting, dan yang di layar depan pasti yang lebih miskin. */
+  function jemputan() {
+    var batas = hariMulai(Date.now());
+    return semuaTugas().filter(function (e) {
+      if (e.selesai) return false;
+      return ikutHariIni(e) || tertunggak(e) || (e.tenggat && e.tenggat <= batas);
+    }).sort(urutMendesak);
   }
 
   /* ===================== TENGGAT DARI KALIMAT =====================
@@ -786,6 +805,7 @@
     daftarYangAda: daftarYangAda,
     hariMulai: hariMulai, tulisTenggat: tulisTenggat, tugasBaru: tugasBaru,
     bacaTenggat: bacaTenggat,
-    selesaikan: selesaikan, tersaring: tersaring, belumDibaca: belumDibaca
+    selesaikan: selesaikan, tersaring: tersaring, belumDibaca: belumDibaca,
+    jemputan: jemputan, tertunggak: tertunggak
   };
 })(window);

@@ -3485,6 +3485,127 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
   cek('yang sekali jalan tetap bulatan kosong',
       (await polos.locator('.tugas-centang.berulang').count()) === 0);
 
+  /* ===== BARIS JEMPUTAN DI LAYAR DEPAN =====
+     Layar depan kosong itu benar dan tetap benar - yang dilarang dinding kartu
+     CATATAN. Bedanya satu hal: catatan tidak pernah pergi, tugas pergi
+     sendiri, jadi blok ini mengosongkan dirinya tanpa ada yang merapikannya. */
+  await hal.evaluate(async () => {
+    const kemarin = TTugas.hariMulai(Date.now()) - 86400000 * 2;
+    const a = TTugas.tugasBaru('kirim invoice kopo project');
+    a.tenggat = kemarin;
+    const b = TTugas.tugasBaru('follow up sample hampers');
+    b.penting = true;
+    b.hariIni = TTugas.hariMulai(Date.now());
+    const c = TTugas.tugasBaru('cek kuota proxy ai');
+    c.tenggat = TTugas.hariMulai(Date.now());
+    const d = TTugas.tugasBaru('ganti oli genset');
+    d.hariIni = TTugas.hariMulai(Date.now());
+    /* DIBERI TANGGAL LAMA dengan sengaja. Saringan "Semua" di layar To Do
+       urutannya terbaru-di-atas, jadi umpan yang lahir di sini akan menyerobot
+       baris pertama dan uji sesudahnya mengklik tugas yang bukan miliknya.
+       Urutan jemputan tidak terpengaruh: 'dibuat' cuma pemutus seri paling
+       akhir, sesudah tertunggak, penting, dan tenggat. */
+    [a, b, c, d].forEach(function (x) { x.dibuat = Date.now() - 86400000 * 10; });
+    await TSimpan.taruh(a); await TSimpan.taruh(b);
+    await TSimpan.taruh(c); await TSimpan.taruh(d);
+    return TAlur.muatUlangUji();
+  });
+  await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); });
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(350);
+
+  /* URUTANNYA DIPAKAI BERSAMA dengan saringan "Hari ini", bukan disalin:
+     tertunggak - penting - tenggat terdekat. */
+  const jemput = await hal.locator('#petak-jemput .jemput-judul')
+    .evaluateAll((n) => n.map((x) => x.textContent.trim()));
+  cek('yang tertunggak berdiri paling atas',
+      /kirim invoice/i.test(jemput[0] || ''), JSON.stringify(jemput));
+  cek('lalu yang penting', /hampers/i.test(jemput[1] || ''), JSON.stringify(jemput));
+  /* TIGA, bukan semua: di empat dia mulai jadi dinding, dan dinding itu persis
+     yang dilawan aplikasi ini. */
+  cek('dibatasi tiga, sisanya jadi satu baris ke To Do',
+      jemput.length === 3 &&
+      (await hal.locator('#petak-jemput [data-jemput-semua]').count()) === 1,
+      JSON.stringify(jemput));
+  /* YANG PERTAMA DIBESARKAN. Tiga baris tipis menjawab pertanyaannya tapi
+     tidak menjawab keluhannya - layarnya tetap sebagian besar kosong. */
+  const tinggiJemput = await hal.locator('#petak-jemput .jemput-baris')
+    .evaluateAll((n) => n.map((x) => Math.round(x.getBoundingClientRect().height)));
+  cek('yang paling mendesak digambar lebih besar daripada sisanya',
+      tinggiJemput[0] > tinggiJemput[1], JSON.stringify(tinggiJemput));
+  cek('dan cuma yang pertama - tiga yang besar itu dinding, bukan daftar',
+      tinggiJemput[1] === tinggiJemput[2], JSON.stringify(tinggiJemput));
+  /* Sasaran centangnya tetap 44px: dia tombol yang dipakai tiap hari. */
+  const sasaranCentang = await hal.locator('#petak-jemput .jemput-centang').first()
+    .evaluate((n) => Math.round(n.getBoundingClientRect().width));
+  cek('bulatan centangnya tetap sasaran 44px', sasaranCentang >= 44, String(sasaranCentang));
+
+  /* DUDUK DI BAWAH, tepat di atas dok - ujung yang paling dekat jempol. Kalau
+     dia mendarat di bawah baris pintu, yang tergambar kepala layar: tempat
+     yang justru paling jauh dari tangan. */
+  const letakJemput = await hal.evaluate(() => {
+    const j = document.querySelector('#petak-jemput').getBoundingClientRect();
+    const d = document.querySelector('#dok').getBoundingClientRect();
+    const t = document.querySelector('#l-utama .tab-baris').getBoundingClientRect();
+    return { j: j.top, d: d.top, t: t.bottom };
+  });
+  cek('bloknya duduk tepat di atas dok, bukan di bawah baris pintu',
+      letakJemput.j > letakJemput.t + 80 && letakJemput.j <= letakJemput.d + 1,
+      JSON.stringify(letakJemput));
+
+  /* DICENTANG DI TEMPAT. Kalau barisnya cuma membawamu ke layar To Do, dia
+     papan pengumuman - dan papan pengumuman tidak punya saluran keluar. */
+  await hal.click('#petak-jemput .jemput-centang');
+  await hal.waitForTimeout(400);
+  const sesudahCentang = await hal.locator('#petak-jemput .jemput-judul')
+    .evaluateAll((n) => n.map((x) => x.textContent.trim()));
+  cek('dicentang di tempat, barisnya langsung hilang',
+      !sesudahCentang.some((t) => /kirim invoice/i.test(t)) &&
+      (await hal.locator('#l-utama').evaluate((n) => n.classList.contains('aktif'))),
+      JSON.stringify(sesudahCentang));
+
+  /* Satu huruf dan bloknya pergi: ruang ini milik hasil pencarian, dan dua
+     daftar yang berebut ruang yang sama membuat keduanya tidak terbaca. */
+  await hal.fill('#kotak', 'kopo');
+  await hal.waitForTimeout(400);
+  cek('satu huruf diketik, blok jemputan pergi',
+      await hal.locator('#petak-jemput').evaluate((n) => n.classList.contains('sembunyi')));
+
+  /* ===== TAWARAN TANYA AI, BENTUK WHATSAPP =====
+     Pilihan AI ditawarkan SESUDAH mengetik, karena baru di situ dia tahu mau
+     ditanya apa. Dulu kebalikannya: ikon AI justru pergi begitu ada yang
+     diketik, jadi satu-satunya jalan ke AI adalah menghapus ketikanmu,
+     menekan ikonnya, lalu mengetik ulang kalimat yang sama. */
+  cek('mengetik memunculkan tawaran tanya AI',
+      (await hal.locator('#hasil-depan [data-tanya-ai]').count()) === 1);
+  cek('dan tawarannya membawa kalimat yang sudah kamu ketik',
+      /kopo/.test(await hal.locator('#hasil-depan [data-tanya-ai]').textContent()));
+  /* LETAKNYA IKUT JAWABAN TIMBUNANNYA: ada hasil -> paling bawah. Catatanmu
+     sendiri selalu jawaban yang lebih baik daripada karangan mesin. */
+  const letakTanya = await hal.evaluate(() => {
+    const anak = Array.from(document.querySelector('#hasil-depan').children);
+    const i = anak.findIndex((n) => n.hasAttribute('data-tanya-ai'));
+    return { i, n: anak.length, kartu: document.querySelectorAll('#hasil-depan .kartu').length };
+  });
+  cek('kalau ada hasil, tawarannya paling bawah - bukan mendorong catatanmu turun',
+      letakTanya.kartu === 0 || letakTanya.i === letakTanya.n - 1, JSON.stringify(letakTanya));
+
+  /* Nol hasil -> tawarannya menggantikan jalan buntu. Di situ layarnya cuma
+     bilang "tidak ada yang cocok" lalu berhenti, padahal itu justru
+     satu-satunya momen AI memang jawabannya. */
+  await hal.fill('#kotak', 'zzzqqxwv');
+  await hal.waitForTimeout(400);
+  cek('layar kosong pun tetap menawarkan AI, bukan jalan buntu',
+      (await hal.locator('#hasil-depan .kosong').count()) === 1 &&
+      (await hal.locator('#hasil-depan [data-tanya-ai]').count()) === 1);
+
+  /* Kotak kosong bukan pertanyaan: tanpa penjaga ini tawarannya menggantung di
+     layar yang tidak sedang menanyakan apa pun. */
+  await hal.fill('#kotak', '');
+  await hal.waitForTimeout(350);
+  cek('kotak kosong tidak menawarkan apa-apa',
+      (await hal.locator('#hasil-depan [data-tanya-ai]').count()) === 0);
+
   /* TEMA WARNA. Yang berganti CUMA aksennya - dasarnya tetap putih redup, dan
      alasannya sama dengan alasan tema gelap dulu dibuang. */
   await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
