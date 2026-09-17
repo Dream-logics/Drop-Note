@@ -608,6 +608,18 @@ console.log('\ncatat: satu baris, banyak versi');
   });
   cek('tulisan polos tidak menyimpan salinan berformat',
       polosKaya && polosKaya.kaya === '', JSON.stringify(polosKaya));
+
+  /* UMPANNYA DIBERESKAN SENDIRI. Blok cadangan sesudah ini menghitung berapa
+     baris yang naik ke spreadsheet, dan satu catatan uji yang tertinggal
+     membuatnya gagal karena alasan yang tidak ada hubungannya dengan
+     cadangannya. Uji yang mengotori tetangganya bukan uji, dia jebakan. */
+  await hal.evaluate(async () => {
+    const e = TAlur.semuaEntri().filter((x) => x.judul === 'tulisan polos uji')[0];
+    if (e) await TSimpan.hapus(e.id);
+    await TAlur.muatUlangUji();
+  });
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(300);
 }
 
 console.log('\ncadangan ke Drive & Sheets');
