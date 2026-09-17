@@ -5747,6 +5747,140 @@
     });
   }
 
+  /* ===================== SETELAN DILIPAT PER KATEGORI =====================
+     Layar Setelan tumbuh jadi dua belas bagian berjajar - satu kereta api yang
+     harus digulir seluruhnya untuk mencari satu tombol, dan itu keluhan
+     lapangannya apa adanya ("aku pusing tiap kali masuk menu setting"). Yang
+     merusaknya bukan panjangnya, tapi RATANYA: dua belas bagian sederajat
+     berarti mata tidak punya satu pun tempat untuk berhenti.
+
+     Jadi yang tampil cuma ENAM baris, dan tiap baris membawa satu kalimat isi
+     ruangannya - supaya kamu tidak perlu membukanya cuma untuk tahu ada apa di
+     dalam. Baris yang cuma bernama menagih satu ketukan untuk menjawab
+     pertanyaan yang seharusnya sudah terjawab dari luar.
+
+     SATU TERBUKA PADA SATU WAKTU, pola yang SUDAH dipakai pohon board di layar
+     yang sama - bukan pola baru yang harus dihafal sendiri. Dan ini KEADAAN,
+     bukan setelan: "sekarang perlihatkan isinya", bukan "mulai sekarang selalu
+     begitu". Tidak ikut disimpan, tidak ikut sinkron.
+
+     Bagiannya dikumpulkan DARI DOM yang sudah tergambar, bukan dengan memecah
+     gambarSetelan() jadi dua belas fungsi: isinya tidak disentuh sama sekali,
+     jadi tidak ada satu pun penangan atau id yang bisa diam-diam putus - dan
+     pasangSetelan() yang berjalan sesudahnya masih menemukan semuanya. */
+  var SET_KATEGORI = [
+    ['Tampilan', 'Baris pintu, bahasa, warna, bentuk hasil cari',
+     ['Menu', 'Tampilan']],
+    ['Ruangan', 'Label rak, pohon board, akhiran yang boleh dipakai AI',
+     ['Label rak', 'Board', 'Akhiran']],
+    ['Bantuan AI', 'Judul, deskripsi, board, dan obrolan',
+     ['Bantuan AI']],
+    ['Sinkron & cadangan', 'Google Drive, kirim sekarang, ruang di perangkat',
+     ['Brankas', 'Cadangan manual', 'Penyimpanan di perangkat']],
+    ['Kunci & arsip', 'Sandi catatan rahasia, dan yang sudah kamu arsipkan',
+     ['Kunci rahasia', 'Arsip']],
+    ['Bahaya', 'Kosongkan semua data di perangkat ini',
+     ['Bahaya']]
+  ];
+
+  /* '*' membuka SEMUANYA, dan itu cuma dipakai uji terima. Bukan kemudahan:
+     sapuan bahasa membaca teks yang TERGAMBAR, jadi kategori yang tertutup
+     berarti kalimat Indonesia yang tertinggal di dalam Setelan berhenti
+     ketahuan sama sekali - penjaga yang diam-diam berhenti menjaga. */
+  var setBuka = '';
+
+  function lipatSetelan() {
+    var isi = $('#setelan-isi');
+    if (!isi) return;
+
+    /* Tiap kepala bagian memungut semua saudara sesudahnya sampai kepala
+       berikutnya. Nodanya DIPINDAH (appendChild memindahkan, bukan menyalin),
+       jadi tidak ada satu pun yang tergambar dua kali. */
+    var bagian = {}, urut = [];
+    Array.prototype.slice.call(isi.children).forEach(function (n) {
+      if (n.classList && n.classList.contains('set-bagian')) {
+        var nama = n.textContent.trim();
+        bagian[nama] = { kepala: n, isi: [] };
+        urut.push(nama);
+      } else if (urut.length) {
+        bagian[urut[urut.length - 1]].isi.push(n);
+      }
+    });
+    if (!urut.length) return;
+
+    var diambil = {};
+    var wadah = document.createDocumentFragment();
+
+    SET_KATEGORI.forEach(function (k) {
+      var punya = k[2].filter(function (n) { return bagian[n]; });
+      if (!punya.length) return;
+      punya.forEach(function (n) { diambil[n] = true; });
+      wadah.appendChild(blokLipat(k[0], k[1], punya, bagian, k[0] === 'Bahaya'));
+    });
+
+    /* PENAMPUNG TERAKHIR, dan dia bukan kemalasan: bagian baru yang lupa
+       didaftarkan di SET_KATEGORI akan tetap terlihat, bukan lenyap dari layar
+       tanpa satu galat pun. Uji terimanya menuntut penampung ini KOSONG - jadi
+       yang lupa gagal di uji, bukan di tangan pemakainya. */
+    var sisa = urut.filter(function (n) { return !diambil[n]; });
+    if (sisa.length) {
+      wadah.appendChild(blokLipat('Lain-lain', 'Belum dikelompokkan', sisa, bagian, false));
+    }
+
+    isi.textContent = '';
+    isi.appendChild(wadah);
+  }
+
+  function blokLipat(nama, ket, daftar, bagian, awas) {
+    var blok = document.createElement('div');
+    var buka = setBuka === '*' || setBuka === nama;
+    blok.className = 'set-lipat' + (awas ? ' awas' : '') + (buka ? ' buka' : '');
+
+    var tbl = document.createElement('button');
+    tbl.className = 'set-lipat-kepala';
+    tbl.setAttribute('data-set-lipat', nama);
+    tbl.setAttribute('aria-expanded', buka ? 'true' : 'false');
+    tbl.innerHTML =
+      '<span class="set-lipat-tubuh">' +
+      '<span class="set-lipat-nama">' + H(nama) + '</span>' +
+      '<span class="set-lipat-ket">' + H(ket) + '</span></span>' +
+      '<svg viewBox="0 0 24 24" class="ik set-lipat-panah"><path d="M9 6l6 6-6 6"/></svg>';
+    blok.appendChild(tbl);
+
+    var panel = document.createElement('div');
+    panel.className = 'set-lipat-isi';
+    if (!buka) panel.classList.add('sembunyi');
+    daftar.forEach(function (n) {
+      var b = bagian[n];
+      /* Kepala bagiannya IKUT kalau kategorinya berisi lebih dari satu - tanpa
+         itu "Board" dan "Akhiran" jadi dua kotak tanpa nama di dalam satu
+         panel, dan yang mencari board harus membaca isinya dulu. Kategori yang
+         cuma berisi satu bagian tidak perlu: namanya sudah di kepalanya. */
+      if (daftar.length > 1) panel.appendChild(b.kepala);
+      else if (b.kepala.parentNode) b.kepala.parentNode.removeChild(b.kepala);
+      b.isi.forEach(function (x) { panel.appendChild(x); });
+    });
+    blok.appendChild(panel);
+    return blok;
+  }
+
+  function alihLipatSetelan(nama) {
+    /* Satu terbuka pada satu waktu. Digambar ulang seluruhnya, bukan ditoggle
+       di tempat: gambarSetelan() dipanggil dari belasan tempat sesudah setelan
+       berubah, dan keadaan yang cuma hidup di kelas DOM akan hilang di
+       gambaran berikutnya - panel yang menutup sendiri sesudah kamu menekan
+       sesuatu di dalamnya terbaca sebagai aplikasi yang menolak disentuh.
+
+       DAN LEWAT gambarSetelan(), BUKAN lipatSetelan() SENDIRIAN. lipatSetelan
+       memungut kepala bagian dari tingkat atas '#setelan-isi', dan sesudah
+       lipatan pertama kepala-kepala itu sudah pindah ke dalam panel - jadi
+       panggilan keduanya tidak menemukan apa pun lalu pulang diam-diam. Yang
+       terlihat pemakainya: mengetuk kategori tidak melakukan apa-apa sama
+       sekali, tanpa satu galat pun. */
+    setBuka = (setBuka === nama) ? '' : nama;
+    gambarSetelan();
+  }
+
   function gambarSetelan() {
     var s = setelanSaat;
     var mode = s.modeAI || 'mati';
@@ -5972,6 +6106,13 @@
       '</div>'
     ].join('');
 
+    /* WAJIB SEBELUM pasangSetelan(). Nodanya dipindah, bukan digambar ulang,
+       jadi urutannya sebetulnya tidak menentukan - tapi gambarArsip() menulis
+       ke '#arsip-daftar' dan penangan-penangan di pasangSetelan() mencari id
+       yang sekarang tinggal di dalam panel. Menaruh pelipatnya di belakang
+       mereka berarti satu hari ada yang memindahkannya lagi dan urutan itu
+       diam-diam jadi penting. */
+    lipatSetelan();
     gambarArsip();
     pasangSetelan();
     perbaruiStatusSetelan();
@@ -7698,8 +7839,17 @@
     });
 
     $('#b-setelan').addEventListener('click', function () {
+      /* Selalu mendarat dengan semuanya tertutup. Panel yang masih terbuka
+         dari kunjungan tadi pagi menjawab pertanyaan yang sudah lewat, dan
+         yang tergambar lagi-lagi layar yang harus digulir. */
+      setBuka = '';
       gambarSetelan();
       keLayar('l-setelan');
+    });
+
+    $('#setelan-isi').addEventListener('click', function (ev) {
+      var k = ev.target.closest('[data-set-lipat]');
+      if (k) alihLipatSetelan(k.getAttribute('data-set-lipat'));
     });
 
     $('#b-tambah-baris').addEventListener('click', tambahBarisDaftar);
@@ -8216,6 +8366,11 @@
   global.TAlur = {
     keCatat: keCatat, drop: drop,
     gambarMulai: gambarMulai, gambarSetelan: gambarSetelan,
+    /* Cuma untuk uji: membuka satu kategori Setelan tanpa mencari tombolnya.
+       Uji yang mengetuk tombol kategori lalu mengetuk isinya menguji
+       pelipatnya berkali-kali, bukan hal yang sedang diuji. */
+    bukaSetelanUji: function (nama) { setBuka = nama || ''; gambarSetelan(); },
+    kategoriSetelanUji: SET_KATEGORI,
     kartuHtmlUji: kartuHtml,
     /* Cuma untuk uji: menukar bentuk hasil tanpa lewat layar Setelan, supaya
        kedua bentuk bisa diperiksa dalam satu lintasan. */

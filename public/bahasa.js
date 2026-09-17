@@ -351,6 +351,22 @@
     'Membuka izin Google…': 'Opening the Google consent screen…',
     'Memeriksa kunci…': 'Checking the key…',
     'Bantuan AI': 'AI help',
+    /* Nama kategori di layar Setelan yang sudah dilipat. */
+    'Ruangan': 'Rooms',
+    'Sinkron & cadangan': 'Sync & backup',
+    'Kunci & arsip': 'Lock & archive',
+    'Lain-lain': 'Other',
+    'Baris pintu, bahasa, warna, bentuk hasil cari':
+      'Door row, language, colour, search result style',
+    'Label rak, pohon board, akhiran yang boleh dipakai AI':
+      'Shelf labels, the board tree, suffixes the AI may use',
+    'Judul, deskripsi, board, dan obrolan': 'Titles, descriptions, boards, and chat',
+    'Google Drive, kirim sekarang, ruang di perangkat':
+      'Google Drive, send now, space on this device',
+    'Sandi catatan rahasia, dan yang sudah kamu arsipkan':
+      'The passphrase for secret notes, and what you have archived',
+    'Kosongkan semua data di perangkat ini': 'Wipe every bit of data on this device',
+    'Belum dikelompokkan': 'Not grouped yet',
     'Menambal konteks yang tidak sempat ditulis': 'Filling in the context you had no time to write',
     'Mati': 'Off',
     'Hemat': 'Light',
