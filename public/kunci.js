@@ -155,7 +155,18 @@
     return kunciTeks(e.isi || '').then(function (isi) {
       var punya = (e.elemen || []).length
         ? kunciTeks(JSON.stringify(e.elemen)) : Promise.resolve('');
-      return punya.then(function (elemen) {
+      /* TULISAN BERFORMAT IKUT DIKUNCI, bukan dibuang dan bukan ditinggal
+         terbuka. Membuangnya berarti mengunci satu catatan diam-diam
+         menghapus tebal dan butirnya - kehilangan yang tidak pernah kamu
+         minta. Meninggalkannya terbuka jauh lebih buruk: 'kaya' memuat
+         kalimat yang SAMA dengan 'isi', jadi seluruh isi rahasianya terbaca
+         apa adanya di spreadsheet cadangan sementara kolom di sebelahnya
+         susah payah disandikan. */
+      var kaya = (e.kaya || '') ? kunciTeks(e.kaya) : Promise.resolve('');
+      return Promise.all([punya, kaya]).then(function (dua) {
+        var elemen = dua[0];
+        e.kayaTerkunci = dua[1];
+        e.kaya = '';
         e.isi = isi;
         e.elemenTerkunci = elemen;
         e.elemen = [];
@@ -179,10 +190,13 @@
   function bukaEntri(e) {
     return bukaTeks(e.isi || '').then(function (isi) {
       var punya = e.elemenTerkunci ? bukaTeks(e.elemenTerkunci) : Promise.resolve('');
-      return punya.then(function (elemen) {
+      var kaya = e.kayaTerkunci ? bukaTeks(e.kayaTerkunci) : Promise.resolve('');
+      return Promise.all([punya, kaya]).then(function (dua) {
+        var elemen = dua[0];
         var salinan = {};
         Object.keys(e).forEach(function (k) { salinan[k] = e[k]; });
         salinan.isi = isi;
+        salinan.kaya = dua[1];
         try { salinan.elemen = elemen ? JSON.parse(elemen) : []; }
         catch (x) { salinan.elemen = []; }
         return salinan;
@@ -194,6 +208,8 @@
   function lepasEntri(e) {
     return bukaEntri(e).then(function (bersih) {
       e.isi = bersih.isi;
+      e.kaya = bersih.kaya || '';
+      e.kayaTerkunci = '';
       e.elemen = bersih.elemen;
       e.elemenTerkunci = '';
       e.rahasia = false;

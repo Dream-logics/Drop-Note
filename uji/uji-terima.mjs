@@ -516,6 +516,129 @@ console.log('\ncatat: satu baris, banyak versi');
   cek('isi diperbarui di baris yang sama', e.isi === 'versi kedua');
   cek('versi lama masuk riwayat', (e.riwayat || []).length === 1 && e.riwayat[0].isi === 'versi pertama');
   cek('tetap satu entri, tidak beranak', (await hal.evaluate(() => TAlur.semuaEntri().length)) === 1);
+
+  /* ===== TULISAN BERFORMAT =====
+     Pesan panjang tanpa tebal dan butir cuma dinding huruf. Formatnya ditulis
+     DENGAN TOMBOL, tidak pernah dengan tanda bintang: "*tebal*" menuntutmu
+     mengetik kode lalu membayangkan hasilnya, dan yang terbaca di layar bukan
+     tulisanmu tapi mesinnya.
+
+     PEMBAGIANNYA YANG MENENTUKAN: 'kaya' menyimpan formatnya, 'isi' TETAP teks
+     polos - dan 'isi' itu yang dibaca pencarian, AI, kartu hasil, dan pembaca
+     rak. Kalau formatnya ikut masuk ke 'isi', mencari "kopi" akan menjaring
+     "<strong>" dan AI menerima tag sebagai bahan. */
+  cek('tiga tombol format, bukan sepuluh',
+      (await hal.locator('.catat-dok [data-format]').count()) === 3);
+  /* Di baris yang SUDAH ada: layar ini dipatok ke tinggi yang terlihat, dan
+     satu baris tambahan berarti yang dibayar justru tempat menulisnya. */
+  cek('tombolnya duduk di dok yang sudah ada, bukan di baris baru',
+      (await hal.locator('.catat-dok').count()) === 1 &&
+      (await hal.locator('.catat-dok #b-simpan').count()) === 1);
+
+  await hal.fill('#catat-isi', 'baris biasa yang akan ditebalkan');
+  await hal.dispatchEvent('#catat-isi', 'input');
+  await hal.evaluate(() => {
+    document.querySelector('#catat-isi').focus();
+    document.execCommand('selectAll');
+  });
+  await hal.locator('.catat-dok [data-format="bold"]').click();
+  await hal.waitForTimeout(900);
+  const kayaE = await hal.evaluate(() => TAlur.semuaEntri()[0]);
+  cek('tebalnya tersimpan di kolomnya sendiri',
+      /<(b|strong)>/i.test(kayaE.kaya || ''), kayaE.kaya);
+  /* INI ATURAN YANG PALING MENENTUKAN DI SELURUH PERUBAHAN INI. */
+  cek('dan isinya TETAP teks polos, tanpa satu tag pun',
+      kayaE.isi === 'baris biasa yang akan ditebalkan', JSON.stringify(kayaE.isi));
+  /* Kalau tagnya bocor ke 'isi', pencariannya ikut rusak - dan rusaknya tidak
+     kelihatan sampai ada yang mencari kata yang kebetulan ada di dalam tag. */
+  const cariKaya = await hal.evaluate(() =>
+    TOtak.cari(TAlur.semuaEntri(), 'ditebalkan', '', '').length);
+  cek('yang ditebalkan tetap ketemu lewat katanya sendiri', cariKaya === 1, String(cariKaya));
+
+  /* Dibuka lagi, tebalnya masih ada - kalau tidak, formatnya cuma hidup selama
+     layarnya belum ditinggal, dan itu lebih buruk daripada tidak ada. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(300);
+  await hal.evaluate(() => TAlur.keCatat(TAlur.semuaEntri()[0]));
+  await hal.waitForTimeout(400);
+  cek('dibuka lagi, tebalnya masih tergambar',
+      (await hal.locator('#catat-isi b, #catat-isi strong').count()) >= 1);
+
+  /* Butirnya jadi "- " di teks polosnya: itu bentuk teks polos sebuah butir,
+     dan tanpa itu daftar berhenti terbaca sebagai daftar di cuplikan kartu. */
+  const teksButir = await hal.evaluate(() =>
+    TAlur.teksDariKayaUji('<ul><li>satu</li><li>dua</li></ul>'));
+  cek('butir jadi "- " di teks polosnya',
+      teksButir === '- satu\n- dua', JSON.stringify(teksButir));
+
+  /* ===== DAFTAR TAGNYA TERTUTUP =====
+     Bukan kerapian: HTML yang datang dari tempelan halaman web membawa skrip,
+     gaya, dan atribut - dan bidang ini duduk di halaman yang sama dengan
+     seluruh catatannya. */
+  const saring = await hal.evaluate(() => TAlur.bersihkanKayaUji(
+    '<b onclick="jahat()">tebal</b><script>jahat()</scr' + 'ipt>' +
+    '<span style="color:red">warna</span><img src=x onerror="jahat()">' +
+    '<a href="javascript:jahat()">tautan</a>'));
+  cek('skrip dan gambar dibuang seluruhnya',
+      saring.indexOf('script') < 0 && saring.indexOf('img') < 0 &&
+      saring.indexOf('onerror') < 0, saring);
+  cek('atribut dibuang, walau tagnya boleh', saring.indexOf('onclick') < 0, saring);
+  /* TAGNYA dibuang, ISINYA tidak: tempelan hampir selalu terbungkus <span>,
+     dan membuang isinya berarti membuang kalimat yang barusan kamu tempel. */
+  cek('tapi kalimatnya tidak ikut hilang',
+      /tebal/.test(saring) && /warna/.test(saring) && /tautan/.test(saring), saring);
+  cek('dan tebalnya selamat', /<b>tebal<\/b>/.test(saring), saring);
+
+  /* Catatan polos TIDAK menyimpan salinan HTML-nya sendiri: kalau menyimpan,
+     tiap baris di spreadsheet membawa kalimatnya dua kali dan yang kedua tidak
+     menjawab apa pun.
+     Diuji di catatan BARU, bukan dengan menimpa yang tadi: mengetik ulang di
+     atas tulisan yang seluruhnya tebal MEWARISI tebalnya - itu perilaku tiap
+     penyunting di mana pun, bukan cacat, dan menguji di situ berarti menguji
+     peramban, bukan aturannya. */
+  await hal.evaluate(() => TAlur.keCatat(TAlur.entriBaruUji('teks')));
+  await hal.waitForTimeout(350);
+  await hal.fill('#catat-judul', 'tulisan polos uji');
+  await hal.fill('#catat-isi', 'tulisan polos tanpa format apa pun');
+  await hal.dispatchEvent('#catat-isi', 'input');
+  await hal.waitForTimeout(900);
+  const polosKaya = await hal.evaluate(() => {
+    const e = TAlur.semuaEntri().filter((x) => x.judul === 'tulisan polos uji')[0];
+    return e ? { kaya: e.kaya, isi: e.isi } : null;
+  });
+  cek('tulisan polos tidak menyimpan salinan berformat',
+      polosKaya && polosKaya.kaya === '', JSON.stringify(polosKaya));
+
+  /* UMPANNYA DIBERESKAN SENDIRI. Blok cadangan sesudah ini menghitung berapa
+     baris yang naik ke spreadsheet, dan satu catatan uji yang tertinggal
+     membuatnya gagal karena alasan yang tidak ada hubungannya dengan
+     cadangannya. Uji yang mengotori tetangganya bukan uji, dia jebakan. */
+  /* LAYARNYA DITINGGAL DULU, BARU DIHAPUS. Meninggalkan layar tulis memanggil
+     simpanCatat() sendiri (di tampilkanLayar), dan penundanya juga masih bisa
+     berbunyi - jadi menghapus lebih dulu berarti catatannya lahir lagi sesaat
+     kemudian, dan yang terlihat cuma uji tetangga yang gagal tanpa sebab. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(600);
+  await hal.evaluate(async () => {
+    const buang = TAlur.semuaEntri().filter((x) => x.judul === 'tulisan polos uji');
+    for (const e of buang) await TSimpan.hapus(e.id);
+    await TAlur.muatUlangUji();
+  });
+  await hal.waitForTimeout(300);
+  cek('umpan uji tulisan polos dibereskan sendiri',
+      (await hal.evaluate(() =>
+        TAlur.semuaEntri().filter((x) => x.judul === 'tulisan polos uji').length)) === 0);
+
+  /* DIKEMBALIKAN KE TEMPAT SEMULA. Blok sesudah ini masih berdiri di layar
+     tulis dan menekan panah kembalinya - meninggalkan suite di layar lain
+     berarti uji tetangga gagal karena tombol yang memang sedang tidak
+     terlihat, dan yang dikejar orang berikutnya cacat di tempat yang salah. */
+  await hal.evaluate(() => {
+    const e = TAlur.semuaEntri().filter((x) => x.judul === 'Link dev photo studio')[0];
+    if (e) TAlur.keCatat(e);
+  });
+  await hal.waitForSelector('#l-catat.aktif');
+  await hal.waitForTimeout(300);
 }
 
 console.log('\ncadangan ke Drive & Sheets');
@@ -7108,9 +7231,23 @@ console.log('\ndriver: satu foto, puluhan sudut pandang');
   /* Kolomnya ikut dicadangkan, DI EKOR - baris lama membaca nilainya menurut
      urutan, jadi menyisipkan di tengah menggeser seluruh cadangan yang ada. */
   const kolomDriver = await hal.evaluate(() => TAwan.KOLOM);
-  cek('driver ikut dicadangkan, kolomnya di ekor',
-      kolomDriver.indexOf('driver') >= kolomDriver.length - 3,
-      JSON.stringify(kolomDriver.slice(-3)));
+  /* PENJAGANYA SEKARANG URUTANNYA SENDIRI, bukan "driver ada di tiga terakhir".
+     Yang dijaga aturannya: baris cadangan lama membaca nilainya menurut URUTAN,
+     jadi menyisipkan satu kolom di tengah menggeser seluruh cadangan yang sudah
+     terlanjur ada - diam-diam, dan tidak ada satu galat pun yang muncul.
+     Uji lamanya longgar: dia lulus selama driver kebetulan dekat ekor, dan
+     gagal justru waktu kolom BARU ditambahkan dengan benar di belakangnya. */
+  const KOLOM_BEKU = ['id', 'jenis', 'judul', 'judulManual', 'isi', 'kategori', 'label',
+    'daftar', 'berkasId', 'driveId', 'namaBerkas', 'tipeBerkas', 'ukuran',
+    'dibuat', 'diubah', 'dipakai', 'diLabeliAI', 'pensiun', 'dihapus', 'riwayat',
+    'tag', 'elemen', 'rahasia', 'elemenTerkunci',
+    'selesai', 'selesaiPada', 'penting', 'hariIni', 'tenggat', 'ulang',
+    'pin', 'rakLepas', 'album', 'sumber', 'driver', 'albumManual', 'albumInduk'];
+  cek('urutan kolom yang sudah ada tidak pernah bergeser',
+      kolomDriver.slice(0, KOLOM_BEKU.length).join(',') === KOLOM_BEKU.join(','),
+      JSON.stringify(kolomDriver.slice(0, KOLOM_BEKU.length)));
+  cek('kolom baru selalu ditambahkan DI EKOR, tidak pernah disisipkan',
+      kolomDriver.length >= KOLOM_BEKU.length, String(kolomDriver.length));
 }
 
 console.log('\narahan gambar: pendek, kontekstual, bahasamu');

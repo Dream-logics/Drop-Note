@@ -135,6 +135,10 @@
     'Dua-tiga kata, sudut pandangmu — bukan yang tergambar. “interior mesjid”, “sofa unik minimalis”, “menu murah enak”.':
       'Two or three words — your angle, not what is pictured. “mosque interior”, “unique minimal sofa”, “cheap tasty menu”.',
     'Tulis catatan baru': 'Write a new note',
+    'Tebal': 'Bold',
+    'Daftar butir': 'Bullet list',
+    'Judul bagian': 'Section heading',
+    'Isi tulisan': 'Note body',
     'Belum berfolder': 'No folder yet',
     /* Bukan nama rak, melainkan kalimat aplikasi untuk "belum ditaruh di
        mana-mana" - jadi dia satu-satunya baris folder yang ikut diterjemahkan. */

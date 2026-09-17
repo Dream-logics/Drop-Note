@@ -118,6 +118,10 @@
     return {
       id: idBaru('e'), jenis: jenis || 'teks',
       judul: '', judulManual: false, isi: '', daftar: [],
+      /* Salinan berformat dari layar tulis. KOSONG untuk hampir semua entri -
+         cuma catatan yang benar-benar ditebalkan atau diberi butir yang
+         mengisinya. 'isi' tetap teks polos, selalu. */
+      kaya: '', kayaTerkunci: '',
       kategori: '', label: [], elemen: [],
       berkasId: null, driveId: null, thumb: '',
       namaBerkas: '', tipeBerkas: '', ukuran: 0,
@@ -5301,20 +5305,172 @@
     /* Isi yang terkunci baru dibuka setelah layarnya tampil - kalau menunggu
        enkripsi dulu, perpindahan layarnya terasa tersendat. */
     var isian = $('#catat-isi');
-    if (!e.rahasia) { isian.value = e.isi || ''; isian.readOnly = false; return; }
-
-    if (!TKunci.terbuka()) {
-      isian.value = '';
-      isian.readOnly = true;
-      isian.placeholder = 'Terkunci. Buka kuncinya di Setelan untuk membacanya.';
+    if (!e.rahasia) {
+      tulisCatat(e.kaya, e.isi);
+      isian.setAttribute('contenteditable', 'true');
       return;
     }
-    isian.readOnly = false;
-    isian.placeholder = 'Tulis apa saja…';
-    isian.value = '…';
-    TKunci.bukaTeks(e.isi || '').then(function (t) {
-      if (entriCatat === e) { isian.value = t; e.isiTerbuka = t; }
-    }, function () { if (entriCatat === e) isian.value = ''; });
+
+    if (!TKunci.terbuka()) {
+      tulisCatat('', '');
+      isian.setAttribute('contenteditable', 'false');
+      isian.setAttribute('data-kosong', 'Terkunci. Buka kuncinya di Setelan untuk membacanya.');
+      return;
+    }
+    isian.setAttribute('contenteditable', 'true');
+    isian.setAttribute('data-kosong', 'Tulis apa saja…');
+    tulisCatat('', '…');
+    /* Yang berformat ikut dibuka bersamanya - bukan dibuang. Mengunci satu
+       catatan tidak pernah boleh diam-diam menghapus tebal dan butirnya. */
+    TKunci.bukaEntri(e).then(function (bersih) {
+      if (entriCatat !== e) return;
+      tulisCatat(bersih.kaya, bersih.isi);
+      e.isiTerbuka = bersih.isi;
+    }, function () { if (entriCatat === e) tulisCatat('', ''); });
+  }
+
+  /* ===================== TULISAN BERFORMAT =====================
+     Layar tulis menyimpan DUA salinan, dan pembagiannya yang menentukan:
+     - 'kaya'  HTML kecil, dibaca lagi HANYA oleh layar ini.
+     - 'isi'   teks polos, dan itu yang dibaca pencarian, AI, kartu hasil,
+               pembaca rak, dan seluruh sisa aplikasi.
+     Kalau formatnya ikut masuk ke 'isi', mencari "kopi" akan menjaring
+     "<strong>", AI menerima tag sebagai bahan, dan cuplikan di kartu berisi
+     markup. Dua kolom, dua pekerjaan - dan yang lama tidak berubah sama
+     sekali, jadi tidak ada satu aturan pun di berkas lain yang perlu disentuh.
+
+     DAFTAR TAGNYA TERTUTUP, aturan yang sama dengan nama board: yang tidak ada
+     di daftar tidak akan pernah lahir. Bukan kerapian - HTML yang datang dari
+     tempelan halaman web membawa skrip, gaya, dan atribut, dan bidang ini
+     duduk di halaman yang sama dengan seluruh catatannya. */
+  var TAG_KAYA = { B: 1, STRONG: 1, I: 1, EM: 1, U: 1, UL: 1, OL: 1, LI: 1,
+                   H3: 1, BR: 1, DIV: 1, P: 1 };
+  var BLOK_KAYA = { DIV: 1, P: 1, LI: 1, H3: 1, UL: 1, OL: 1 };
+
+  /* DIURAI LEWAT DOMParser, BUKAN innerHTML pada div biasa. Dokumen DOMParser
+     mati: skripnya tidak jalan dan gambarnya tidak pernah diminta ke jaringan.
+     Menyetel innerHTML pada elemen halaman ini - walau belum ditempel -
+     sudah cukup untuk membuat '<img onerror>' berangkat di sebagian peramban. */
+  function bersihkanKaya(html) {
+    var doc = null;
+    try { doc = new DOMParser().parseFromString('<body>' + String(html || '') + '</body>', 'text/html'); }
+    catch (e) { return ''; }
+    (function bersih(induk) {
+      var n = induk.firstChild;
+      while (n) {
+        var lanjut = n.nextSibling;
+        if (n.nodeType === 1) {
+          if (!TAG_KAYA[n.tagName]) {
+            /* TAGNYA dibuang, ISINYA tidak: tempelan dari halaman web hampir
+               selalu terbungkus <span> dan <font>, dan membuang isinya berarti
+               membuang kalimat yang barusan kamu tempel. Jalannya dilanjutkan
+               dari anak pertama yang baru dipindah - kalau tidak, yang
+               tersembunyi satu tingkat di dalamnya tidak pernah diperiksa. */
+            var pertama = n.firstChild;
+            while (n.firstChild) induk.insertBefore(n.firstChild, n);
+            induk.removeChild(n);
+            lanjut = pertama || lanjut;
+          } else {
+            while (n.attributes.length) n.removeAttribute(n.attributes[0].name);
+            bersih(n);
+          }
+        } else if (n.nodeType !== 3) {
+          induk.removeChild(n);
+        }
+        n = lanjut;
+      }
+    })(doc.body);
+    return doc.body.innerHTML;
+  }
+
+  /* Teks polos dari yang berformat. Butirnya diberi "- " supaya daftar tetap
+     terbaca sebagai daftar di cuplikan kartu dan di mata AI - tanda hubung itu
+     bentuk teks polos sebuah butir, bukan hiasan. */
+  function teksDariKaya(html) {
+    var doc = null;
+    try { doc = new DOMParser().parseFromString('<body>' + bersihkanKaya(html) + '</body>', 'text/html'); }
+    catch (e) { return ''; }
+    var keluar = '';
+    (function jalan(induk) {
+      for (var n = induk.firstChild; n; n = n.nextSibling) {
+        if (n.nodeType === 3) { keluar += n.nodeValue; continue; }
+        if (n.nodeType !== 1) continue;
+        if (n.tagName === 'BR') { keluar += '\n'; continue; }
+        if (n.tagName === 'LI') keluar += '- ';
+        jalan(n);
+        if (BLOK_KAYA[n.tagName]) keluar += '\n';
+      }
+    })(doc.body);
+    return keluar.replace(/\u00a0/g, ' ').replace(/[ \t]+\n/g, '\n')
+                 .replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  /* Catatan lama tidak punya 'kaya' sama sekali, dan itu keadaan yang sah
+     selamanya - yang pernah ditulis di textarea tidak akan diformat ulang
+     siapa pun. Teksnya diloloskan lalu barisnya jadi <br>. */
+  function kayaDariTeks(teks) {
+    return H(String(teks || '')).replace(/\n/g, '<br>');
+  }
+
+  function bidangCatat() { return $('#catat-isi'); }
+
+  function tulisCatat(kaya, teks) {
+    var b = bidangCatat();
+    if (!b) return;
+    b.innerHTML = kaya ? bersihkanKaya(kaya) : kayaDariTeks(teks);
+    tandaiKosongCatat();
+  }
+
+  function bacaKayaCatat() {
+    var b = bidangCatat();
+    return b ? bersihkanKaya(b.innerHTML) : '';
+  }
+
+  function bacaTeksCatat() {
+    var b = bidangCatat();
+    return b ? teksDariKaya(b.innerHTML) : '';
+  }
+
+  /* Bidang contenteditable tidak punya placeholder, dan dia jarang benar-benar
+     kosong: peramban meninggalkan satu <br> begitu kamu menghapus huruf
+     terakhir. Jadi kosongnya dinilai dari TEKSNYA, bukan dari ':empty'. */
+  function tandaiKosongCatat() {
+    var b = bidangCatat();
+    if (!b) return;
+    var kosong = !b.textContent.replace(/\u00a0/g, ' ').trim() &&
+                 !b.querySelector('li, h3');
+    b.classList.toggle('kosong', kosong);
+    /* Sisa <br> sendirian ikut dibuang - kalau tidak, catatan yang kelihatan
+       kosong tetap tersimpan sebagai satu baris dan berhenti dianggap kosong
+       oleh penjaga "yang belum berisi apa-apa tidak perlu jadi baris". */
+    if (kosong && b.innerHTML && b.innerHTML !== '') b.innerHTML = '';
+  }
+
+  /* execCommand memang sudah usang, dan dia tetap yang benar di sini: dia
+     satu-satunya jalan menyunting sorotan tanpa menulis mesin penyunting
+     sendiri, dan aplikasi ini tidak punya build step untuk memasang pustaka.
+     'styleWithCSS' dimatikan supaya tebalnya lahir sebagai <b>, bukan
+     <span style> - dan <span style> akan dibuang penyaring tag di atas,
+     jadi tebalnya hilang lagi tepat sesudah disimpan. */
+  function formatCatat(apa) {
+    var b = bidangCatat();
+    if (!b) return;
+    b.focus();
+    try { document.execCommand('styleWithCSS', false, false); } catch (e) { /* tidak semua peramban punya */ }
+    if (apa === 'judul') {
+      var diJudul = !!(document.queryCommandValue &&
+        /h3/i.test(document.queryCommandValue('formatBlock') || ''));
+      document.execCommand('formatBlock', false, diJudul ? 'div' : 'h3');
+    } else {
+      document.execCommand(apa, false, null);
+    }
+    tandaiKosongCatat();
+    /* Disundul lewat 'input', bukan dengan memanggil penyimpannya langsung:
+       penundanya (simpanTertunda) lahir di dalam pasang() dan tidak terlihat
+       dari sini - dan memanggilnya dari sini berarti dua jalur yang menyimpan
+       hal yang sama, lalu yang satu ketinggalan begitu yang lain disunting.
+       Satu jalur: apa pun yang mengubah tulisan mengirim 'input'. */
+    b.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
   function gambarGembok(e) {
@@ -5343,7 +5499,7 @@
         return TSimpan.taruh(e);
       }).then(function () {
         segarkanCache(e);
-        $('#catat-isi').value = e.isi || '';
+        tulisCatat(e.kaya, e.isi);
         gambarGembok(e);
         pesan('Kuncinya dilepas');
       });
@@ -5351,7 +5507,8 @@
     }
 
     /* Isi yang sedang diketik ikut dikunci, bukan yang terakhir tersimpan. */
-    e.isi = $('#catat-isi').value;
+    e.isi = bacaTeksCatat();
+    e.kaya = bacaKayaCatat();
     e.elemen = TOtak.gabungElemen([], TOtak.elemenOtomatis(e));
     TKunci.kunciEntri(e).then(function () {
       e.diubah = Date.now();
@@ -5375,7 +5532,8 @@
        dan yang kehilangan tidak akan pernah tahu sebabnya. */
     var ruang = TOtak.bacaRuang(judul, daftarLabel());
     var kat = ruang ? ruang.nama : (e.kategori || '');
-    var isi = $('#catat-isi').value;
+    var isi = bacaTeksCatat();
+    var kaya = bacaKayaCatat();
 
     /* Entri terkunci: kolom isinya berisi sandi, bukan teks. Menyimpan apa
        yang tampak di layar akan menimpanya dengan teks biasa - jadi
@@ -5388,7 +5546,10 @@
       return TSimpan.taruh(e).then(function () { segarkanCache(e); tanda('tersimpan'); });
     }
 
-    if (judul === e.judul && kat === e.kategori && isi === e.isi) {
+    /* 'kaya' ikut dibandingkan: menebalkan satu kata tidak mengubah teks
+       polosnya sama sekali, jadi tanpa ini menekan B lalu meninggalkan layarnya
+       terbaca "tersimpan" padahal tidak ada yang tersimpan. */
+    if (judul === e.judul && kat === e.kategori && isi === e.isi && kaya === (e.kaya || '')) {
       tanda('tersimpan');
       return Promise.resolve();
     }
@@ -5403,12 +5564,16 @@
        versi lamanya tetap ada. Di Keep, tiap revisi melahirkan catatan baru -
        dan dari enam versi mirip tidak ada cara tahu mana yang terakhir. */
     if (isi !== e.isi && e.isi && (sekarang - (e.diubah || 0)) > JARAK_RIWAYAT) {
-      e.riwayat = (e.riwayat || []).concat([{ isi: e.isi, ts: e.diubah || sekarang }]).slice(-RIWAYAT_MAKS);
+      e.riwayat = (e.riwayat || []).concat([{ isi: e.isi, kaya: e.kaya || '', ts: e.diubah || sekarang }]).slice(-RIWAYAT_MAKS);
     }
 
     e.judul = judul;
     e.kategori = kat;
     e.isi = isi;
+    /* Disimpan CUMA kalau memang ada formatnya. Catatan polos yang menyimpan
+       salinan HTML-nya sendiri berarti tiap baris di spreadsheet membawa
+       kalimatnya dua kali, dan yang kedua tidak menjawab apa pun. */
+    e.kaya = /<(b|strong|i|em|u|ul|ol|li|h3)\b/i.test(kaya) ? kaya : '';
     e.diubah = sekarang;
     /* Judul dikosongkan = dikembalikan ke mesin. Selama masih ada isinya,
        judul manual tidak pernah ditimpa - termasuk oleh AI. */
@@ -8117,11 +8282,38 @@
     });
     $('#b-salin-catat').addEventListener('click', function () {
       var judul = $('#catat-judul').value.trim();
-      var isi = $('#catat-isi').value;
+      /* Yang tersalin TEKS POLOSNYA, bukan HTML-nya: yang menekan ini sedang
+         menempelkannya ke jendela obrolan atau kotak isian di aplikasi lain,
+         dan di sana "<strong>" adalah dua belas karakter yang harus dihapus. */
+      var isi = bacaTeksCatat();
       if (!judul && !isi.trim()) { pesan('Belum ada yang ditulis'); return; }
       salin(judul && isi.trim() ? judul + '\n\n' + isi : (judul || isi));
     });
-    $('#catat-isi').addEventListener('input', function () { tanda('menyimpan…'); simpanTertunda(); });
+    $('#catat-isi').addEventListener('input', function () {
+      tandaiKosongCatat();
+      tanda('menyimpan…');
+      simpanTertunda();
+    });
+    /* TEMPELAN MASUK SEBAGAI TEKS POLOS. Menempel dari halaman web membawa
+       skrip, gaya, tabel, dan warna latar - dan walau penyaring tag membuang
+       semuanya waktu disimpan, yang tergambar SEBELUM disimpan sudah terlanjur
+       jadi halaman orang lain di dalam tulisanmu. */
+    $('#catat-isi').addEventListener('paste', function (ev) {
+      var teks = ev.clipboardData && ev.clipboardData.getData('text/plain');
+      if (teks == null) return;
+      ev.preventDefault();
+      document.execCommand('insertText', false, teks);
+      tandaiKosongCatat();
+      tanda('menyimpan…');
+      simpanTertunda();
+    });
+    /* MENOLAK BAWAAN 'mousedown', bukan cuma menangani 'click': menekan
+       tombolnya memindahkan fokus keluar dari tulisan, dan begitu fokusnya
+       pindah sorotannya runtuh - yang ditebalkan jadi tidak ada sama sekali. */
+    $$('.catat-dok [data-format]').forEach(function (b) {
+      b.addEventListener('mousedown', function (ev) { ev.preventDefault(); });
+      b.addEventListener('click', function () { formatCatat(b.getAttribute('data-format')); });
+    });
 
     $('#b-riwayat').addEventListener('click', function () {
       var kotak = $('#riwayat');
@@ -8138,7 +8330,10 @@
          yang menghilangkan tulisan. */
       entriCatat.riwayat = entriCatat.riwayat.concat([{ isi: entriCatat.isi, ts: entriCatat.diubah }]).slice(-RIWAYAT_MAKS);
       entriCatat.isi = '';
-      $('#catat-isi').value = versi.isi;
+      /* Versi lama menyimpan teksnya saja - yang dijaga riwayat KALIMATNYA,
+         bukan tebalnya. Memulihkan berarti kembali ke kalimat itu, dan
+         formatnya kamu pasang lagi kalau memang masih perlu. */
+      tulisCatat(versi.kaya || '', versi.isi);
       simpanCatat().then(gambarRiwayat);
       pesan('Versi dipulihkan');
     });
@@ -8407,6 +8602,9 @@
     setelanUji: function () { return setelanSaat; },
     albumTampakUji: albumTampak,
     setelModeAIUji: setelModeAI,
+    /* Cuma untuk uji: penyaring tag dan pengubah teks polos berdiri sendiri
+       tanpa DOM layar, jadi keduanya bisa diperiksa tanpa membuka layar tulis. */
+    bersihkanKayaUji: bersihkanKaya, teksDariKayaUji: teksDariKaya,
     kirimAIUji: kirimAI,
     riwayatAIUji: function () { return riwayatAI; },
     dropObrolanUji: dropObrolan,

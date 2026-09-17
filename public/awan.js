@@ -405,7 +405,15 @@
                'tag', 'elemen', 'rahasia', 'elemenTerkunci',
                'selesai', 'selesaiPada', 'penting', 'hariIni', 'tenggat', 'ulang',
                'pin', 'rakLepas', 'album', 'sumber', 'driver', 'albumManual',
-               'albumInduk'];
+               'albumInduk',
+               /* 'kaya' = tulisan berformat (HTML kecil: tebal, butir, judul
+                  bagian). ISINYA TIDAK PERNAH MENGGANTIKAN 'isi' - 'isi' tetap
+                  teks polos, dan itu yang dibaca pencarian, AI, kartu hasil,
+                  dan pembaca rak. Kalau formatnya ikut masuk ke 'isi', mencari
+                  "kopi" akan menjaring "<strong>" dan AI menerima tag sebagai
+                  bahan. Dua kolom, dua pekerjaan. DI EKOR KOLOM, seperti semua
+                  kolom baru. */
+               'kaya', 'kayaTerkunci'];
 
   /* Lewat 26 kolom, Sheets memakai dua huruf (AA, AB, ...). Menghitungnya
      dengan satu fromCharCode menghasilkan '[' dan seluruh cadangan gagal

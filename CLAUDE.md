@@ -1144,6 +1144,70 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     membuka rincian di tempat seperti di hasil dan Storage).
                     Layar 'l-note' itu STORAGE - gudang berfolder, isinya
                     semua yang pernah jatuh.
+                    LAYAR TULIS PUNYA TEBAL, BUTIR, DAN JUDUL BAGIAN, dan
+                    ISINYA DISIMPAN DUA KALI - pembagian itu yang menentukan
+                    segalanya. 'kaya' memuat HTML kecilnya dan dibaca lagi HANYA
+                    oleh layar tulis; 'isi' TETAP TEKS POLOS, dan itu yang
+                    dibaca pencarian, AI, kartu hasil, dan pembaca rak. Kalau
+                    formatnya ikut masuk ke 'isi', mencari "kopi" akan menjaring
+                    "<strong>", AI menerima tag sebagai bahan, dan cuplikan di
+                    kartu berisi markup. Dua kolom, dua pekerjaan - jadi tidak
+                    ada satu aturan pun di berkas lain yang perlu disentuh.
+                    FORMATNYA DITULIS DENGAN TOMBOL, TIDAK PERNAH DENGAN TANDA
+                    BINTANG. "*tebal*" menuntutmu mengetik kode lalu
+                    membayangkan hasilnya, dan yang terbaca di layar bukan
+                    tulisanmu tapi mesinnya - itu laporan lapangannya apa
+                    adanya.
+                    TIGA TOMBOL, DI DOK YANG SUDAH ADA - bukan baris sendiri.
+                    Layar ini dipatok ke tinggi yang terlihat, dan di jendela
+                    pendek badan tulisannya tinggal 43px; satu baris tambahan
+                    berarti yang dibayar justru tempat menulisnya. Tebal, butir,
+                    judul bagian - ketiganya menambah STRUKTUR. Miring, garis
+                    bawah, coret, dan warna cuma menambah pilihan tanpa menambah
+                    struktur, dan tiap pilihan di sini ditagih justru waktu kamu
+                    sedang menulis.
+                    DAFTAR TAGNYA TERTUTUP (TAG_KAYA), aturan yang sama dengan
+                    nama board: yang tidak ada di daftar tidak akan pernah
+                    lahir. Bukan kerapian - tempelan halaman web membawa skrip,
+                    gaya, dan atribut, dan bidang ini duduk di halaman yang sama
+                    dengan seluruh catatannya. DIURAI LEWAT DOMParser, BUKAN
+                    innerHTML: dokumen DOMParser mati, jadi '<img onerror>'
+                    tidak pernah berangkat - menyetel innerHTML pada elemen
+                    halaman ini, walau belum ditempel, sudah cukup untuk
+                    membuatnya jalan di sebagian peramban. TAGNYA dibuang,
+                    ISINYA tidak, dan jalannya DILANJUTKAN dari anak pertama
+                    yang baru dipindah - kalau tidak, yang tersembunyi satu
+                    tingkat di dalam <span> tidak pernah diperiksa.
+                    Tempelan masuk sebagai TEKS POLOS.
+                    'onmousedown' MENOLAK BAWAANNYA: menekan tombolnya
+                    memindahkan fokus keluar dari tulisan, sorotannya runtuh,
+                    dan yang ditebalkan tidak ada sama sekali.
+                    TOMBOLNYA MENYUNDUL LEWAT 'input', bukan memanggil
+                    penyimpannya langsung - penundanya lahir di dalam pasang()
+                    dan tidak terlihat dari sana; dua jalur yang menyimpan hal
+                    yang sama berarti yang satu ketinggalan begitu yang lain
+                    disunting.
+                    Bidangnya <div contenteditable>, jadi dia TIDAK menggulir
+                    sendiri seperti <textarea>: 'overflow-y:auto' wajib di
+                    jendela yang layarnya dipatok, kalau tidak tulisan panjang
+                    cuma terpotong di tepi bawah tanpa cara apa pun membacanya.
+                    Placeholder-nya digambar dari 'data-kosong' + kelas
+                    'kosong', BUKAN ':empty' - peramban meninggalkan satu <br>
+                    begitu huruf terakhir dihapus.
+                    CATATAN TERKUNCI: 'kaya' ikut dikunci ('kayaTerkunci'),
+                    bukan dibuang dan bukan ditinggal terbuka. Membuangnya
+                    berarti mengunci satu catatan diam-diam menghapus tebal dan
+                    butirnya; meninggalkannya terbuka jauh lebih buruk - dia
+                    memuat kalimat yang SAMA dengan 'isi', jadi seluruh isi
+                    rahasianya terbaca apa adanya di spreadsheet cadangan
+                    sementara kolom di sebelahnya susah payah disandikan.
+                    Salin tetap menyalin TEKS POLOSNYA: yang menekannya sedang
+                    menempelkannya ke jendela obrolan sebelah.
+                    Tulisan polos TIDAK menyimpan salinan HTML-nya sendiri.
+                    EMOJI TIDAK BUTUH APA-APA DARI SINI - papan ketik HP sudah
+                    punya tombolnya, dan di bidang ini dia masuk apa adanya.
+                    Jangan tambahkan pemilih emoji: dia menyalin tombol yang
+                    sudah ada di bawah jempolnya.
                     LAYAR TULIS TIDAK PUNYA KOLOM KATEGORI, dan jangan
                     dikembalikan: gudangnya dibaca dari JUDUL, aturan yang sama
                     persis dengan kotak Drop. Yang tampil cuma kabarnya. Judul

@@ -137,6 +137,12 @@
       id: String(r.id), jenis: r.jenis || 'teks', judul: r.judul || '',
       judulManual: benar(r.judulManual),
       isi: r.isi == null ? '' : String(r.isi),
+      /* Tulisan berformat, dan dia MENYUSUL 'isi' - bukan menggantikannya.
+         'isi' tetap teks polos di seberang sana juga, jadi perangkat yang
+         belum punya kolom ini tetap membaca catatan yang sama, cuma tanpa
+         tebalnya. */
+      kaya: r.kaya == null ? '' : String(r.kaya),
+      kayaTerkunci: r.kayaTerkunci || '',
       kategori: r.kategori || '',
       label: String(r.label || '').split(' ').filter(Boolean),
       tag: String(r.tag || '').split(' ').filter(Boolean),
