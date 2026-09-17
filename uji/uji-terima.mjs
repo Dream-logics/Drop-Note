@@ -613,13 +613,21 @@ console.log('\ncatat: satu baris, banyak versi');
      baris yang naik ke spreadsheet, dan satu catatan uji yang tertinggal
      membuatnya gagal karena alasan yang tidak ada hubungannya dengan
      cadangannya. Uji yang mengotori tetangganya bukan uji, dia jebakan. */
+  /* LAYARNYA DITINGGAL DULU, BARU DIHAPUS. Meninggalkan layar tulis memanggil
+     simpanCatat() sendiri (di tampilkanLayar), dan penundanya juga masih bisa
+     berbunyi - jadi menghapus lebih dulu berarti catatannya lahir lagi sesaat
+     kemudian, dan yang terlihat cuma uji tetangga yang gagal tanpa sebab. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(600);
   await hal.evaluate(async () => {
-    const e = TAlur.semuaEntri().filter((x) => x.judul === 'tulisan polos uji')[0];
-    if (e) await TSimpan.hapus(e.id);
+    const buang = TAlur.semuaEntri().filter((x) => x.judul === 'tulisan polos uji');
+    for (const e of buang) await TSimpan.hapus(e.id);
     await TAlur.muatUlangUji();
   });
-  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(300);
+  cek('umpan uji tulisan polos dibereskan sendiri',
+      (await hal.evaluate(() =>
+        TAlur.semuaEntri().filter((x) => x.judul === 'tulisan polos uji').length)) === 0);
 }
 
 console.log('\ncadangan ke Drive & Sheets');
