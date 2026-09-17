@@ -209,7 +209,24 @@ public/index.html   kerangka semua layar (mulai, utama/Drop, tulis/Note,
                     Escape, dan tombol Kembali HP (satu langkah riwayat
                     didorong waktu membuka - tanpa itu Kembali meninggalkan
                     layarnya, dan itu yang terbaca sebagai "beku"). Ketukan di
-                    keterangannya TIDAK menutup. z-index 40, DI ATAS dok kamera
+                    keterangannya TIDAK menutup.
+                    DESKRIPSI AI TIDAK DIGAMBAR DI SINI, dan jangan
+                    dikembalikan. Judulnya SUDAH karangan AI; menambahkan
+                    deskripsinya berarti dua kalimat mesin tentang foto yang
+                    sama, dan yang kedua hampir selalu menulis ulang yang
+                    pertama dengan kata yang beda tipis - itu yang dilaporkan
+                    lapangan sebagai "double, dan memenuhi jendela". Dia juga
+                    yang paling panjang di kartu itu, jadi dia yang memakan
+                    gambarnya - padahal gambar itu yang kamu datangi. Gunanya
+                    deskripsi MEMBUAT FOTONYA BISA DICARI, bukan dibaca: dia
+                    bahan pencarian, dan di layar ini pencariannya sudah
+                    selesai. Satu gambar sudah seribu kata, dan seribu kata itu
+                    sedang terpampang di belakang kartunya. Yang tetap ada cuma
+                    yang TIDAK bisa dibaca dari gambarnya sendiri: judul, kapan,
+                    di mana, dan drivermu. Mesin "Selengkapnya" ikut dibuang -
+                    tombol yang membuka sesuatu yang sudah tidak digambar tidak
+                    punya pekerjaan.
+                    z-index 40, DI ATAS dok kamera
                     Gallery - kalau di bawah, yang duduk di sudut kanan bawah
                     tombol kamera dan mengetuknya memotret
                     TIDAK ADA layar hasil dan TIDAK ADA tombol Cari: kotak drop
@@ -1157,9 +1174,23 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     jempol. Angka "N tersimpan" sudah dibuang dan jangan
                     dikembalikan.
                     Isi kotak, ala WhatsApp: AI - [teks] - klip - Todo, lalu
-                    Drop di luar. EMPAT ikon waktu diam, TIGA waktu mengetik:
-                    ikon AI pergi di mode Drop begitu ada yang diketik, klip
-                    dan Todo pergi di mode AI.
+                    Drop di luar. EMPAT ikon, DAN MEREKA TIDAK KE MANA-MANA di
+                    mode Drop; klip dan Todo pergi di mode AI.
+                    IKON AI DULU MENGALAH WAKTU MENGETIK, dan aturan itu SUDAH
+                    DIBATALKAN oleh alasannya sendiri. Dalihnya "orang yang
+                    sudah mengetik catatan tidak sedang mau bertanya ke AI" -
+                    justru itu yang terbukti keliru: yang sudah mengetik sesuatu
+                    PERSIS yang paling mungkin mau menanyakannya, dan itu bentuk
+                    yang sudah dibuktikan WhatsApp. Laporan lapangannya apa
+                    adanya: "tombol AI hilang? bukannya mau ikut ala WhatsApp?".
+                    Tombol yang lenyap tepat di detik kamu mencarinya terbaca
+                    sebagai aplikasi yang rusak, berapa pun bagusnya alasan di
+                    baliknya. Yang dibayar lebar kotak teksnya - dan kotak itu
+                    tumbuh ke BAWAH, jadi yang hilang cuma beberapa karakter per
+                    baris, bukan satu kalimat pun. Kelas '.mengetik' ikut
+                    dibuang seluruhnya: kelas yang masih dipasang tiap ketukan
+                    huruf tapi tidak menata apa pun membuat yang membacanya
+                    berburu akibat yang tidak ada.
                     KAMERA DAN TULIS BUKAN CIP: sepasang LINGKARAN
                     ('.pintas-bulat') dipatok di ujung kanan baris cip, tepat
                     di atas tombol Drop, DI LUAR kotak yang menggulir.

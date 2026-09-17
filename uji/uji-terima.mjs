@@ -4297,9 +4297,14 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
   });
   cek('ikon AI duduk di ujung kiri kotak, seperti WhatsApp', diKiriKotak === 'ok', diKiriKotak);
 
-  /* EMPAT IKON WAKTU DIAM, TIGA WAKTU MENGETIK. Yang pergi selalu yang paling
-     tidak mungkin dipakai saat itu: orang yang sudah mengetik catatan tidak
-     sedang mau bertanya ke AI.
+  /* EMPAT IKON, DAN MEREKA TIDAK KE MANA-MANA. Dulu tiga waktu mengetik: ikon
+     AI mengalah, dengan dalih "orang yang sudah mengetik catatan tidak sedang
+     mau bertanya ke AI". Justru itu yang terbukti keliru - yang sudah mengetik
+     sesuatu PERSIS yang paling mungkin mau menanyakannya, dan itu bentuk yang
+     sudah dibuktikan WhatsApp. Laporan lapangannya apa adanya: "tombol AI
+     hilang? bukannya mau ikut ala WhatsApp?".
+     Tombol yang lenyap tepat di detik kamu mencarinya terbaca sebagai aplikasi
+     yang rusak, berapa pun bagusnya alasan di baliknya.
 
      Kamera sempat ikut di sini dan itu keliru: di antara klip dan Todo - dua
      ikon yang MEMBUKA LACI - dia tidak pernah terbaca sebagai tombol yang
@@ -4314,13 +4319,18 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
   await hal.fill('#kotak', 'sesuatu');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(200);
-  cek('tinggal tiga begitu mulai mengetik, dan yang pergi ikon AI',
-      (await ikonKotak()) === 3 &&
-      (await hal.locator('#b-ai').isHidden()), String(await ikonKotak()));
+  cek('tetap empat waktu mengetik - ikon AI tidak ke mana-mana',
+      (await ikonKotak()) === 4 &&
+      (await hal.locator('#b-ai').isVisible()), String(await ikonKotak()));
+  /* Kotak teksnya yang mengalah, dan dia tumbuh ke BAWAH - yang hilang cuma
+     beberapa karakter per baris, bukan satu kalimat pun. */
+  const lebarKotak = await hal.locator('#kotak').evaluate((n) => n.getBoundingClientRect().width);
+  cek('kotak teksnya tetap layak diketik walau ikonnya berempat',
+      lebarKotak >= 120, String(Math.round(lebarKotak)));
   await hal.fill('#kotak', '');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(200);
-  cek('dan kembali empat begitu kotaknya kosong lagi', (await ikonKotak()) === 4);
+  cek('dan tetap empat waktu kotaknya kosong lagi', (await ikonKotak()) === 4);
 
   cek('sebelum dinyalakan, obrolannya tidak kelihatan sama sekali',
       await hal.locator('#petak-ai').isHidden());
@@ -7186,9 +7196,14 @@ console.log('\narahan gambar: pendek, kontekstual, bahasamu');
       arahanDok.indexOf('DRIVER') > 0 && arahanDok.indexOf('karpet mesjid') < 0,
       String(arahanDok.length));
 
-  /* CAPTION YANG TERPOTONG HARUS BISA DIBACA. Teks yang dipotong "…" tanpa satu
-     pun cara membacanya lebih buruk daripada tidak ditampilkan sama sekali:
-     yang terbaca bukan "ringkas" tapi "ada yang disembunyikan". */
+  /* DESKRIPSI AI TIDAK DIGAMBAR DI PREVIEW, dan jangan dikembalikan.
+     Judulnya SUDAH karangan AI; menambahkan deskripsinya berarti dua kalimat
+     mesin tentang foto yang sama, dan yang kedua hampir selalu menulis ulang
+     yang pertama dengan kata yang beda tipis - itu yang dilaporkan lapangan
+     sebagai "double, dan memenuhi jendela".
+     Gunanya deskripsi MEMBUAT FOTONYA BISA DICARI, bukan dibaca: dia bahan
+     pencarian, dan di layar ini pencariannya sudah selesai. Satu gambar sudah
+     seribu kata, dan seribu kata itu sedang terpampang di belakang kartunya. */
   const PNG4 = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGP8z8Dw'
              + 'nwEJMKEL0FIQAG3+AwOfLbXbAAAAAElFTkSuQmCC';
   const binPng4 = Buffer.from(PNG4, 'base64');
@@ -7223,30 +7238,24 @@ console.log('\narahan gambar: pendek, kontekstual, bahasamu');
   await hal.waitForTimeout(450);
   await hal.locator('#galeri-isi .petak-satu').first().click();
   await hal.waitForTimeout(600);
-  cek('caption panjang menawarkan jalan untuk membacanya',
-      await hal.locator('.lihat-isi-lagi').isVisible());
-  /* Diukur dari TINGGINYA, bukan dari scrollHeight: -webkit-line-clamp memotong
-     dengan menyembunyikan barisnya, jadi scrollHeight ikut terpotong dan
-     selisihnya nol - ukuran yang kelihatan masuk akal tapi tidak pernah bisa
-     membuktikan apa pun. */
-  const tinggiRingkas = await hal.evaluate(() =>
-    document.querySelector('.lihat-isi').getBoundingClientRect().height);
-  await hal.click('.lihat-isi-lagi');
-  await hal.waitForTimeout(350);
-  const tinggiPenuh = await hal.evaluate(() =>
-    document.querySelector('.lihat-isi').getBoundingClientRect().height);
-  cek('dan captionnya memang tumbuh waktu dibuka, bukan cuma ganti kelas',
-      tinggiPenuh > tinggiRingkas + 8,
-      Math.round(tinggiRingkas) + ' -> ' + Math.round(tinggiPenuh));
-  cek('mengetuknya membuka penuh, tanpa pindah layar',
-      (await hal.evaluate(() =>
-        document.querySelector('.lihat-isi').classList.contains('penuh'))) === true &&
-      (await hal.locator('#lihat').isVisible()));
-  cek('dan previewnya tidak ikut tertutup — itu bagian dari membaca',
-      (await hal.evaluate(() => document.querySelector('.layar.aktif').id)) === 'l-galeri');
-  cek('tombolnya berubah jadi jalan pulang',
-      (await hal.innerText('.lihat-isi-lagi')) === 'Ringkas',
-      await hal.innerText('.lihat-isi-lagi'));
+  cek('deskripsi AI tidak digambar di preview',
+      (await hal.locator('#lihat-info .lihat-isi').count()) === 0 &&
+      (await hal.locator('#lihat-info .lihat-isi-lagi').count()) === 0);
+  /* Yang TETAP ada cuma yang tidak bisa dibaca dari gambarnya sendiri. */
+  const isiPreview = await hal.innerText('#lihat-info');
+  cek('judulnya tetap ada', /Caption panjang uji/.test(isiPreview), isiPreview);
+  cek('drivermu sendiri tetap ada - dia satu-satunya kalimat yang lahir dari kepalamu',
+      /bedroom interior lighting/.test(isiPreview), isiPreview);
+  cek('dan kalimat karangan AI tidak ikut sama sekali',
+      isiPreview.indexOf('cermin LED bulat') < 0, isiPreview);
+  /* Keterangannya tidak boleh memakan gambarnya - itu separuh keluhannya. */
+  const petakInfo = await hal.evaluate(() => {
+    const i = document.querySelector('#lihat-info').getBoundingClientRect();
+    return { info: i.height, jendela: window.innerHeight };
+  });
+  cek('keterangannya tidak memenuhi jendela',
+      petakInfo.info < petakInfo.jendela * 0.4,
+      Math.round(petakInfo.info) + ' / ' + Math.round(petakInfo.jendela));
   await hal.click('#b-lihat-tutup');
   await hal.waitForTimeout(350);
   await hal.fill('#galeri-cari', '');

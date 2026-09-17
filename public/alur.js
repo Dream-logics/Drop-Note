@@ -1075,15 +1075,9 @@
      jadi ikon AI yang mengalah, dan kotaknya dapat tempat justru waktu isinya
      paling panjang. Di mode AI dia tidak pernah pergi - dia satu-satunya jalan
      pulang. */
-  function setelIkonKotak() {
-    var ada = !!$('#kotak').value.trim();
-    $('#l-utama').classList.toggle('mengetik', ada && !modeAI);
-  }
-
   function setelTinggiKotak() {
     var k = $('#kotak');
     if (!k) return;
-    setelIkonKotak();
     k.style.height = 'auto';
     k.style.height = Math.min(k.scrollHeight, tinggiKotakMaks()) + 'px';
     var b = $('#kotak-bayang');
@@ -1266,7 +1260,6 @@
     $('#b-ai').setAttribute('aria-pressed', modeAI ? 'true' : 'false');
     $('#petak-ai').classList.toggle('sembunyi', !modeAI);
     tulisPlaceholder();
-    setelIkonKotak();
     if (modeAI) {
       /* Yang sedang setengah jalan ditutup dulu. Kotak isian daftar yang masih
          menganga di bawah obrolan bukan cuma berantakan - dia bikin ragu tombol
@@ -5091,14 +5084,21 @@
               waktu itu terjadi, baris ini yang memberitahu apa yang sebenarnya
               kamu maksud waktu memotret. */
            (e.driver ? '<div class="lihat-driver" data-asli>“' + H(e.driver) + '”</div>' : '') +
-           /* Deskripsi AI dipotong dua baris. Dia menolong sebagai pengenal,
-              bukan sebagai bacaan - dan yang panjang akan memakan gambarnya,
-              padahal gambar itu yang kamu datangi. */
-           ((e.isi || '').trim() && !e.rahasia
-             ? '<div class="lihat-isi" data-lihat-isi data-asli>' + H((e.isi || '').trim()) + '</div>' +
-               ((e.isi || '').trim().length > 90
-                 ? '<button class="lihat-isi-lagi" data-lihat-isi>Selengkapnya</button>' : '')
-             : '') +
+           /* DESKRIPSI AI TIDAK DIGAMBAR DI SINI, dan jangan dikembalikan.
+              Judul di atas SUDAH karangan AI; menambahkan deskripsinya berarti
+              dua kalimat mesin tentang foto yang sama, dan yang kedua hampir
+              selalu menulis ulang yang pertama dengan kata yang beda tipis -
+              itu yang dilaporkan lapangan sebagai "double".
+              Dia juga yang paling panjang di kartu ini, jadi dia yang memakan
+              gambarnya - padahal gambar itu yang kamu datangi.
+              Gunanya deskripsi MEMBUAT FOTONYA BISA DICARI, bukan dibaca:
+              dia bahan pencarian, dan di layar ini pencariannya sudah selesai.
+              Satu gambar sudah seribu kata, dan seribu kata itu sedang
+              terpampang di belakang kartu ini. Yang tetap ada cuma yang TIDAK
+              bisa dibaca dari gambarnya: judul, kapan, di mana, dan drivermu
+              sendiri. Mesin "Selengkapnya" ikut dibuang bersamanya - tombol
+              yang membuka sesuatu yang sudah tidak digambar tidak punya
+              pekerjaan. */
            '<div class="lihat-aksi">' +
              '<button class="lihat-tutup" id="b-lihat-tutup">Tutup</button>' +
            '</div>';
@@ -7925,19 +7925,6 @@
        TIDAK menutup: di situ ada tulisan yang mungkin mau kamu sorot. */
     $('#lihat').addEventListener('click', function (ev) {
       if (ev.target.closest('#b-lihat-tutup')) { tutupLihat(); return; }
-      /* Caption yang terpotong dibuka DI TEMPAT, bukan di layar lain: yang mau
-         kamu baca sekarang cuma dua kalimat, dan memindahkan layar untuk itu
-         berarti kehilangan gambarnya - padahal gambarnya yang sedang kamu
-         cocokkan dengan kalimatnya. */
-      if (ev.target.closest('[data-lihat-isi]')) {
-        var teks = $('#lihat-info') && $('#lihat-info').querySelector('.lihat-isi');
-        var lagi = $('#lihat-info') && $('#lihat-info').querySelector('.lihat-isi-lagi');
-        if (teks) {
-          var penuh = teks.classList.toggle('penuh');
-          if (lagi) lagi.textContent = penuh ? 'Ringkas' : 'Selengkapnya';
-        }
-        return;
-      }
       if (ev.target.closest('#lihat-info')) return;
       tutupLihat();
     });
