@@ -1615,6 +1615,51 @@ public/hitung.js    (lanjutan) KONVERSI SATUAN ('SATUAN' + 'konversi'), di
                     Penangan keydown kalkulatornya PULANG kalau yang aktif
                     INPUT/SELECT - tanpa itu, angka yang diketik di konverter
                     ikut mendarat di kalkulatornya.
+public/alur.js      (lanjutan) LAYAR SETELAN DILIPAT JADI ENAM KATEGORI.
+                    Dia tumbuh jadi dua belas bagian berjajar - satu kereta api
+                    yang harus digulir seluruhnya untuk mencari satu tombol, dan
+                    itu keluhan lapangannya apa adanya ("aku pusing tiap kali
+                    masuk menu setting"). Yang merusaknya BUKAN PANJANGNYA, TAPI
+                    RATANYA: dua belas bagian sederajat berarti mata tidak punya
+                    satu pun tempat untuk berhenti.
+                    Kategorinya di 'SET_KATEGORI': Tampilan, Ruangan, Bantuan
+                    AI, Sinkron & cadangan, Kunci & arsip, Bahaya. TIAP BARIS
+                    MEMBAWA SATU KALIMAT ISINYA - baris yang cuma bernama
+                    menagih satu ketukan untuk menjawab pertanyaan yang
+                    seharusnya sudah terjawab dari luar.
+                    SATU TERBUKA PADA SATU WAKTU, dan itu pola yang SUDAH
+                    dipakai pohon board di layar yang sama - bukan pola baru
+                    yang harus dihafal sendiri. KEADAAN, bukan setelan: tidak
+                    ikut disimpan, tidak ikut sinkron, dan SELALU MENDARAT
+                    TERTUTUP (tombol gerigi mengosongkan 'setBuka') - panel yang
+                    masih terbuka dari kunjungan tadi pagi menjawab pertanyaan
+                    yang sudah lewat.
+                    BAGIANNYA DIPUNGUT DARI DOM YANG SUDAH TERGAMBAR, bukan
+                    dengan memecah gambarSetelan() jadi dua belas fungsi: isinya
+                    tidak disentuh sama sekali, jadi tidak ada satu pun penangan
+                    atau id yang bisa diam-diam putus, dan pasangSetelan() yang
+                    berjalan sesudahnya masih menemukan semuanya. Nodanya
+                    DIPINDAH (appendChild memindahkan, bukan menyalin).
+                    LIPATSETELAN() TIDAK BISA DIPANGGIL DUA KALI, dan itu
+                    kekeliruan yang sudah terjadi sekali: dia memungut kepala
+                    bagian dari tingkat atas '#setelan-isi', dan sesudah lipatan
+                    pertama kepala-kepala itu sudah pindah ke dalam panel - jadi
+                    panggilan keduanya tidak menemukan apa pun lalu pulang
+                    diam-diam. Yang terlihat pemakainya: mengetuk kategori tidak
+                    melakukan apa-apa sama sekali, TANPA SATU GALAT PUN. Jadi
+                    yang dipanggil alihLipatSetelan() dan bukaSetelanUji()
+                    SELALU gambarSetelan(), bukan lipatSetelan() sendirian.
+                    PENAMPUNG "Lain-lain" menangkap bagian yang lupa
+                    didaftarkan - terlihat, bukan lenyap tanpa satu galat pun -
+                    dan uji terimanya menuntut penampung itu KOSONG, jadi yang
+                    lupa gagal di uji, bukan di tangan pemakainya.
+                    UJI YANG MENGUJI ISI SETELAN WAJIB MEMBUKA KATEGORINYA DULU
+                    lewat bukaSetelanUji('*'), TERMASUK SAPUAN BAHASA: sapuan
+                    itu membaca teks yang TERGAMBAR, jadi kategori yang tertutup
+                    berarti kalimat Indonesia yang tertinggal di dalam Setelan
+                    berhenti ketahuan sama sekali - penjaga yang diam-diam
+                    berhenti menjaga. Blok yang menguji pelipatnya sendiri
+                    sengaja TIDAK memakainya.
 public/alur.js      BARIS PINTUNYA MILIK PEMAKAINYA ('pintuUtama' di setelan,
                     diatur di bagian Menu paling atas Setelan). Enam pintu
                     tidak muat sebaris di HP, dan yang tidak muat dipotong
