@@ -318,6 +318,11 @@
     'Indonesia': 'Indonesia',
     'Bahasa layar. Nama pintu — Drop, Note, To Do, Storage — sengaja tidak ikut diterjemahkan: itu nama tempat, dan nama tempat yang berganti bahasa membuat jarimu harus belajar ulang.':
       'Interface language. The four doors — Drop, Note, To Do, Storage — deliberately stay as they are: those are place names, and place names that change language make your fingers learn the app twice.',
+    'Bentuk hasil cari': 'Search result style',
+    'Baris beralamat': 'Addressed rows',
+    'Kartu berjenis': 'Typed cards',
+    'Baris beralamat: semua hasil satu bentuk, paling cepat dipindai. Kartu berjenis: yang isinya elemen — token, nomor, tautan — jadi kartu dengan tombol salin bernama. Keduanya memakai remah alamat dan sorotan kata yang sama.':
+      'Addressed rows: every result the same shape, fastest to scan. Typed cards: results whose payload is an element — a token, a number, a link — become a card with a named copy button. Both carry the same address breadcrumb and the same highlighting.',
     'Cadangkan ke Google-mu': 'Back up to your Google',
     'Cadangan aktif': 'Backup on',
     'Cadangan manual': 'Manual backup',
