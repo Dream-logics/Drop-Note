@@ -4335,6 +4335,37 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
   cek('sebelum dinyalakan, obrolannya tidak kelihatan sama sekali',
       await hal.locator('#petak-ai').isHidden());
 
+  /* SATU KETUKAN, BUKAN DUA. Kalau kotaknya sudah berisi, mengetuk ikon AI
+     berarti "tanyakan INI" - bukan "pindahkan aku ke ruang tanya lalu suruh aku
+     menekan kirim". Pertanyaannya sudah lengkap di detik kamu mengetuknya;
+     ketukan kedua tidak menambahkan satu informasi pun, dia cuma ongkos. */
+  await hal.fill('#kotak', 'apa bedanya kopi arabika dan robusta');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(200);
+  await hal.click('#b-ai');
+  await hal.waitForTimeout(600);
+  cek('satu ketukan ikon AI: pindah mode DAN pertanyaannya berangkat',
+      (await hal.locator('#petak-ai').isVisible()) &&
+      (await hal.locator('#ai-isi .ai-pesan.aku').count()) >= 1,
+      await hal.innerText('#ai-isi'));
+  /* Kotaknya ikut dikosongkan - pertanyaannya sudah pindah ke obrolannya, dan
+     kalimat yang tertinggal di kotak akan terkirim dua kali. */
+  cek('dan kotaknya kosong lagi, bukan mengulang pertanyaan yang sama',
+      (await hal.inputValue('#kotak')) === '');
+  await hal.evaluate(() => TAlur.setelModeAIUji(false));
+  await hal.waitForTimeout(200);
+  await hal.fill('#kotak', '');
+  await hal.dispatchEvent('#kotak', 'input');
+  await hal.waitForTimeout(200);
+  /* Kotak KOSONG tetap cuma berpindah mode: tidak ada yang bisa ditanyakan, dan
+     mengirim kekosongan cuma melahirkan pesan galat. */
+  await hal.click('#b-ai');
+  await hal.waitForTimeout(250);
+  cek('kotak kosong cuma berpindah mode, tidak mengirim apa-apa',
+      await hal.locator('#petak-ai').isVisible());
+  await hal.evaluate(() => TAlur.setelModeAIUji(false));
+  await hal.waitForTimeout(200);
+
   await hal.click('#b-ai');
   await hal.waitForTimeout(120);
   cek('mengetuk ikonnya menyalakan mode AI', await hal.locator('#petak-ai').isVisible());
@@ -4391,7 +4422,11 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
 
   /* ... tapi yang memang layak jadi timbunan tetap bisa masuk, satu ketukan. */
   const sebelumDrop = await hal.evaluate(() => TAlur.semuaEntri().length);
-  await hal.click('#ai-isi .ai-pesan.ai [data-ai-drop]');
+  /* Yang di-drop gelembung TERAKHIR, bukan yang pertama: yang mau kamu simpan
+     jawaban yang BARUSAN datang, dan riwayat obrolan tidak pernah kosong di
+     tengah sesi. Uji yang mengambil yang pertama diam-diam menguji jawaban
+     dari pertanyaan yang sudah lewat. */
+  await hal.locator('#ai-isi .ai-pesan.ai [data-ai-drop]').last().click();
   await hal.waitForFunction((n) => TAlur.semuaEntri().length > n, sebelumDrop, { timeout: 5000 });
   const kartuAI = await hal.evaluate(() => {
     const a = TAlur.semuaEntri().slice().sort((x, y) => y.dibuat - x.dibuat)[0];
