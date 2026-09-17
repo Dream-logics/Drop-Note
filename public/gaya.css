@@ -18,12 +18,21 @@
      kali sehari. Dasarnya diredupkan sedikit; permukaannya - kotak, laci,
      kartu - justru putih penuh, jadi yang bisa diketik selalu selangkah lebih
      terang daripada latarnya. */
-  --g:#f5f5f3;   /* dasar - putih redup */
+  /* DASARNYA DITURUNKAN untuk HP, bukan untuk selera. Dulu #f5f5f3, dan di
+     situ kartu putih (#ffffff) cuma beda DUA PERSEN dari alasnya - cukup di
+     panel laptop yang terang, lenyap sama sekali di HP dengan kecerahan rendah
+     atau di bawah matahari. Yang dilaporkan lapangan persis itu: "di laptop
+     bagus, di HP garis dan kartunya tidak kelihatan beda".
+     Kartunya tidak bisa dinaikkan - dia sudah putih penuh - jadi yang turun
+     alasnya. Tetap SATU tema putih; yang berubah jaraknya, bukan wataknya. */
+  --g:#efefec;   /* dasar - putih redup */
   --p:#ffffff;   /* permukaan - putih penuh, selangkah di atas dasar */
   --i:#16181b;   /* tinta   */
   --m:#6b7178;   /* redup   */
-  --l:#e4e4e0;   /* garis   */
-  --lt:#d6d6d1;  /* garis terang */
+  /* Garis rambut 1px yang cuma beda 4% dari alasnya bukan pemisah, dia
+     bisikan - dan di HP bisikan itu tidak terdengar sama sekali. */
+  --l:#d7d7d0;   /* garis   */
+  --lt:#c2c2b9;  /* garis terang */
   /* Aksen teal tua. Dua nada, karena tugasnya dua: --a dipakai sebagai TINTA
      (tag, tautan, tenggat dekat), --ap sebagai ALAS tombol dengan tinta putih
      di atasnya. Di atas dasar putih keduanya kebetulan sama pekatnya. */
@@ -592,6 +601,14 @@ a.kv-teks{color:var(--a)}
 .set-lipat-isi > .set-kotak.awas{background:none}
 .set-lipat-isi > .set-kotak + .set-bagian{
   margin-top:6px;padding-top:12px;border-top:1px solid var(--l);
+}
+/* DUA KOTAK BERURUTAN WAJIB DIPISAH GARIS. Bingkai kartunya sengaja dilepas di
+   dalam panel (kotak di dalam kotak menggandakan garis), tapi melepasnya tanpa
+   mengganti pemisahnya berarti Bahasa, Bentuk hasil, dan Warna aksen meleleh
+   jadi satu blok teks panjang - dan yang terbaca bukan "tiga setelan" tapi
+   "satu paragraf". Di laptop masih terbaca dari jaraknya saja; di HP tidak. */
+.set-lipat-isi > .set-kotak + .set-kotak{
+  padding-top:12px;border-top:1px solid var(--l);
 }
 .set-lipat-isi > .set-bagian{margin:0}
 .set-judul{font-size:14.5px;font-weight:600;margin-bottom:5px}
