@@ -4422,7 +4422,11 @@ console.log('\nmode AI: satu ikon di atas Drop, dan obrolan yang tidak jadi timb
 
   /* ... tapi yang memang layak jadi timbunan tetap bisa masuk, satu ketukan. */
   const sebelumDrop = await hal.evaluate(() => TAlur.semuaEntri().length);
-  await hal.click('#ai-isi .ai-pesan.ai [data-ai-drop]');
+  /* Yang di-drop gelembung TERAKHIR, bukan yang pertama: yang mau kamu simpan
+     jawaban yang BARUSAN datang, dan riwayat obrolan tidak pernah kosong di
+     tengah sesi. Uji yang mengambil yang pertama diam-diam menguji jawaban
+     dari pertanyaan yang sudah lewat. */
+  await hal.locator('#ai-isi .ai-pesan.ai [data-ai-drop]').last().click();
   await hal.waitForFunction((n) => TAlur.semuaEntri().length > n, sebelumDrop, { timeout: 5000 });
   const kartuAI = await hal.evaluate(() => {
     const a = TAlur.semuaEntri().slice().sort((x, y) => y.dibuat - x.dibuat)[0];
