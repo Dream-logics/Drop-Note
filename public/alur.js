@@ -7455,7 +7455,19 @@
     $('#b-drop').addEventListener('click', function () {
       if (modeAI) kirimAI(); else drop();
     });
-    $('#b-ai').addEventListener('click', function () { setelModeAI(!modeAI); });
+    /* SATU KETUKAN, BUKAN DUA. Kalau kotaknya sudah berisi, mengetuk ikon AI
+       berarti "tanyakan INI" - bukan "pindahkan aku ke ruang tanya lalu suruh
+       aku menekan kirim". Pertanyaannya sudah lengkap di detik kamu
+       mengetuknya; ketukan kedua tidak menambahkan satu informasi pun, dia cuma
+       ongkos. Itu bentuk yang dibuktikan Meta AI di kotak cari WhatsApp, dan
+       itu juga laporan lapangannya: "cukup 1 kali klik akan pindah mode dan
+       minta jawaban".
+       Kotak KOSONG tetap cuma berpindah mode - tidak ada yang bisa ditanyakan,
+       dan mengirim kekosongan cuma melahirkan pesan galat. */
+    $('#b-ai').addEventListener('click', function () {
+      if (!modeAI && $('#kotak').value.trim()) { tanyaDariKotak(); return; }
+      setelModeAI(!modeAI);
+    });
     $('#ai-mode').addEventListener('click', function (ev) {
       var b = ev.target.closest('[data-ai-mode]');
       if (!b) return;
