@@ -533,8 +533,30 @@ a.kv-teks{color:var(--a)}
 .catat-isi{
   width:100%;flex:1 1 auto;min-height:300px;border:none;background:none;outline:none;resize:none;
   font-size:16px;line-height:1.65;margin-top:14px;padding:0;
+  /* Bidangnya contenteditable, jadi tempelan panjang tanpa spasi (alamat,
+     token) bisa mendorong lebarnya keluar layar - textarea dulu membungkusnya
+     sendiri. */
+  word-break:break-word;overflow-wrap:anywhere;
 }
-.catat-isi::placeholder{color:var(--m);opacity:.6}
+/* Bidang contenteditable tidak punya placeholder. Digambar dari 'data-kosong'
+   dan dinyalakan kelas 'kosong' dari JS - bukan dari ':empty', karena peramban
+   meninggalkan satu <br> begitu huruf terakhir dihapus dan ':empty' berhenti
+   cocok justru waktu layarnya memang terlihat kosong. */
+.catat-isi.kosong::before{
+  content:attr(data-kosong);color:var(--m);opacity:.6;pointer-events:none;
+}
+.catat-isi[contenteditable="false"]{color:var(--m)}
+/* --- rupa tulisan berformat ---
+   Tiga saja, dan ketiganya menambah STRUKTUR. Warna, ukuran, dan jenis huruf
+   sengaja tidak ada: dia menambah pilihan tanpa menambah struktur, dan tiap
+   pilihan di sini ditagih justru waktu kamu sedang menulis. */
+.catat-isi b, .catat-isi strong{font-weight:700;color:var(--i)}
+.catat-isi h3{
+  font-size:17px;font-weight:700;line-height:1.35;margin:16px 0 4px;
+}
+.catat-isi h3:first-child{margin-top:0}
+.catat-isi ul, .catat-isi ol{margin:6px 0;padding-left:22px}
+.catat-isi li{margin:2px 0}
 .riwayat{margin-top:18px;border-top:1px solid var(--l);padding-top:14px}
 .riwayat-baris{padding:11px 0;border-bottom:1px solid var(--l)}
 .riwayat-waktu{font-size:11px;color:var(--m);margin-bottom:4px}
@@ -1464,6 +1486,14 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    layar ini, dan tindakan kedua tidak pantas sebesar yang pertama. */
 .catat-dok{display:flex;align-items:center;gap:8px}
 .catat-dok .tbl.simpan{flex:1}
+/* TIGA TOMBOL FORMAT DI BARIS YANG SUDAH ADA - bukan baris sendiri. Layar ini
+   dipatok ke tinggi yang terlihat, dan di jendela pendek badan tulisannya
+   tinggal 43px; satu baris tambahan di situ berarti yang dibayar justru tempat
+   menulisnya. */
+.catat-dok .format{flex:0 0 auto;width:40px;height:40px;font-size:15px}
+.catat-dok .format b{font-weight:800}
+.catat-dok .format .ik{width:17px;height:17px}
+.catat-dok .format:active{background:var(--p)}
 
 
 /* BELUM DIBACA - bentuk yang sudah dikenali dari tiap aplikasi pesan: judulnya
@@ -2226,7 +2256,11 @@ body:has(.layar.pas-layar.aktif){height:var(--tampak, 100%);overflow:hidden}
      kesan luas walau tulisannya baru satu baris) - jadi yang dilepas cuma di
      jendela pendek, bukan seluruhnya. */
   #l-catat.aktif{height:var(--tampak, 100dvh);min-height:0;overflow:hidden}
-  .catat-isi{min-height:0;margin-top:8px}
+  /* MENGGULIR DI DALAM DIRINYA SENDIRI begitu layarnya dipatok. Bidangnya
+     sekarang <div>, bukan <textarea> - textarea menggulir sendiri tanpa
+     diminta, div tidak: tanpa baris ini tulisan panjang cuma terpotong di
+     tepi bawah dan tidak ada cara apa pun membaca sisanya. */
+  .catat-isi{min-height:0;margin-top:8px;overflow-y:auto}
   /* Tombol Simpan tidak boleh ikut menyusut: dia yang membayar keraguan
      "apakah tulisanku aman", dan itu justru paling terasa di jendela sempit. */
   .catat-dok{flex:none}
@@ -2255,4 +2289,8 @@ body:has(.layar.pas-layar.aktif){height:var(--tampak, 100%);overflow:hidden}
   .catat-isi{margin-top:4px}
   .catat-dok{padding:5px 0 calc(env(safe-area-inset-bottom) + 4px);margin-top:5px}
   .catat-dok .tbl.simpan{padding:8px 12px}
+  /* Tombol formatnya ikut merapat, TIDAK dibuang: di jendela seperempat layar
+     yang dikerjakan justru mengetik pesan panjang, dan itu persis keadaan yang
+     paling butuh tebal dan butirnya. */
+  .catat-dok .format{width:34px;height:34px}
 }

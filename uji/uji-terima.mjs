@@ -516,6 +516,88 @@ console.log('\ncatat: satu baris, banyak versi');
   cek('isi diperbarui di baris yang sama', e.isi === 'versi kedua');
   cek('versi lama masuk riwayat', (e.riwayat || []).length === 1 && e.riwayat[0].isi === 'versi pertama');
   cek('tetap satu entri, tidak beranak', (await hal.evaluate(() => TAlur.semuaEntri().length)) === 1);
+
+  /* ===== TULISAN BERFORMAT =====
+     Pesan panjang tanpa tebal dan butir cuma dinding huruf. Formatnya ditulis
+     DENGAN TOMBOL, tidak pernah dengan tanda bintang: "*tebal*" menuntutmu
+     mengetik kode lalu membayangkan hasilnya, dan yang terbaca di layar bukan
+     tulisanmu tapi mesinnya.
+
+     PEMBAGIANNYA YANG MENENTUKAN: 'kaya' menyimpan formatnya, 'isi' TETAP teks
+     polos - dan 'isi' itu yang dibaca pencarian, AI, kartu hasil, dan pembaca
+     rak. Kalau formatnya ikut masuk ke 'isi', mencari "kopi" akan menjaring
+     "<strong>" dan AI menerima tag sebagai bahan. */
+  cek('tiga tombol format, bukan sepuluh',
+      (await hal.locator('.catat-dok [data-format]').count()) === 3);
+  /* Di baris yang SUDAH ada: layar ini dipatok ke tinggi yang terlihat, dan
+     satu baris tambahan berarti yang dibayar justru tempat menulisnya. */
+  cek('tombolnya duduk di dok yang sudah ada, bukan di baris baru',
+      (await hal.locator('.catat-dok').count()) === 1 &&
+      (await hal.locator('.catat-dok #b-simpan').count()) === 1);
+
+  await hal.fill('#catat-isi', 'baris biasa yang akan ditebalkan');
+  await hal.dispatchEvent('#catat-isi', 'input');
+  await hal.evaluate(() => {
+    document.querySelector('#catat-isi').focus();
+    document.execCommand('selectAll');
+  });
+  await hal.locator('.catat-dok [data-format="bold"]').click();
+  await hal.waitForTimeout(900);
+  const kayaE = await hal.evaluate(() => TAlur.semuaEntri()[0]);
+  cek('tebalnya tersimpan di kolomnya sendiri',
+      /<(b|strong)>/i.test(kayaE.kaya || ''), kayaE.kaya);
+  /* INI ATURAN YANG PALING MENENTUKAN DI SELURUH PERUBAHAN INI. */
+  cek('dan isinya TETAP teks polos, tanpa satu tag pun',
+      kayaE.isi === 'baris biasa yang akan ditebalkan', JSON.stringify(kayaE.isi));
+  /* Kalau tagnya bocor ke 'isi', pencariannya ikut rusak - dan rusaknya tidak
+     kelihatan sampai ada yang mencari kata yang kebetulan ada di dalam tag. */
+  const cariKaya = await hal.evaluate(() =>
+    TOtak.cari(TAlur.semuaEntri(), 'ditebalkan', '', '').length);
+  cek('yang ditebalkan tetap ketemu lewat katanya sendiri', cariKaya === 1, String(cariKaya));
+
+  /* Dibuka lagi, tebalnya masih ada - kalau tidak, formatnya cuma hidup selama
+     layarnya belum ditinggal, dan itu lebih buruk daripada tidak ada. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(300);
+  await hal.evaluate(() => TAlur.keCatat(TAlur.semuaEntri()[0]));
+  await hal.waitForTimeout(400);
+  cek('dibuka lagi, tebalnya masih tergambar',
+      (await hal.locator('#catat-isi b, #catat-isi strong').count()) >= 1);
+
+  /* Butirnya jadi "- " di teks polosnya: itu bentuk teks polos sebuah butir,
+     dan tanpa itu daftar berhenti terbaca sebagai daftar di cuplikan kartu. */
+  const teksButir = await hal.evaluate(() =>
+    TAlur.teksDariKayaUji('<ul><li>satu</li><li>dua</li></ul>'));
+  cek('butir jadi "- " di teks polosnya',
+      teksButir === '- satu\n- dua', JSON.stringify(teksButir));
+
+  /* ===== DAFTAR TAGNYA TERTUTUP =====
+     Bukan kerapian: HTML yang datang dari tempelan halaman web membawa skrip,
+     gaya, dan atribut - dan bidang ini duduk di halaman yang sama dengan
+     seluruh catatannya. */
+  const saring = await hal.evaluate(() => TAlur.bersihkanKayaUji(
+    '<b onclick="jahat()">tebal</b><script>jahat()</scr' + 'ipt>' +
+    '<span style="color:red">warna</span><img src=x onerror="jahat()">' +
+    '<a href="javascript:jahat()">tautan</a>'));
+  cek('skrip dan gambar dibuang seluruhnya',
+      saring.indexOf('script') < 0 && saring.indexOf('img') < 0 &&
+      saring.indexOf('onerror') < 0, saring);
+  cek('atribut dibuang, walau tagnya boleh', saring.indexOf('onclick') < 0, saring);
+  /* TAGNYA dibuang, ISINYA tidak: tempelan hampir selalu terbungkus <span>,
+     dan membuang isinya berarti membuang kalimat yang barusan kamu tempel. */
+  cek('tapi kalimatnya tidak ikut hilang',
+      /tebal/.test(saring) && /warna/.test(saring) && /tautan/.test(saring), saring);
+  cek('dan tebalnya selamat', /<b>tebal<\/b>/.test(saring), saring);
+
+  /* Catatan polos TIDAK menyimpan salinan HTML-nya sendiri: kalau menyimpan,
+     tiap baris di spreadsheet membawa kalimatnya dua kali dan yang kedua tidak
+     menjawab apa pun. */
+  await hal.fill('#catat-isi', 'tulisan polos tanpa format apa pun');
+  await hal.dispatchEvent('#catat-isi', 'input');
+  await hal.waitForTimeout(900);
+  cek('tulisan polos tidak menyimpan salinan berformat',
+      (await hal.evaluate(() => TAlur.semuaEntri()[0].kaya)) === '',
+      await hal.evaluate(() => TAlur.semuaEntri()[0].kaya));
 }
 
 console.log('\ncadangan ke Drive & Sheets');
