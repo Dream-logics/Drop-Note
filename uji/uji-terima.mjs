@@ -796,6 +796,134 @@ console.log('\ndeskripsi menggantikan tag, dan dinilai setinggi tag');
       /class="kartu-waktu"/.test(kartu) &&
       kartu.indexOf('kartu-waktu') < kartu.indexOf('kartu-rinci'));
 
+  /* ===== REMAH ALAMAT DI ATAS JUDUL =====
+     Hasil pencarian dulu mengucapkan ISI saja - judul dan satu baris cuplikan -
+     dan tidak satu baris pun mengucapkan DI MANA. Padahal alamatnya sudah
+     tersimpan sejak hari catatannya jatuh; yang kurang cuma menggambarnya.
+     Bentuknya dibaca dari NAMA, aturan yang sama persis dengan pohon board. */
+  const CONTOH_REMAH = {
+    id: 'rm1', jenis: 'tautan', judul: 'Token Replicate AI',
+    isi: 'https://replicate.com/account/api-tokens',
+    label: [], elemen: [], diubah: Date.now()
+  };
+  const remah = await hal.evaluate((e) => TAlur.kartuHtmlUji(e, {
+    alamat: 'Tools Apps Dev', kata: ['token']
+  }), CONTOH_REMAH);
+  cek('remah alamat digambar DI ATAS judulnya',
+      remah.indexOf('kartu-remah') >= 0 &&
+      remah.indexOf('kartu-remah') < remah.indexOf('kartu-judul'), remah.slice(0, 160));
+  cek('jenisnya disebut di remah', /remah-jenis">Link</.test(remah), remah.slice(0, 200));
+  /* "Tools Apps Dev" itu SATU nama di pohon; yang digambar jalurnya, dan
+     jalurnya dibaca dari awalan namanya sendiri - bukan dari kolom induk. */
+  cek('alamatnya digambar sebagai jalur bertingkat',
+      /Tools › Apps Dev/.test(remah), remah.slice(0, 300));
+  /* Dua tanggal di satu kartu terbaca sebagai dua waktu yang berbeda, dan yang
+     membacanya berhenti mempercayai keduanya. */
+  cek('jamnya pindah ke remah, tidak digambar dua kali',
+      (remah.match(/kartu-waktu/g) || []).length === 1);
+  /* Nama tempat itu tulisannya sendiri - tidak pernah ikut berganti bahasa. */
+  cek('jalur alamat dijaga data-asli', /remah-jalur" data-asli/.test(remah));
+
+  /* Tanpa alamat, kartunya persis seperti dulu: remahnya tidak lahir dan
+     jamnya tetap di baris judul. Di dalam folder yang sedang dibuka, alamat
+     tiap baris sama dengan nama di kepalanya - mengulanginya dua puluh kali
+     bukan alamat, cuma kebisingan. */
+  cek('tanpa alamat, remahnya tidak digambar sama sekali',
+      kartu.indexOf('kartu-remah') < 0);
+
+  /* ===== SOROTAN DIHITUNG DI TEKS MENTAH =====
+     Menyorot sesudah meloloskan HTML berarti menyisipkan <mark> di tengah
+     "&amp;", dan yang tergambar bukan sorotan tapi teks rusak. */
+  const sorot = await hal.evaluate(() => TAlur.kartuHtmlUji({
+    id: 's1', jenis: 'teks', judul: 'catatan panjang',
+    isi: 'catatan panjang berisi kata & tanda <kurung> lalu kopi hitam di ujungnya',
+    label: [], elemen: [], diubah: Date.now()
+  }, { kata: ['kopi'] }));
+  cek('kata yang cocok disorot di cuplikan', /<mark>kopi<\/mark>/.test(sorot), sorot);
+  cek('tanda & dan < tetap diloloskan, bukan jadi markup',
+      /&amp;/.test(sorot) && /&lt;kurung&gt;/.test(sorot) &&
+      sorot.indexOf('<kurung>') < 0, sorot);
+
+  /* Cuplikannya DIGESER ke kata yang cocok. Catatan lima ratus kata yang cocok
+     di kata ke dua ratus menampilkan kalimat pembuka yang tidak ada
+     hubungannya dengan yang diketik, dan yang terbaca "kenapa ini yang
+     muncul?" - bukan "ini dia". */
+  const geser = await hal.evaluate(() => TAlur.kartuHtmlUji({
+    id: 's2', jenis: 'teks', judul: 'panjang',
+    isi: 'panjang ' + 'alfa beta gama delta '.repeat(20) + 'kata kuncinya di ujung',
+    label: [], elemen: [], diubah: Date.now()
+  }, { kata: ['kuncinya'] }));
+  cek('cuplikannya digeser ke kata yang cocok, bukan dari huruf pertama',
+      /<mark>kuncinya<\/mark>/.test(geser) && /…/.test(geser), geser);
+
+  /* Elemen yang rapi tidak boleh MENYEMBUNYIKAN satu-satunya alasan baris ini
+     muncul: kalau yang kamu ketik cuma ada di badannya, cuplikannya tetap
+     digambar walau elemennya ada. */
+  const badan = await hal.evaluate(() => TAlur.kartuHtmlUji({
+    id: 's3', jenis: 'teks', judul: 'Rekening BCA',
+    isi: 'Rekening BCA untuk pembayaran sewa gudang kopo bulanan',
+    elemen: [{ nama: 'No rekening', nilai: '6573937947', jenis: 'nomor' }],
+    label: [], diubah: Date.now()
+  }, { kata: ['gudang'] }));
+  cek('cocok di badan tetap dicuplik walau elemennya ada',
+      /kartu-cuplik/.test(badan) && /<mark>gudang<\/mark>/.test(badan), badan);
+
+  /* ===== DUA BENTUK HASIL, DAN YANG BERUBAH CUMA YANG ISINYA ELEMEN =====
+     Kalau semuanya ikut berubah bentuk, yang dipilih bukan "bentuk hasil" lagi
+     tapi aplikasi kedua - dan jarinya harus hafal dua tempat. */
+  const CONTOH_KV = {
+    id: 'kv1', jenis: 'teks', judul: 'Token Replicate',
+    isi: 'token replicate', label: [], diubah: Date.now(),
+    elemen: [{ nama: 'Replicate token', nilai: 'https://replicate.com/account/api-tokens', jenis: 'tautan' }]
+  };
+  const duaBentuk = await hal.evaluate((e) => {
+    const asal = TAlur.gayaHasilUji();
+    TAlur.gayaHasilUji('a');
+    const a = TAlur.kartuHtmlUji(e, { alamat: 'Tools Apps Dev' });
+    TAlur.gayaHasilUji('b');
+    const b = TAlur.kartuHtmlUji(e, { alamat: 'Tools Apps Dev' });
+    TAlur.gayaHasilUji(asal);
+    return [a, b, asal];
+  }, CONTOH_KV);
+  cek('bawaannya baris beralamat, bukan kartu', duaBentuk[2] === 'a', duaBentuk[2]);
+  cek('bentuk A: elemennya baris, bukan kotak',
+      /elemen-baris/.test(duaBentuk[0]) && duaBentuk[0].indexOf('class="kv"') < 0);
+  cek('bentuk B: elemennya kartu kunci-nilai',
+      /class="kv"/.test(duaBentuk[1]) && /kv-cip/.test(duaBentuk[1]));
+  /* Tombolnya BERNAMA di bentuk B - di kartu yang sudah berkotak, ikon
+     telanjang di ujung kanan terbaca sebagai bagian kotaknya, bukan sasaran. */
+  cek('bentuk B: tombol salinnya bernama, bukan ikon telanjang',
+      /kv-salin-teks">Salin</.test(duaBentuk[1]), duaBentuk[1]);
+  /* Alasan sebuah tautan disimpan adalah DIBUKA. Bentuk yang menelan tautannya
+     ke dalam tombol salin menghapus alasan itu. */
+  cek('bentuk B: tautannya tetap bisa dibuka, bukan cuma disalin',
+      /<a class="kv-teks" href="https:\/\/replicate\.com/.test(duaBentuk[1]), duaBentuk[1]);
+  cek('bentuk B: domainnya digambar sebagai jalur',
+      /replicate\.com › account › api-tokens/.test(duaBentuk[1]), duaBentuk[1]);
+  /* Salinnya dibaca penangan yang SAMA di dua bentuk - kalau tidak, satu
+     bentuk punya tombol salin yang diam waktu ditekan. */
+  cek('kedua bentuk memakai penanda salin yang sama',
+      /data-elemen="0"/.test(duaBentuk[0]) && /data-elemen="0"/.test(duaBentuk[1]));
+  /* Remah dan sorotan MILIK KEDUANYA: yang dipilih bentuk elemennya, bukan
+     dua aplikasi yang berbeda. */
+  cek('kedua bentuk tetap membawa remah alamat',
+      /kartu-remah/.test(duaBentuk[0]) && /kartu-remah/.test(duaBentuk[1]));
+
+  /* Salin itu TOMBOL, bukan ikon yang harus dibidik - dan sasarannya 44px,
+     aturan yang sama dengan tombol lain di aplikasi ini. */
+  const gayaSalin = fs.readFileSync(path.join(AKAR, 'gaya.css'), 'utf8');
+  const aturanSalin = gayaSalin.slice(gayaSalin.indexOf('.elemen-salin{'),
+                                      gayaSalin.indexOf('.elemen-salin .ik'));
+  cek('tombol salin elemen 44px dan berbingkai',
+      /width:44px/.test(aturanSalin) && /height:44px/.test(aturanSalin) &&
+      /border:1px solid/.test(aturanSalin), aturanSalin.replace(/\s+/g, ' '));
+
+  /* TAMPILAN TIDAK PERNAH IKUT SINKRON, aturan yang sama dengan tema, bahasa,
+     dan gayaGaleri: bentuk hasil yang berganti sendiri di perangkat lain
+     terbaca sebagai kehilangan kendali, bukan sebagai setelan yang rajin. */
+  cek('bentuk hasil tidak ikut menyeberang ke perangkat lain',
+      (await hal.evaluate(() => TSinkron.KUNCI_SINKRON)).indexOf('gayaHasil') < 0);
+
   /* Daftar, bukan tumpukan kartu: yang memisahkan cukup garis rambut. Kalau
      tiap hasil dikotaki lagi, beratnya kembali dan yang muat tinggal dua. */
   const gaya = fs.readFileSync(path.join(AKAR, 'gaya.css'), 'utf8');
@@ -1387,7 +1515,7 @@ console.log('\nlima pintu di kepala, dan layar Note');
   cek('mengetik menembus semua folder',
       (await hal.locator('#note-isi .kartu').count()) >= 1);
   cek('tiap hasil membawa alamat foldernya',
-      (await hal.locator('#note-isi .note-alamat-kecil').count()) >= 1);
+      (await hal.locator('#note-isi .kartu-remah .remah-jalur').count()) >= 1);
   await hal.fill('#note-cari', '');
   await hal.waitForTimeout(250);
 

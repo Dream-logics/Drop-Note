@@ -1289,6 +1289,80 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     di luar "N tersimpan", dan di luar bahan pelabelan AI.
                     Yang layak jadi timbunan masuk lewat tombol Drop di tiap
                     jawaban - satu ketukan, bukan otomatis
+public/alur.js      (lanjutan) BENTUK HASIL CARI: REMAH ALAMAT DI ATAS JUDUL.
+                    Tiap baris hasil dulu mengucapkan ISI saja - judul dan satu
+                    baris cuplikan - dan tidak satu pun mengucapkan DI MANA.
+                    Bentuk itu yang terbaca sebagai daftar percakapan WhatsApp,
+                    dan itu keluhan lapangannya apa adanya. Padahal alamatnya
+                    sudah tersimpan sejak hari catatannya jatuh; yang kurang
+                    cuma menggambarnya. Sekarang di atas judul ada satu baris
+                    tipis: JENIS - JALUR ALAMAT - tanggal di ujung kanan.
+                    Jalurnya dibaca dari NAMA ("Tools Apps Dev" jadi
+                    "Tools › Apps Dev"), aturan yang sama persis dengan pohon
+                    board - tidak ada kolom induk yang bisa jadi yatim.
+                    JAMNYA PINDAH KE REMAH, tidak digambar dua kali: dua
+                    tanggal di satu kartu terbaca sebagai dua waktu yang
+                    berbeda, dan yang membacanya berhenti mempercayai keduanya.
+                    Remahnya CUMA digambar kalau pemanggilnya memberi alamat -
+                    di dalam folder yang sedang dibuka, alamat tiap baris sama
+                    dengan nama di kepalanya, dan mengulanginya dua puluh kali
+                    bukan alamat, cuma kebisingan. Alamatnya dihitung SEKALI
+                    untuk seluruh daftar, bukan sekali per kartu: alamatNote()
+                    menyapu seluruh timbunan tiap kali dipanggil, jadi
+                    memanggilnya di dalam map() berarti dua ratus sapuan untuk
+                    satu ketukan huruf.
+                    '.note-alamat-kecil' DIBUANG - layar Note dulu menggambar
+                    alamatnya sebagai barisnya sendiri di atas kartu, dan itu
+                    sekarang cuma mengucapkan hal yang sama dua kali.
+                    CUPLIKANNYA DIGESER KE KATA YANG COCOK dan kata itu
+                    DISOROT. Catatan lima ratus kata yang cocok di kata ke dua
+                    ratus menampilkan kalimat pembuka yang tidak ada
+                    hubungannya dengan yang diketik, dan yang terbaca "kenapa
+                    ini yang muncul?" - bukan "ini dia". Sorotannya dihitung di
+                    TEKS MENTAH lalu tiap potongnya diloloskan sendiri:
+                    menyorot sesudah H() berarti menyisipkan <mark> di tengah
+                    "&amp;", dan yang tergambar bukan sorotan tapi teks rusak.
+                    Katanya diambil MENTAH dari kotaknya, bukan lewat
+                    TOtak.normal() - normal() membuang tanda baca, jadi
+                    "r8_9nV" jatuh jadi "r8 9nv" dan sorotannya meleset dari
+                    nilai yang justru dicari.
+                    CUPLIKAN TETAP DIGAMBAR WALAU ELEMENNYA ADA, kalau yang
+                    kamu ketik cuma ketemu di BADANNYA. Elemen yang rapi
+                    biasanya ringkasan yang lebih baik, tapi di keadaan itu dia
+                    menyembunyikan satu-satunya alasan baris ini muncul - dan
+                    hasil yang tidak bisa menjelaskan dirinya sendiri terbaca
+                    sebagai pencarian yang salah.
+                    DUA BENTUK, DIPILIH DI SETELAN ('gayaHasil', bawaannya
+                    'a'). 'a' baris beralamat: semua hasil satu bentuk, paling
+                    cepat dipindai. 'b' kartu berjenis: yang isinya ELEMEN -
+                    token, nomor, tautan - jadi kartu berkotak dengan tombol
+                    salin BERNAMA. Itu satu-satunya bentuk di aplikasi ini yang
+                    boleh berkotak, dan kotaknya yang mengatakan "ini satu
+                    barang utuh, ambil semuanya": yang cocoknya di elemen bukan
+                    bacaan, dia barang yang mau DIPINDAHKAN ke kolom harga atau
+                    ke jendela obrolan sebelah.
+                    B CUMA MENGUBAH YANG ISINYA ELEMEN. Catatan digambar persis
+                    seperti di A, dan remah serta sorotan milik keduanya -
+                    kalau semuanya ikut berubah bentuk, yang dipilih bukan
+                    "bentuk hasil" lagi tapi aplikasi kedua, dan jarinya harus
+                    hafal dua tempat.
+                    Di B tautannya TETAP <a>, tidak ikut ditelan tombol salin:
+                    alasan sebuah tautan disimpan adalah DIBUKA, dan bentuk
+                    yang menghapus alasan itu bukan peningkatan. Dua sasaran di
+                    satu baris - bukanya di teksnya, salinnya di tombolnya.
+                    Keduanya memakai penanda 'data-elemen' yang sama, jadi satu
+                    penangan melayani dua bentuk; bentuk yang punya penangan
+                    sendiri adalah bentuk yang tombolnya diam waktu ditekan.
+                    SAKLARNYA DI SETELAN, bukan di layar hasilnya sendiri:
+                    tombol yang mengubah rupa duduk di tempat yang kamu datangi
+                    sekali, bukan di tempat yang kamu pakai sepanjang hari -
+                    saklar rupa di layar hasil adalah satu keputusan yang
+                    ditagih tiap kali kamu mencari. TIDAK IKUT SINKRON, aturan
+                    yang sama dengan tema, bahasa, dan gayaGaleri.
+                    TOMBOL SALIN ELEMEN JADI 44px BERBINGKAI (bentuk A). Dulu
+                    36px tanpa bingkai, dan di baris yang isinya sudah penuh
+                    huruf monospace dia terbaca sebagai hiasan di ujung - yang
+                    dicoba jari justru menyorot teksnya sendiri.
 public/hitung.js    MESIN KALKULATOR, dan dia BUKAN eval(). eval menjalankan
                     apa pun yang bentuknya JavaScript, dan yang mengetik di
                     situ duduk di halaman yang sama dengan seluruh catatannya -

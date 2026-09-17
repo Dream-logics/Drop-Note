@@ -1957,6 +1957,8 @@
      dia kenali, bukan terjemahannya. */
   var BAHASA = [['en', 'English'], ['id', 'Indonesia']];
 
+  var GAYA_HASIL = [['a', 'Baris beralamat'], ['b', 'Kartu berjenis']];
+
   function bahasaSaat() { return setelanSaat.bahasa || 'en'; }
 
   var TEMA = [
@@ -2130,7 +2132,18 @@
        tercapai lagi - dan menyimpan dua tempat yang menggambar petak yang sama
        berarti perbaikan di satu tempat diam-diam tidak sampai ke tempat lain.
        Petaknya tinggal satu, di layar yang memang mengurus gambar. */
-    wadah.innerHTML = urutPin(hasil).slice(0, 200).map(kartuHtml).join('');
+    /* Alamatnya dihitung SEKALI untuk seluruh daftar, bukan sekali per kartu:
+       alamatNote() menyapu seluruh timbunan tiap kali dipanggil, jadi
+       memanggilnya di dalam map() berarti dua ratus sapuan untuk satu ketukan
+       huruf - tidak terasa di dua puluh catatan, mematikan di sepuluh ribu. */
+    var petaDepan = petaAlamatNote(semuaEntri.filter(catatanSaja));
+    var kataCari = kataSorot(kueri);
+    var memoDepan = {};
+    wadah.innerHTML = urutPin(hasil).slice(0, 200).map(function (e) {
+      return kartuHtml(e, {
+        alamat: petaDepan[e.id] || TANPA_RAK, kata: kataCari, jalurMemo: memoDepan
+      });
+    }).join('');
     pasangGambarKartu(wadah);
   }
 
@@ -2681,6 +2694,15 @@
      lacinya masih seperti kamu tinggalkan. */
   var galeriLaci = {};
   var gayaGaleri = 'sedang';
+  /* BENTUK HASIL CARI, dan dia SETELAN - bukan keadaan. Dua bentuk yang sama
+     benarnya untuk dua cara memakai: 'a' baris beralamat (memindai banyak),
+     'b' kartu berjenis (hasil yang isinya elemen berhenti terlihat seperti
+     catatan biasa). Bawaannya 'a' karena memindai yang paling sering.
+
+     TIDAK IKUT SINKRON, aturan yang sama dengan tema, bahasa, dan gayaGaleri:
+     tampilan yang berganti sendiri di perangkat lain terbaca sebagai
+     kehilangan kendali, bukan sebagai setelan yang rajin. */
+  var gayaHasil = 'a';
   /* "All" menembus board: yang tampil semua gambarnya, bukan daftar boardnya.
      Keadaan, bukan setelan - dia tidak ikut disimpan, karena yang kamu minta
      "sekarang perlihatkan semuanya", bukan "mulai sekarang selalu begitu". */
@@ -4289,14 +4311,17 @@
          untuk tiap baris yang digambar - tidak terasa di dua puluh catatan,
          mematikan di sepuluh ribu. */
       var petaCari = petaAlamatNote(semuaEntri.filter(catatanSaja));
+      var memoCari = {}, kataCariNote = kataSorot(kueri);
       $('#note-isi').innerHTML = hasil.length
         ? urutPin(hasil).slice(0, 200).map(function (e) {
-            /* Alamatnya ditulis di atas judulnya, bukan dikirim sebagai
-               argumen kedua ke kartuHtml: kartu itu dipakai di tiga tempat,
-               dan menambah parameter di sana berarti map() yang memanggilnya
-               diam-diam mengoper nomor urut sebagai alamat. */
-            return '<div class="note-alamat-kecil" data-asli>' + H(petaCari[e.id] || TANPA_RAK) + ' /</div>' +
-                   kartuHtml(e, { jamPenuh: true });
+            /* Alamatnya dikirim sebagai OPSI, tidak lagi digambar sebagai
+               barisnya sendiri di atas kartu: dua baris yang mengucapkan hal
+               yang sama - satu di luar kartu, satu remah di dalamnya - membuat
+               kartunya kelihatan beralamat dua kali. */
+            return kartuHtml(e, {
+              jamPenuh: true, alamat: petaCari[e.id] || TANPA_RAK,
+              kata: kataCariNote, jalurMemo: memoCari
+            });
           }).join('')
         : '<div class="kosong">Tidak ada yang cocok.<br>Coba satu kata saja — pencarian ini memaafkan.</div>';
       pasangGambarKartu($('#note-isi'));
@@ -4380,6 +4405,104 @@
     gambarCipRuang();
   }
 
+  /* ===================== REMAH ALAMAT DI ATAS JUDUL =====================
+     Hasil pencarian dulu cuma judul + satu baris cuplikan, dan bentuk itu
+     yang terbaca sebagai daftar percakapan: tiap baris mengucapkan ISI, tidak
+     satu pun mengucapkan DI MANA. Padahal yang dicari enam bulan kemudian
+     hampir selalu punya alamat di kepalanya ("yang di Tools itu"), dan
+     alamatnya sudah tersimpan - cuma tidak pernah digambar.
+
+     Jalurnya dibaca dari NAMANYA sendiri, aturan yang sama persis dengan
+     pohon board: "Business FNB Menu Promo" jadi "Business › FNB › Menu Promo"
+     tanpa satu kolom induk pun. */
+  var NAMA_REMAH = {
+    teks: 'Teks', gambar: 'Gambar', berkas: 'Berkas', tautan: 'Link', daftar: 'Todo'
+  };
+
+  /* Memo-nya DIBUAT PER GAMBARAN, bukan disimpan di modul. indukBoard menyapu
+     seluruh pohon tiap panggilan, dan dua ratus kartu dikali tiga tingkat
+     berarti enam ratus sapuan untuk satu ketukan huruf. Memo yang hidup di
+     modul harus dibuang tiap kali pohonnya berubah nama - dan yang lupa
+     membuangnya tidak pernah bergalat, dia cuma menggambar alamat kemarin.
+     Memo yang mati bersama gambarannya tidak punya cara jadi basi. */
+  function remahJalur(nama, memo) {
+    var n = String(nama || '').trim();
+    if (!n || n === TANPA_RAK) return n;
+    if (memo && memo[n] != null) return memo[n];
+    var bagian = [], kini = n, pagar = 0;
+    /* Pagar 6: susunannya dibaca dari awalan nama, dan nama yang kebetulan
+       jadi awalan dirinya sendiri akan memutar selamanya. Pohon tiga tingkat
+       tidak pernah butuh lebih dari itu. */
+    while (kini && pagar++ < 6) {
+      var induk = indukBoard(kini);
+      bagian.unshift(namaPendek(kini, induk));
+      kini = induk;
+    }
+    var jalur = bagian.join(' › ');
+    if (memo) memo[n] = jalur;
+    return jalur;
+  }
+
+  /* SOROTANNYA DIHITUNG DI TEKS MENTAH, BARU DILOLOSKAN.
+     Menyorot sesudah H() berarti mencari kata di dalam "&amp;" dan
+     menyisipkan <mark> di tengah entitas - yang tergambar bukan sorotan, tapi
+     teks rusak. Jadi potongannya dipisah dulu, tiap potong diloloskan
+     sendiri, dan <mark> ditulis di antaranya. */
+  function sorotHtml(teks, kata) {
+    var sisa = String(teks || '');
+    if (!kata || !kata.length) return H(sisa);
+    var keluar = '', pagar = 0;
+    while (sisa && pagar++ < 40) {
+      var rendah = sisa.toLowerCase();
+      var pos = -1, pjg = 0;
+      kata.forEach(function (k) {
+        if (!k) return;
+        var p = rendah.indexOf(k);
+        if (p < 0) return;
+        /* Yang paling KIRI menang; kalau seri, yang paling PANJANG - supaya
+           "kopi" tidak menyorot separuh "kopial" lalu menyisakan ekornya. */
+        if (pos < 0 || p < pos || (p === pos && k.length > pjg)) { pos = p; pjg = k.length; }
+      });
+      if (pos < 0) break;
+      keluar += H(sisa.slice(0, pos)) + '<mark>' + H(sisa.substr(pos, pjg)) + '</mark>';
+      sisa = sisa.slice(pos + pjg);
+    }
+    return keluar + H(sisa);
+  }
+
+  /* Cuplikannya DIGESER KE KATA YANG COCOK, bukan selalu dari huruf pertama.
+     Catatan lima ratus kata yang cocok di kata ke dua ratus menampilkan
+     kalimat pembuka yang tidak ada hubungannya dengan yang diketik, dan yang
+     terbaca "kenapa ini yang muncul?" - bukan "ini dia". */
+  var CUPLIK_MAKS = 130;
+  var CUPLIK_KIRI = 42;
+
+  /* Kata yang disorot diambil MENTAH dari kotaknya, bukan lewat TOtak.normal():
+     normal() membuang tanda baca, jadi "r8_9nV" jatuh jadi "r8 9nv" dan
+     sorotannya meleset dari nilai yang justru dicari. Satu huruf dilewati -
+     menyorot tiap "a" di layar bukan sorotan, itu layar yang belang. */
+  function kataSorot(kueri) {
+    return String(kueri || '').toLowerCase().split(/\s+/).filter(function (w) {
+      return w.length >= 2;
+    }).slice(0, 8);
+  }
+
+  function jendelaCuplik(teks, kata) {
+    var t = String(teks || '').replace(/\s+/g, ' ').trim();
+    if (!t) return '';
+    var titik = -1;
+    if (kata && kata.length) {
+      var rendah = t.toLowerCase();
+      kata.forEach(function (k) {
+        var p = k ? rendah.indexOf(k) : -1;
+        if (p >= 0 && (titik < 0 || p < titik)) titik = p;
+      });
+    }
+    var mulai = titik > CUPLIK_KIRI ? titik - CUPLIK_KIRI : 0;
+    var potong = t.slice(mulai, mulai + CUPLIK_MAKS);
+    return (mulai ? '…' : '') + potong + (mulai + CUPLIK_MAKS < t.length ? '…' : '');
+  }
+
   function cuplikan(e) {
     if (e.jenis === 'tautan' || e.jenis === 'daftar') return '';
     var isi = (e.isi || '').trim();
@@ -4408,10 +4531,41 @@
      .map(kartuHtml) di tiga tempat, dan map() mengoper nomor urut sebagai
      argumen kedua. Angka tidak punya properti, jadi nomor urut yang nyasar ke
      sini otomatis terbaca sebagai "tidak ada pilihan". */
+  /* Cocok di badan tapi TIDAK di judul maupun di elemen mana pun - itu satu-
+     satunya keadaan yang menuntut cuplikan walau elemennya sudah ada. */
+  function cocokDiBadan(e, cup, kata) {
+    if (!kata || !kata.length) return false;
+    var badan = String(cup || '').toLowerCase();
+    var luar = String(e.judul || '').toLowerCase() + ' ' +
+               (e.elemen || []).map(function (x) {
+                 return String(x.nama || '') + ' ' + String(x.nilai || '');
+               }).join(' ').toLowerCase();
+    return kata.some(function (k) {
+      return k && badan.indexOf(k) >= 0 && luar.indexOf(k) < 0;
+    });
+  }
+
   function kartuHtml(e, opsi) {
     var sering = (e.dipakai || 0) >= SERING;
     var jamPenuh = !!(opsi && opsi.jamPenuh);
+    var alamat = (opsi && opsi.alamat) || '';
+    var kata = (opsi && opsi.kata) || [];
     var b = [];
+
+    /* Remah cuma digambar kalau pemanggilnya memberi alamat. Di dalam folder
+       yang sedang dibuka, alamat tiap baris sama dengan nama di kepalanya -
+       mengulanginya dua puluh kali bukan alamat, cuma kebisingan. */
+    if (alamat) {
+      b.push('<div class="kartu-remah">' +
+        '<span class="remah-jenis">' +
+        H(e.tulisan ? 'Catatan' : (NAMA_REMAH[e.jenis] || 'Teks')) + '</span>' +
+        '<span class="remah-sep">·</span>' +
+        '<span class="remah-jalur" data-asli>' +
+        H(remahJalur(alamat, opsi && opsi.jalurMemo)) + '</span>' +
+        '<span class="kartu-waktu">' +
+        H(jamPenuh ? TOtak.waktuLengkap(e.diubah) : TOtak.waktuRingkas(e.diubah)) +
+        '</span></div>');
+    }
 
     /* PIN SELALU TERLIHAT, tidak disembunyikan di dalam rincian. Yang dipin
        itu justru yang paling sering dipanggil, dan menyembunyikan tombolnya di
@@ -4424,9 +4578,12 @@
       ' aria-label="' + (e.pin ? 'Lepas pin' : 'Pin ke atas') + '">' +
       '<svg viewBox="0 0 24 24" class="ik"><path d="M9 3h6l-1 6 4 4v2H6v-2l4-4z"/>' +
       '<path d="M12 15v6"/></svg></button>' +
-      '<span class="kartu-waktu">' +
-      H(jamPenuh ? TOtak.waktuLengkap(e.diubah) : TOtak.waktuRingkas(e.diubah)) +
-      '</span></div>');
+      /* Jamnya pindah ke remah kalau remahnya ada - dua tanggal di satu kartu
+         terbaca sebagai dua waktu yang berbeda, dan yang membacanya berhenti
+         mempercayai keduanya. */
+      (alamat ? '' : '<span class="kartu-waktu">' +
+        H(jamPenuh ? TOtak.waktuLengkap(e.diubah) : TOtak.waktuRingkas(e.diubah)) +
+        '</span>') + '</div>');
 
     /* Satu baris saja, dan CUMA kalau tidak ada elemen. Kalau elemennya ada,
        dia sudah jadi ringkasan yang lebih baik daripada potongan mentahnya -
@@ -4446,8 +4603,14 @@
         '<path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>' +
         (TKunci.terbuka() ? 'Terkunci — buka lewat tombol ubah'
                           : 'Terkunci — sandinya belum dibuka') + '</div>');
-    } else if (cup && !elemen.length) {
-      b.push('<div class="kartu-cuplik" data-asli>' + H(cup) + '</div>');
+    } else if (cup && (!elemen.length || cocokDiBadan(e, cup, kata))) {
+      /* Cuplikannya tetap disembunyikan kalau elemennya sudah jadi ringkasan
+         yang lebih baik - KECUALI kalau yang kamu ketik ternyata cuma ada di
+         badannya. Di situ elemen yang rapi justru menyembunyikan satu-satunya
+         alasan baris ini muncul, dan hasil yang tidak bisa dijelaskan sendiri
+         terbaca sebagai pencarian yang salah. */
+      b.push('<div class="kartu-cuplik" data-asli>' +
+        sorotHtml(jendelaCuplik(cup, kata), kata) + '</div>');
     }
 
     /* Thumbnail-nya sudah ada di dalam entri, jadi tidak ada satu pun
@@ -4464,7 +4627,15 @@
        tersering kartu ini dibuka sama sekali. Kalau dia ikut disembunyikan,
        yang dihemat cuma tinggi kartu - yang dibayar satu ketukan tambahan
        pada gerakan tersering. */
-    if (elemen.length && !e.rahasia) b.push('<div class="elemen">' + elemenBaris(elemen[0], 0) + '</div>');
+    /* BENTUK B CUMA MENGUBAH YANG ISINYA ELEMEN, tidak yang lain. Catatan
+       tetap digambar persis seperti di A - kalau semuanya ikut berubah bentuk,
+       yang dipilih bukan "bentuk hasil" lagi tapi aplikasi kedua, dan jarinya
+       harus hafal dua tempat. */
+    if (elemen.length && !e.rahasia) {
+      b.push(gayaHasil === 'b'
+        ? kvHtml(elemen[0], 0)
+        : '<div class="elemen">' + elemenBaris(elemen[0], 0) + '</div>');
+    }
 
     var r = [];
     if (e.rahasia) elemen = [];
@@ -4515,6 +4686,46 @@
     nomor: 'No', alamat: 'alamat', berkas: 'berkas', nama: 'nama',
     jadwal: 'jadwal', harga: 'harga', prompt: 'prompt', lainnya: 'catatan'
   };
+
+  /* ===================== BENTUK B: KARTU KUNCI-NILAI =====================
+     Di bentuk A semua hasil bentuknya sama, dan itu benar untuk memindai.
+     Tapi yang cocoknya di ELEMEN bukan bacaan - dia barang yang mau
+     DIPINDAHKAN ke tempat lain (kolom harga, jendela obrolan), dan barang itu
+     pantas punya wadahnya sendiri: nilainya selebar kartu, tombol salinnya
+     BERNAMA, bukan ikon mikro yang harus dibidik.
+
+     Tautan tetap <a>, bukan ikut ditelan tombol salin: alasan sebuah tautan
+     disimpan adalah dibuka, dan bentuk yang menghapus alasan itu bukan
+     peningkatan. Jadi dua sasaran di satu baris - bukanya di teksnya,
+     salinnya di tombolnya. */
+  function jalurTautan(u) {
+    var m = /^https?:\/\/([^/?#]+)([^?#]*)/i.exec(String(u || ''));
+    if (!m) return '';
+    var tuan = m[1].replace(/^www\./i, '');
+    var jalan = (m[2] || '').split('/').filter(Boolean);
+    return [tuan].concat(jalan.slice(0, 3)).join(' › ');
+  }
+
+  function kvHtml(x, i) {
+    var nama = TOtak.pendekkanNama(x.nama || NAMA_JENIS[x.jenis] || 'elemen');
+    var nilai = String(x.nilai || '');
+    var tautan = /^https?:\/\//i.test(nilai);
+    /* data-asli duduk di TEKSNYA, bukan di baris pembungkusnya: kalau di
+       pembungkus, kata "Salin" di dalam tombolnya ikut terkunci dan berhenti
+       berganti bahasa. */
+    var teks = tautan
+      ? '<a class="kv-teks" href="' + H(nilai) + '" target="_blank" rel="noopener" data-asli>' + H(nilai) + '</a>'
+      : '<span class="kv-teks" data-asli>' + H(nilai) + '</span>';
+    return '<div class="kv">' +
+      '<div class="kv-kepala"><span class="kv-cip" data-asli>' + H(nama) + '</span>' +
+      (tautan ? '<span class="kv-domain" data-asli>' + H(jalurTautan(nilai)) + '</span>' : '') +
+      '</div>' +
+      '<div class="kv-nilai">' + teks +
+      '<button class="kv-salin" data-elemen="' + i + '" aria-label="Salin ' + H(nama) + '">' +
+      '<svg viewBox="0 0 24 24" class="ik"><rect x="9" y="9" width="12" height="12" rx="2"/>' +
+      '<path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
+      '<span class="kv-salin-teks">Salin</span></button></div></div>';
+  }
 
   function elemenBaris(x, i) {
     /* Disingkat saat DITAMPILKAN juga, bukan cuma saat disimpan: yang
@@ -5502,6 +5713,21 @@
       '</div>',
       '<div class="set-ket">Bahasa layar. Nama pintu — Drop, Note, To Do, Storage — sengaja tidak ikut diterjemahkan: itu nama tempat, dan nama tempat yang berganti bahasa membuat jarimu harus belajar ulang.</div>',
       '</div>',
+      /* BENTUK HASIL DI SETELAN, bukan di layar hasilnya sendiri. Tombol yang
+         mengubah rupa duduk di tempat yang kamu datangi sekali, bukan di
+         tempat yang kamu pakai sepanjang hari - saklar rupa di layar hasil
+         adalah satu keputusan yang ditagih tiap kali kamu mencari. */
+      '<div class="set-kotak">',
+      '<div class="set-judul">Bentuk hasil cari</div>',
+      '<div class="tema-baris" id="set-gaya-hasil">' +
+        GAYA_HASIL.map(function (g) {
+          return '<button class="tema-cip' + (gayaHasil === g[0] ? ' nyala' : '') +
+                 '" data-ghasil="' + g[0] + '">' + H(g[1]) + '</button>';
+        }).join('') +
+      '</div>',
+      '<div class="set-ket">Baris beralamat: semua hasil satu bentuk, paling cepat dipindai. Kartu berjenis: yang isinya elemen — token, nomor, tautan — jadi kartu dengan tombol salin bernama. Keduanya memakai remah alamat dan sorotan kata yang sama.</div>',
+      '</div>',
+
       '<div class="set-kotak">',
       '<div class="set-judul">Warna aksen</div>',
       '<div class="set-ket">Yang berganti cuma aksennya — dasarnya tetap putih redup. Aplikasi yang dibuka puluhan kali sehari selama bertahun-tahun boleh sesekali ganti baju.</div>',
@@ -7322,6 +7548,23 @@
       TSimpan.setel('bahasa', kode).then(function () { global.location.reload(); });
     });
 
+    /* Didengar di tingkat dokumen, sama dengan pemilih bahasa: layar Setelan
+       digambar ulang seluruhnya tiap kali dibuka, jadi penangan yang dipasang
+       pada tombolnya sendiri ikut hilang bersama tombolnya. */
+    document.addEventListener('click', function (ev) {
+      var g = ev.target.closest('[data-ghasil]');
+      if (!g) return;
+      var pilih = g.getAttribute('data-ghasil');
+      if (pilih === gayaHasil) return;
+      gayaHasil = pilih;
+      simpanSetelan('gayaHasil', gayaHasil);
+      gambarSetelan();
+      /* Digambar ulang SEKARANG - kalau tidak, bentuk yang barusan dipilih
+         baru terlihat waktu kamu kebetulan mengetik lagi, dan tombol yang
+         tidak menghasilkan apa pun terbaca sebagai aplikasi yang rusak. */
+      segarkanTampilan();
+    });
+
     $('#b-setelan').addEventListener('click', function () {
       gambarSetelan();
       keLayar('l-setelan');
@@ -7744,6 +7987,7 @@
       muatAlbum(setelanSaat);
       muatLengket(setelanSaat);
       if (setelanSaat.gayaGaleri) gayaGaleri = setelanSaat.gayaGaleri;
+      if (setelanSaat.gayaHasil) gayaHasil = setelanSaat.gayaHasil;
       if (setelanSaat.konversiKategori) konvKat = setelanSaat.konversiKategori;
       /* Temanya dipasang SEBELUM apa pun digambar - kalau sesudah, warnanya
          berkedip dari teal ke pilihanmu tiap kali aplikasinya dibuka. */
@@ -7836,6 +8080,9 @@
     keCatat: keCatat, drop: drop,
     gambarMulai: gambarMulai, gambarSetelan: gambarSetelan,
     kartuHtmlUji: kartuHtml,
+    /* Cuma untuk uji: menukar bentuk hasil tanpa lewat layar Setelan, supaya
+       kedua bentuk bisa diperiksa dalam satu lintasan. */
+    gayaHasilUji: function (g) { if (g) gayaHasil = g; return gayaHasil; },
     /* Cuma untuk uji: memeriksa bentuk entri yang baru lahir - kolom yang
        sudah pensiun tidak boleh diam-diam kembali lewat sini. */
     entriBaruUji: entriBaru,
