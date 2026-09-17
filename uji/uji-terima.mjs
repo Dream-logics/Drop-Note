@@ -8671,7 +8671,7 @@ console.log('\npemilih pintu di Setelan');
      mana yang layak memakan lebar layar - cuma dia yang tahu mana yang dibuka
      sepuluh kali sehari. Yang tidak dipilih TIDAK HILANG, dia pindah ke balik
      Tools; yang berubah cuma berapa ketukan untuk sampai ke sana. */
-  await hal.evaluate(() => TAlur.keLayarUji('l-setelan'));
+  await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.bukaSetelanUji('*'); TAlur.keLayarUji('l-setelan'); });
   await hal.waitForTimeout(350);
   cek('tiap pintu punya barisnya sendiri di Setelan',
       (await hal.locator('#pintu-atur .pintu-baris').count()) === 6,
