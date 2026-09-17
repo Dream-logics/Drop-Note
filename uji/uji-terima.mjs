@@ -3684,16 +3684,40 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
   const aksen = () => hal.evaluate(() =>
     getComputedStyle(document.documentElement).getPropertyValue('--a').trim());
   const sebelumTema = await aksen();
+  const dasarAwal = await hal.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--g').trim());
   await hal.click('#set-tema [data-tema="nila"]');
   await hal.waitForTimeout(350);
   const sesudahTema = await aksen();
   cek('memilih warna benar-benar mengganti aksennya',
       sesudahTema !== sebelumTema && /^#4338CA$/i.test(sesudahTema), sesudahTema);
   /* Dasarnya TIDAK ikut berubah - dua alas berarti tiap suntingan gaya harus
-     diperiksa dua kali. */
+     diperiksa dua kali.
+     DIBANDINGKAN SEBELUM-SESUDAH, bukan dipatok ke satu angka hex: yang dijaga
+     "aksennya berganti, alasnya tidak", dan uji yang memaku hexnya gagal tiap
+     kali paletnya disetel - lalu yang dibetulkan angkanya di uji, bukan
+     aturannya. Penjaga yang cuma menagih angka berhenti menjaga maknanya. */
+  const dasarKini = () => hal.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--g').trim());
   cek('dasarnya tetap putih redup di tema mana pun',
-      (await hal.evaluate(() =>
-        getComputedStyle(document.documentElement).getPropertyValue('--g').trim())) === '#f5f5f3');
+      (await dasarKini()) === dasarAwal, (await dasarKini()) + ' vs ' + dasarAwal);
+  /* Dan dia memang putih redup, bukan abu-abu: kartu putih penuh di atasnya
+     harus tetap terbaca sebagai permukaan yang lebih terang. */
+  cek('dasarnya masih putih redup, bukan abu-abu',
+      /^#[e-f][0-9a-f]{5}$/i.test(await dasarKini()), await dasarKini());
+  /* KONTRASNYA CUKUP UNTUK HP. Kartu putih yang cuma beda dua persen dari
+     alasnya kelihatan di panel laptop dan lenyap di HP yang kecerahannya
+     rendah - itu laporan lapangannya apa adanya. */
+  const jarakPalet = await hal.evaluate(() => {
+    const g = getComputedStyle(document.documentElement);
+    const ang = (v) => parseInt(v.trim().slice(1, 3), 16);
+    return { dasar: ang(g.getPropertyValue('--g')), garis: ang(g.getPropertyValue('--l')) };
+  });
+  cek('kartu putih cukup jauh dari alasnya untuk terlihat di HP',
+      255 - jarakPalet.dasar >= 12, String(255 - jarakPalet.dasar));
+  cek('garis rambutnya cukup jauh dari alasnya',
+      jarakPalet.dasar - jarakPalet.garis >= 22,
+      String(jarakPalet.dasar - jarakPalet.garis));
   cek('pilihannya diingat',
       (await hal.evaluate(() => TSimpan.semuaSetelan().then((s) => s.tema))) === 'nila');
   await hal.click('#set-tema [data-tema="teal"]');
