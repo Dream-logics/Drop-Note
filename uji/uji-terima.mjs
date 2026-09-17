@@ -591,13 +591,23 @@ console.log('\ncatat: satu baris, banyak versi');
 
   /* Catatan polos TIDAK menyimpan salinan HTML-nya sendiri: kalau menyimpan,
      tiap baris di spreadsheet membawa kalimatnya dua kali dan yang kedua tidak
-     menjawab apa pun. */
+     menjawab apa pun.
+     Diuji di catatan BARU, bukan dengan menimpa yang tadi: mengetik ulang di
+     atas tulisan yang seluruhnya tebal MEWARISI tebalnya - itu perilaku tiap
+     penyunting di mana pun, bukan cacat, dan menguji di situ berarti menguji
+     peramban, bukan aturannya. */
+  await hal.evaluate(() => TAlur.keCatat(TAlur.entriBaruUji('teks')));
+  await hal.waitForTimeout(350);
+  await hal.fill('#catat-judul', 'tulisan polos uji');
   await hal.fill('#catat-isi', 'tulisan polos tanpa format apa pun');
   await hal.dispatchEvent('#catat-isi', 'input');
   await hal.waitForTimeout(900);
+  const polosKaya = await hal.evaluate(() => {
+    const e = TAlur.semuaEntri().filter((x) => x.judul === 'tulisan polos uji')[0];
+    return e ? { kaya: e.kaya, isi: e.isi } : null;
+  });
   cek('tulisan polos tidak menyimpan salinan berformat',
-      (await hal.evaluate(() => TAlur.semuaEntri()[0].kaya)) === '',
-      await hal.evaluate(() => TAlur.semuaEntri()[0].kaya));
+      polosKaya && polosKaya.kaya === '', JSON.stringify(polosKaya));
 }
 
 console.log('\ncadangan ke Drive & Sheets');
@@ -7190,9 +7200,23 @@ console.log('\ndriver: satu foto, puluhan sudut pandang');
   /* Kolomnya ikut dicadangkan, DI EKOR - baris lama membaca nilainya menurut
      urutan, jadi menyisipkan di tengah menggeser seluruh cadangan yang ada. */
   const kolomDriver = await hal.evaluate(() => TAwan.KOLOM);
-  cek('driver ikut dicadangkan, kolomnya di ekor',
-      kolomDriver.indexOf('driver') >= kolomDriver.length - 3,
-      JSON.stringify(kolomDriver.slice(-3)));
+  /* PENJAGANYA SEKARANG URUTANNYA SENDIRI, bukan "driver ada di tiga terakhir".
+     Yang dijaga aturannya: baris cadangan lama membaca nilainya menurut URUTAN,
+     jadi menyisipkan satu kolom di tengah menggeser seluruh cadangan yang sudah
+     terlanjur ada - diam-diam, dan tidak ada satu galat pun yang muncul.
+     Uji lamanya longgar: dia lulus selama driver kebetulan dekat ekor, dan
+     gagal justru waktu kolom BARU ditambahkan dengan benar di belakangnya. */
+  const KOLOM_BEKU = ['id', 'jenis', 'judul', 'judulManual', 'isi', 'kategori', 'label',
+    'daftar', 'berkasId', 'driveId', 'namaBerkas', 'tipeBerkas', 'ukuran',
+    'dibuat', 'diubah', 'dipakai', 'diLabeliAI', 'pensiun', 'dihapus', 'riwayat',
+    'tag', 'elemen', 'rahasia', 'elemenTerkunci',
+    'selesai', 'selesaiPada', 'penting', 'hariIni', 'tenggat', 'ulang',
+    'pin', 'rakLepas', 'album', 'sumber', 'driver', 'albumManual', 'albumInduk'];
+  cek('urutan kolom yang sudah ada tidak pernah bergeser',
+      kolomDriver.slice(0, KOLOM_BEKU.length).join(',') === KOLOM_BEKU.join(','),
+      JSON.stringify(kolomDriver.slice(0, KOLOM_BEKU.length)));
+  cek('kolom baru selalu ditambahkan DI EKOR, tidak pernah disisipkan',
+      kolomDriver.length >= KOLOM_BEKU.length, String(kolomDriver.length));
 }
 
 console.log('\narahan gambar: pendek, kontekstual, bahasamu');

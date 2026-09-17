@@ -5465,8 +5465,12 @@
       document.execCommand(apa, false, null);
     }
     tandaiKosongCatat();
-    tanda('menyimpan…');
-    simpanTertunda();
+    /* Disundul lewat 'input', bukan dengan memanggil penyimpannya langsung:
+       penundanya (simpanTertunda) lahir di dalam pasang() dan tidak terlihat
+       dari sini - dan memanggilnya dari sini berarti dua jalur yang menyimpan
+       hal yang sama, lalu yang satu ketinggalan begitu yang lain disunting.
+       Satu jalur: apa pun yang mengubah tulisan mengirim 'input'. */
+    b.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
   function gambarGembok(e) {
