@@ -314,7 +314,11 @@
     /* Penjaga terakhir: layar yang tidak punya bilah pilih tidak boleh
        menampilkannya, dari jalan mana pun dia sampai ke sana. */
     if (id !== 'l-utama' && id !== 'l-tulis' && id !== 'l-note' && id !== 'l-galeri') batalPilih();
-    if (id === 'l-utama') perbaruiJumlah();
+    /* Digambar ulang tiap kali layar depan tampil, bukan cuma waktu datanya
+       berubah: yang paling sering dilakukan di sini mencentang satu tugas di
+       layar To Do lalu menekan Drop - dan baris yang masih menyebut tugas yang
+       barusan kamu selesaikan terbaca sebagai aplikasi yang tidak mendengar. */
+    if (id === 'l-utama') { perbaruiJumlah(); gambarJemputan(); }
     /* Bilah sesinya digambar untuk SETIAP layar, bukan cuma waktu Gallery
        dibuka: kembarannya hidup di layar Drop, dan sesi bisa kedaluwarsa
        sendiri lewat satu jam sementara layarnya tidak ke mana-mana. */
@@ -369,6 +373,12 @@
          tidak ditampilkan, dan itu berubah tiap kali timbunannya berubah.
          Kalau tidak digambar ulang di sini, cipnya menyebut keadaan kemarin. */
       gambarCipSaring();
+      /* Baris jemputan juga lahir dari salinan ini. Tanpa baris ini dia cuma
+         muncul kalau kebetulan ada yang menggambar ulang layar depan - jadi
+         tugas yang turun dari perangkat lain, atau yang baru saja dimuat waktu
+         aplikasinya dibuka, tidak pernah terlihat sampai kamu mengetik lalu
+         menghapus ketikanmu lagi. */
+      gambarJemputan();
       return semuaEntri;
     });
   }
@@ -1272,6 +1282,7 @@
       gambarBayang();
       gambarHasilDepan();
     }
+    gambarJemputan();
   }
 
   function gambarCipModeAI() {
@@ -1344,6 +1355,17 @@
         tipeBerkas: blob.type, ukuran: blob.size
       };
     });
+  }
+
+  /* Satu ketukan, bukan dua: setelModeAI TIDAK mengosongkan kotaknya, jadi
+     kalimat yang sudah kamu ketik ikut terbawa dan langsung berangkat.
+     Menyalakan modenya lalu menunggu kamu menekan Drop lagi berarti tawaran
+     ini cuma memindahkanmu ke ruang tunggu - dan yang kamu ketik tadi sudah
+     lengkap, tidak ada yang perlu ditambahkan. */
+  function tanyaDariKotak() {
+    if (!$('#kotak').value.trim()) return;
+    setelModeAI(true);
+    kirimAI();
   }
 
   function kirimAI() {
@@ -2065,7 +2087,114 @@
     return !!labelDepan || !!saringJenis || !!$('#kotak').value.trim();
   }
 
+  /* ===================== BARIS JEMPUTAN DI LAYAR DEPAN =====================
+     Layar depan kosong itu benar, dan tetap benar - yang dilarang dinding kartu
+     catatan, bukan diam. Bedanya satu: catatan tidak pernah pergi, tugas pergi
+     sendiri. Yang dibawa mata waktu membuka aplikasi juga bukan "apa yang kamu
+     cari" - kotaknya sudah menjawab itu - tapi "ada yang tertinggal tidak?",
+     dan sampai sekarang tidak ada satu piksel pun yang menjawabnya.
+
+     TIGA, bukan semua. Di empat dia mulai jadi dinding, dan dinding itu persis
+     yang dilawan aplikasi ini. Sisanya jadi SATU baris ke To Do. */
+  var JEMPUT_MAKS = 3;
+
+  function gambarJemputan() {
+    var petak = $('#petak-jemput');
+    if (!petak) return;
+    /* Begitu ada satu huruf, ruang ini milik hasil pencarian. Dua daftar yang
+       berebut ruang yang sama membuat keduanya tidak terbaca - aturan yang
+       sama yang sudah dipakai mode AI terhadap hasil cari. */
+    if (modeAI || hasilDepanAktif()) { petak.classList.add('sembunyi'); petak.innerHTML = ''; return; }
+
+    var daftar = TTugas.jemputan();
+    if (!daftar.length) { petak.classList.add('sembunyi'); petak.innerHTML = ''; return; }
+
+    var tampil = daftar.slice(0, JEMPUT_MAKS);
+    var sisa = daftar.length - tampil.length;
+    petak.classList.remove('sembunyi');
+    petak.innerHTML =
+      '<div class="jemput-kepala">' +
+      '<span class="jemput-label">Hari ini</span>' +
+      '<span class="jemput-garis"></span>' +
+      '<span class="jemput-jumlah">' + daftar.length + ' menunggu</span></div>' +
+      tampil.map(function (e, i) { return jemputBaris(e, i === 0); }).join('') +
+      (sisa ? '<button class="jemput-lagi" data-jemput-semua>' + sisa + ' lagi di To Do →</button>' : '');
+  }
+
+  /* YANG PALING MENDESAK DIBESARKAN. Tiga baris tipis menjawab pertanyaannya,
+     tapi tidak menjawab keluhannya - layarnya tetap sebagian besar kosong, dan
+     yang terbaca "aplikasi ini belum jadi". Yang membesar cuma yang PERTAMA:
+     kalau semuanya besar, tiga baris jadi tiga kartu, dan tiga kartu adalah
+     dinding yang baru saja kita tolak. */
+  function jemputBaris(e, besar) {
+    var lewat = TTugas.tertunggak(e);
+    var tenggat = e.tenggat ? TTugas.tulisTenggat(e.tenggat) : '';
+    var judul = String(e.judul || '').trim() || '(tanpa judul)';
+    return '<div class="jemput-baris' + (besar ? ' besar' : '') + '" data-jemput="' + H(e.id) + '">' +
+      /* Dicentang DI SINI, tanpa pindah layar. Kalau barisnya cuma membawamu ke
+         layar To Do, dia papan pengumuman - dan papan pengumuman tidak punya
+         saluran keluar, jadi dia akan menumpuk persis seperti yang lain. */
+      '<button class="jemput-centang" data-jemput-selesai="' + H(e.id) + '"' +
+      ' aria-label="Selesaikan ' + H(judul) + '"><span class="bulat' +
+      (lewat ? ' lewat' : '') + '"></span></button>' +
+      '<span class="jemput-judul" data-asli>' +
+      (e.penting ? '<span class="titik" title="penting"></span>' : '') + H(judul) + '</span>' +
+      (tenggat
+        ? '<span class="jemput-tenggat' + (lewat ? ' lewat' : '') + '">' + H(tenggat) + '</span>'
+        : (e.penting ? '<span class="jemput-tenggat penting">Penting</span>' : '')) +
+      '</div>';
+  }
+
+  function tanganiJemput(ev) {
+    var b = ev.target.closest('[data-jemput-selesai]');
+    if (b) {
+      var id = b.getAttribute('data-jemput-selesai');
+      var t = null;
+      semuaEntri.forEach(function (x) { if (x.id === id) t = x; });
+      /* segarkan() milik TTugas sudah dipanggil di dalam simpan(), tapi dia
+         cuma menyegarkan cache dan angka - barisnya sendiri harus digambar
+         ulang di sini, kalau tidak yang tercentang tetap berdiri sampai
+         layarnya ditinggal lalu didatangi lagi. */
+      if (t) TTugas.selesaikan(t).then(gambarJemputan);
+      return;
+    }
+    if (ev.target.closest('[data-jemput-semua], [data-jemput]')) {
+      TTugas.saring('hariini');
+      keTab('l-tugas');
+    }
+  }
+
+  /* ===================== TAWARAN TANYA AI =====================
+     Bentuk yang sudah dibuktikan WhatsApp: pilihan AI baru ditawarkan SESUDAH
+     kamu mengetik, karena baru di situ dia tahu mau ditanya apa. Di sini dulu
+     kebalikannya - ikon AI justru PERGI begitu ada yang diketik, jadi satu-
+     satunya jalan ke AI adalah menghapus ketikanmu, menekan ikonnya, lalu
+     mengetik ulang kalimat yang sama.
+
+     LETAKNYA IKUT JAWABAN TIMBUNANNYA, dan itu bukan hiasan:
+     - ada hasil  -> barisnya PALING BAWAH. Timbunanmu sudah menjawab, dan
+       catatanmu sendiri selalu jawaban yang lebih baik daripada karangan
+       mesin. Menaruhnya di atas berarti mendorong catatanmu sendiri ke bawah
+       demi tebakan.
+     - nol hasil  -> barisnya MENGGANTIKAN jalan buntu. Di situ layarnya cuma
+       bilang "tidak ada yang cocok" lalu berhenti, padahal itu justru satu-
+       satunya momen AI memang jawabannya. */
+  function tanyaAIHtml(kueri) {
+    if (!kueri) return '';
+    var pendek = kueri.length > 34 ? kueri.slice(0, 33) + '…' : kueri;
+    return '<button class="tanya-ai" data-tanya-ai>' +
+      '<svg viewBox="0 0 24 24" class="ik"><path d="M12 3.4l1.9 5.1 5.1 1.9-5.1 1.9-1.9 5.1-1.9-5.1L5 10.4l5.1-1.9z"/></svg>' +
+      /* Satu simpul teks, tanpa <b> di dalamnya: lapisan bahasa mencocokkan
+         SELURUH isi simpul, jadi ketikanmu yang dibungkus tag sendiri membuat
+         kalimatnya tidak pernah cocok dengan pola mana pun - dan yang tersisa
+         separuh Inggris separuh Indonesia. Ketikannya tetap utuh karena
+         polanya mengembalikannya apa adanya lewat $1. */
+      '<span class="tanya-ai-teks">Tanya AI: “' + H(pendek) + '”</span>' +
+      '<span class="tanya-ai-panah">→</span></button>';
+  }
+
   function gambarHasilDepan() {
+    gambarJemputan();
     /* Di mode AI kotaknya bertanya, bukan mencari - satu huruf tidak boleh
        memanggil daftar hasil yang tidak diminta siapa pun. */
     if (modeAI || !hasilDepanAktif()) { tutupHasilDepan(); return; }
@@ -2123,7 +2252,7 @@
           : saringJenis
             ? 'Belum ada yang berjenis ini.'
             : 'Belum ada yang masuk label ini.<br>Label diisi AI sesudah catatannya jatuh.') +
-        '</div>';
+        '</div>' + tanyaAIHtml(kueri);
       return;
     }
 
@@ -2143,7 +2272,7 @@
       return kartuHtml(e, {
         alamat: petaDepan[e.id] || TANPA_RAK, kata: kataCari, jalurMemo: memoDepan
       });
-    }).join('');
+    }).join('') + tanyaAIHtml(kueri);
     pasangGambarKartu(wadah);
   }
 
@@ -4398,6 +4527,9 @@
     if (layarSaat === 'l-note') gambarNote();
     if (layarSaat === 'l-galeri') gambarGaleri();
     if (hasilDepanAktif()) gambarHasilDepan();
+    /* Di luar gambarHasilDepan juga, karena dia CUMA dipanggil waktu hasilnya
+       aktif - dan justru waktu hasilnya TIDAK aktif blok ini yang tampil. */
+    gambarJemputan();
     gambarCipSaring();
     /* Gudang tersering dihitung dari salinan lokal, jadi dia ikut disegarkan
        tiap kali salinan itu berubah - termasuk sesudah cadangan menyunting
@@ -7663,12 +7795,17 @@
       if (ev.key === 'Escape') tutupLihat();
     });
     $('#hasil-depan').addEventListener('click', function (ev) {
+      /* Dibaca DULUAN, sebelum penanganan kartu: barisnya duduk di dalam wadah
+         yang sama, dan klikHasil mencari '.kartu' terdekat - tanpa penjaga ini
+         tawarannya ikut tertelan dan tombolnya diam waktu ditekan. */
+      if (ev.target.closest('[data-tanya-ai]')) { tanyaDariKotak(); return; }
       if (pilihNyala || jumlahPilih()) {
         var k = ev.target.closest('.kartu');
         if (k) { alihPilih(k.getAttribute('data-id')); return; }
       }
       klikHasil(ev);
     });
+    $('#petak-jemput').addEventListener('click', tanganiJemput);
     /* Hasil pencarian ikut bisa dipilih berbanyak, dan pintunya CUMA
        tekan-lama: tombol Pilih yang menganga di dok akan menagih tempat dari
        kotak yang dipakai puluhan kali sehari, untuk pekerjaan sebulan sekali. */

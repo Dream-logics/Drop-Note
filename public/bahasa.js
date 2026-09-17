@@ -521,6 +521,10 @@
   var POLA = [
     [/^(\d{1,2}) (Mei|Agu|Okt|Des)\b/, function (_, d, b) { return d + ' ' + BULAN_EN[b]; }],
     [/^(\d+) hasil$/, '$1 results'],
+    [/^Tanya AI: “(.+)”$/, 'Ask AI: “$1”'],
+    [/^(\d+) menunggu$/, '$1 waiting'],
+    [/^(\d+) lagi di To Do →$/, '$1 more in To Do →'],
+    [/^Selesaikan (.+)$/, 'Complete $1'],
     [/^Kosong$/, 'Empty'],
     [/^(\d+) catatan$/, '$1 notes'],
     [/^(\d+) tulisan$/, '$1 notes'],
