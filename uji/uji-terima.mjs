@@ -628,6 +628,17 @@ console.log('\ncatat: satu baris, banyak versi');
   cek('umpan uji tulisan polos dibereskan sendiri',
       (await hal.evaluate(() =>
         TAlur.semuaEntri().filter((x) => x.judul === 'tulisan polos uji').length)) === 0);
+
+  /* DIKEMBALIKAN KE TEMPAT SEMULA. Blok sesudah ini masih berdiri di layar
+     tulis dan menekan panah kembalinya - meninggalkan suite di layar lain
+     berarti uji tetangga gagal karena tombol yang memang sedang tidak
+     terlihat, dan yang dikejar orang berikutnya cacat di tempat yang salah. */
+  await hal.evaluate(() => {
+    const e = TAlur.semuaEntri().filter((x) => x.judul === 'Link dev photo studio')[0];
+    if (e) TAlur.keCatat(e);
+  });
+  await hal.waitForSelector('#l-catat.aktif');
+  await hal.waitForTimeout(300);
 }
 
 console.log('\ncadangan ke Drive & Sheets');
