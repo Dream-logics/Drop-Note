@@ -626,6 +626,11 @@ console.log('\nsetelan & pwa');
 
   await hal.click('#b-setelan');
   await hal.waitForSelector('#l-setelan.aktif');
+  /* Setelan mendarat dengan semua kategorinya tertutup, jadi innerText tidak
+     melihat apa pun yang belum dibuka - dan itu memang perilakunya sekarang.
+     Yang diuji isinya, bukan pelipatnya, jadi kategorinya dibuka dulu. */
+  await hal.evaluate(() => TAlur.bukaSetelanUji('Sinkron & cadangan'));
+  await hal.waitForTimeout(200);
   const teks = await hal.innerText('#setelan-isi');
   cek('setelan menyebut brankas Drive', /Tersambung ke Drive/.test(teks));
   cek('setelan jujur soal kunci di HP', /tidak bisa benar-benar disembunyikan/.test(teks) || true);
@@ -3606,10 +3611,67 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
   cek('kotak kosong tidak menawarkan apa-apa',
       (await hal.locator('#hasil-depan [data-tanya-ai]').count()) === 0);
 
-  /* TEMA WARNA. Yang berganti CUMA aksennya - dasarnya tetap putih redup, dan
-     alasannya sama dengan alasan tema gelap dulu dibuang. */
+  /* ===== SETELAN DILIPAT PER KATEGORI =====
+     Dua belas bagian berjajar itu kereta api yang harus digulir seluruhnya
+     untuk mencari satu tombol, dan itu keluhan lapangannya apa adanya. Yang
+     merusaknya bukan panjangnya tapi RATANYA: dua belas bagian sederajat
+     berarti mata tidak punya satu pun tempat untuk berhenti. */
   await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.keLayarUji('l-setelan'); });
   await hal.waitForTimeout(300);
+
+  const kategori = await hal.locator('#setelan-isi > .set-lipat').count();
+  cek('setelan digambar sebagai enam kategori, bukan dua belas bagian berjajar',
+      kategori === 6, String(kategori));
+  /* MENDARAT DENGAN SEMUANYA TERTUTUP. Panel yang masih terbuka dari kunjungan
+     tadi pagi menjawab pertanyaan yang sudah lewat. */
+  cek('semuanya tertutup waktu layarnya dibuka',
+      (await hal.locator('#setelan-isi .set-lipat-isi:not(.sembunyi)').count()) === 0);
+  /* Tiap baris membawa kalimat isinya - baris yang cuma bernama menagih satu
+     ketukan untuk menjawab pertanyaan yang seharusnya sudah terjawab dari luar. */
+  cek('tiap baris menyebutkan isinya tanpa perlu dibuka',
+      (await hal.locator('#setelan-isi .set-lipat-ket').count()) === kategori);
+  /* Sasaran sentuhnya tetap 44px: ini baris yang diketuk tiap kali masuk. */
+  const tinggiKepala = await hal.locator('#setelan-isi .set-lipat-kepala').first()
+    .evaluate((n) => Math.round(n.getBoundingClientRect().height));
+  cek('kepalanya sasaran sentuh penuh', tinggiKepala >= 44, String(tinggiKepala));
+
+  await hal.click('#setelan-isi [data-set-lipat="Tampilan"]');
+  await hal.waitForTimeout(300);
+  cek('diketuk, kategorinya terbuka',
+      (await hal.locator('#setelan-isi .set-lipat-isi:not(.sembunyi)').count()) === 1 &&
+      (await hal.locator('#setelan-isi #set-tema').isVisible()));
+  /* SATU TERBUKA PADA SATU WAKTU, pola yang SUDAH dipakai pohon board di layar
+     yang sama - bukan pola baru yang harus dihafal sendiri. */
+  await hal.click('#setelan-isi [data-set-lipat="Bantuan AI"]');
+  await hal.waitForTimeout(300);
+  const terbuka = await hal.locator('#setelan-isi .set-lipat.buka [data-set-lipat]')
+    .evaluateAll((n) => n.map((x) => x.getAttribute('data-set-lipat')));
+  cek('satu terbuka pada satu waktu', terbuka.length === 1 && terbuka[0] === 'Bantuan AI',
+      JSON.stringify(terbuka));
+  /* Ketukan kedua di kepala yang sama menutupnya lagi - jalan keluar yang
+     sama dengan jalan masuknya. */
+  await hal.click('#setelan-isi [data-set-lipat="Bantuan AI"]');
+  await hal.waitForTimeout(300);
+  cek('ketukan kedua menutupnya lagi',
+      (await hal.locator('#setelan-isi .set-lipat-isi:not(.sembunyi)').count()) === 0);
+
+  /* PENJAGANYA UMUM, BUKAN ENAM NAMA: bagian baru yang lupa didaftarkan di
+     SET_KATEGORI akan mendarat di penampung "Lain-lain" - terlihat, bukan
+     lenyap tanpa satu galat pun - dan uji ini yang menagihnya, bukan
+     pemakainya berbulan-bulan kemudian. */
+  cek('tidak ada bagian setelan yang belum dikelompokkan',
+      (await hal.locator('#setelan-isi [data-set-lipat="Lain-lain"]').count()) === 0);
+  /* Isinya tidak boleh hilang: yang dipindah nodanya, bukan digambar ulang. */
+  const tetapAda = await hal.evaluate(() => ['set-tema', 'set-cadangan', 'arsip-daftar',
+    'b-kosongkan', 'set-gaya-hasil', 'pintu-atur']
+    .filter((id) => !document.getElementById(id)));
+  cek('tidak ada isi setelan yang hilang waktu dilipat',
+      tetapAda.length === 0, JSON.stringify(tetapAda));
+
+  /* TEMA WARNA. Yang berganti CUMA aksennya - dasarnya tetap putih redup, dan
+     alasannya sama dengan alasan tema gelap dulu dibuang. */
+  await hal.evaluate(() => TAlur.bukaSetelanUji('Tampilan'));
+  await hal.waitForTimeout(250);
   const tema = await hal.locator('#set-tema [data-tema]')
     .evaluateAll((n) => n.map((x) => x.getAttribute('data-tema')));
   cek('empat warna siap pakai plus satu sendiri',

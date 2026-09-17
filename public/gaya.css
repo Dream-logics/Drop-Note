@@ -555,6 +555,45 @@ a.kv-teks{color:var(--a)}
 .set-bagian{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
             color:var(--m);margin:20px 0 4px}
 .set-kotak{background:var(--p);border:1px solid var(--l);border-radius:13px;padding:14px}
+
+/* --- kategori setelan, dilipat ---
+   Dua belas bagian berjajar itu kereta api, dan yang merusaknya bukan
+   panjangnya tapi RATANYA: dua belas bagian sederajat berarti mata tidak punya
+   satu pun tempat untuk berhenti. Enam baris berbingkai punya. */
+.set-lipat{
+  background:var(--p);border:1px solid var(--l);border-radius:13px;overflow:hidden;
+}
+.set-lipat.awas{border-color:color-mix(in srgb, var(--bahaya) 35%, var(--l))}
+.set-lipat-kepala{
+  display:flex;align-items:center;gap:10px;width:100%;min-height:60px;
+  padding:10px 12px;border:none;background:none;font:inherit;color:var(--i);
+  cursor:pointer;text-align:left;
+}
+.set-lipat-tubuh{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.set-lipat-nama{font-size:15px;font-weight:700}
+/* Tiap baris membawa satu kalimat isinya, supaya kamu tidak perlu membukanya
+   cuma untuk tahu ada apa di dalam. Baris yang cuma bernama menagih satu
+   ketukan untuk menjawab pertanyaan yang seharusnya sudah terjawab dari luar. */
+.set-lipat-ket{font-size:12px;line-height:1.4;color:var(--m)}
+.set-lipat.awas .set-lipat-nama{color:var(--bahaya)}
+.set-lipat-panah{
+  width:17px;height:17px;flex:0 0 auto;color:var(--m);
+  transition:transform .16s ease;
+}
+.set-lipat.buka .set-lipat-panah{transform:rotate(90deg)}
+.set-lipat-kepala:active{background:color-mix(in srgb, var(--a) 7%, transparent)}
+.set-lipat-isi{
+  display:flex;flex-direction:column;gap:8px;
+  padding:2px 12px 14px;border-top:1px solid var(--l);
+}
+/* Kotak di dalam kotak menggandakan garis, dan yang dibayar lebar isinya di
+   layar yang paling sempit - aturan yang sama dengan bingkai kalkulator. */
+.set-lipat-isi > .set-kotak{border:none;border-radius:0;padding:0;background:none}
+.set-lipat-isi > .set-kotak.awas{background:none}
+.set-lipat-isi > .set-kotak + .set-bagian{
+  margin-top:6px;padding-top:12px;border-top:1px solid var(--l);
+}
+.set-lipat-isi > .set-bagian{margin:0}
 .set-judul{font-size:14.5px;font-weight:600;margin-bottom:5px}
 .set-ket{font-size:12.5px;line-height:1.6;color:var(--m)}
 .set-ket b{color:var(--i);font-weight:600}
