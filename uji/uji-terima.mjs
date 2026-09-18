@@ -4054,47 +4054,62 @@ console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan')
      Jadi yang diuji dua hal sekaligus - dia DI LUAR kotak yang menggulir
      (kalau tidak, cacat yang sama kembali begitu cip gudangnya bertambah),
      dan dia SEGARIS TEGAK dengan lingkaran kamera di bawahnya. */
-  const letakReset = await hal.evaluate(() => {
-    const r = document.querySelector('#b-reset');
-    const k = document.querySelector('#b-pintas-kamera');
-    const gulir = document.querySelector('#ruang-cip');
-    if (!r || !k) return 'tidak ada';
-    if (document.querySelector('#l-utama .atas #b-reset')) return 'masih di kepala';
-    if (gulir && gulir.contains(r)) return 'masih di dalam kotak yang menggulir';
-    const br = r.getBoundingClientRect(), bk = k.getBoundingClientRect();
-    if (br.bottom > bk.top) return 'tidak di atas kamera';
-    /* Segaris tegak: titik tengahnya beda paling banyak 4px. */
-    const beda = Math.abs((br.left + br.right) / 2 - (bk.left + bk.right) / 2);
-    if (beda > 4) return 'meleset ' + Math.round(beda) + 'px dari kamera';
-    return 'ok';
-  });
-  cek('reset duduk tepat di atas kamera, di luar baris yang menggulir',
-      letakReset === 'ok', letakReset);
+  /* DIPERIKSA DI DUA KEADAAN, dan itu bukan kelebihan kehati-hatian - versi
+     pertama uji ini cuma memeriksa satu, dan cacatnya lolos sampai ke tangan
+     pemakainya ("posisi refresh icon lari-lari").
 
-  /* BARISNYA SELALU ADA, walau cip gudangnya kosong. Tombol yang
-     muncul-hilang sendiri berhenti bisa dituju tanpa melihat - dan di dok
-     yang tingginya berubah-ubah, yang bergoyang justru layar di bawah
-     jempol yang sedang mengetik. */
-  const tetapAda = await hal.evaluate(async () => {
-    const lihat = () => {
+     Sebabnya kotak cip gudang 'flex:1': waktu gudangnya ada dia memuai dan
+     mendorong Reset ke kanan, waktu kosong dia 'display:none' dan hilang
+     dari baris - jadi tidak ada lagi yang mendorong dan Reset jatuh ke ujung
+     KIRI. Tombol yang berpindah tempat lebih buruk daripada tombol yang
+     tidak ada: yang tidak ada dicari sekali lalu diterima, yang berpindah
+     dicari setiap kali. */
+  const letakReset = await hal.evaluate(async () => {
+    const ukur = () => {
       const r = document.querySelector('#b-reset');
-      return !!(r && r.getBoundingClientRect().height > 0);
+      const k = document.querySelector('#b-pintas-kamera');
+      const gulir = document.querySelector('#ruang-cip');
+      if (!r || !k) return 'tidak ada';
+      if (document.querySelector('#l-utama .atas #b-reset')) return 'masih di kepala';
+      if (gulir && gulir.contains(r)) return 'masih di dalam kotak yang menggulir';
+      const br = r.getBoundingClientRect(), bk = k.getBoundingClientRect();
+      if (!br.height) return 'tidak kelihatan';
+      if (br.bottom > bk.top) return 'tidak di atas kamera';
+      /* Segaris tegak: titik tengahnya beda paling banyak 4px. */
+      const beda = Math.abs((br.left + br.right) / 2 - (bk.left + bk.right) / 2);
+      if (beda > 4) return 'meleset ' + Math.round(beda) + 'px dari kamera';
+      return 'ok';
     };
-    const kotak = document.querySelector('#kotak');
-    kotak.value = '';
-    kotak.dispatchEvent(new Event('input', { bubbles: true }));
-    await new Promise((s) => setTimeout(s, 250));
-    const kosong = lihat();
-    kotak.value = 'kataygtidakadadimanapun';
-    kotak.dispatchEvent(new Event('input', { bubbles: true }));
-    await new Promise((s) => setTimeout(s, 250));
-    const terisi = lihat();
-    kotak.value = '';
-    kotak.dispatchEvent(new Event('input', { bubbles: true }));
-    return kosong && terisi ? 'ok' : ('kosong=' + kosong + ' terisi=' + terisi);
+    const gulir = document.querySelector('#ruang-cip');
+    /* Keadaan yang dipaksa, BUKAN yang kebetulan digambar aplikasinya.
+       Yang diuji di sini aturan tata letaknya, dan aturan itu harus berlaku
+       apa pun isi kotak cipnya - menunggu sampai cip gudangnya kebetulan
+       kosong berarti ujinya bergantung pada riwayat pemakaian, dan penjaga
+       yang bergantung pada riwayat berhenti menjaga tanpa memberi tahu. */
+    gulir.classList.remove('sembunyi');
+    const simpan = gulir.innerHTML;
+    gulir.innerHTML = '<button class="ruang-cip">Gudang Uji</button>';
+    await new Promise((s) => setTimeout(s, 60));
+    const adaCip = ukur();
+    /* Inilah keadaan yang dulu melemparkannya ke ujung kiri: kotak cipnya
+       'display:none', jadi tidak ada lagi yang memuai dan mendorong. */
+    gulir.innerHTML = '';
+    gulir.classList.add('sembunyi');
+    await new Promise((s) => setTimeout(s, 60));
+    const lenyap = gulir.getBoundingClientRect().width === 0;
+    const tanpaCip = ukur();
+    gulir.classList.remove('sembunyi');
+    gulir.innerHTML = simpan;
+    return { adaCip: adaCip, tanpaCip: tanpaCip, lenyap: lenyap };
   });
-  cek('reset tetap kelihatan waktu cip gudangnya datang dan pergi',
-      tetapAda === 'ok', tetapAda);
+  cek('reset duduk tepat di atas kamera waktu cip gudangnya ada',
+      letakReset.adaCip === 'ok', letakReset.adaCip);
+  cek('dan tetap di situ waktu kotak cip gudangnya lenyap dari baris',
+      letakReset.tanpaCip === 'ok', letakReset.tanpaCip);
+  /* Kalau kotaknya ternyata tidak benar-benar keluar dari barisnya, uji di
+     atas cuma memeriksa satu hal dua kali. */
+  cek('dan kotak cipnya memang benar-benar keluar dari barisnya',
+      letakReset.lenyap === true);
 
   /* Sasaran sentuhnya tetap bulatan 36px yang sama dengan tetangganya di
      bawah - bentuk yang berbeda (garis putus-putus) karena pekerjaannya

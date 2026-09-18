@@ -1249,6 +1249,19 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     '#ruang-cip' (kotak yang menggulir) DAN segaris tegak
                     dengan kamera - kalau cuma keberadaannya yang diuji, cacat
                     yang sama kembali diam-diam begitu cip gudangnya bertambah.
+                    DIPATOK 'margin-left:auto', BUKAN OLEH TETANGGANYA, dan itu
+                    laporan lapangan KEDUA ("posisi refresh icon lari-lari").
+                    Kotak cip gudang 'flex:1': waktu gudangnya ada dia memuai
+                    dan mendorong Reset ke kanan, waktu kosong dia
+                    'display:none' dan HILANG DARI BARIS - jadi tidak ada lagi
+                    yang mendorong dan Reset jatuh ke ujung KIRI. Tombol yang
+                    berpindah tempat lebih buruk daripada tombol yang tidak
+                    ada: yang tidak ada dicari sekali lalu diterima, yang
+                    berpindah dicari SETIAP KALI. Uji letaknya WAJIB jalan di
+                    DUA keadaan (cip gudang ada dan kosong) plus satu
+                    pemeriksaan bahwa dua keadaan itu memang berbeda - versi
+                    pertamanya cuma memeriksa satu, dan cacatnya lolos sampai
+                    ke tangan pemakainya.
                     Rupanya garis putus-putus, bukan beralas aksen seperti dua
                     lingkaran di bawahnya: yang di bawah MEMBUAT sesuatu, Reset
                     MENGHAPUS keadaan. Ukurannya tetap sama - bentuk boleh
