@@ -1159,12 +1159,34 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    dulu menumpuk jadi dua baris dan mendorong kotaknya turun setengah layar.
    Yang tidak muat menggulir ke samping, dan potongan cip terakhir yang
    setengah kelihatan itu justru yang memberi tahu masih ada lanjutannya. */
+/* Barisnya sendiri TIDAK menggulir lagi - yang menggulir kotak cip di
+   dalamnya. Sebabnya Reset: dia dipatok di ujung kanan baris ini, dan yang
+   dipatok di dalam kotak yang menggulir ikut tergeser keluar layar begitu
+   cipnya bertambah. Itu persis yang sudah terjadi sekali di baris saringan
+   di bawahnya, dan sekali sudah cukup. */
 .ruang-baris{
   display:flex;gap:5px;flex-wrap:nowrap;align-items:center;
   grid-column:1 / -1;padding:2px 2px 0;
+}
+.ruang-cip-baris{
+  display:flex;gap:5px;flex-wrap:nowrap;align-items:center;
+  flex:1;min-width:0;
   overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;
 }
-.ruang-baris::-webkit-scrollbar{display:none}
+.ruang-cip-baris::-webkit-scrollbar{display:none}
+/* Yang disembunyikan cuma kotak cipnya, tidak pernah barisnya: tinggi baris
+   dipegang tombol Reset yang selalu ada, jadi cip gudang boleh datang dan
+   pergi sambil kamu mengetik tanpa memindahkan seluruh dok. */
+
+/* Reset BEDA RUPA dari dua lingkaran di bawahnya walau seukuran dan sebentuk.
+   Dua di bawah beralas aksen karena keduanya MEMBUAT sesuatu; Reset
+   MENGHAPUS keadaan, dan untuk itu aplikasi ini sudah punya kosakatanya
+   sendiri - garis putus-putus, sama dengan "+ Folder" dan cip Gambar. */
+.pintas-tbl.reset{
+  background:none;color:var(--m);
+  border:1px dashed var(--l);
+}
+.pintas-tbl.reset:active{color:var(--bahaya);border-color:var(--bahaya);background:none}
 .ruang-cip{
   flex:0 0 auto;
   display:inline-flex;align-items:center;min-height:28px;padding:0 9px;

@@ -111,7 +111,25 @@
       <!-- Kabar ke mana barangnya akan mendarat, plus turunan gudangnya.
            Tidak perlu disentuh sama sekali - mengetuknya cuma jalan pintas
            untuk saat kata berikutnya tidak langsung terpikir. -->
-      <div class="ruang-baris sembunyi" id="ruang-baris"></div>
+      <!-- RESET DIPATOK DI UJUNG KANAN BARIS INI, tepat di atas lingkaran
+           kamera. Dulu dia cip terakhir DI DALAM kotak saringan yang
+           menggulir, dan waktu kamera + Tulis pindah jadi sepasang lingkaran
+           di ujung kanan baris itu, Reset terdorong keluar layar - masih
+           ada, tapi cuma bisa dicapai dengan menggulir barisnya ke samping.
+           Tombol yang harus dicari dulu sama saja dengan tombol yang hilang,
+           dan itu laporan lapangannya apa adanya ("aku kehilangan tombol
+           refresh").
+           Akibat sampingannya justru perbaikan: barisnya sekarang SELALU
+           ada, jadi tinggi doknya berhenti berubah waktu cip gudangnya
+           muncul dan pergi sambil kamu mengetik. -->
+      <div class="ruang-baris" id="ruang-baris">
+        <div class="ruang-cip-baris sembunyi" id="ruang-cip"></div>
+        <div class="pintas-bulat">
+          <button class="pintas-tbl reset" id="b-reset" title="Reset" aria-label="Reset">
+            <svg viewBox="0 0 24 24" class="ik"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          </button>
+        </div>
+      </div>
       <!-- Saringan jenis, naik dari dalam laci ke atas kotaknya. Di dalam laci
            dia butuh dua ketukan untuk sesuatu yang dipakai tiap hari, dan
            ketukan pertamanya cuma untuk melihat pilihan yang seharusnya sudah

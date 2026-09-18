@@ -851,7 +851,10 @@
     $('#l-utama').classList.toggle('mode-isi', sunyi);
     if (sunyi) {
       tutupHasilDepan();
-      $('#ruang-baris').classList.add('sembunyi');
+      /* Cip gudangnya yang didiamkan, bukan barisnya: Reset justru paling
+         berguna di sini - dia satu ketukan keluar dari kotak isian yang
+         terlanjur terbuka. */
+      $('#ruang-cip').classList.add('sembunyi');
     } else {
       gambarBayang();
       gambarHasilDepan();
@@ -1029,8 +1032,12 @@
   /* Cip gudang: KABAR, bukan gerbang. Dia memberi tahu ke mana barangnya akan
      mendarat, dan kamu tidak perlu menyentuhnya sama sekali. Turunannya ikut
      tampil supaya kamu melihat pilihan yang ada tanpa harus mengingatnya. */
+  /* Yang digambar di sini cuma KOTAK CIPNYA ('#ruang-cip'), bukan barisnya.
+     Barisnya juga memuat Reset di ujung kanan, dan Reset tidak boleh ikut
+     hilang tiap kali cip gudangnya kebetulan kosong - tombol yang
+     muncul-hilang sendiri berhenti bisa dituju tanpa melihat. */
   function gambarCipRuang() {
-    var wadah = $('#ruang-baris');
+    var wadah = $('#ruang-cip');
     if (!wadah) return;
     if (modeAI) { wadah.classList.add('sembunyi'); return; }
     var pohon = daftarRuang();
@@ -1831,21 +1838,22 @@
        yang kamu pin cuma kelihatan kalau kebetulan ada pencarian yang
        memancingnya, dan pin yang harus dipancing bukan pin. */
     ['*pin', 'Pin', '<path d="M9 3h6l-1 6 4 4v2H6v-2l4-4z"/><path d="M12 15v6"/>'],
-    /* Reset PALING KANAN, di ujung yang paling dekat jempol. Dia bukan
-       saringan - dia menghapus keadaan, bukan menyempitkannya - tapi dia
-       dipakai sepanjang hari, dan itu yang menentukan tempatnya. Sempat naik
-       ke kepala layar dan itu keliru: kepala ada di ujung terjauh dari jempol
-       yang bertumpu di sudut kanan bawah.
+    /* KAMERA, TULIS, DAN RESET TIDAK ADA LAGI DI BARIS INI - yang tersisa di
+       sini semuanya menjawab satu pertanyaan yang sama: "perlihatkan yang
+       mana".
 
-       KAMERA DAN TULIS TIDAK ADA LAGI DI BARIS INI. Keduanya pindah jadi
-       sepasang lingkaran di ujung kanan baris yang sama, DI LUAR kotak yang
-       menggulir - lihat '.pintas-bulat'. Sebabnya bukan tempat, tapi jenis:
-       baris ini menjawab "perlihatkan yang mana", sementara keduanya
-       menjawab "aku mau MEMBUAT sesuatu sekarang". Selama mereka duduk di
-       sini, dua pertanyaan yang berbeda memakai bentuk yang sama, dan yang
-       paling sering ditekan ikut menggulir keluar layar begitu saringannya
-       bertambah. */
-    ['*reset', 'Reset', '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>']
+       Kamera dan Tulis pindah jadi sepasang lingkaran di ujung kanan baris
+       yang sama, DI LUAR kotak yang menggulir (lihat '.pintas-bulat'): mereka
+       menjawab "aku mau MEMBUAT sesuatu sekarang", dan yang paling sering
+       ditekan tidak boleh ikut menggulir keluar layar.
+
+       RESET NAIK SATU BARIS, ke ujung kanan baris cip gudang - tepat di atas
+       lingkaran kamera. Dia dulu cip terakhir di kotak yang menggulir ini,
+       dan begitu dua lingkaran tadi memakan ujung kanannya, dia terdorong ke
+       luar layar: masih ada, tapi cuma bisa dicapai dengan menggulir barisnya
+       ke samping. Tombol yang harus dicari dulu sama saja dengan tombol yang
+       hilang - itu laporan lapangannya apa adanya. Dia juga memang bukan
+       saringan: dia MENGHAPUS keadaan, bukan menyempitkannya. */
   ];
 
   /* LINK DIBACA DARI ISINYA, BUKAN DARI BENTUK DROP-NYA.
@@ -1894,14 +1902,6 @@
     var hidup = semuaEntri.filter(catatanSaja);
     var adaHasil = hasilDepanAktif();
     var cip = JENIS_SARING.map(function (j) {
-      /* Reset bukan saringan: dia tidak punya angka dan tidak pernah menyala.
-         Garis putus-putus yang membedakannya - bentuk yang di aplikasi ini
-         selalu berarti "ini jalan pintas, bukan keadaan". */
-      if (j[0] === '*reset') {
-        return '<button class="saring-cip reset" data-jenis="' + j[0] +
-               '" title="' + H(j[1]) + '" aria-label="' + H(j[1]) + '">' +
-               '<svg viewBox="0 0 24 24" class="ik">' + j[2] + '</svg></button>';
-      }
       /* ANGKANYA ANGKA HASIL PENCARIAN, bukan angka seluruh timbunan. Yang
          menolong waktu kamu mengetik bukan "aku punya berapa gambar", tapi
          "kata ini menemukan berapa gambar" - dan itu yang menjawab kenapa
@@ -2043,7 +2043,6 @@
   }
 
   function pilihJenis(j) {
-    if (j === '*reset') { resetLayar(); return; }
     if (j === 'gambar') { keGaleriDariDrop(); return; }
     /* Mengetuk yang sedang menyala mematikannya - tanpa itu, satu-satunya
        jalan keluar adalah menebak cip mana yang berarti "batal". */
@@ -2210,7 +2209,6 @@
     var semuaHasil = TOtak.cari(semuaEntri, kueri, '', istilah || '');
     hitungSaring = {};
     JENIS_SARING.forEach(function (x) {
-      if (x[0] === '*reset') return;
       hitungSaring[x[0]] = x[0] === '*semua' ? semuaHasil.length
         : semuaHasil.filter(function (e) { return cocokJenis(e, x[0]); }).length;
     });
@@ -7550,6 +7548,8 @@
     });
     document.addEventListener('keydown', ketikHitung);
     document.addEventListener('paste', tempelSistem);
+
+    $('#b-reset').addEventListener('click', resetLayar);
 
     $('#b-pintas-tulis').addEventListener('click', function () {
       /* Foldernya DIKOSONGKAN dengan sengaja, dan itu bukan kekurangan -

@@ -1233,9 +1233,34 @@ public/alur.js      alur UI — semua layar, drop, cari, catat, setelan.
                     satu tempat tidak sampai ke tempat lain, dan yang di Drop
                     selalu yang lebih miskin. Bentuknya bergaris putus-putus,
                     kosakata yang di aplikasi ini sudah berarti "jalan pintas,
-                    bukan keadaan" (sama dengan Reset dan "+ Folder"). Reset cip PALING KANAN, sebelah Pin -
-                    jangan naikkan lagi ke kepala, itu ujung terjauh dari
-                    jempol. Angka "N tersimpan" sudah dibuang dan jangan
+                    bukan keadaan" (sama dengan Reset dan "+ Folder").
+                    RESET BUKAN CIP SARINGAN LAGI, dan jangan dikembalikan ke
+                    sana. Dia sekarang LINGKARAN di ujung kanan baris cip
+                    gudang, TEPAT DI ATAS lingkaran kamera, di luar kotak yang
+                    menggulir. Dulu dia cip terakhir DI DALAM kotak saringan
+                    yang menggulir - benar selama kamera dan Tulis masih cip
+                    biasa, salah begitu keduanya jadi sepasang lingkaran yang
+                    memakan ujung kanan baris itu: Reset terdorong keluar
+                    layar. Masih ada, masih jalan, dan tidak ada satu galat
+                    pun - tapi yang dilaporkan bukan "resetnya susah dicapai",
+                    melainkan "AKU KEHILANGAN TOMBOL REFRESH". Tombol yang
+                    harus digulir dulu sama saja dengan tombol yang hilang.
+                    Yang menjaganya di uji BUKAN "ada di DOM" tapi DI LUAR
+                    '#ruang-cip' (kotak yang menggulir) DAN segaris tegak
+                    dengan kamera - kalau cuma keberadaannya yang diuji, cacat
+                    yang sama kembali diam-diam begitu cip gudangnya bertambah.
+                    Rupanya garis putus-putus, bukan beralas aksen seperti dua
+                    lingkaran di bawahnya: yang di bawah MEMBUAT sesuatu, Reset
+                    MENGHAPUS keadaan. Ukurannya tetap sama - bentuk boleh
+                    beda, jempolnya sama.
+                    BARIS CIP GUDANG SEKARANG SELALU ADA, dan itu akibat
+                    sampingan yang kebetulan perbaikan: yang disembunyikan
+                    waktu gudangnya kosong cuma kotak cipnya ('#ruang-cip'),
+                    tingginya dipegang Reset. Dulu seluruh barisnya
+                    muncul-hilang sambil kamu mengetik, dan dok yang tingginya
+                    berubah-ubah adalah layar yang bergoyang tepat di bawah
+                    jempol. Jangan kembalikan 'sembunyi' ke barisnya.
+                    Angka "N tersimpan" sudah dibuang dan jangan
                     dikembalikan.
                     Isi kotak, ala WhatsApp: AI - [teks] - klip - Todo, lalu
                     Drop di luar. EMPAT ikon, DAN MEREKA TIDAK KE MANA-MANA di

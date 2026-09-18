@@ -3525,25 +3525,19 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
   await hal.evaluate(() => TAlur.muatUlangUji());
   await hal.waitForTimeout(350);
 
-  /* ENAM SARINGAN PLUS RESET, dan Reset yang PALING KANAN - di ujung yang
-     paling dekat jempol. Dia memang bukan saringan, tapi dia dipakai sepanjang
-     hari, dan itu yang menentukan tempatnya. Sempat naik ke kepala layar dan
-     itu keliru: kepala ada di ujung terjauh dari jempol yang bertumpu di sudut
-     kanan bawah. */
+  /* ENAM SARINGAN, DAN SEMUANYA MENJAWAB PERTANYAAN YANG SAMA:
+     "perlihatkan yang mana". Reset sudah tidak di sini - dia menghapus
+     keadaan, bukan menyempitkannya, dan tempatnya sekarang di ujung kanan
+     baris cip gudang, tepat di atas lingkaran kamera. */
   const semuaJenis = await hal.evaluate(() =>
     TAlur.jenisSaringUji().map((j) => j[0]));
-  cek('barisnya lengkap: semua, teks, gambar, berkas, link, pin, reset',
+  cek('barisnya lengkap: semua, teks, gambar, berkas, link, pin',
       JSON.stringify(semuaJenis) ===
-        JSON.stringify(['*semua', 'teks', 'gambar', 'berkas', 'tautan', '*pin',
-                        '*reset']),
+        JSON.stringify(['*semua', 'teks', 'gambar', 'berkas', 'tautan', '*pin']),
       JSON.stringify(semuaJenis));
-  /* KAMERA PALING KANAN, sesudah Reset - ujung yang paling dekat jempol, untuk
-     hal yang paling sering dilakukan di aplikasi ini. Keduanya bukan saringan:
-     mereka tidak punya angka dan tidak pernah menyala. */
-  /* Reset kembali paling kanan di baris ini: kamera dan Tulis sudah pindah
-     jadi sepasang lingkaran di luar kotak yang menggulir. */
-  cek('resetnya paling kanan di antara cipnya sendiri',
-      semuaJenis[semuaJenis.length - 1] === '*reset');
+  cek('reset tidak lagi jadi cip saringan',
+      semuaJenis.indexOf('*reset') < 0 &&
+      (await hal.locator('#saring-cip [data-jenis="*reset"]').count()) === 0);
 
   /* BAWAANNYA TEKS, bukan semua. Hasil yang langsung berisi dinding gambar
      memenuhi layar sebelum satu judul pun sempat terbaca; gambar dicari
@@ -3572,12 +3566,11 @@ console.log('\nsaringan lengkap, To Do rapat, dan tema warna');
   cek('dan dia selalu tampil, tidak peduli isinya',
       (await hal.locator('#saring-baris [data-jenis="*semua"]').count()) === 1);
 
-  /* Yang diuji sungguhan: reset benar-benar mengosongkan layarnya - sekarang
-     dari kepala, di kiri Setelan. */
+  /* Yang diuji sungguhan: reset benar-benar mengosongkan layarnya. */
   await hal.fill('#kotak', 'pinuji');
   await hal.dispatchEvent('#kotak', 'input');
   await hal.waitForTimeout(350);
-  await hal.click('#saring-cip [data-jenis="*reset"]');
+  await hal.click('#b-reset');
   await hal.waitForTimeout(350);
   cek('reset mengosongkan kotak dan menutup hasilnya',
       (await hal.inputValue('#kotak')) === '' &&
@@ -3904,7 +3897,7 @@ console.log('\nbadge angka, cip Pin, kotak link, dan To Do yang ringkas');
   cek('cip Pin membuka yang dipin tanpa satu kata pun diketik',
       (await hal.locator('#hasil-depan .kartu').count()) === 1 &&
       /badgeuji yang dipin/.test(await hal.locator('#hasil-depan').innerText()));
-  await hal.click('#saring-cip [data-jenis="*reset"]');
+  await hal.click('#b-reset');
   await hal.waitForTimeout(300);
 
   /* KOTAK KHUSUS LINK. Menempel sepuluh tautan lalu menyorot satu per satu
@@ -3992,8 +3985,9 @@ console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan')
     const atas = anak.map((n) => Math.round(n.getBoundingClientRect().top));
     return { baris: new Set(atas).size, jumlah: anak.length };
   });
-  cek('tujuh cip muat dalam satu baris',
-      saringSebaris.baris === 1 && saringSebaris.jumlah === 7,
+  /* ENAM, bukan tujuh: Reset sudah naik ke baris cip gudang di atasnya. */
+  cek('keenam cipnya muat dalam satu baris',
+      saringSebaris.baris === 1 && saringSebaris.jumlah === 6,
       JSON.stringify(saringSebaris));
 
   const muatLebar = await hal.evaluate(() => {
@@ -4048,17 +4042,68 @@ console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan')
   });
   cek('dan namanya tetap utuh, tidak dipotong', gudangUtuh === true);
 
-  /* Reset naik ke kepala, di KIRI Setelan. Dan "N tersimpan" turun: dia tidak
-     pernah mengubah satu keputusan pun, dan tempatnya justru yang dibutuhkan. */
-  const diBawah = await hal.evaluate(() => {
-    const r = document.querySelector('#saring-cip [data-jenis="*reset"]');
-    const p = document.querySelector('#saring-cip [data-jenis="*pin"]');
-    if (!r || !p) return 'tidak ada';
+  /* RESET DUDUK TEPAT DI ATAS KAMERA, sebaris dengan cip gudang.
+
+     Dulu dia cip terakhir DI DALAM kotak saringan yang menggulir, dan begitu
+     kamera + Tulis jadi sepasang lingkaran yang memakan ujung kanan baris
+     itu, Reset terdorong keluar layar - masih ada, tapi cuma bisa dicapai
+     dengan menggulir barisnya ke samping. Yang dilaporkan lapangan bukan
+     "resetnya susah dicapai" tapi "aku kehilangan tombol refresh": tombol
+     yang harus dicari dulu sama saja dengan tombol yang hilang.
+
+     Jadi yang diuji dua hal sekaligus - dia DI LUAR kotak yang menggulir
+     (kalau tidak, cacat yang sama kembali begitu cip gudangnya bertambah),
+     dan dia SEGARIS TEGAK dengan lingkaran kamera di bawahnya. */
+  const letakReset = await hal.evaluate(() => {
+    const r = document.querySelector('#b-reset');
+    const k = document.querySelector('#b-pintas-kamera');
+    const gulir = document.querySelector('#ruang-cip');
+    if (!r || !k) return 'tidak ada';
     if (document.querySelector('#l-utama .atas #b-reset')) return 'masih di kepala';
-    return r.getBoundingClientRect().left > p.getBoundingClientRect().left
-      ? 'ok' : 'reset di kiri pin';
+    if (gulir && gulir.contains(r)) return 'masih di dalam kotak yang menggulir';
+    const br = r.getBoundingClientRect(), bk = k.getBoundingClientRect();
+    if (br.bottom > bk.top) return 'tidak di atas kamera';
+    /* Segaris tegak: titik tengahnya beda paling banyak 4px. */
+    const beda = Math.abs((br.left + br.right) / 2 - (bk.left + bk.right) / 2);
+    if (beda > 4) return 'meleset ' + Math.round(beda) + 'px dari kamera';
+    return 'ok';
   });
-  cek('reset turun ke baris saringan, di kanan Pin', diBawah === 'ok', diBawah);
+  cek('reset duduk tepat di atas kamera, di luar baris yang menggulir',
+      letakReset === 'ok', letakReset);
+
+  /* BARISNYA SELALU ADA, walau cip gudangnya kosong. Tombol yang
+     muncul-hilang sendiri berhenti bisa dituju tanpa melihat - dan di dok
+     yang tingginya berubah-ubah, yang bergoyang justru layar di bawah
+     jempol yang sedang mengetik. */
+  const tetapAda = await hal.evaluate(async () => {
+    const lihat = () => {
+      const r = document.querySelector('#b-reset');
+      return !!(r && r.getBoundingClientRect().height > 0);
+    };
+    const kotak = document.querySelector('#kotak');
+    kotak.value = '';
+    kotak.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((s) => setTimeout(s, 250));
+    const kosong = lihat();
+    kotak.value = 'kataygtidakadadimanapun';
+    kotak.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((s) => setTimeout(s, 250));
+    const terisi = lihat();
+    kotak.value = '';
+    kotak.dispatchEvent(new Event('input', { bubbles: true }));
+    return kosong && terisi ? 'ok' : ('kosong=' + kosong + ' terisi=' + terisi);
+  });
+  cek('reset tetap kelihatan waktu cip gudangnya datang dan pergi',
+      tetapAda === 'ok', tetapAda);
+
+  /* Sasaran sentuhnya tetap bulatan 36px yang sama dengan tetangganya di
+     bawah - bentuk yang berbeda (garis putus-putus) karena pekerjaannya
+     berbeda, ukuran yang sama karena jempolnya sama. */
+  const ukurReset = await hal.evaluate(() => {
+    const b = document.querySelector('#b-reset').getBoundingClientRect();
+    return Math.round(b.width) + 'x' + Math.round(b.height);
+  });
+  cek('reset seukuran lingkaran kamera di bawahnya', ukurReset === '36x36', ukurReset);
   cek('angka "N tersimpan" dibuang dari kepala',
       (await hal.locator('#l-utama .atas .jumlah').count()) === 0);
 
