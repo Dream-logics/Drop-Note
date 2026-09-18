@@ -1178,6 +1178,20 @@ body:has(.layar.dok-bawah.aktif){height:var(--tampak, 100%);overflow:hidden}
    dipegang tombol Reset yang selalu ada, jadi cip gudang boleh datang dan
    pergi sambil kamu mengetik tanpa memindahkan seluruh dok. */
 
+/* RESET DIPATOK KE KANAN OLEH DIRINYA SENDIRI, bukan oleh tetangganya.
+   Ini laporan lapangan kedua: "posisi refresh icon lari-lari". Sebabnya
+   'flex:1' di kotak cip gudang - waktu gudangnya ada, kotak itu memuai dan
+   mendorong Reset ke kanan; waktu gudangnya kosong kotaknya 'display:none'
+   dan HILANG DARI BARIS, jadi tidak ada lagi yang mendorong dan Reset jatuh
+   ke ujung KIRI. Dua tempat untuk satu tombol, bergantian, mengikuti sesuatu
+   yang tidak ada hubungannya dengan tombol itu.
+   Tombol yang berpindah tempat lebih buruk daripada tombol yang tidak ada:
+   yang tidak ada dicari sekali lalu diterima, yang berpindah dicari SETIAP
+   KALI - jari tidak pernah bisa hafal tempatnya.
+   'margin-left:auto' menjawabnya tanpa bergantung pada siapa pun: ada
+   tetangga atau tidak, dia tetap di ujung kanan. */
+.ruang-baris .pintas-bulat{margin-left:auto}
+
 /* Reset BEDA RUPA dari dua lingkaran di bawahnya walau seukuran dan sebentuk.
    Dua di bawah beralas aksen karena keduanya MEMBUAT sesuatu; Reset
    MENGHAPUS keadaan, dan untuk itu aplikasi ini sudah punya kosakatanya
