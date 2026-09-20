@@ -2285,6 +2285,13 @@ body:has(.layar.pas-layar.aktif){height:var(--tampak, 100%);overflow:hidden}
 .pdf-badan{
   flex:1;min-height:0;overflow:auto;
   padding:12px;background:var(--l);
+  /* WAJIB 'relative', dan ini bukan kerapian: dia membuat badan jadi
+     'offsetParent' halaman-halamannya, sehingga 'offsetTop/offsetLeft' tiap
+     halaman terbaca dalam ruang koordinat GULIRNYA. Tanpa itu, angkanya
+     dihitung terhadap seksi di luarnya, dan tiap perhitungan jangkar zoom
+     maupun lompat-halaman meleset sebesar tinggi dok - diam-diam, dan cuma
+     terlihat sebagai "layarnya lari". */
+  position:relative;
   /* Cubit-zoom kita tangani sendiri, jadi peramban tidak boleh ikut
      campur - tanpa ini dua zoom berjalan bersamaan dan halamannya melompat. */
   touch-action:pan-x pan-y;
@@ -2338,11 +2345,24 @@ body:has(.layar.pas-layar.aktif){height:var(--tampak, 100%);overflow:hidden}
 body.pdf-penuh .atas,
 body.pdf-penuh #l-pdf .tab-baris,
 body.pdf-penuh .pdf-dok{display:none}
+/* LAYAR PENUH BERARTI NOL MARGIN APLIKASI - satu-satunya margin yang boleh
+   terlihat margin yang dibuat dokumennya sendiri.
+   Yang menyisakan pita kosong di kiri-kanan bukan '.pdf-badan' tapi '.layar'
+   di atasnya: dia punya 'padding:18px' DAN 'max-width:620px; margin:0 auto'.
+   Yang kedua itu yang paling licin - di layar selebar apa pun dia memusatkan
+   kolomnya dan meninggalkan tepi kosong, dan tepi itu tetap ada walau
+   paddingnya sudah dinolkan. Di layar penuh dua-duanya wajib dilepas. */
+body.pdf-penuh #l-pdf{padding:0;max-width:none;margin:0}
 body.pdf-penuh .pdf-badan{padding:0}
 /* Alasnya ikut menghitam di layar penuh: kertas putih di atas abu-abu terang
    memantulkan cahaya layar ke mata di ruangan gelap, dan yang dibaca di
    layar penuh biasanya dibaca lama. */
 body.pdf-penuh .pdf-badan{background:#2a2a28}
+/* Bayangan halamannya ikut pergi: di layar penuh halamannya menyentuh tepi
+   layar, dan bayangan di tepi terbaca sebagai garis kotor, bukan sebagai
+   kertas. Jarak antar halaman TETAP - itu yang memisahkan halaman 3 dari
+   halaman 4, dan tanpanya keduanya terbaca sebagai satu gulungan panjang. */
+body.pdf-penuh .pdf-lembar-satu{box-shadow:none}
 
 /* Jalan keluarnya SELALU TERLIHAT - ketukan di halaman ikut bekerja, tapi
    gerakan yang tidak kelihatan sama dengan tidak ada bagi yang belum pernah

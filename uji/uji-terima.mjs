@@ -4083,6 +4083,87 @@ console.log('\npembaca PDF: mesinnya diam sampai diminta');
         return g.overflowX !== 'hidden' && g.overflowY !== 'hidden';
       })) === true);
 
+  /* ===== ZOOM WAJIB PUNYA JANGKAR =====
+     Laporan lapangannya: "zoom-nya terasa licin, lari ke sisi lain, titik
+     yang mau kulihat tidak pernah muncul". Sebabnya memperbesar halaman
+     menambah lebar dan tingginya sementara guliran TIDAK ikut berubah - jadi
+     yang tadi di tengah layar bergeser keluar sebanding pembesarannya.
+
+     Yang diukur di sini titik dokumen yang berada tepat di jangkar, dinyatakan
+     sebagai pecahan tinggi HALAMANNYA (bukan seluruh gulungan - jarak antar
+     halaman tidak ikut membesar, jadi perhitungan atas gulungan akan meleset
+     makin jauh makin ke bawah). Kalau jangkarnya bekerja, pecahan itu sama
+     sebelum dan sesudah. */
+  const jangkar = await hal.evaluate(() => {
+    const lembar = document.querySelector('#pdf-lembar');
+    const badan = document.querySelector('#pdf-badan');
+    document.querySelector('#pdf-kosong').classList.add('sembunyi');
+    lembar.innerHTML = '';
+    for (let i = 1; i <= 5; i++) {
+      const d = document.createElement('div');
+      d.className = 'pdf-lembar-satu';
+      d.setAttribute('data-hal', String(i));
+      d.setAttribute('data-rasio', '1.414');
+      const c = document.createElement('canvas');
+      c.width = 100; c.height = 141;
+      c.style.width = '352px'; c.style.height = '498px';
+      d.appendChild(c); lembar.appendChild(d);
+    }
+    /* Berdiri di tengah halaman KETIGA - bukan halaman pertama: di halaman
+       pertama sebagian besar kekeliruan jangkar masih tertutup karena
+       gulirannya dekat nol, dan uji yang berdiri di situ lolos untuk cacat
+       yang jelas ada. */
+    const h3 = lembar.children[2];
+    const ay = badan.clientHeight / 2;
+    badan.scrollTop = h3.offsetTop + h3.offsetHeight / 2 - ay;
+    const fSebelum = (badan.scrollTop + ay - h3.offsetTop) / h3.offsetHeight;
+    const halSebelum = TAlur.halamanKiniPdfUji();
+    TAlur.zumPdfUji(2.5);
+    const h3b = lembar.children[2];
+    const fSesudah = (badan.scrollTop + ay - h3b.offsetTop) / h3b.offsetHeight;
+    const r = {
+      fSebelum: +fSebelum.toFixed(3), fSesudah: +fSesudah.toFixed(3),
+      halSebelum: halSebelum, halSesudah: TAlur.halamanKiniPdfUji(),
+      lebarSesudah: h3b.querySelector('canvas').style.width
+    };
+    TAlur.zumPdfUji(1);
+    lembar.innerHTML = '';
+    return r;
+  });
+  cek('zoom menahan titik yang sedang dilihat, tidak menggesernya',
+      Math.abs(jangkar.fSebelum - jangkar.fSesudah) < 0.02, JSON.stringify(jangkar));
+  cek('dan tetap di halaman yang sama, tidak melompat ke awal dokumen',
+      jangkar.halSebelum === 3 && jangkar.halSesudah === 3, JSON.stringify(jangkar));
+
+  /* ===== LAYAR PENUH = NOL MARGIN APLIKASI =====
+     Yang menyisakan pita kosong di kiri-kanan bukan padding badannya tapi
+     '.layar' di atasnya: dia punya 'padding:18px' DAN 'max-width:620px'
+     dengan 'margin:0 auto'. Yang kedua paling licin - dia memusatkan
+     kolomnya di layar selebar apa pun, dan tepi kosongnya tetap ada walau
+     paddingnya sudah dinolkan. */
+  const margin = await hal.evaluate(() => {
+    TAlur.penuhPdfUji(true);
+    const s = document.querySelector('#l-pdf');
+    const b = document.querySelector('#pdf-badan');
+    const gs = getComputedStyle(s), gb = getComputedStyle(b);
+    const r = {
+      layarKiri: gs.paddingLeft, layarKanan: gs.paddingRight,
+      lebarMaks: gs.maxWidth,
+      badanKiri: gb.paddingLeft,
+      badanLebar: Math.round(b.getBoundingClientRect().width),
+      layarLebar: Math.round(document.documentElement.clientWidth)
+    };
+    TAlur.penuhPdfUji(false);
+    return r;
+  });
+  cek('layar penuh benar-benar tanpa margin aplikasi',
+      margin.layarKiri === '0px' && margin.layarKanan === '0px' &&
+      margin.badanKiri === '0px' && margin.lebarMaks === 'none',
+      JSON.stringify(margin));
+  cek('dan badannya selebar layarnya',
+      margin.badanLebar === margin.layarLebar,
+      margin.badanLebar + ' vs ' + margin.layarLebar);
+
   /* MODE 2: layar penuh membuang kepala, baris pintu, dan dok - sekitar
      180px di layar 820px. Jalan keluarnya WAJIB kelihatan: ketukan di
      halaman ikut bekerja, tapi gerakan yang tidak kelihatan sama dengan
