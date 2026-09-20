@@ -2295,7 +2295,24 @@ body:has(.layar.pas-layar.aktif){height:var(--tampak, 100%);overflow:hidden}
   /* Cubit-zoom kita tangani sendiri, jadi peramban tidak boleh ikut
      campur - tanpa ini dua zoom berjalan bersamaan dan halamannya melompat. */
   touch-action:pan-x pan-y;
+  /* ===== PERAMBANNYA JUGA PUNYA JANGKAR, DAN DIA MELAWAN JANGKAR KITA =====
+     Chrome punya 'scroll anchoring': waktu isi DI ATAS layar berubah ukuran,
+     dia diam-diam menggeser scrollTop supaya yang terlihat tidak bergerak.
+     Niatnya baik dan biasanya benar - tapi di sini SETIAP zoom mengubah
+     ukuran semua halaman sekaligus, jadi dia dan kita menghitung koreksi
+     yang berbeda untuk gerakan yang sama, lalu keduanya dipakai. Hasilnya
+     halaman yang meluncur sendiri sesudah jari berhenti, dan itu persis
+     yang terbaca sebagai "licin seperti main ice skating".
+     Cuma boleh ada satu yang menjangkarkan, dan itu kita - karena cuma kita
+     yang tahu titik mana yang sedang dituju jarinya. */
+  overflow-anchor:none;
 }
+.pdf-lembar, .pdf-lembar-satu{overflow-anchor:none}
+/* Selama dua jari menempel, peramban TIDAK BOLEH ikut menggulir sama sekali.
+   'pan-x pan-y' di atas benar untuk satu jari (itu memang gulir biasa), tapi
+   waktu mencubit dia membuat peramban menggeser isinya sambil kita
+   menjangkarkannya - dua tangan menarik benda yang sama. */
+.pdf-badan.mencubit{touch-action:none}
 /* 'safe center' - BUKAN 'center' telanjang. Begitu halamannya lebih lebar
    daripada kotaknya (dan itu justru yang terjadi waktu kamu zoom untuk bisa
    membaca), 'center' memotong tepi KIRI dan tepi itu tidak bisa digulir

@@ -4135,6 +4135,65 @@ console.log('\npembaca PDF: mesinnya diam sampai diminta');
   cek('dan tetap di halaman yang sama, tidak melompat ke awal dokumen',
       jangkar.halSebelum === 3 && jangkar.halSesudah === 3, JSON.stringify(jangkar));
 
+  /* ===== GESER ANTAR PINTU TIDAK BOLEH HIDUP DI ATAS HALAMAN PDF =====
+     Laporan lapangannya: "waktu zoom in dan zoom out, menunya berkali-kali
+     berubah jadi Calculator sendiri". Sebabnya dua jari yang tidak terangkat
+     bersamaan - jari kedua lepas dulu, jari pertama masih menempel dan masih
+     bergerak, dan gerakan mendatar satu jari itu dibaca sebagai geseran
+     antar pintu. 'l-pdf' duduk persis sesudah 'l-hitung' di katalog, jadi
+     yang muncul Calculator.
+     Di luar itu: waktu halamannya sudah di-zoom, geseran mendatar SUDAH
+     punya arti sendiri - menggeser halaman. */
+  cek('geser antar pintu dimatikan di atas halaman PDF',
+      (await hal.evaluate(() => {
+        const s = TAlur.geserLewatUji();
+        return s.indexOf('.pdf-badan') >= 0 && s.indexOf('.pdf-mini') >= 0;
+      })) === true);
+  cek('dan PDF memang bertetangga dengan Calculator di katalog',
+      (await hal.evaluate(() => {
+        const n = TAlur.tabUji().map((t) => t[0]);
+        return Math.abs(n.indexOf('l-pdf') - n.indexOf('l-hitung')) === 1;
+      })) === true);
+
+  /* ===== TINGGI ISINYA TIDAK BOLEH BERUBAH SELAMA DIGAMBAR =====
+     Versi sebelumnya menambahkan halaman satu per satu sambil menggambar,
+     jadi tinggi isi wadahnya tumbuh bertahap - dan selama dia lebih pendek
+     daripada yang seharusnya, 'scrollTop' yang kita pasang DIPOTONG peramban
+     ke tinggi yang ada saat itu. Posisinya hilang, dan hilangnya tidak bisa
+     diketahui dari mana pun. Yang terlihat: halaman meluncur sendiri sesudah
+     jari berhenti - "licin seperti main ice skating".
+     Yang dijaga: tiap bungkus halaman punya tinggi FINAL sejak dipasang,
+     walau kanvasnya masih kosong. */
+  const tinggiSiap = await hal.evaluate(() => {
+    const lembar = document.querySelector('#pdf-lembar');
+    document.querySelector('#pdf-kosong').classList.add('sembunyi');
+    lembar.innerHTML = '';
+    const d = document.createElement('div');
+    d.className = 'pdf-lembar-satu';
+    d.setAttribute('data-rasio', '1.414');
+    const c = document.createElement('canvas');
+    /* Kanvas TANPA isi sama sekali - persis keadaan sesaat sesudah
+       dipasang, sebelum PDF.js sempat menggambarnya. */
+    c.style.width = '352px';
+    c.style.height = '498px';
+    d.appendChild(c); lembar.appendChild(d);
+    const t = Math.round(d.getBoundingClientRect().height);
+    lembar.innerHTML = '';
+    return t;
+  });
+  cek('bungkus halaman sudah setinggi final sebelum kanvasnya diisi',
+      tinggiSiap === 498, String(tinggiSiap));
+
+  /* Peramban punya jangkar gulirnya sendiri ('scroll anchoring'), dan di
+     layar ini dia MELAWAN jangkar kita: setiap zoom mengubah ukuran semua
+     halaman sekaligus, jadi dia dan kita menghitung koreksi yang berbeda
+     untuk gerakan yang sama lalu keduanya dipakai. Cuma boleh ada satu yang
+     menjangkarkan, dan itu kita - cuma kita yang tahu titik mana yang sedang
+     dituju jarinya. */
+  cek('jangkar guliran bawaan peramban dimatikan',
+      (await hal.evaluate(() =>
+        getComputedStyle(document.querySelector('#pdf-badan')).overflowAnchor)) === 'none');
+
   /* ===== LAYAR PENUH = NOL MARGIN APLIKASI =====
      Yang menyisakan pita kosong di kiri-kanan bukan padding badannya tapi
      '.layar' di atasnya: dia punya 'padding:18px' DAN 'max-width:620px'
