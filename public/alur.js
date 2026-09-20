@@ -310,8 +310,15 @@
        dan riwayat yang bolong justru waktu kamu paling butuh lebih buruk
        daripada tidak ada riwayat sama sekali. */
     if (layarSaat === 'l-hitung' && id !== 'l-hitung') catatRiwayat();
+    /* MENINGGALKAN LAYARNYA MELEPAS DOKUMENNYA. Satu PDF dua ratus halaman
+       yang sudah digambar memegang puluhan kanvas plus penguraiannya di
+       worker - ratusan megabyte yang tidak akan pernah dilepas sendiri
+       selama dokumennya masih dipegang. Di HP akibatnya bukan aplikasi yang
+       lambat, tapi tab yang dibunuh sistem tanpa satu pesan pun, dan yang
+       terbaca "aplikasinya menutup sendiri". */
+    if (layarSaat === 'l-pdf' && id !== 'l-pdf') tutupPdf();
     ['l-mulai', 'l-utama', 'l-tulis', 'l-tugas', 'l-note', 'l-galeri', 'l-hitung',
-     'l-catat', 'l-setelan'].forEach(function (x) {
+     'l-pdf', 'l-catat', 'l-setelan'].forEach(function (x) {
       $('#' + x).classList.toggle('aktif', x === id);
     });
     layarSaat = id;
@@ -440,7 +447,12 @@
        Itu sebabnya dia tinggal di balik pintu Tools: pintu yang dipakai
        sekali seminggu tidak pantas memakan lebar yang dibutuhkan pintu yang
        dipakai sepuluh kali sehari. */
-    ['l-hitung', 'Calculator', '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8"/><path d="M8 11h2"/><path d="M12 11h2"/><path d="M16 11h0.01"/><path d="M8 15h2"/><path d="M12 15h2"/><path d="M16 15v4"/><path d="M8 19h6"/>']
+    ['l-hitung', 'Calculator', '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8"/><path d="M8 11h2"/><path d="M12 11h2"/><path d="M16 11h0.01"/><path d="M8 15h2"/><path d="M12 15h2"/><path d="M16 15v4"/><path d="M8 19h6"/>'],
+    /* Lembar bersudut lipat, sama keluarganya dengan ikon Berkas di baris cip
+       - yang dibuka di sini memang jenis yang sama. Dia alat, sekelas
+       kalkulator: tidak menyimpan apa-apa, dan mesinnya baru diunduh waktu
+       PDF pertama dibuka (lihat pdf.js). */
+    ['l-pdf', 'PDF', '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 13.5h1.2a1.2 1.2 0 0 1 0 2.4H8.5V18"/><path d="M12.8 13.5v4.5h.9a1.4 1.4 0 0 0 1.4-1.4v-1.7a1.4 1.4 0 0 0-1.4-1.4z"/>']
   ];
 
   /* ===== BARIS PINTUNYA MILIK PEMAKAINYA =====
@@ -5695,6 +5707,202 @@
     });
   }
 
+  /* ===================== LAYAR PDF =====================
+     Alat, bukan gudang - sekelas kalkulator. Dia membuka berkas yang sudah
+     kamu punya, memperlihatkannya, lalu melepasnya. Tidak ada yang disimpan,
+     jadi tidak ada yang perlu disinkronkan, dan tidak ada satu keputusan pun
+     yang ditagih dari pemakainya.
+
+     MESINNYA DIMUAT MALAS dan itu aturan, bukan optimasi - alasannya lengkap
+     di kepala pdf.js. Yang perlu diketahui dari sini: 'TPdf.muat()' boleh
+     memakan belasan detik pada pembukaan PERTAMA, dan layar yang diam selama
+     itu terbaca "tombolnya tidak berfungsi". Karena itu keadaan memuatnya
+     dikatakan, dan kalimatnya BEDA untuk unduhan pertama - "mengunduh mesin
+     pembaca" menjelaskan kenapa lama; "membuka" tidak menjelaskan apa-apa. */
+
+  var pdfDok = null;        /* dokumen yang sedang terbuka */
+  var pdfZum = 1;
+  var pdfNamaSaat = '';
+  var pdfGiliran = 0;       /* penanda pembukaan ke berapa - lihat gambarPdf */
+
+  var PDF_ZUM = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
+
+  function pdfKabar(teks, sibuk) {
+    var k = $('#pdf-kosong');
+    if (!k) return;
+    k.classList.remove('sembunyi');
+    k.innerHTML = '<p>' + H(teks) + '</p>' +
+      (sibuk ? '<p class="pdf-kosong-kecil">' +
+        H('Mesin pembacanya diunduh sekali saja. Sesudah itu dia jalan tanpa sinyal.') +
+        '</p>' : '');
+  }
+
+  /* DILEPAS SUNGGUHAN, bukan cuma dilupakan. 'destroy()' menghentikan
+     workernya dan membebaskan penguraiannya; membuang acuannya saja
+     meninggalkan worker hidup dengan dokumen utuh di dalamnya. Kanvasnya ikut
+     dinolkan - elemen yang dibuang dari DOM tetap memegang bufer pikselnya
+     sampai pemulung datang, dan di HP pemulungnya sering datang terlambat. */
+  function tutupPdf() {
+    var lembar = $('#pdf-lembar');
+    if (lembar) {
+      $$('#pdf-lembar canvas').forEach(function (k) { k.width = 0; k.height = 0; });
+      lembar.innerHTML = '';
+    }
+    if (pdfDok) { try { pdfDok.destroy(); } catch (e) {} }
+    pdfDok = null;
+    pdfNamaSaat = '';
+    pdfGiliran++;
+    var nama = $('#pdf-nama');
+    if (nama) nama.textContent = '';
+    var kabar = $('#pdf-halaman-kabar');
+    if (kabar) kabar.classList.add('sembunyi');
+    pdfKabar('Belum ada PDF yang dibuka.', true);
+  }
+
+  /* Lebar yang tersedia dibaca dari badannya, bukan dari window: layar ini
+     punya padding, dan halaman yang digambar selebar window selalu meleset
+     sebesar paddingnya - terlihat sebagai gulir mendatar yang tidak pernah
+     kamu minta. */
+  function pdfLebar() {
+    var badan = $('#pdf-badan');
+    if (!badan) return 320;
+    var gaya = global.getComputedStyle(badan);
+    var pad = (parseFloat(gaya.paddingLeft) || 0) + (parseFloat(gaya.paddingRight) || 0);
+    return Math.max(160, badan.clientWidth - pad);
+  }
+
+  function bukaPdfBlob(blob, nama) {
+    if (!global.TPdf) return Promise.resolve(false);
+    tutupPdf();
+    var giliran = pdfGiliran;
+    pdfNamaSaat = nama || 'PDF';
+    pdfZum = 1;
+    perbaruiZumPdf();
+    /* Kalimatnya menyesuaikan: yang pertama kali menunggu unduhan 1,8 MB,
+       yang kedua kali tidak menunggu apa pun. Memakai kalimat yang sama untuk
+       keduanya berarti salah satunya berbohong. */
+    pdfKabar(TPdf.siap() ? 'Membuka…' : 'Mengunduh mesin pembaca…', !TPdf.siap());
+
+    return TPdf.bukaBlob(blob).then(function (dok) {
+      /* Dokumen yang datang terlambat untuk pembukaan yang SUDAH dibatalkan
+         dibuang di sini. Tanpa penjaga ini, membuka dua PDF cepat-cepat
+         menggambar keduanya bertumpuk di lembar yang sama. */
+      if (giliran !== pdfGiliran) { try { dok.destroy(); } catch (e) {} return false; }
+      pdfDok = dok;
+      var nm = $('#pdf-nama');
+      if (nm) nm.textContent = pdfNamaSaat;
+      $('#pdf-kosong').classList.add('sembunyi');
+      return gambarPdf();
+    }).catch(function (e) {
+      if (giliran !== pdfGiliran) return false;
+      /* Dikatakan apa adanya, DENGAN sebabnya kalau ada. PDF berkata sandi
+         dan berkas yang bukan PDF gagal dengan cara yang sangat berbeda, dan
+         "gagal membuka" untuk dua-duanya menyuruh orang menebak sendiri. */
+      var sebab = e && e.name === 'PasswordException'
+        ? 'PDF ini dikunci kata sandi.'
+        : (e && e.name === 'InvalidPDFException'
+          ? 'Berkas ini bukan PDF yang bisa dibaca.'
+          : 'Gagal membuka PDF ini.');
+      pdfKabar(sebab, false);
+      return false;
+    });
+  }
+
+  /* SEMUA HALAMAN DIGAMBAR, BERURUTAN. Bukan sekaligus: 'Promise.all' di atas
+     dua ratus halaman membuka dua ratus permintaan ke worker yang sama, dan
+     yang terjadi bukan lebih cepat tapi kehabisan memori. Berurutan juga
+     berarti halaman pertama muncul lebih dulu, dan halaman pertama itu yang
+     sedang ditunggu mata. */
+  function gambarPdf() {
+    if (!pdfDok) return Promise.resolve(false);
+    var giliran = pdfGiliran;
+    var lembar = $('#pdf-lembar');
+    var lebar = pdfLebar();
+    $$('#pdf-lembar canvas').forEach(function (k) { k.width = 0; k.height = 0; });
+    lembar.innerHTML = '';
+
+    var rantai = Promise.resolve();
+    for (var n = 1; n <= pdfDok.numPages; n++) {
+      (function (nomor) {
+        rantai = rantai.then(function () {
+          if (giliran !== pdfGiliran || !pdfDok) return null;
+          return pdfDok.getPage(nomor).then(function (hal) {
+            if (giliran !== pdfGiliran) return null;
+            var bungkus = document.createElement('div');
+            bungkus.className = 'pdf-lembar-satu';
+            bungkus.setAttribute('data-hal', String(nomor));
+            var kanvas = document.createElement('canvas');
+            bungkus.appendChild(kanvas);
+            lembar.appendChild(bungkus);
+            return TPdf.gambarHalaman(hal, kanvas, lebar, pdfZum);
+          });
+        });
+      })(n);
+    }
+    return rantai.then(function () {
+      if (giliran !== pdfGiliran) return false;
+      perbaruiHalamanPdf();
+      return true;
+    });
+  }
+
+  /* Nomor halaman dibaca dari GULIRAN, bukan disimpan sebagai keadaan:
+     halaman yang "sedang dibaca" itu yang tengahnya paling dekat ke tengah
+     layar, dan itu satu-satunya definisi yang cocok dengan gulir menerus. */
+  function perbaruiHalamanPdf() {
+    var kabar = $('#pdf-halaman-kabar');
+    var badan = $('#pdf-badan');
+    if (!kabar || !badan || !pdfDok) return;
+    var semua = $$('#pdf-lembar .pdf-lembar-satu');
+    if (!semua.length) { kabar.classList.add('sembunyi'); return; }
+    var tengah = badan.scrollTop + badan.clientHeight / 2;
+    var kini = 1;
+    for (var i = 0; i < semua.length; i++) {
+      if (semua[i].offsetTop <= tengah) kini = i + 1;
+    }
+    kabar.textContent = kini + ' / ' + pdfDok.numPages;
+    kabar.classList.remove('sembunyi');
+  }
+
+  function perbaruiZumPdf() {
+    var a = $('#pdf-zum-angka');
+    if (a) a.textContent = Math.round(pdfZum * 100) + '%';
+  }
+
+  function zumPdf(arah) {
+    if (!pdfDok) return;
+    var i = PDF_ZUM.indexOf(pdfZum);
+    if (i < 0) i = PDF_ZUM.indexOf(1);
+    i = Math.max(0, Math.min(PDF_ZUM.length - 1, i + arah));
+    if (PDF_ZUM[i] === pdfZum) return;
+    pdfZum = PDF_ZUM[i];
+    perbaruiZumPdf();
+    gambarPdf();
+  }
+
+  function pasangPdf() {
+    var buka = $('#b-pdf-buka');
+    var pilih = $('#pdf-pilih');
+    if (!buka || !pilih) return;
+
+    buka.addEventListener('click', function () { pilih.click(); });
+    pilih.addEventListener('change', function () {
+      var f = pilih.files && pilih.files[0];
+      /* Isiannya DIKOSONGKAN sesudah dibaca: tanpa itu, memilih berkas yang
+         SAMA dua kali tidak memicu 'change' sama sekali, dan yang terlihat
+         tombol yang berhenti berfungsi persis waktu kamu mengulang. */
+      pilih.value = '';
+      if (f) bukaPdfBlob(f, f.name);
+    });
+
+    $('#b-pdf-kecil').addEventListener('click', function () { zumPdf(-1); });
+    $('#b-pdf-besar').addEventListener('click', function () { zumPdf(1); });
+
+    /* Gulirnya didengar di badannya, bukan di window: layar ini dipatok ke
+       tinggi yang terlihat, jadi yang menggulir kotak di dalamnya. */
+    $('#pdf-badan').addEventListener('scroll', perbaruiHalamanPdf, { passive: true });
+  }
+
   /* ===================== layar mulai =====================
      Swalayan. Pemakainya tidak membuat folder, tidak membuat spreadsheet,
      tidak menempel kode ke mana pun - dia menekan satu tombol dan aplikasi
@@ -8127,6 +8335,7 @@
     pasangGeser($('#hasil-depan'));
     pasangGeserPintu();
     pasangTinggiTampak();
+    pasangPdf();
     pasangSisanya();
   }
 
@@ -8597,6 +8806,7 @@
     tutupLaciUji: tutupLaci,
     muatUlangUji: muatSemua,
     jenisSaringUji: function () { return JENIS_SARING; },
+    tabUji: function () { return TAB; },
     /* Cuma untuk uji: setelan yang HIDUP di memori, bukan salinannya - menulis
        ke basis data saja tidak mengubah apa yang sedang dipakai layar. */
     setelanUji: function () { return setelanSaat; },

@@ -24,10 +24,27 @@
    singgahan yang baru, HP yang sudah memasang aplikasinya akan terus
    memakai versi lama SELAMANYA - terbitan baru tidak akan pernah sampai.
    'activate' membuang singgahan bernama lain, jadi menaikkannya sudah cukup. */
-var SINGGAH = 'singgahan-v149';
+var SINGGAH = 'singgahan-v150';
+
+/* ===== PUSTAKA BERAT PUNYA EMBER SENDIRI, DAN ITU BUKAN KERAPIAN =====
+   PDF.js = 1,8 MB; seluruh aplikasi ini 936 KB. Kalau dia ikut KERANGKA,
+   tiap pemasangan dan TIAP TERBITAN BARU menyeret 1,8 MB - dibayar setiap
+   orang, setiap kali, untuk layar yang dibuka sesekali. Jadi dia tidak
+   pernah ikut 'install'; dia disinggahkan waktu benar-benar diminta.
+
+   Embernya terpisah karena 'activate' membuang tiap singgahan yang namanya
+   bukan SINGGAH - dan SINGGAH naik tiap terbitan. Kalau pustakanya tinggal
+   di situ, satu perbaikan CSS sepele memaksanya diunduh ulang 1,8 MB. Nama
+   embernya membawa versi PUSTAKANYA sendiri, jadi dia cuma turun lagi kalau
+   memang pustakanya yang berganti. */
+var PUSTAKA_AWALAN = 'pustaka-';
+var PUSTAKA = PUSTAKA_AWALAN + 'pdfjs-6.3.289';
 var KERANGKA = [
   './', './index.html', './gaya.css',
-  './bawaan.js', './bahasa.js', './hitung.js', './simpan.js', './otak.js', './awan.js', './pelabel.js',
+  /* 'pdf.js' IKUT di sini, tapi pustakanya TIDAK - berkas ini cuma pemuat
+     malasnya, beberapa kilobyte. Yang 1,8 MB tinggal di '/pustaka/' dan punya
+     embernya sendiri (lihat PUSTAKA di atas). */
+  './bawaan.js', './bahasa.js', './hitung.js', './pdf.js', './simpan.js', './otak.js', './awan.js', './pelabel.js',
   './sinkron.js', './kunci.js', './tugas.js', './alur.js',
   './manifest.webmanifest', './ikon.svg', './ikon-192.png', './ikon-512.png',
   './ikon-tulis-192.png', './ikon-kamera-192.png'
@@ -49,7 +66,10 @@ self.addEventListener('activate', function (ev) {
   ev.waitUntil(
     caches.keys().then(function (kunci) {
       return Promise.all(kunci.map(function (k) {
-        return k === SINGGAH ? null : caches.delete(k);
+        if (k === SINGGAH || k === PUSTAKA) return null;
+        /* Ember pustaka versi LAIN tetap dibuang - itu gunanya versi ada di
+           namanya. Yang dijaga cuma ember pustaka yang sedang dipakai. */
+        return caches.delete(k);
       }));
     }).then(function () { return self.clients.claim(); })
   );
@@ -189,6 +209,25 @@ self.addEventListener('fetch', function (ev) {
       }).catch(function () {
         return caches.match(permintaan).then(function (r) {
           return r || new Response('{}', { headers: { 'Content-Type': 'application/manifest+json' } });
+        });
+      })
+    );
+    return;
+  }
+
+  /* PUSTAKA BERAT: singgahan-dulu juga, tapi ke EMBER SENDIRI, dan tidak
+     pernah diambil waktu 'install'. Yang pertama kali membuka PDF membayar
+     1,8 MB sekali; sesudah itu dia jalan penuh tanpa sinyal, dan terbitan
+     baru aplikasi tidak memaksanya turun lagi. */
+  if (alamat.pathname.indexOf('/pustaka/') >= 0) {
+    ev.respondWith(
+      caches.open(PUSTAKA).then(function (c) {
+        return c.match(permintaan).then(function (tersinggah) {
+          if (tersinggah) return tersinggah;
+          return fetch(permintaan).then(function (jawab) {
+            if (jawab && jawab.ok && jawab.type === 'basic') c.put(permintaan, jawab.clone());
+            return jawab;
+          });
         });
       })
     );
