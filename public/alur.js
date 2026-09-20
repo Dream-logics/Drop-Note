@@ -603,8 +603,20 @@
      benar-benar ada - tidak ada gerakan mendatar yang berarti apa pun di atas
      baris tugas - dan akibatnya layar To Do jadi layar yang paling sulit
      ditinggalkan dengan geseran: hampir seluruh isinya baris tugas. */
+  /* '.pdf-badan' WAJIB di sini, dan ini laporan lapangan: "waktu zoom in dan
+     zoom out, menunya berkali-kali berubah jadi Calculator sendiri".
+
+     Sebabnya dua jari yang TIDAK terangkat bersamaan. Jari kedua lepas lebih
+     dulu, jari pertama masih menempel dan masih bergerak - dan gerakan satu
+     jari mendatar itulah yang dibaca sebagai geseran antar pintu. 'l-pdf'
+     duduk persis sesudah 'l-hitung' di katalog, jadi yang muncul Calculator.
+
+     Dan di luar itu: waktu halamannya sudah di-zoom, geseran mendatar SUDAH
+     punya arti sendiri - dia menggeser halaman. Satu gerakan tidak boleh
+     punya dua arti, dan yang kalah harus yang lebih jarang. */
   var GESER_LEWAT = '.kartu, input, textarea, .dok, .laci, ' +
                     '.saring-baris, .ruang-baris, .lampiran, .cip-gulir, ' +
+                    '.pdf-badan, .pdf-mini, ' +
                     '#petak-ai, .pilih-bilah, #tanya, #lihat, .tanya-pilih';
 
   function pasangGeserPintu() {
@@ -5840,6 +5852,39 @@
      yang terjadi bukan lebih cepat tapi kehabisan memori. Berurutan juga
      berarti halaman pertama muncul lebih dulu, dan halaman pertama itu yang
      sedang ditunggu mata. */
+  /* Rasio tinggi:lebar tiap halaman. DIBACA DARI DOM kalau dokumennya sama -
+     sesudah pembukaan pertama, angkanya sudah tertulis di tiap bungkus, jadi
+     zoom tidak perlu menunggu PDF.js sama sekali dan tata letaknya bisa jadi
+     final SEBELUM satu piksel pun digambar. */
+  function rasioPdf() {
+    var ada = $$('#pdf-lembar .pdf-lembar-satu');
+    if (pdfDok && ada.length === pdfDok.numPages) {
+      return Promise.resolve(ada.map(function (b) {
+        return Number(b.getAttribute('data-rasio')) || 1.414;
+      }));
+    }
+    var janji = [];
+    for (var n = 1; n <= pdfDok.numPages; n++) {
+      janji.push(pdfDok.getPage(n).then(function (hal) {
+        var v = hal.getViewport({ scale: 1 });
+        return v.width ? v.height / v.width : 1.414;
+      }));
+    }
+    return Promise.all(janji);
+  }
+
+  /* ===== TATA LETAKNYA JADI FINAL DULU, GAMBARNYA MENYUSUL =====
+     Versi sebelumnya menambahkan halaman SATU PER SATU sambil menggambar.
+     Akibatnya tinggi isi wadahnya tumbuh bertahap - dan selama dia masih
+     lebih pendek daripada yang seharusnya, 'scrollTop' yang kita pasang
+     DIPOTONG peramban ke tinggi yang ada saat itu. Posisinya hilang, dan
+     hilangnya tidak bisa dikembalikan karena kita tidak pernah tahu dia
+     dipotong. Yang terlihat: halaman meluncur sendiri sesudah jari berhenti.
+
+     Sekarang semua bungkusnya dibuat lebih dulu dengan ukuran FINAL (rasio
+     sudah diketahui), dipasang SEKALI lewat fragment, jangkarnya dipulihkan,
+     baru kanvasnya digambar berurutan. Tinggi isinya tidak pernah berubah
+     lagi sesudah itu, jadi tidak ada satu pun pemotongan yang bisa terjadi. */
   function gambarPdf() {
     if (!pdfDok) return Promise.resolve(false);
     var giliran = pdfGiliran;
@@ -5848,46 +5893,63 @@
     /* Digambar paling tinggi PDF_GAMBAR_MAKS; selebihnya CSS yang melar.
        Alasannya memori - lihat catatan di atas konstanta itu. */
     var gambarZum = Math.min(pdfZum, PDF_GAMBAR_MAKS);
-    /* JANGKARNYA DICATAT SEBELUM LEMBARNYA DIBONGKAR. Fungsi ini membangun
-       ulang seluruh isi '#pdf-lembar', dan wadah yang isinya dikosongkan
-       memulangkan 'scrollTop' ke NOL. Tanpa ini, tiap selesai mencubit
-       halamannya melompat ke awal dokumen 260 milidetik kemudian - dan itu
-       bagian terbesar dari yang terasa sebagai "zoom-nya licin". */
+    /* JANGKARNYA DICATAT SEBELUM LEMBARNYA DIBONGKAR. Wadah yang isinya
+       dikosongkan memulangkan 'scrollTop' ke NOL. */
     var jangkar = jangkarTengahPdf();
-    $$('#pdf-lembar canvas').forEach(function (k) { k.width = 0; k.height = 0; });
-    lembar.innerHTML = '';
 
-    var rantai = Promise.resolve();
-    for (var n = 1; n <= pdfDok.numPages; n++) {
-      (function (nomor) {
-        rantai = rantai.then(function () {
-          if (giliran !== pdfGiliran || !pdfDok) return null;
-          return pdfDok.getPage(nomor).then(function (hal) {
-            if (giliran !== pdfGiliran) return null;
-            var bungkus = document.createElement('div');
-            bungkus.className = 'pdf-lembar-satu';
-            bungkus.setAttribute('data-hal', String(nomor));
-            /* Rasio tinggi:lebar disimpan supaya lentingPdf() bisa melarkan
-               kanvasnya tanpa bertanya lagi ke PDF.js - dan bertanya lagi di
-               tengah cubitan persis yang bikin layarnya membeku. */
-            var v = hal.getViewport({ scale: 1 });
-            bungkus.setAttribute('data-rasio', String(v.height / v.width));
-            var kanvas = document.createElement('canvas');
-            bungkus.appendChild(kanvas);
-            lembar.appendChild(bungkus);
-            return TPdf.gambarHalaman(hal, kanvas, lebar, gambarZum);
-          });
-        });
-      })(n);
-    }
-    return rantai.then(function () {
-      if (giliran !== pdfGiliran) return false;
-      /* Kalau zoom-nya melewati batas gambar, CSS yang menutup selisihnya. */
-      if (gambarZum !== pdfZum) lentingPdf();
+    return rasioPdf().then(function (rasio) {
+      if (giliran !== pdfGiliran || !pdfDok) return false;
+      var lebarTampil = Math.round(lebar * pdfZum);
+      var frag = document.createDocumentFragment();
+      var kanvas = [];
+      for (var n = 0; n < pdfDok.numPages; n++) {
+        var bungkus = document.createElement('div');
+        bungkus.className = 'pdf-lembar-satu';
+        bungkus.setAttribute('data-hal', String(n + 1));
+        bungkus.setAttribute('data-rasio', String(rasio[n]));
+        var k = document.createElement('canvas');
+        /* Ukuran TAMPILNYA dipasang sekarang, sebelum ada isinya - inilah
+           yang membuat tinggi wadahnya final sejak bingkai pertama. */
+        k.style.width = lebarTampil + 'px';
+        k.style.height = Math.round(lebarTampil * rasio[n]) + 'px';
+        bungkus.appendChild(k);
+        frag.appendChild(bungkus);
+        kanvas.push(k);
+      }
+      $$('#pdf-lembar canvas').forEach(function (c) { c.width = 0; c.height = 0; });
+      lembar.innerHTML = '';
+      lembar.appendChild(frag);
       pulihkanJangkarPdf(jangkar);
       perbaruiHalamanPdf();
-      if (pdfMiniBuka) gambarMiniPdf();
-      return true;
+
+      var rantai = Promise.resolve();
+      for (var i = 0; i < kanvas.length; i++) {
+        (function (nomor, k, r) {
+          rantai = rantai.then(function () {
+            if (giliran !== pdfGiliran || !pdfDok) return null;
+            return pdfDok.getPage(nomor).then(function (hal) {
+              if (giliran !== pdfGiliran) return null;
+              return TPdf.gambarHalaman(hal, k, lebar, gambarZum).then(function () {
+                /* UKURAN TAMPILNYA DIKEMBALIKAN SEKETIKA, per halaman.
+                   gambarHalaman() menulis 'style.width' menurut skala yang
+                   DIGAMBAR, dan di atas 3x skala itu lebih kecil daripada
+                   zoom yang diminta - jadi tanpa baris ini tiap halaman
+                   MENYUSUT tepat pada saat dia selesai digambar, satu per
+                   satu, dan tinggi isinya berubah sepanjang penggambaran.
+                   Itu persis pemotongan scrollTop yang baru saja ditutup di
+                   atas, masuk lagi lewat pintu belakang. */
+                k.style.width = lebarTampil + 'px';
+                k.style.height = Math.round(lebarTampil * r) + 'px';
+              });
+            });
+          });
+        })(i + 1, kanvas[i], rasio[i]);
+      }
+      return rantai.then(function () {
+        if (giliran !== pdfGiliran) return false;
+        if (pdfMiniBuka) gambarMiniPdf();
+        return true;
+      });
     });
   }
 
@@ -6175,6 +6237,12 @@
       if (ev.touches.length !== 2 || !pdfDok) return;
       cubitAwal = jarak(ev.touches);
       zumAwal = pdfZum;
+      /* 'touch-action:none' DIPASANG SELAMA MENCUBIT SAJA. Bawaannya
+         'pan-x pan-y' dan itu benar untuk satu jari - itu memang gulir
+         biasa. Tapi waktu dua jari menempel, peramban tetap menggulir
+         isinya sambil kita menjangkarkannya: dua tangan menarik benda yang
+         sama, dan yang terasa meluncur. */
+      badan.classList.add('mencubit');
     }, { passive: true });
 
     badan.addEventListener('touchmove', function (ev) {
@@ -6197,12 +6265,19 @@
       });
     }, { passive: false });
 
-    badan.addEventListener('touchend', function (ev) {
-      if (ev.touches.length < 2) {
-        cubitAwal = 0;
-        if (cubitBingkai) { cancelAnimationFrame(cubitBingkai); cubitBingkai = 0; }
-      }
-    }, { passive: true });
+    function lepasCubit(ev) {
+      if (ev.touches.length >= 2) return;
+      cubitAwal = 0;
+      if (cubitBingkai) { cancelAnimationFrame(cubitBingkai); cubitBingkai = 0; }
+      /* DILEPAS BARU SESUDAH JARI TERAKHIR ANGKAT, bukan waktu jari kedua
+         lepas. Dua jari hampir tidak pernah terangkat bersamaan; kalau
+         penguncinya dilepas di jari kedua, jari pertama yang masih menempel
+         langsung disambar peramban sebagai guliran - dan halamannya
+         meluncur tepat di detik kamu selesai menyetel zoom. */
+      if (!ev.touches.length) badan.classList.remove('mencubit');
+    }
+    badan.addEventListener('touchend', lepasCubit, { passive: true });
+    badan.addEventListener('touchcancel', lepasCubit, { passive: true });
 
     /* ===== KETUK: SATU KALI MASUK/KELUAR LAYAR PENUH, DUA KALI ZOOM =====
        Pola Adobe, dan bukan karena meniru: di layar sesempit ini tidak ada
@@ -9153,6 +9228,7 @@
     penuhPdfUji: setelPenuhPdf,
     miniPdfUji: setelMiniPdf,
     zumPdfUji: function (n, j) { setelZumPdf(n, j); },
+    geserLewatUji: function () { return GESER_LEWAT; },
     halamanKiniPdfUji: halamanKiniPdf,
     /* Cuma untuk uji: setelan yang HIDUP di memori, bukan salinannya - menulis
        ke basis data saja tidak mengubah apa yang sedang dipakai layar. */
