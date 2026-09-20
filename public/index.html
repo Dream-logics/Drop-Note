@@ -695,6 +695,57 @@
   </div>
 </section>
 
+<!-- PEMBACA PDF. Mesinnya sendiri, karena Chrome Android menolak menggambar
+     PDF di <iframe>/<embed> dan cuma menawarkan unduh - lihat pdf.js.
+     LAYARNYA DIPATOK KE TINGGI YANG TERLIHAT ('pas-layar'), aturan yang sama
+     dengan kalkulator: halaman PDF yang separuhnya di bawah lipatan dan
+     halamannya sendiri ikut menggulir berarti dua gulir bersarang, dan yang
+     terjadi di jempol satu geseran menggerakkan yang salah.
+     TIDAK ADA SOROT / CATATAN TEMPEL / TANDA TANGAN, dan jangan ditambahkan:
+     itu editor, bukan pembaca. Editor menuntut penyimpanan, versi, dan
+     resolusi konflik - tiga hal yang harganya tidak dibayar satu layar baca. -->
+<section class="layar pas-layar" id="l-pdf">
+  <header class="atas">
+    <div class="merek" data-merek>Cortex Space</div>
+  </header>
+  <div class="tab-baris" data-tab></div>
+
+  <!-- Dok di ATAS, bukan di bawah: yang dibaca di layar ini halamannya, dan
+       jempol yang menggulir halaman panjang bertumpu persis di tempat dok
+       bawah akan duduk. Kalkulator lain ceritanya - di sana yang disentuh
+       justru tombolnya. -->
+  <div class="pdf-dok" id="pdf-dok">
+    <button class="pdf-tbl" id="b-pdf-buka">Buka PDF</button>
+    <!-- Nama berkasnya DI TENGAH dan dipotong di tengah nama, bukan di
+         ekornya: yang membedakan dua scan biasanya angka di ujung
+         ("Invoice-2024-0917.pdf"), jadi ekor yang dipotong membuang persis
+         bagian yang kamu pakai mengenalinya. -->
+    <div class="pdf-nama" id="pdf-nama" data-asli></div>
+    <div class="pdf-zum">
+      <button class="pdf-tbl kecil" id="b-pdf-kecil" aria-label="Perkecil">&minus;</button>
+      <span class="pdf-zum-angka" id="pdf-zum-angka" data-asli>100%</span>
+      <button class="pdf-tbl kecil" id="b-pdf-besar" aria-label="Perbesar">+</button>
+    </div>
+  </div>
+
+  <!-- Nomor halaman MENUMPANG di atas halamannya, tidak memakan satu baris
+       sendiri: di jendela pendek tiap baris dok dibayar dari tinggi yang
+       justru dipakai membaca. Dia meredup sendiri waktu diam. -->
+  <div class="pdf-halaman-kabar sembunyi" id="pdf-halaman-kabar" data-asli></div>
+
+  <div class="pdf-badan" id="pdf-badan">
+    <!-- Keadaan kosong menyebutkan ONGKOSNYA di muka. Unduhan mesin PDF
+         1,8 MB di sinyal seadanya bisa belasan detik, dan layar yang diam
+         selama itu terbaca "tombolnya rusak" - jadi ongkosnya dikatakan
+         sebelum ditekan, bukan sesudah. -->
+    <div class="pdf-kosong" id="pdf-kosong">
+      <p>Belum ada PDF yang dibuka.</p>
+      <p class="pdf-kosong-kecil">Mesin pembacanya diunduh sekali saja, waktu PDF pertama dibuka. Sesudah itu dia jalan tanpa sinyal.</p>
+    </div>
+    <div class="pdf-lembar" id="pdf-lembar"></div>
+  </div>
+</section>
+
 <section class="layar" id="l-setelan">
   <header class="atas rapat">
     <button class="ikon-btn" data-kembali aria-label="Kembali">
@@ -793,10 +844,16 @@
      adalah dua puluh keputusan untuk satu niat. -->
 <input type="file" id="galeri-pilih-kamera" accept="image/*" capture="environment" hidden>
 <input type="file" id="galeri-pilih-unggah" accept="image/*" multiple hidden>
+<!-- Milik layar PDF. Isiannya sendiri, bukan menumpang '#pilih-berkas': yang
+     itu melampirkan berkasnya ke kotak Drop, yang ini cuma membukanya untuk
+     dibaca dan tidak menyimpan apa pun. Satu isian untuk dua arti akan salah
+     di salah satunya. -->
+<input type="file" id="pdf-pilih" accept="application/pdf,.pdf" hidden>
 
 <script src="bawaan.js"></script>
 <script src="bahasa.js"></script>
 <script src="hitung.js"></script>
+<script src="pdf.js"></script>
 <script src="simpan.js"></script>
 <script src="otak.js"></script>
 <script src="awan.js"></script>

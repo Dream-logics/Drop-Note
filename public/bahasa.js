@@ -221,6 +221,22 @@
        pernah disimpan, dan kata yang sama dengan menghapus catatan bikin
        jarinya ragu di tombol yang sebenarnya tidak berakibat apa-apa. */
     'Bersihkan': 'Clear',
+    /* ----- pembaca PDF ----- */
+    'Buka PDF': 'Open PDF',
+    'Perkecil': 'Zoom out',
+    'Perbesar': 'Zoom in',
+    'Belum ada PDF yang dibuka.': 'No PDF open yet.',
+    /* Ongkosnya disebut di muka, bukan sesudah ditekan: mesin pembacanya
+       1,8 MB, dan di sinyal seadanya itu belasan detik diam. */
+    'Mesin pembacanya diunduh sekali saja, waktu PDF pertama dibuka. Sesudah itu dia jalan tanpa sinyal.':
+      'The reader engine downloads once, the first time you open a PDF. After that it works offline.',
+    'Mesin pembacanya diunduh sekali saja. Sesudah itu dia jalan tanpa sinyal.':
+      'The reader engine downloads once. After that it works offline.',
+    'Mengunduh mesin pembaca…': 'Downloading reader engine…',
+    'Membuka…': 'Opening…',
+    'PDF ini dikunci kata sandi.': 'This PDF is password-protected.',
+    'Berkas ini bukan PDF yang bisa dibaca.': 'This file is not a readable PDF.',
+    'Gagal membuka PDF ini.': 'Could not open this PDF.',
     'Kembali': 'Back',
     'Tutup': 'Close',
     'tersimpan': 'saved',

@@ -1570,8 +1570,14 @@ console.log('\nlima pintu di kepala, dan layar Note');
      wadah kosong" - bukan angka tetap yang harus disunting tiap ada pintu
      baru. */
   const wadahTab = (html.match(/class="tab-baris" data-tab></g) || []).length;
-  cek('baris tabnya wadah kosong di HTML, diisi dari alur.js',
-      wadahTab === 6, String(wadahTab));
+  /* DITURUNKAN DARI KATALOG, BUKAN DIPATOK ANGKA - persis yang diperingatkan
+     komentar di atas, dan yang dilanggarnya sendiri: dulu tertulis '=== 6',
+     lalu satu pintu baru membuat uji ini gagal padahal tidak ada yang rusak.
+     Uji yang harus disunting tiap kali fitur bertambah mengajari orang
+     menyuntingnya tanpa membaca, dan sekali itu terjadi dia berhenti menjaga. */
+  const jumlahPintu = await hal.evaluate(() => TAlur.tabUji().length);
+  cek('tiap layar berpintu punya satu wadah tab kosong di HTML',
+      wadahTab === jumlahPintu, wadahTab + ' wadah vs ' + jumlahPintu + ' pintu');
 
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(250);
@@ -1594,9 +1600,19 @@ console.log('\nlima pintu di kepala, dan layar Note');
   await hal.click('#l-utama [data-tab-ke="l-alat"]');
   await hal.waitForTimeout(250);
   const isiAlat = await hal.locator('#alat-menu .alat-baris').allTextContents();
-  cek('Tools membuka menu berisi Storage dan Calculator',
-      isiAlat.length === 2 && isiAlat.indexOf('Storage') >= 0 &&
-      isiAlat.indexOf('Calculator') >= 0, isiAlat.join('|'));
+  /* ISINYA DITURUNKAN: apa pun yang ada di katalog tapi tidak di baris utama
+     harus muncul di sini. Menyebut namanya satu per satu berarti pintu baru
+     yang lupa mendarat di mana pun lolos tanpa ketahuan - dan pintu yang
+     tidak punya jalan sama sekali persis cacat yang paling sulit dilihat. */
+  const harusDiAlat = await hal.evaluate(() => {
+    const utama = [...document.querySelectorAll('#l-utama [data-tab] .tab')]
+      .map((n) => n.textContent.trim());
+    return TAlur.tabUji().map((t) => t[1]).filter((n) => utama.indexOf(n) < 0);
+  });
+  cek('Tools memuat persis pintu yang tidak kebagian baris utama',
+      isiAlat.length === harusDiAlat.length &&
+      harusDiAlat.every((n) => isiAlat.indexOf(n) >= 0),
+      isiAlat.join('|') + '  vs  ' + harusDiAlat.join('|'));
   /* Menutup begitu satu dipilih: menu yang tetap terbuka sesudah dipakai
      adalah satu ketukan tambahan untuk membereskan sesuatu yang tidak
      diminta. */
@@ -3969,6 +3985,63 @@ console.log('\nbadge angka, cip Pin, kotak link, dan To Do yang ringkas');
   await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
   await hal.fill('#kotak', '');
   await hal.waitForTimeout(200);
+}
+
+console.log('\npembaca PDF: mesinnya diam sampai diminta');
+{
+  /* YANG DIJAGA DI SINI SATU HAL, DAN DIA YANG PALING MAHAL KALAU BOCOR:
+     pustaka PDF.js 1,8 MB - dua kali lipat seluruh aplikasi ini - dan dia
+     TIDAK BOLEH berangkat sebelum ada PDF yang benar-benar dibuka.
+
+     Kebocorannya tidak akan pernah terlihat dari layar: aplikasinya tetap
+     jalan, cuma tiap pembukaan diam-diam menyeret 1,8 MB. Di HP dengan kuota
+     itu ongkos harian untuk layar yang dibuka sebulan sekali, dan tidak ada
+     satu pun angka di aplikasi ini yang akan menyebutnya. Jadi yang diuji
+     BUKAN "layarnya tergambar" tapi "jaringannya diam". */
+  const diminta = [];
+  hal.on('request', (r) => { if (r.url().indexOf('/pustaka/') >= 0) diminta.push(r.url()); });
+
+  await hal.evaluate(() => TAlur.keLayarUji('l-pdf'));
+  await hal.waitForTimeout(400);
+  cek('layar PDF tergambar', await hal.locator('#l-pdf').evaluate((n) => n.classList.contains('aktif')));
+  cek('dan mesinnya BELUM diunduh sama sekali', diminta.length === 0, JSON.stringify(diminta));
+  cek('pemuatnya ada tapi belum siap',
+      (await hal.evaluate(() => !!window.TPdf && TPdf.siap() === false)) === true);
+
+  /* Ongkosnya dikatakan SEBELUM ditekan. Layar yang diam belasan detik
+     sesudah ditekan terbaca "tombolnya rusak", dan yang membaca begitu tidak
+     menekannya kedua kali. */
+  cek('keadaan kosongnya menyebutkan unduhan sekali itu',
+      /once|sekali/i.test(await hal.locator('#pdf-kosong').innerText()));
+
+  /* Doknya DI ATAS: yang digulir jempol di layar ini halamannya, dan dok yang
+     duduk di jalur gulir akan tertekan tiap kali kamu sampai ke bawah. */
+  const letakDok = await hal.evaluate(() => {
+    const d = document.querySelector('#pdf-dok').getBoundingClientRect();
+    const b = document.querySelector('#pdf-badan').getBoundingClientRect();
+    return d.bottom <= b.top + 1 ? 'ok' : 'dok tidak di atas badan';
+  });
+  cek('doknya di atas halamannya, bukan di bawah', letakDok === 'ok', letakDok);
+
+  /* Skala 'fit width' dihitung dari lebar yang tersedia, bukan dipatok: satu
+     PDF bisa A4 tegak, A3 rebah, atau struk selebar 8 cm. Diuji tanpa DOM,
+     jadi kalkulasinya bisa gagal di uji, bukan di tangan pemakainya. */
+  const skala = await hal.evaluate(() => {
+    const palsu = { getViewport: () => ({ scale: 1, width: 600, height: 800 }) };
+    return { pas: TPdf.skalaMuatUji(palsu, 300, 1), zum: TPdf.skalaMuatUji(palsu, 300, 2) };
+  });
+  cek('lebar halaman mengikuti lebar layar, bukan angka tetap',
+      Math.abs(skala.pas - 0.5) < 0.001 && Math.abs(skala.zum - 1) < 0.001,
+      JSON.stringify(skala));
+
+  /* Pintu PDF tidak boleh menggusur satu pun dari lima pintu utama - dia
+     mendarat di Tools, dan itu seluruh gunanya katalog TAB. */
+  cek('PDF ada di katalog pintu',
+      (await hal.evaluate(() => TAlur.tabUji ? TAlur.tabUji().some((t) => t[0] === 'l-pdf') : true)) === true);
+
+  await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
+  await hal.waitForTimeout(250);
+  cek('meninggalkan layarnya tetap tidak mengunduh apa pun', diminta.length === 0);
 }
 
 console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan');
@@ -8938,9 +9011,14 @@ console.log('\npemilih pintu di Setelan');
      Tools; yang berubah cuma berapa ketukan untuk sampai ke sana. */
   await hal.evaluate(() => { TAlur.gambarSetelan(); TAlur.bukaSetelanUji('*'); TAlur.keLayarUji('l-setelan'); });
   await hal.waitForTimeout(350);
+  /* Diturunkan dari katalog, bukan dipatok: pintu baru yang lupa diberi baris
+     di Setelan berarti pintu yang tidak bisa dipindahkan pemakainya sama
+     sekali - dan itu harus gagal di uji, bukan ketahuan waktu dia mencarinya. */
+  const pintuDiKatalog = await hal.evaluate(() => TAlur.tabUji().length);
+  const barisPintu = await hal.locator('#pintu-atur .pintu-baris').count();
   cek('tiap pintu punya barisnya sendiri di Setelan',
-      (await hal.locator('#pintu-atur .pintu-baris').count()) === 6,
-      String(await hal.locator('#pintu-atur .pintu-baris').count()));
+      barisPintu === pintuDiKatalog,
+      barisPintu + ' baris vs ' + pintuDiKatalog + ' pintu');
   /* Drop tidak punya pilihan, dan barisnya menyebut alasannya: baris yang
      kelihatan bisa diketuk tapi diam waktu ditekan lebih buruk daripada baris
      yang terang-terangan berkata "yang ini memang tidak bisa". */

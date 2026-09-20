@@ -1902,6 +1902,65 @@ public/sw.js        service worker — singgahan kerangka + penerima "Bagikan".
                     jauh lebih murah daripada terbitan yang sampai dalam
                     keadaan rusak. Manifest tetap jaringan-dulu, dan dia
                     satu-satunya - alasannya di berkasnya sendiri.
+public/pdf.js       PEMBACA PDF, dan mesinnya DIMUAT MALAS - itu aturan,
+                    bukan optimasi. pdf.mjs + pdf.worker.mjs = 1,8 MB,
+                    sementara SELURUH aplikasi ini 936 KB: pustakanya dua kali
+                    lipat aplikasinya sendiri. Kalau dia ikut 'KERANGKA' di
+                    sw.js, tiap pemasangan DAN tiap terbitan baru menyeret
+                    1,8 MB - dibayar semua orang, tiap kali, untuk layar yang
+                    dibuka sesekali. Jadi 'import()' dinamis, dipanggil dari
+                    satu pintu ('TPdf.muat()'), dan uji terimanya MENDENGARKAN
+                    JARINGAN: kalau ada permintaan ke '/pustaka/' sebelum satu
+                    PDF pun dibuka, dia gagal. Yang diuji bukan "layarnya
+                    tergambar" - kebocorannya memang tidak kelihatan dari
+                    layar mana pun, aplikasinya tetap jalan, cuma tiap
+                    pembukaan diam-diam memakan kuota.
+                    KENAPA MESIN SENDIRI: Chrome di Android MENOLAK menggambar
+                    PDF di '<iframe>'/'<embed>'/'<object>' - yang ditawarkan
+                    mengunduhnya, dan tidak ada akal-akalan HTML yang
+                    menolong. Karena aplikasi ini dipakai di HP, jalan gratis
+                    itu tertutup sejak awal.
+                    EMBER SINGGAHANNYA TERPISAH ('pustaka-pdfjs-<versi>' di
+                    sw.js) dan 'activate' TIDAK membuangnya. Kalau dia tinggal
+                    di SINGGAH, satu perbaikan CSS sepele menaikkan SINGGAH dan
+                    memaksa 1,8 MB itu turun ulang. Versinya ada di nama
+                    embernya, jadi dia cuma turun lagi kalau pustakanya yang
+                    memang berganti.
+                    Dipakai build LEGACY (Chrome 125+/Safari 18+), +58 KB
+                    dibanding build modern - WebAPK yang terlanjur terpasang
+                    bisa tertinggal versinya, dan pembaca yang mati di
+                    peramban lama lebih mahal daripada 58 KB.
+                    cmaps + standard_fonts (1,9 MB lagi) SENGAJA DILEWATI:
+                    akibatnya PDF berhuruf CJK atau berfont tak tertanam
+                    digambar dengan font pengganti. Ditambah kalau kasusnya
+                    benar-benar muncul, bukan sebelum.
+                    DPR DIBATASI 2: di HP ber-DPR 3, satu halaman A4 jadi
+                    kanvas 2480x3508 - tiga halaman sudah ratusan megabyte dan
+                    tab-nya dibunuh sistem tanpa pesan apa pun. Selisih 2
+                    lawan 3 hampir tidak terlihat mata; selisih hidup dan mati
+                    tab-nya jelas terlihat.
+                    Halamannya digambar BERURUTAN, bukan Promise.all: dua ratus
+                    permintaan serentak ke satu worker bukan lebih cepat, cuma
+                    kehabisan memori - dan berurutan berarti halaman pertama
+                    muncul duluan, dan itu yang ditunggu mata.
+                    MENINGGALKAN LAYARNYA MEMANGGIL destroy(): membuang
+                    acuannya saja meninggalkan worker hidup dengan dokumen utuh
+                    di dalamnya.
+                    TIDAK ADA SOROT, CATATAN TEMPEL, TANDA TANGAN, ISI FORMULIR
+                    - dan jangan ditambahkan. Itu EDITOR, bukan pembaca, dan
+                    editor menuntut penyimpanan, versi, dan resolusi konflik.
+                    Dia alat sekelas kalkulator: buka, baca, lepas, tidak
+                    menyimpan apa pun - jadi tidak ada yang perlu disinkronkan.
+                    Doknya DI ATAS, kebalikan dok Drop, dan bedanya bukan
+                    selera: di sini yang disentuh jempol HALAMANNYA (digulir
+                    terus-menerus), jadi dok di bawah akan tertekan tiap kali
+                    kamu sampai ke dasar. Di layar Drop yang disentuh justru
+                    tombolnya.
+                    Menarik teks PDF ke indeks pencarian BELUM dikerjakan, dan
+                    itu sebenarnya hadiah terbesarnya - "Scan_20250412.pdf"
+                    jadi bisa dicari dari isinya, persis temuan nomor 3. Dia
+                    ditunda karena menambah kolom entri, dan kolom baru berarti
+                    menyentuh sinkron - yang akarnya belum dibereskan.
 public/manifest.webmanifest   supaya bisa dipasang di HP
 uji/uji-terima.mjs            uji terima (Playwright)
 uji/palsu-google.mjs          tiruan Drive+Sheets di memori untuk uji

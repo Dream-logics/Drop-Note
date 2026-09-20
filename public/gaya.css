@@ -2248,6 +2248,71 @@ body:has(.layar.pas-layar.aktif){height:var(--tampak, 100%);overflow:hidden}
    tapi diam waktu ditekan terbaca sebagai aplikasi yang rusak. */
 .pintu-kunci{flex:0 0 auto;font-size:11.5px;color:var(--m)}
 
+/* ===== PEMBACA PDF =====
+   DOKNYA DI ATAS, bukan di bawah seperti dok Drop. Bedanya bukan selera:
+   di layar ini yang disentuh jempol HALAMANNYA (digulir terus-menerus), dan
+   dok yang duduk di jalur itu akan tertekan tiap kali kamu menggulir sampai
+   ke bawah. Di layar Drop yang disentuh justru tombolnya, jadi di sana dok
+   bawah benar. */
+.pdf-dok{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;border-bottom:1px solid var(--l);
+  flex:0 0 auto;background:var(--g);
+}
+.pdf-tbl{
+  flex:0 0 auto;min-height:36px;padding:0 12px;
+  border:1px solid var(--l);border-radius:18px;background:var(--p);
+  color:var(--i);font-size:12.5px;font-weight:600;cursor:pointer;
+}
+.pdf-tbl:active{border-color:var(--a);color:var(--a)}
+.pdf-tbl.kecil{
+  width:32px;padding:0;min-height:32px;
+  display:inline-flex;align-items:center;justify-content:center;font-size:16px;
+}
+/* Dipotong di TENGAH nama, bukan di ekornya: yang membedakan dua scan
+   biasanya angka di ujung ("Invoice-2024-0917.pdf"), jadi ellipsis di ekor
+   membuang persis bagian yang kamu pakai mengenalinya. */
+.pdf-nama{
+  flex:1;min-width:0;font-size:12px;color:var(--m);text-align:center;
+  overflow:hidden;white-space:nowrap;direction:rtl;text-overflow:ellipsis;
+}
+.pdf-zum{display:flex;align-items:center;gap:4px;flex:0 0 auto}
+.pdf-zum-angka{font-size:11.5px;color:var(--m);min-width:38px;text-align:center}
+
+/* Badannya yang menggulir, BUKAN halamannya: layar ini dipatok ke tinggi
+   yang terlihat, jadi kalau halamannya ikut menggulir sendiri ada dua gulir
+   bersarang - dan satu geseran jempol menggerakkan yang salah. */
+.pdf-badan{
+  flex:1;min-height:0;overflow-y:auto;overflow-x:auto;
+  padding:12px;background:var(--l);
+}
+.pdf-lembar{display:flex;flex-direction:column;align-items:center;gap:12px}
+/* Halamannya beralas putih dengan bayangan tipis - satu-satunya tempat di
+   aplikasi ini yang memakai bayangan, dan alasannya bukan hiasan: kertas
+   putih di atas alas putih tidak punya tepi, dan PDF tanpa tepi terbaca
+   sebagai gambar yang meluber, bukan sebagai halaman. */
+.pdf-lembar-satu{
+  background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.18);
+  line-height:0;max-width:100%;
+}
+.pdf-lembar-satu canvas{display:block;max-width:100%;height:auto}
+
+/* MENUMPANG di atas halamannya, tidak memakan satu baris sendiri - kosakata
+   yang sama dengan angka di cip saringan. Di jendela pendek tiap baris dok
+   dibayar dari tinggi yang justru dipakai membaca. */
+.pdf-halaman-kabar{
+  position:absolute;left:50%;transform:translateX(-50%);
+  bottom:14px;z-index:5;pointer-events:none;
+  padding:4px 10px;border-radius:12px;
+  background:rgba(0,0,0,.62);color:#fff;font-size:11.5px;font-weight:600;
+}
+#l-pdf{position:relative}
+.pdf-kosong{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:40px 24px;text-align:center;color:var(--m);font-size:13px;
+}
+.pdf-kosong-kecil{font-size:11.5px;opacity:.8;max-width:34ch}
+
 /* ===== JENDELA PENDEK =====
    DITARUH DI EKOR BERKAS, dan itu wajib: '@media' TIDAK menambah kekhususan,
    jadi '.kotak' di dalamnya kalah dari '.kotak' biasa yang ditulis di baris
