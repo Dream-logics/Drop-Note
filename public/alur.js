@@ -5848,6 +5848,12 @@
     /* Digambar paling tinggi PDF_GAMBAR_MAKS; selebihnya CSS yang melar.
        Alasannya memori - lihat catatan di atas konstanta itu. */
     var gambarZum = Math.min(pdfZum, PDF_GAMBAR_MAKS);
+    /* JANGKARNYA DICATAT SEBELUM LEMBARNYA DIBONGKAR. Fungsi ini membangun
+       ulang seluruh isi '#pdf-lembar', dan wadah yang isinya dikosongkan
+       memulangkan 'scrollTop' ke NOL. Tanpa ini, tiap selesai mencubit
+       halamannya melompat ke awal dokumen 260 milidetik kemudian - dan itu
+       bagian terbesar dari yang terasa sebagai "zoom-nya licin". */
+    var jangkar = jangkarTengahPdf();
     $$('#pdf-lembar canvas').forEach(function (k) { k.width = 0; k.height = 0; });
     lembar.innerHTML = '';
 
@@ -5878,6 +5884,7 @@
       if (giliran !== pdfGiliran) return false;
       /* Kalau zoom-nya melewati batas gambar, CSS yang menutup selisihnya. */
       if (gambarZum !== pdfZum) lentingPdf();
+      pulihkanJangkarPdf(jangkar);
       perbaruiHalamanPdf();
       if (pdfMiniBuka) gambarMiniPdf();
       return true;
@@ -5933,16 +5940,74 @@
     setelZumPdf(PDF_ZUM[i]);
   }
 
-  /* SATU CORONG UNTUK TIAP PERUBAHAN ZOOM - tombol maupun cubitan. Dua jalur
-     yang mengatur hal yang sama berarti yang satu ketinggalan begitu yang
-     lain disunting, dan di sini yang ketinggalan akan diam-diam melewati
-     batas memori. */
-  function setelZumPdf(nilai) {
+  /* ===== ZOOM WAJIB PUNYA JANGKAR =====
+     Ini laporan lapangan, dan kalimatnya tepat: "zoom-nya terasa licin, lari
+     ke sisi lain, titik yang mau kulihat tidak pernah muncul".
+
+     Sebabnya: memperbesar halaman menambah lebar dan tingginya, sementara
+     'scrollLeft/scrollTop' TIDAK ikut berubah - jadi titik yang tadi ada di
+     tengah layar bergeser keluar sebanding dengan pembesarannya. Di 300% dia
+     tiga kali lipat lebih jauh dari tempatnya semula. Yang terasa bukan
+     "membesar", tapi "membesar sambil digeser oleh tangan lain".
+
+     Obatnya: catat titik dokumen yang sedang berada DI BAWAH JANGKAR (tengah
+     layar untuk tombol, titik cubitan untuk jari), lalu sesudah ukurannya
+     berubah, kembalikan guliran supaya titik itu ada di tempat yang sama
+     persis. Itu yang membuat zoom terasa "membesar dari titik ini", dan itu
+     yang dilakukan tiap aplikasi peta dan foto.
+
+     JANGKARNYA DIHITUNG RELATIF TERHADAP SATU HALAMAN, bukan terhadap
+     seluruh gulungan - jarak antar halaman dan padding TIDAK ikut membesar,
+     jadi perhitungan yang memakai tinggi total akan meleset makin jauh makin
+     ke bawah halamannya. Relatif ke halamannya, selisih itu tidak ada. */
+  function jangkarPdf(ax, ay) {
+    var badan = $('#pdf-badan');
+    var semua = $$('#pdf-lembar .pdf-lembar-satu');
+    if (!badan || !semua.length) return null;
+    var dokX = badan.scrollLeft + ax;
+    var dokY = badan.scrollTop + ay;
+    var i = 0;
+    for (var n = 0; n < semua.length; n++) if (semua[n].offsetTop <= dokY) i = n;
+    var el = semua[i];
+    return {
+      i: i, ax: ax, ay: ay,
+      fx: el.offsetWidth ? (dokX - el.offsetLeft) / el.offsetWidth : 0.5,
+      fy: el.offsetHeight ? (dokY - el.offsetTop) / el.offsetHeight : 0
+    };
+  }
+
+  function pulihkanJangkarPdf(j) {
+    if (!j) return;
+    var badan = $('#pdf-badan');
+    var semua = $$('#pdf-lembar .pdf-lembar-satu');
+    var el = semua[j.i];
+    if (!badan || !el) return;
+    badan.scrollLeft = el.offsetLeft + j.fx * el.offsetWidth - j.ax;
+    badan.scrollTop = el.offsetTop + j.fy * el.offsetHeight - j.ay;
+  }
+
+  /* Jangkar bawaan: TENGAH layar. Yang menekan '+' sedang melihat sesuatu di
+     tengah layarnya - itu asumsi yang benar hampir selalu, dan jauh lebih
+     baik daripada sudut kiri atas (yang artinya "besarkan menjauhi yang
+     sedang kamu baca"). */
+  function jangkarTengahPdf() {
+    var badan = $('#pdf-badan');
+    if (!badan) return null;
+    return jangkarPdf(badan.clientWidth / 2, badan.clientHeight / 2);
+  }
+
+  /* SATU CORONG UNTUK TIAP PERUBAHAN ZOOM - tombol, cubitan, maupun ketukan
+     ganda. Dua jalur yang mengatur hal yang sama berarti yang satu
+     ketinggalan begitu yang lain disunting, dan di sini yang ketinggalan akan
+     diam-diam melewati batas memori ATAU kehilangan jangkarnya. */
+  function setelZumPdf(nilai, jangkar) {
     var baru = Math.max(PDF_ZUM_MIN, Math.min(PDF_ZUM_MAKS, nilai));
     if (Math.abs(baru - pdfZum) < 0.001) return;
+    var j = jangkar || jangkarTengahPdf();
     pdfZum = baru;
     perbaruiZumPdf();
     lentingPdf();
+    pulihkanJangkarPdf(j);
     /* Digambar ulang BELAKANGAN, bukan seketika: menggambar lima halaman
        pada tiap langkah cubitan berarti puluhan penggambaran penuh untuk satu
        gerakan jari, dan yang terasa layar yang membeku. Yang di layar sudah
@@ -6087,11 +6152,23 @@
        Tombol '+/-' tetap ada (gerakan yang tidak kelihatan bukan jalan
        pintas), tapi kalau cubitannya tidak ada, yang terjadi orang mencubit,
        tidak terjadi apa-apa, dan dia menyimpulkan zoom-nya memang mentok. */
-    var cubitAwal = 0, zumAwal = 1;
+    var cubitAwal = 0, zumAwal = 1, cubitMinta = 0, cubitBingkai = 0;
 
     function jarak(t) {
       var dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY;
       return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    /* Titik tengah DUA JARI, dalam koordinat kotak gulirnya. Inilah jangkar
+       cubitan: yang mencubit sedang menunjuk sesuatu di antara jarinya, dan
+       itu yang harus tetap di tempatnya. Memakai tengah layar untuk cubitan
+       salah - jarimu jarang ada di tengah layar. */
+    function pusat(t) {
+      var r = badan.getBoundingClientRect();
+      return {
+        x: (t[0].clientX + t[1].clientX) / 2 - r.left,
+        y: (t[0].clientY + t[1].clientY) / 2 - r.top
+      };
     }
 
     badan.addEventListener('touchstart', function (ev) {
@@ -6105,11 +6182,26 @@
       /* Bawaannya DITOLAK: tanpa ini peramban ikut men-zoom seluruh halaman,
          dan dua zoom yang berjalan bersamaan membuat halamannya melompat. */
       ev.preventDefault();
-      setelZumPdf(zumAwal * (jarak(ev.touches) / cubitAwal));
+      cubitMinta = zumAwal * (jarak(ev.touches) / cubitAwal);
+      var p = pusat(ev.touches);
+      /* SATU PENYETELAN PER BINGKAI. 'touchmove' datang lebih cepat daripada
+         layar bisa menggambar, dan tiap panggilan mengubah ukuran SEMUA
+         halaman - jadi tanpa penampung ini, satu gerakan jari memicu puluhan
+         perhitungan tata letak penuh dan yang terasa justru tersendat, bukan
+         halus. */
+      if (cubitBingkai) return;
+      cubitBingkai = requestAnimationFrame(function () {
+        cubitBingkai = 0;
+        if (!cubitAwal) return;
+        setelZumPdf(cubitMinta, jangkarPdf(p.x, p.y));
+      });
     }, { passive: false });
 
     badan.addEventListener('touchend', function (ev) {
-      if (ev.touches.length < 2) cubitAwal = 0;
+      if (ev.touches.length < 2) {
+        cubitAwal = 0;
+        if (cubitBingkai) { cancelAnimationFrame(cubitBingkai); cubitBingkai = 0; }
+      }
     }, { passive: true });
 
     /* ===== KETUK: SATU KALI MASUK/KELUAR LAYAR PENUH, DUA KALI ZOOM =====
@@ -6131,8 +6223,13 @@
         ketukTerakhir = 0;
         /* Ketuk dua kali: bolak-balik antara muat-lebar dan terbaca. Yang
            ditawarkan cuma DUA keadaan, bukan tangga - yang mengetuk dua kali
-           sedang bilang "besarkan", bukan "besarkan satu langkah". */
-        setelZumPdf(pdfZum > 1.2 ? 1 : 2.5);
+           sedang bilang "besarkan", bukan "besarkan satu langkah".
+           DIJANGKARKAN DI TITIK YANG DIKETUK, bukan di tengah layar: yang
+           mengetuk dua kali sedang menunjuk, dan membesarkan menjauhi
+           tunjukannya adalah kebalikan dari yang dia minta. */
+        var kotak = badan.getBoundingClientRect();
+        setelZumPdf(pdfZum > 1.2 ? 1 : 2.5,
+                    jangkarPdf(ev.clientX - kotak.left, ev.clientY - kotak.top));
         return;
       }
       ketukTerakhir = kini;
@@ -9055,6 +9152,8 @@
     tabUji: function () { return TAB; },
     penuhPdfUji: setelPenuhPdf,
     miniPdfUji: setelMiniPdf,
+    zumPdfUji: function (n, j) { setelZumPdf(n, j); },
+    halamanKiniPdfUji: halamanKiniPdf,
     /* Cuma untuk uji: setelan yang HIDUP di memori, bukan salinannya - menulis
        ke basis data saja tidak mengubah apa yang sedang dipakai layar. */
     setelanUji: function () { return setelanSaat; },
