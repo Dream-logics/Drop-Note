@@ -4039,6 +4039,81 @@ console.log('\npembaca PDF: mesinnya diam sampai diminta');
   cek('PDF ada di katalog pintu',
       (await hal.evaluate(() => TAlur.tabUji ? TAlur.tabUji().some((t) => t[0] === 'l-pdf') : true)) === true);
 
+  /* ===== ZOOM WAJIB MENGUBAH UKURAN, BUKAN CUMA KETAJAMAN =====
+     Ini bekas luka, dan cacatnya tidak kelihatan dari mana pun kecuali dari
+     mata yang berusaha membaca: kanvasnya pernah dipasangi 'max-width:100%',
+     jadi yang diminta 990px pulang 352px dan yang diminta 1980px juga 352px.
+     Tombol '+' menambah piksel tapi tidak menambah ukuran sama sekali, dan
+     yang dilaporkan lapangan "sudah kuperbesar sampai maksimum, tetap tidak
+     terbaca".
+
+     Diuji tanpa PDF sungguhan: yang dijaga aturan TATA LETAKNYA, dan aturan
+     itu berlaku untuk kanvas apa pun isinya. */
+  const melar = await hal.evaluate(() => {
+    const lembar = document.querySelector('#pdf-lembar');
+    document.querySelector('#pdf-kosong').classList.add('sembunyi');
+    const coba = (lebarPx) => {
+      lembar.innerHTML = '';
+      const d = document.createElement('div');
+      d.className = 'pdf-lembar-satu';
+      const c = document.createElement('canvas');
+      c.width = lebarPx * 2; c.height = Math.round(lebarPx * 2 * 1.41);
+      c.style.width = lebarPx + 'px';
+      c.style.height = Math.round(lebarPx * 1.41) + 'px';
+      d.appendChild(c); lembar.appendChild(d);
+      return Math.round(c.getBoundingClientRect().width);
+    };
+    const badan = Math.round(document.querySelector('#pdf-badan').clientWidth);
+    const hasil = { badan: badan, x1: coba(300), x3: coba(900), x6: coba(1800) };
+    lembar.innerHTML = '';
+    return hasil;
+  });
+  cek('halaman yang di-zoom benar-benar jadi lebih besar di layar',
+      melar.x3 === 900 && melar.x6 === 1800 && melar.x1 === 300,
+      JSON.stringify(melar));
+  cek('dan halaman yang lebih lebar dari layar memang meluber, bukan dipangkas',
+      melar.x6 > melar.badan, JSON.stringify(melar));
+
+  /* Yang meluber harus bisa DIGULIR mendatar. Tanpa itu yang di luar layar
+     hilang selamanya, dan zoom yang memotong teks lebih buruk daripada tidak
+     bisa zoom sama sekali. */
+  cek('badannya menggulir dua arah',
+      (await hal.evaluate(() => {
+        const g = getComputedStyle(document.querySelector('#pdf-badan'));
+        return g.overflowX !== 'hidden' && g.overflowY !== 'hidden';
+      })) === true);
+
+  /* MODE 2: layar penuh membuang kepala, baris pintu, dan dok - sekitar
+     180px di layar 820px. Jalan keluarnya WAJIB kelihatan: ketukan di
+     halaman ikut bekerja, tapi gerakan yang tidak kelihatan sama dengan
+     tidak ada bagi yang belum pernah diberi tahu. */
+  const penuh = await hal.evaluate(() => {
+    const badanSebelum = document.querySelector('#pdf-badan').clientHeight;
+    TAlur.penuhPdfUji(true);
+    const r = {
+      kelas: document.body.classList.contains('pdf-penuh'),
+      dokTampak: getComputedStyle(document.querySelector('#pdf-dok')).display !== 'none',
+      tabTampak: getComputedStyle(document.querySelector('#l-pdf .tab-baris')).display !== 'none',
+      keluarTampak: getComputedStyle(document.querySelector('#b-pdf-keluar')).display !== 'none',
+      badanSebelum: badanSebelum,
+      badanSesudah: document.querySelector('#pdf-badan').clientHeight
+    };
+    TAlur.penuhPdfUji(false);
+    r.kembali = !document.body.classList.contains('pdf-penuh');
+    r.dokKembali = getComputedStyle(document.querySelector('#pdf-dok')).display !== 'none';
+    return r;
+  });
+  cek('layar penuh menyembunyikan dok dan baris pintu',
+      penuh.kelas === true && penuh.dokTampak === false && penuh.tabTampak === false,
+      JSON.stringify(penuh));
+  cek('dan benar-benar menambah tinggi baca',
+      penuh.badanSesudah > penuh.badanSebelum,
+      penuh.badanSebelum + ' -> ' + penuh.badanSesudah);
+  cek('jalan keluarnya kelihatan, bukan cuma ketukan yang harus ditebak',
+      penuh.keluarTampak === true);
+  cek('dan keluar mengembalikan semuanya',
+      penuh.kembali === true && penuh.dokKembali === true);
+
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(250);
   cek('meninggalkan layarnya tetap tidak mengunduh apa pun', diminta.length === 0);

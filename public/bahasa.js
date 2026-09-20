@@ -225,6 +225,9 @@
     'Buka PDF': 'Open PDF',
     'Perkecil': 'Zoom out',
     'Perbesar': 'Zoom in',
+    'Halaman kecil': 'Page thumbnails',
+    'Layar penuh': 'Full screen',
+    'Keluar layar penuh': 'Exit full screen',
     'Belum ada PDF yang dibuka.': 'No PDF open yet.',
     /* Ongkosnya disebut di muka, bukan sesudah ditekan: mesin pembacanya
        1,8 MB, dan di sinyal seadanya itu belasan detik diam. */
