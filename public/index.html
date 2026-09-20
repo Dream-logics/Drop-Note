@@ -726,12 +726,35 @@
       <span class="pdf-zum-angka" id="pdf-zum-angka" data-asli>100%</span>
       <button class="pdf-tbl kecil" id="b-pdf-besar" aria-label="Perbesar">+</button>
     </div>
+    <!-- Halaman kecil dan layar penuh: dua tombol yang MENGUBAH CARA MELIHAT,
+         jadi mereka duduk bersebelahan dan terpisah dari zoom. -->
+    <button class="pdf-tbl kecil" id="b-pdf-mini" aria-label="Halaman kecil">
+      <svg viewBox="0 0 24 24" class="ik"><rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/></svg>
+    </button>
+    <button class="pdf-tbl kecil" id="b-pdf-penuh" aria-label="Layar penuh">
+      <svg viewBox="0 0 24 24" class="ik"><path d="M4 9V5a1 1 0 0 1 1-1h4"/><path d="M15 4h4a1 1 0 0 1 1 1v4"/><path d="M20 15v4a1 1 0 0 1-1 1h-4"/><path d="M9 20H5a1 1 0 0 1-1-1v-4"/></svg>
+    </button>
   </div>
 
   <!-- Nomor halaman MENUMPANG di atas halamannya, tidak memakan satu baris
        sendiri: di jendela pendek tiap baris dok dibayar dari tinggi yang
        justru dipakai membaca. Dia meredup sendiri waktu diam. -->
   <div class="pdf-halaman-kabar sembunyi" id="pdf-halaman-kabar" data-asli></div>
+
+  <!-- JALAN KELUAR DARI LAYAR PENUH YANG SELALU TERLIHAT. Adobe memakai
+       "ketuk di mana saja untuk keluar", dan ketukan itu ikut kupasang - tapi
+       dia tidak boleh jadi SATU-SATUNYA jalan: gerakan yang tidak kelihatan
+       sama dengan tidak ada bagi orang yang belum pernah diberi tahu, dan di
+       layar penuh tidak ada satu pun tombol lain yang bisa ditebak. -->
+  <button class="pdf-keluar sembunyi" id="b-pdf-keluar" aria-label="Keluar layar penuh">
+    <svg viewBox="0 0 24 24" class="ik"><path d="M9 4v4a1 1 0 0 1-1 1H4"/><path d="M15 4v4a1 1 0 0 0 1 1h4"/><path d="M15 20v-4a1 1 0 0 1 1-1h4"/><path d="M9 20v-4a1 1 0 0 0-1-1H4"/></svg>
+  </button>
+
+  <!-- Strip halaman kecil, MENDATAR DI BAWAH - bukan panel tegak di samping.
+       Panel di samping merampas lebar, dan lebar itu persis yang sedang
+       diperebutkan waktu kamu tidak bisa membaca. Di bawah dia cuma merampas
+       tinggi sekali, bisa ditutup, dan duduk di tempat jempol sudah ada. -->
+  <div class="pdf-mini sembunyi" id="pdf-mini"></div>
 
   <div class="pdf-badan" id="pdf-badan">
     <!-- Keadaan kosong menyebutkan ONGKOSNYA di muka. Unduhan mesin PDF

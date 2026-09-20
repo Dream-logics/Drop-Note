@@ -5725,7 +5725,26 @@
   var pdfNamaSaat = '';
   var pdfGiliran = 0;       /* penanda pembukaan ke berapa - lihat gambarPdf */
 
-  var PDF_ZUM = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
+  /* Langkahnya sampai 400%. Di HP, 'fit width' untuk A4 berarti teks 10pt
+     digambar selebar 3 cm - itu memang tidak terbaca, dan bukan cacat yang
+     bisa diperbaiki: kertasnya memang lebih lebar daripada layarnya. Yang
+     menutupnya zoom + gulir mendatar, jadi batas atasnya harus benar-benar
+     tinggi. */
+  var PDF_ZUM = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 4];
+  var PDF_ZUM_MIN = 0.5, PDF_ZUM_MAKS = 4;
+
+  /* KANVASNYA BERHENTI DIPERBESAR DI 3x, SELEBIHNYA CSS YANG MELAR.
+     Kanvas tumbuh KUADRAT: A4 selebar 376px di DPR 2 dan zoom 4 jadi
+     3008 x 4250 piksel = 51 MB untuk SATU halaman. Lima halaman sudah
+     seperempat gigabyte, dan yang terjadi di HP bukan aplikasi yang lambat
+     tapi tab yang dibunuh sistem tanpa satu pesan pun.
+     Di atas 3x gambarnya jadi sedikit lunak, dan itu pertukaran yang benar:
+     teks lunak masih terbaca, tab yang mati tidak. */
+  var PDF_GAMBAR_MAKS = 3;
+
+  var pdfPenuh = false;
+  var pdfMiniBuka = false;
+  var pdfTundaGambar = null;
 
   function pdfKabar(teks, sibuk) {
     var k = $('#pdf-kosong');
@@ -5752,6 +5771,14 @@
     pdfDok = null;
     pdfNamaSaat = '';
     pdfGiliran++;
+    if (pdfTundaGambar) { clearTimeout(pdfTundaGambar); pdfTundaGambar = null; }
+    /* Layar penuh IKUT dilepas: kalau tidak, menutup PDF meninggalkan
+       aplikasi tanpa kepala dan tanpa baris pintu - dan yang terlihat bukan
+       "PDF-nya tertutup" tapi "aplikasinya hilang". */
+    setelPenuhPdf(false);
+    var mini = $('#pdf-mini');
+    if (mini) { mini.innerHTML = ''; mini.removeAttribute('data-untuk'); mini.classList.add('sembunyi'); }
+    pdfMiniBuka = false;
     var nama = $('#pdf-nama');
     if (nama) nama.textContent = '';
     var kabar = $('#pdf-halaman-kabar');
@@ -5818,6 +5845,9 @@
     var giliran = pdfGiliran;
     var lembar = $('#pdf-lembar');
     var lebar = pdfLebar();
+    /* Digambar paling tinggi PDF_GAMBAR_MAKS; selebihnya CSS yang melar.
+       Alasannya memori - lihat catatan di atas konstanta itu. */
+    var gambarZum = Math.min(pdfZum, PDF_GAMBAR_MAKS);
     $$('#pdf-lembar canvas').forEach(function (k) { k.width = 0; k.height = 0; });
     lembar.innerHTML = '';
 
@@ -5831,17 +5861,25 @@
             var bungkus = document.createElement('div');
             bungkus.className = 'pdf-lembar-satu';
             bungkus.setAttribute('data-hal', String(nomor));
+            /* Rasio tinggi:lebar disimpan supaya lentingPdf() bisa melarkan
+               kanvasnya tanpa bertanya lagi ke PDF.js - dan bertanya lagi di
+               tengah cubitan persis yang bikin layarnya membeku. */
+            var v = hal.getViewport({ scale: 1 });
+            bungkus.setAttribute('data-rasio', String(v.height / v.width));
             var kanvas = document.createElement('canvas');
             bungkus.appendChild(kanvas);
             lembar.appendChild(bungkus);
-            return TPdf.gambarHalaman(hal, kanvas, lebar, pdfZum);
+            return TPdf.gambarHalaman(hal, kanvas, lebar, gambarZum);
           });
         });
       })(n);
     }
     return rantai.then(function () {
       if (giliran !== pdfGiliran) return false;
+      /* Kalau zoom-nya melewati batas gambar, CSS yang menutup selisihnya. */
+      if (gambarZum !== pdfZum) lentingPdf();
       perbaruiHalamanPdf();
+      if (pdfMiniBuka) gambarMiniPdf();
       return true;
     });
   }
@@ -5849,19 +5887,28 @@
   /* Nomor halaman dibaca dari GULIRAN, bukan disimpan sebagai keadaan:
      halaman yang "sedang dibaca" itu yang tengahnya paling dekat ke tengah
      layar, dan itu satu-satunya definisi yang cocok dengan gulir menerus. */
-  function perbaruiHalamanPdf() {
-    var kabar = $('#pdf-halaman-kabar');
+  function halamanKiniPdf() {
     var badan = $('#pdf-badan');
-    if (!kabar || !badan || !pdfDok) return;
     var semua = $$('#pdf-lembar .pdf-lembar-satu');
-    if (!semua.length) { kabar.classList.add('sembunyi'); return; }
+    if (!badan || !semua.length) return 1;
     var tengah = badan.scrollTop + badan.clientHeight / 2;
     var kini = 1;
     for (var i = 0; i < semua.length; i++) {
       if (semua[i].offsetTop <= tengah) kini = i + 1;
     }
-    kabar.textContent = kini + ' / ' + pdfDok.numPages;
+    return kini;
+  }
+
+  function perbaruiHalamanPdf() {
+    var kabar = $('#pdf-halaman-kabar');
+    if (!kabar || !pdfDok) return;
+    if (!$$('#pdf-lembar .pdf-lembar-satu').length) {
+      kabar.classList.add('sembunyi');
+      return;
+    }
+    kabar.textContent = halamanKiniPdf() + ' / ' + pdfDok.numPages;
     kabar.classList.remove('sembunyi');
+    if (pdfMiniBuka) tandaiMiniPdf();
   }
 
   function perbaruiZumPdf() {
@@ -5871,13 +5918,136 @@
 
   function zumPdf(arah) {
     if (!pdfDok) return;
-    var i = PDF_ZUM.indexOf(pdfZum);
-    if (i < 0) i = PDF_ZUM.indexOf(1);
-    i = Math.max(0, Math.min(PDF_ZUM.length - 1, i + arah));
-    if (PDF_ZUM[i] === pdfZum) return;
-    pdfZum = PDF_ZUM[i];
+    /* Langkah terdekat, bukan indeks yang tersimpan: sesudah cubit, zoom-nya
+       angka bebas (1,73) dan tidak ada di daftar sama sekali. Mencari
+       indeksnya akan gagal dan melempar balik ke 100% - lompatan yang tidak
+       diminta persis di tengah kamu sedang menyetel. */
+    var i;
+    if (arah > 0) {
+      for (i = 0; i < PDF_ZUM.length; i++) if (PDF_ZUM[i] > pdfZum + 0.001) break;
+      if (i >= PDF_ZUM.length) return;
+    } else {
+      for (i = PDF_ZUM.length - 1; i >= 0; i--) if (PDF_ZUM[i] < pdfZum - 0.001) break;
+      if (i < 0) return;
+    }
+    setelZumPdf(PDF_ZUM[i]);
+  }
+
+  /* SATU CORONG UNTUK TIAP PERUBAHAN ZOOM - tombol maupun cubitan. Dua jalur
+     yang mengatur hal yang sama berarti yang satu ketinggalan begitu yang
+     lain disunting, dan di sini yang ketinggalan akan diam-diam melewati
+     batas memori. */
+  function setelZumPdf(nilai) {
+    var baru = Math.max(PDF_ZUM_MIN, Math.min(PDF_ZUM_MAKS, nilai));
+    if (Math.abs(baru - pdfZum) < 0.001) return;
+    pdfZum = baru;
     perbaruiZumPdf();
-    gambarPdf();
+    lentingPdf();
+    /* Digambar ulang BELAKANGAN, bukan seketika: menggambar lima halaman
+       pada tiap langkah cubitan berarti puluhan penggambaran penuh untuk satu
+       gerakan jari, dan yang terasa layar yang membeku. Yang di layar sudah
+       benar ukurannya lewat CSS; penggambaran ulang cuma menajamkannya. */
+    if (pdfTundaGambar) clearTimeout(pdfTundaGambar);
+    pdfTundaGambar = setTimeout(function () { pdfTundaGambar = null; gambarPdf(); }, 260);
+  }
+
+  /* Melarkan yang SUDAH tergambar, tanpa menyentuh PDF.js sama sekali. Ini
+     yang membuat cubitan terasa seketika: kanvasnya tidak digambar ulang,
+     cuma diubah ukuran tampilnya. */
+  function lentingPdf() {
+    var lebar = pdfLebar();
+    $$('#pdf-lembar .pdf-lembar-satu').forEach(function (bungkus) {
+      var k = bungkus.querySelector('canvas');
+      if (!k) return;
+      var rasio = Number(bungkus.getAttribute('data-rasio')) || 1.414;
+      var w = Math.round(lebar * pdfZum);
+      k.style.width = w + 'px';
+      k.style.height = Math.round(w * rasio) + 'px';
+    });
+  }
+
+  /* ---------------------------------------------- mode 2: layar penuh */
+
+  function setelPenuhPdf(nyala) {
+    var jadi = !!nyala;
+    if (jadi === pdfPenuh) return;
+    /* Satu langkah riwayat didorong waktu masuk, supaya tombol Kembali HP
+       keluar dari layar penuh dan berhenti di situ - aturan yang sama dengan
+       preview gambar. */
+    if (jadi && pakaiRiwayatBrowser) {
+      try { history.pushState({ layar: 'l-pdf', penuh: 1 }, ''); } catch (e) {}
+    }
+    pdfPenuh = jadi;
+    document.body.classList.toggle('pdf-penuh', pdfPenuh);
+    $('#b-pdf-keluar').classList.toggle('sembunyi', !pdfPenuh);
+    /* Lebar yang tersedia BERUBAH waktu doknya pergi (padding badan jadi 0),
+       jadi halamannya wajib digambar ulang - kalau tidak, dia tetap selebar
+       mode 1 dan layar penuh cuma menghasilkan pita abu-abu di kiri-kanan. */
+    if (pdfDok) gambarPdf();
+  }
+
+  /* ---------------------------------------------- strip halaman kecil */
+
+  function setelMiniPdf(nyala) {
+    pdfMiniBuka = !!nyala;
+    $('#pdf-mini').classList.toggle('sembunyi', !pdfMiniBuka || !pdfDok);
+    if (pdfMiniBuka && pdfDok) gambarMiniPdf();
+  }
+
+  var MINI_LEBAR = 54;
+
+  /* Digambar SEKALI per pembukaan, dan tidak ikut digambar ulang waktu zoom:
+     halaman kecil tidak ada hubungannya dengan zoom halaman besar, dan
+     menggambarnya lagi tiap cubitan berarti membayar dua kali untuk satu
+     gerakan. */
+  function gambarMiniPdf() {
+    var wadah = $('#pdf-mini');
+    if (!wadah || !pdfDok) return;
+    if (wadah.getAttribute('data-untuk') === pdfNamaSaat + '|' + pdfDok.numPages) {
+      tandaiMiniPdf();
+      return;
+    }
+    wadah.setAttribute('data-untuk', pdfNamaSaat + '|' + pdfDok.numPages);
+    wadah.innerHTML = '';
+    var giliran = pdfGiliran;
+    var rantai = Promise.resolve();
+    for (var n = 1; n <= pdfDok.numPages; n++) {
+      (function (nomor) {
+        rantai = rantai.then(function () {
+          if (giliran !== pdfGiliran || !pdfDok) return null;
+          return pdfDok.getPage(nomor).then(function (hal) {
+            if (giliran !== pdfGiliran) return null;
+            var tbl = document.createElement('button');
+            tbl.className = 'pdf-mini-satu';
+            tbl.setAttribute('data-ke-hal', String(nomor));
+            var k = document.createElement('canvas');
+            tbl.appendChild(k);
+            var no = document.createElement('span');
+            no.className = 'pdf-mini-no';
+            no.textContent = String(nomor);
+            tbl.appendChild(no);
+            wadah.appendChild(tbl);
+            return TPdf.gambarHalaman(hal, k, MINI_LEBAR, 1);
+          });
+        });
+      })(n);
+    }
+    return rantai.then(tandaiMiniPdf);
+  }
+
+  function tandaiMiniPdf() {
+    var kini = halamanKiniPdf();
+    $$('#pdf-mini .pdf-mini-satu').forEach(function (b) {
+      b.classList.toggle('kini', Number(b.getAttribute('data-ke-hal')) === kini);
+    });
+  }
+
+  function keHalamanPdf(nomor) {
+    var target = $('#pdf-lembar .pdf-lembar-satu[data-hal="' + nomor + '"]');
+    var badan = $('#pdf-badan');
+    if (!target || !badan) return;
+    badan.scrollTop = target.offsetTop - 8;
+    perbaruiHalamanPdf();
   }
 
   function pasangPdf() {
@@ -5897,10 +6067,80 @@
 
     $('#b-pdf-kecil').addEventListener('click', function () { zumPdf(-1); });
     $('#b-pdf-besar').addEventListener('click', function () { zumPdf(1); });
+    $('#b-pdf-penuh').addEventListener('click', function () { setelPenuhPdf(true); });
+    $('#b-pdf-keluar').addEventListener('click', function () { setelPenuhPdf(false); });
+    $('#b-pdf-mini').addEventListener('click', function () { setelMiniPdf(!pdfMiniBuka); });
+
+    $('#pdf-mini').addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-ke-hal]');
+      if (b) keHalamanPdf(Number(b.getAttribute('data-ke-hal')));
+    });
 
     /* Gulirnya didengar di badannya, bukan di window: layar ini dipatok ke
        tinggi yang terlihat, jadi yang menggulir kotak di dalamnya. */
-    $('#pdf-badan').addEventListener('scroll', perbaruiHalamanPdf, { passive: true });
+    var badan = $('#pdf-badan');
+    badan.addEventListener('scroll', perbaruiHalamanPdf, { passive: true });
+
+    /* ===== CUBIT-ZOOM =====
+       Ini gerakan yang dicoba jari LEBIH DULU daripada tombol mana pun di
+       layar ini - tiap orang sudah memakainya di aplikasi foto sejak lama.
+       Tombol '+/-' tetap ada (gerakan yang tidak kelihatan bukan jalan
+       pintas), tapi kalau cubitannya tidak ada, yang terjadi orang mencubit,
+       tidak terjadi apa-apa, dan dia menyimpulkan zoom-nya memang mentok. */
+    var cubitAwal = 0, zumAwal = 1;
+
+    function jarak(t) {
+      var dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    badan.addEventListener('touchstart', function (ev) {
+      if (ev.touches.length !== 2 || !pdfDok) return;
+      cubitAwal = jarak(ev.touches);
+      zumAwal = pdfZum;
+    }, { passive: true });
+
+    badan.addEventListener('touchmove', function (ev) {
+      if (ev.touches.length !== 2 || !cubitAwal || !pdfDok) return;
+      /* Bawaannya DITOLAK: tanpa ini peramban ikut men-zoom seluruh halaman,
+         dan dua zoom yang berjalan bersamaan membuat halamannya melompat. */
+      ev.preventDefault();
+      setelZumPdf(zumAwal * (jarak(ev.touches) / cubitAwal));
+    }, { passive: false });
+
+    badan.addEventListener('touchend', function (ev) {
+      if (ev.touches.length < 2) cubitAwal = 0;
+    }, { passive: true });
+
+    /* ===== KETUK: SATU KALI MASUK/KELUAR LAYAR PENUH, DUA KALI ZOOM =====
+       Pola Adobe, dan bukan karena meniru: di layar sesempit ini tidak ada
+       tempat untuk tombol yang cukup besar tanpa memakan halamannya sendiri,
+       jadi halamannya sendiri yang jadi tombolnya.
+       Ketukan tunggal DITUNDA menunggu ketukan kedua - tanpa penundaan itu,
+       tiap ketukan ganda juga memicu ketukan tunggal, dan yang terjadi kamu
+       men-zoom sambil tidak sengaja masuk layar penuh. */
+    var tundaKetuk = null, ketukTerakhir = 0;
+
+    badan.addEventListener('click', function (ev) {
+      if (!pdfDok) return;
+      /* Ketukan di tombol apa pun BUKAN ketukan di halaman. */
+      if (ev.target.closest('button')) return;
+      var kini = Date.now();
+      if (kini - ketukTerakhir < 300) {
+        if (tundaKetuk) { clearTimeout(tundaKetuk); tundaKetuk = null; }
+        ketukTerakhir = 0;
+        /* Ketuk dua kali: bolak-balik antara muat-lebar dan terbaca. Yang
+           ditawarkan cuma DUA keadaan, bukan tangga - yang mengetuk dua kali
+           sedang bilang "besarkan", bukan "besarkan satu langkah". */
+        setelZumPdf(pdfZum > 1.2 ? 1 : 2.5);
+        return;
+      }
+      ketukTerakhir = kini;
+      tundaKetuk = setTimeout(function () {
+        tundaKetuk = null;
+        setelPenuhPdf(!pdfPenuh);
+      }, 300);
+    });
   }
 
   /* ===================== layar mulai =====================
@@ -8598,6 +8838,12 @@
          kamu keluar dari gambar dan dari album sekaligus tanpa memintanya. */
       var lapis = $('#lihat');
       if (lapis && !lapis.classList.contains('sembunyi')) { tutupLihat(true); return; }
+      /* Layar penuh KELUAR DULU, aturan yang sama persis dengan preview: satu
+         tekanan, satu langkah. Tanpa ini, menekan Kembali di layar penuh
+         melompat keluar dari layar PDF sekaligus - dan karena kepala dan
+         baris pintunya sedang disembunyikan, yang terlihat bukan "aku
+         kembali" tapi "aplikasinya melompat entah ke mana". */
+      if (pdfPenuh) { setelPenuhPdf(false); return; }
       tampilkanLayar((ev.state && ev.state.layar) || 'l-utama');
     });
 
@@ -8807,6 +9053,8 @@
     muatUlangUji: muatSemua,
     jenisSaringUji: function () { return JENIS_SARING; },
     tabUji: function () { return TAB; },
+    penuhPdfUji: setelPenuhPdf,
+    miniPdfUji: setelMiniPdf,
     /* Cuma untuk uji: setelan yang HIDUP di memori, bukan salinannya - menulis
        ke basis data saja tidak mengubah apa yang sedang dipakai layar. */
     setelanUji: function () { return setelanSaat; },
