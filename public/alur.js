@@ -6593,6 +6593,20 @@
       simpan.then(function () {
         return TAwan.masuk(setelanSaat);
       }).then(function () {
+        /* EMAILNYA DISIMPAN DI SINI JUGA, sama dengan tombol Hubungkan di
+           Setelan - dan ketiadaannya di jalur ini yang melahirkan laporan
+           "kenapa sekarang selalu minta akun". Jalur inilah yang dipakai
+           PEMASANGAN BARU, jadi yang paling mungkin kehilangan petunjuknya
+           justru perangkat yang paling baru.
+           Emailnya dipakai sebagai 'hint' permintaan token berikutnya; tanpa
+           dia Google tidak tahu akun mana yang dimaksud dan memunculkan
+           pemilih akun tiap kali tokennya habis - bukan karena izinnya
+           kurang.
+           Boleh gagal diam: yang penting foldernya, bukan namanya. */
+        return TAwan.siapa(setelanSaat).then(function (email) {
+          return email ? simpanSetelan('akunEmail', email) : null;
+        }, function () { return null; });
+      }).then(function () {
         return TSinkron.rumah(setelanSaat);
       }).then(function () {
         return simpanSetelan('cadanganNyala', true);
