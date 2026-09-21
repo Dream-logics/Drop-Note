@@ -39,6 +39,15 @@ export function buatGooglePalsu() {
     const u = new URL(url);
     const j = badan ? (() => { try { return JSON.parse(badan); } catch (e) { return null; } })() : null;
 
+    /* SIAPA PEMAKAINYA. Ditiru di sini karena alamatnya ikut ditangani uji
+       ini juga, dan tanpa dia 'siapa()' selalu gagal - lalu petunjuk akun
+       tidak pernah terisi, dan uji yang menjaganya menguji ketiadaan.
+       Emailnya yang menentukan 'hint' permintaan token berikutnya, dan hint
+       itu yang menentukan pemilih akun Google muncul atau tidak. */
+    if (u.pathname.indexOf('/oauth2/v3/userinfo') >= 0) {
+      return jawab({ email: 'aku@contoh.com', email_verified: true });
+    }
+
     /* ---------------- Drive ---------------- */
     if (u.pathname.startsWith('/upload/drive/v3/files')) {
       const isi = (badan.split('\r\n\r\n')[2] || '').split('\r\n--')[0];

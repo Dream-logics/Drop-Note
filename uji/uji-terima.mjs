@@ -275,6 +275,51 @@ console.log('\npemasangan swalayan');
   cek('dan akunnya ikut disebut, supaya pemilih akun tidak muncul lagi',
       izinKedua.hint === 'aku@contoh.com', JSON.stringify(izinKedua));
 
+  /* ===== PETUNJUKNYA DIISI SENDIRI, DARI MANA PUN TOKENNYA DATANG =====
+     Laporan lapangannya: "kenapa aplikasinya sekarang selalu minta akun,
+     padahal dulu tidak pernah".
+
+     Emailnya dulu cuma disimpan di SATU jalur - tombol Hubungkan di Setelan.
+     Perangkat yang tersambung lewat layar MULAI (jalur yang justru dipakai
+     pemasangan baru) tidak pernah menyimpannya. 'sheetId'-nya ada, jadi
+     'pernahMasuk' benar dan permintaan diam-diam TIDAK diblokir; dia
+     berangkat tanpa petunjuk, dan tiap kali tokennya habis (sejam) Google
+     memunculkan "Choose an account" - bukan karena izinnya kurang, tapi
+     karena dia tidak tahu akun mana yang dimaksud.
+
+     Yang dijaga di sini BUKAN "jalur Mulai menyimpan email" - itu menambal
+     satu jalur, dan jalur ketiga yang lahir besok akan lupa lagi. Yang dijaga
+     'akunEmail' terisi sesudah token berhasil, dari pintu mana pun. */
+  const petunjukIsiSendiri = await hal.evaluate(async () => {
+    await TSimpan.setel('akunEmail', '');
+    TAwan.keluar();
+    const setelan = { clientId: 'x.apps.googleusercontent.com', sheetId: 'sheet-uji' };
+    await TAwan.ambilToken(setelan, true);
+    /* Pengisiannya menyusul di belakang dan boleh gagal diam - jadi ditunggu,
+       bukan diharapkan sudah selesai di baris berikutnya. */
+    for (let i = 0; i < 40; i++) {
+      if (await TSimpan.setelan('akunEmail')) break;
+      await new Promise((s) => setTimeout(s, 50));
+    }
+    return { tersimpan: await TSimpan.setelan('akunEmail'), diMemori: setelan.akunEmail || '' };
+  });
+  cek('petunjuk akun terisi sendiri sesudah token pertama, tanpa jalur khusus',
+      !!petunjukIsiSendiri.tersimpan, JSON.stringify(petunjukIsiSendiri));
+
+  /* Dan sesudah terisi, permintaan BERIKUTNYA benar-benar membawanya - itu
+     yang menentukan pemilih akun muncul atau tidak. */
+  const sesudahIsi = await hal.evaluate(async () => {
+    TAwan.keluar();
+    const surel = await TSimpan.setelan('akunEmail');
+    await TAwan.ambilToken({
+      clientId: 'x.apps.googleusercontent.com', sheetId: 'sheet-uji', akunEmail: surel
+    }, true);
+    return { minta: window.__mintaTerakhir, surel: surel };
+  });
+  cek('dan permintaan berikutnya membawa petunjuk itu',
+      sesudahIsi.minta.hint === sesudahIsi.surel && sesudahIsi.minta.prompt === '',
+      JSON.stringify(sesudahIsi));
+
   /* Tapi yang tersimpan TETAP dipakai kalau bawaan.js memang kosong - itu
      memang gunanya, untuk yang memasang sendiri. */
   cek('kalau bawaan.js kosong, yang tersimpan tetap dipakai',

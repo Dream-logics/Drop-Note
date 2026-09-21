@@ -175,11 +175,49 @@
     mintaJalan = mintaTokenBaru(id, diam, (setelan && setelan.akunEmail) || '',
                                 pernahMasuk(setelan));
     mintaDiamJalan = !!diam;
+    /* Begitu tokennya di tangan, petunjuk akunnya diisi kalau memang belum
+       ada - lihat pastikanPetunjuk. Ditaruh di sini, bukan di pemanggilnya,
+       karena di sinilah SEMUA token lewat. */
+    mintaJalan.then(function () { pastikanPetunjuk(setelan); }, function () {});
     /* Dilepas setelah selesai, sukses atau gagal - kalau tidak, satu kegagalan
        mengunci seluruh sisa hidup halaman ini. */
     var lepas = function () { mintaJalan = null; mintaDiamJalan = false; };
     mintaJalan.then(lepas, lepas);
     return mintaJalan;
+  }
+
+  /* ===== PETUNJUK AKUN DIISI SENDIRI, DARI MANA PUN TOKENNYA DATANG =====
+     Ini laporan lapangan: "kenapa aplikasinya sekarang selalu minta akun,
+     padahal dulu tidak pernah".
+
+     'hint' adalah satu-satunya hal yang membuat permintaan token diam-diam
+     benar-benar diam. Tanpa dia, 'requestAccessToken' membuka
+     accounts.google.com dan Google TIDAK BISA menjawab sendiri - dia tidak
+     tahu akun mana yang dimaksud - jadi yang muncul "Choose an account".
+     Izinnya tidak kurang sedikit pun; yang kurang alamat tujuannya.
+
+     Dulu emailnya cuma disimpan di SATU jalur: tombol "Hubungkan" di Setelan.
+     Perangkat yang tersambung lewat layar MULAI - jalur yang justru dipakai
+     pemasangan baru - tidak pernah menyimpannya sama sekali. 'sheetId'-nya
+     ada, jadi 'pernahMasuk' benar dan permintaan diam-diam tidak diblokir;
+     dia berangkat tanpa petunjuk, dan tiap kali tokennya habis (sejam)
+     pemilih akun muncul lagi.
+
+     Obatnya bukan menambal jalur kedua itu, tapi MENGISINYA DARI SINI: tiap
+     token yang berhasil lewat satu pintu ini, dan pintu ini yang tahu apakah
+     petunjuknya sudah ada. Menambal per-pemanggil berarti jalur ketiga yang
+     lahir besok lupa lagi - persis bentuk kekeliruan yang sudah dua kali
+     terjadi di berkas sinkron.
+
+     Boleh gagal diam-diam: tanpa email aplikasinya tetap jalan, cuma
+     pemilih akunnya muncul lagi nanti. */
+  function pastikanPetunjuk(setelan) {
+    if (!setelan || setelan.akunEmail || !global.TSimpan) return;
+    siapa(setelan).then(function (email) {
+      if (!email) return;
+      setelan.akunEmail = email;
+      return TSimpan.setel('akunEmail', email);
+    }).catch(function () {});
   }
 
   function mintaTokenBaru(id, diam, petunjuk, pernah) {
