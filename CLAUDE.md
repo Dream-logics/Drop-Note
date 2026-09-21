@@ -2011,6 +2011,66 @@ public/pdf.js       PEMBACA PDF, dan mesinnya DIMUAT MALAS - itu aturan,
                     jadi bisa dicari dari isinya, persis temuan nomor 3. Dia
                     ditunda karena menambah kolom entri, dan kolom baru berarti
                     menyentuh sinkron - yang akarnya belum dibereskan.
+                    MENU TAMBAHAN LAYAR PENUH: SATU TOMBOL MELAYANG
+                    ('#b-pdf-alat', tiga titik, sudut KANAN atas), bukan
+                    sederet tombol tetap. Layar penuh itu ruang yang gunanya
+                    MELIHAT HALAMAN, dan tiap tombol yang duduk permanen di
+                    atasnya memakan bagian yang justru kamu datangi. Kiri atas
+                    sudah milik tombol keluar, bawah milik jempol yang
+                    menggulir - jadi kanan atas. Isinya dua, dan keduanya
+                    menjawab satu pertanyaan yang sama ("bawa aku ke halaman
+                    lain"): KETIK NOMORNYA untuk yang sudah kamu tahu
+                    nomornya, STRIP HALAMAN KECIL untuk yang cuma kamu ingat
+                    rupanya. Nomornya DISOROT seluruhnya waktu panelnya
+                    dibuka - yang membukanya hampir selalu mau MENGGANTI
+                    nomornya, bukan menyuntingnya, jadi ketukan berikutnya
+                    langsung menimpa tanpa menghapus dulu. Di luar nomor
+                    halaman dijepit ke 1..numPages, tidak ditolak: yang
+                    mengetik "999" di dokumen 120 halaman sedang bilang
+                    "paling belakang", dan kotak yang diam sesudah ditekan
+                    terbaca sebagai aplikasi yang rusak.
+                    MENGETUK NOMOR HALAMAN ('#b-pdf-nav-no') MEMBUKA PANEL
+                    ITU, BUKAN STRIP HALAMAN KECIL, dan itu laporan lapangan:
+                    "klik halaman jangan redirecting". Layar penuhnya memang
+                    TIDAK PERNAH dimatikan di jalur itu - sudah diukur dengan
+                    ketukan jari sungguhan: 'pdf-penuh' tetap menyala,
+                    'popstate' tidak pernah menembak. Yang berubah cuma
+                    RUPANYA: strip halaman kecil beralas TERANG yang muncul di
+                    tepi atas bentuknya persis dok mode normal yang baru saja
+                    disembunyikan, jadi yang terbaca "layarnya kembali ke mode
+                    normal". Dua yang membereskannya, dan dua-duanya perlu:
+                    stripnya berganti rupa gelap di layar penuh
+                    ('body.pdf-penuh .pdf-mini'), dan ketukan nomor tidak lagi
+                    membuka strip itu sama sekali. Rupa yang berbohong adalah
+                    cacat yang tidak bisa dibantah dengan "tapi keadaannya
+                    benar" - yang dipercaya orang matanya.
+                    STRIPNYA MENGECIL (MINI_LEBAR 54 -> 38, gap 8 -> 5): dia
+                    dipakai untuk MENGGULIR CEPAT mencari halaman yang diingat
+                    rupanya, dan yang menentukan cepatnya berapa halaman muat
+                    sekali pandang. Di 54px satu layar HP memuat enam; di 38px
+                    sembilan, dan rupa halaman masih terbaca karena yang dicari
+                    bentuk kasarnya (gambar? tabel? teks rata?), bukan isinya.
+                    'touch-action:pan-x' dipasang karena guliran mendatar
+                    SATU-SATUNYA arti geseran di strip itu.
+                    LAYAR DIPUTAR: HALAMANNYA DIUKUR ULANG
+                    (tanganiPutarPdf, pada 'resize' + 'orientationchange').
+                    Skala 'muat lebar' dihitung dari lebar yang tersedia, dan
+                    lebar itu hampir dua kali lipat di landscape - tanpa
+                    pengukuran ulang yang didapat pita kosong di kiri-kanan
+                    dan teks yang tetap sekecil tadi, padahal landscape
+                    ditempuh justru supaya terbaca.
+                    PENJAGANYA LEBAR, BUKAN 'resize' ITU SENDIRI, dan ini
+                    wajib: 'resize' juga menembak waktu PAPAN KETIK naik - dan
+                    papan ketik naik persis waktu kamu mengetik nomor halaman
+                    di panel. Menggambar ulang di situ berarti halamannya
+                    melompat di tengah kamu mengetik. Yang berubah waktu papan
+                    ketik naik cuma TINGGInya. Ditunda 180 ms juga, karena
+                    peramban menembakkan beberapa 'resize' berturut-turut
+                    selama animasi putarnya.
+                    Uji putarnya mengukur LEBAR YANG DIPAKAI (lebarPdfUji) DAN
+                    lebar kanvas yang tergambar - listener yang terpasang tapi
+                    mengukur lebar yang sama tidak menggambar apa pun, dan itu
+                    persis cacat yang mau dijaga.
 public/manifest.webmanifest   supaya bisa dipasang di HP
 uji/uji-terima.mjs            uji terima (Playwright)
 uji/palsu-google.mjs          tiruan Drive+Sheets di memori untuk uji

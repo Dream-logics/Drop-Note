@@ -764,6 +764,34 @@
     <svg viewBox="0 0 24 24" class="ik"><path d="M9 4v4a1 1 0 0 1-1 1H4"/><path d="M15 4v4a1 1 0 0 0 1 1h4"/><path d="M15 20v-4a1 1 0 0 1 1-1h4"/><path d="M9 20v-4a1 1 0 0 0-1-1H4"/></svg>
   </button>
 
+  <!-- SATU tombol kecil melayang untuk seluruh menu tambahan di layar penuh.
+       Bukan sederet tombol: layar penuh gunanya melihat halaman, dan tiap
+       tombol tetap yang duduk di atasnya memakan bagian yang justru kamu
+       datangi. Di sudut KANAN atas - sudut kiri atas sudah milik tombol
+       keluar, dan sudut bawah milik jempol yang menggulir. -->
+  <button class="pdf-alat-tbl sembunyi" id="b-pdf-alat" aria-label="Menu halaman">
+    <svg viewBox="0 0 24 24" class="ik"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+  </button>
+
+  <!-- Panel menu tambahan. Isinya DUA, dan keduanya jawaban atas satu
+       pertanyaan yang sama: "bawa aku ke halaman lain". Yang diketik untuk
+       yang sudah kamu tahu nomornya; yang dilihat untuk yang cuma kamu ingat
+       rupanya. -->
+  <div class="pdf-alat sembunyi" id="pdf-alat">
+    <div class="pdf-alat-baris">
+      <label class="pdf-alat-label" for="pdf-ke-hal">Ke halaman</label>
+      <!-- inputmode numeric, BUKAN type=number: type=number di Android
+           memunculkan papan angka yang sama tapi menambah tombol panah
+           naik-turun yang tidak ada gunanya di sini, dan di sebagian peramban
+           dia menolak tempelan. -->
+      <input id="pdf-ke-hal" type="text" inputmode="numeric" pattern="[0-9]*"
+             class="pdf-alat-isi" data-asli>
+      <span class="pdf-alat-dari" id="pdf-alat-dari" data-asli></span>
+      <button class="pdf-alat-ok" id="b-pdf-ke-hal">Buka</button>
+    </div>
+    <button class="pdf-alat-pilih" id="b-pdf-alat-mini">Halaman kecil</button>
+  </div>
+
   <!-- Strip halaman kecil, MENDATAR DI BAWAH - bukan panel tegak di samping.
        Panel di samping merampas lebar, dan lebar itu persis yang sedang
        diperebutkan waktu kamu tidak bisa membaca. Di bawah dia cuma merampas
