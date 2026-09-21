@@ -5786,6 +5786,9 @@
        aplikasi tanpa kepala dan tanpa baris pintu - dan yang terlihat bukan
        "PDF-nya tertutup" tapi "aplikasinya hilang". */
     setelPenuhPdf(false);
+    setelAlatPdf(false);
+    pdfLebarTerakhir = 0;
+    if (pdfTundaPutar) { clearTimeout(pdfTundaPutar); pdfTundaPutar = null; }
     if (pdfMiniPantau) { pdfMiniPantau.disconnect(); pdfMiniPantau = null; }
     var mini = $('#pdf-mini');
     if (mini) { $$('#pdf-mini canvas').forEach(lepasKanvasPdf); mini.innerHTML = ''; mini.removeAttribute('data-untuk'); mini.classList.add('sembunyi'); }
@@ -5933,6 +5936,9 @@
 
     return rasioPdf().then(function (rasio) {
       if (giliran !== pdfGiliran || !pdfDok) return false;
+      /* Patokan lebar untuk pengenal putar layar dicatat di sini - satu-satunya
+         tempat yang tahu lebar berapa yang BARU SAJA dipakai menggambar. */
+      pdfLebarTerakhir = lebar;
       var lebarTampil = Math.round(lebar * pdfZum);
       var frag = document.createDocumentFragment();
       for (var n = 0; n < pdfDok.numPages; n++) {
@@ -6223,6 +6229,10 @@
     pdfPenuh = jadi;
     document.body.classList.toggle('pdf-penuh', pdfPenuh);
     $('#b-pdf-keluar').classList.toggle('sembunyi', !pdfPenuh);
+    $('#b-pdf-alat').classList.toggle('sembunyi', !pdfPenuh);
+    /* Panelnya ikut tutup waktu keluar: panel melayang yang tertinggal di
+       mode normal duduk di atas dok yang baru saja kembali. */
+    if (!pdfPenuh) setelAlatPdf(false);
     /* Lebar yang tersedia BERUBAH waktu doknya pergi (padding badan jadi 0),
        jadi halamannya wajib digambar ulang - kalau tidak, dia tetap selebar
        mode 1 dan layar penuh cuma menghasilkan pita abu-abu di kiri-kanan. */
@@ -6237,7 +6247,13 @@
     if (pdfMiniBuka && pdfDok) gambarMiniPdf();
   }
 
-  var MINI_LEBAR = 54;
+  /* 38, bukan 54. Yang dicari di strip ini BUKAN isi halamannya - di 38 piksel
+     tidak ada teks yang terbaca - tapi RUPA KASARNYA: gambar besar di tengah,
+     tabel, halaman yang hampir kosong. Untuk itu 38 sudah cukup, dan yang
+     dibeli dengan mengecilkannya jumlah halaman yang muat sekali pandang:
+     dari tujuh jadi sepuluh, dan tiap geseran menempuh lebih jauh. Di buku
+     lima ratus halaman itu bedanya nyata. */
+  var MINI_LEBAR = 38;
 
   /* Digambar SEKALI per pembukaan, dan tidak ikut digambar ulang waktu zoom:
      halaman kecil tidak ada hubungannya dengan zoom halaman besar, dan
@@ -6350,6 +6366,71 @@
     segarkanTampakPdf();
   }
 
+  /* ===== MENU TAMBAHAN DI LAYAR PENUH =====
+     Satu tombol kecil melayang, bukan sederet tombol tetap: layar penuh
+     gunanya melihat halaman, dan tiap tombol yang duduk di atasnya memakan
+     bagian yang justru kamu datangi. */
+  var pdfAlatBuka = false;
+
+  function setelAlatPdf(nyala, fokus) {
+    pdfAlatBuka = !!nyala && !!pdfDok;
+    $('#pdf-alat').classList.toggle('sembunyi', !pdfAlatBuka);
+    $('#b-pdf-alat').classList.toggle('buka', pdfAlatBuka);
+    if (!pdfAlatBuka) return;
+    $('#b-pdf-alat-mini').classList.toggle('nyala', pdfMiniBuka);
+    $('#pdf-alat-dari').textContent = '/ ' + (pdfDok ? pdfDok.numPages : 0);
+    var isi = $('#pdf-ke-hal');
+    isi.value = String(halamanKiniPdf());
+    if (fokus) {
+      /* Disorot seluruhnya, bukan cuma difokuskan: yang membuka ini hampir
+         selalu mau MENGGANTI nomornya, bukan menyuntingnya - jadi ketukan
+         berikutnya langsung menimpa, tanpa menghapus dulu. */
+      isi.focus();
+      try { isi.select(); } catch (e) {}
+    }
+  }
+
+  function keHalamanKetik() {
+    if (!pdfDok) return;
+    var n = parseInt($('#pdf-ke-hal').value, 10);
+    if (!n || n < 1) n = 1;
+    if (n > pdfDok.numPages) n = pdfDok.numPages;
+    $('#pdf-ke-hal').value = String(n);
+    $('#pdf-ke-hal').blur();
+    keHalamanPdf(n);
+    setelAlatPdf(false);
+  }
+
+  /* ===== LAYAR DIPUTAR: HALAMANNYA IKUT DIUKUR ULANG =====
+     Lebar yang tersedia berubah total waktu HP diputar - di landscape hampir
+     dua kali lipat - dan skala 'muat lebar' dihitung dari lebar itu. Tanpa
+     pengukuran ulang, halaman tetap selebar potret: pita kosong di kiri dan
+     kanan, dan teks yang tetap sekecil tadi. Padahal landscape ditempuh
+     justru supaya terbaca.
+
+     HANYA KALAU LEBARNYA YANG BERUBAH, dan ini penting: 'resize' juga
+     menembak waktu PAPAN KETIK naik - dan papan ketik naik persis waktu kamu
+     mengetik nomor halaman di panel. Menggambar ulang di situ berarti
+     halamannya melompat di tengah kamu mengetik. Yang berubah waktu papan
+     ketik naik cuma tingginya. */
+  var pdfLebarTerakhir = 0;
+  var pdfTundaPutar = null;
+
+  function tanganiPutarPdf() {
+    if (layarSaat !== 'l-pdf' || !pdfDok) return;
+    var lebar = pdfLebar();
+    if (!lebar || lebar === pdfLebarTerakhir) return;
+    pdfLebarTerakhir = lebar;
+    if (pdfTundaPutar) clearTimeout(pdfTundaPutar);
+    /* Ditunda: peramban menembakkan beberapa 'resize' berturut-turut selama
+       animasi putarnya, dan menggambar ulang di tiap tembakan berarti
+       membayar berkali-kali untuk satu putaran. */
+    pdfTundaPutar = setTimeout(function () {
+      pdfTundaPutar = null;
+      gambarPdf();
+    }, 180);
+  }
+
   function pasangPdf() {
     var buka = $('#b-pdf-buka');
     var pilih = $('#pdf-pilih');
@@ -6382,9 +6463,38 @@
        dok, dan dok HILANG di layar penuh - jadi tanpa jalan ini, satu-satunya
        cara melihat halaman kecil adalah keluar dulu dari layar penuh, dan itu
        kebalikan dari gunanya layar penuh. */
+    /* MENGETUK NOMORNYA MEMBUKA ISIAN HALAMAN, bukan strip thumbnail.
+       Dulu dia membuka strip, dan stripnya muncul di tepi ATAS dengan alas
+       terang - bentuk yang persis sama dengan dok yang baru saja
+       disembunyikan layar penuh. Yang dilaporkan "layarnya kembali ke mode
+       normal", padahal layar penuhnya tidak pernah mati; yang berubah cuma
+       rupanya, dan rupa yang berbohong sama buruknya dengan perilaku yang
+       salah.
+       Isian halaman juga jawaban yang lebih lurus: yang mengetuk ANGKA
+       sedang memikirkan angka. */
     $('#b-pdf-nav-no').addEventListener('click', function () {
-      setelMiniPdf(!pdfMiniBuka);
+      setelAlatPdf(true, true);
     });
+
+    $('#b-pdf-alat').addEventListener('click', function () {
+      setelAlatPdf(!pdfAlatBuka, !pdfAlatBuka);
+    });
+    $('#b-pdf-ke-hal').addEventListener('click', keHalamanKetik);
+    $('#pdf-ke-hal').addEventListener('keydown', function (ev) {
+      /* Enter menutup pekerjaannya. Papan ketik HP menampilkan tombol itu
+         sebagai "Go"/"Buka", dan yang menekannya berharap pindah - bukan
+         harus mencari tombol lain dengan jari yang sama. */
+      if (ev.key === 'Enter') { ev.preventDefault(); keHalamanKetik(); }
+    });
+    $('#b-pdf-alat-mini').addEventListener('click', function () {
+      setelMiniPdf(!pdfMiniBuka);
+      $('#b-pdf-alat-mini').classList.toggle('nyala', pdfMiniBuka);
+    });
+
+    global.addEventListener('resize', tanganiPutarPdf);
+    if (global.screen && screen.orientation) {
+      try { screen.orientation.addEventListener('change', tanganiPutarPdf); } catch (e) {}
+    }
 
     $('#b-pdf-penuh').addEventListener('click', function () { setelPenuhPdf(true); });
     $('#b-pdf-keluar').addEventListener('click', function () { setelPenuhPdf(false); });
@@ -9436,6 +9546,12 @@
     tabUji: function () { return TAB; },
     penuhPdfUji: setelPenuhPdf,
     miniPdfUji: setelMiniPdf,
+    alatPdfUji: function (n, f) { setelAlatPdf(n, f); },
+    /* Cuma untuk uji: lebar yang dipakai menghitung skala 'muat lebar'. Yang
+       diuji waktu layarnya diputar BUKAN "ada listener-nya" tapi "lebarnya
+       memang berubah" - listener yang terpasang tapi mengukur lebar yang
+       sama tidak menggambar apa pun, dan itu persis cacat yang mau dijaga. */
+    lebarPdfUji: pdfLebar,
     zumPdfUji: function (n, j) { setelZumPdf(n, j); },
     keHalamanPdfUji: keHalamanPdf,
     geserLewatUji: function () { return GESER_LEWAT; },

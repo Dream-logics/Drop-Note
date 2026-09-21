@@ -4396,16 +4396,140 @@ console.log('\npembaca PDF: dokumen sungguhan, dari muat sampai navigasi');
   cek('panah mundur mengembalikannya',
       (await hal.locator('#b-pdf-nav-no').textContent()) === '1 / 2');
 
-  /* Angkanya membuka halaman kecil - tombolnya sendiri tinggal di dok, dan
-     dok HILANG di layar penuh. Tanpa jalan ini, satu-satunya cara melihat
-     halaman kecil adalah keluar dulu dari layar penuh, dan itu kebalikan
-     dari gunanya layar penuh. */
-  await hal.click('#b-pdf-nav-no');
+  /* HALAMAN KECIL TETAP BISA DICAPAI DI LAYAR PENUH - tombolnya sendiri
+     tinggal di dok, dan dok HILANG di situ. Tanpa satu jalan pun, cara
+     melihatnya cuma keluar dulu dari layar penuh, dan itu kebalikan dari
+     gunanya layar penuh. Jalannya sekarang lewat menu melayang, BUKAN lewat
+     ketukan nomor halaman: yang mengetuk ANGKA sedang memikirkan angka, dan
+     strip beralas terang yang muncul di tepi atas terbaca sebagai "mode
+     normal sudah kembali" (lihat blok berikutnya). */
+  await hal.click('#b-pdf-alat');
+  await hal.waitForTimeout(200);
+  await hal.click('#b-pdf-alat-mini');
   await hal.waitForTimeout(400);
-  cek('mengetuk nomornya membuka halaman kecil, walau doknya sedang hilang',
+  cek('halaman kecil tetap bisa dibuka di layar penuh, walau doknya hilang',
       (await hal.locator('#pdf-mini').evaluate((n) => !n.classList.contains('sembunyi'))) === true);
   cek('dan halaman kecilnya berisi satu petak per halaman',
       (await hal.locator('#pdf-mini .pdf-mini-satu').count()) === 2);
+  /* Ditutup lagi: strip yang tertinggal terbuka mengubah tinggi badan
+     halamannya, dan blok putar layar di bawah mengukur lebar kanvasnya. */
+  await hal.evaluate(() => { TAlur.miniPdfUji(false); TAlur.alatPdfUji(false); });
+  await hal.waitForTimeout(200);
+
+  /* ===== MENGETUK NOMOR HALAMAN TIDAK PERNAH MEMINDAHKAN LAYAR =====
+     Laporan lapangannya: "klik nomor halaman, layarnya kembali ke mode
+     normal". Yang sebenarnya terjadi bukan itu - layar penuhnya tidak pernah
+     mati - tapi dulu ketukan itu membuka strip thumbnail di tepi ATAS dengan
+     alas TERANG, bentuk yang persis sama dengan dok yang baru saja
+     disembunyikan. Rupa yang berbohong sama buruknya dengan perilaku yang
+     salah, jadi keduanya diperbaiki: ketukannya sekarang membuka isian
+     halaman, dan stripnya gelap di layar penuh. */
+  const ketukNomor = await hal.evaluate(async () => {
+    TAlur.penuhPdfUji(true);
+    document.querySelector('#b-pdf-nav-no').click();
+    await new Promise((s) => setTimeout(s, 200));
+    return {
+      masihPenuh: document.body.classList.contains('pdf-penuh'),
+      panelBuka: !document.querySelector('#pdf-alat').classList.contains('sembunyi'),
+      stripIkutBuka: !document.querySelector('#pdf-mini').classList.contains('sembunyi')
+    };
+  });
+  cek('mengetuk nomor halaman tidak keluar dari layar penuh',
+      ketukNomor.masihPenuh === true, JSON.stringify(ketukNomor));
+  cek('yang dibuka isian halaman, bukan strip thumbnail',
+      ketukNomor.panelBuka === true && ketukNomor.stripIkutBuka === false,
+      JSON.stringify(ketukNomor));
+
+  /* Pindah halaman dengan MENGETIK - untuk yang sudah tahu nomornya. */
+  const ketik = await hal.evaluate(async () => {
+    const isi = document.querySelector('#pdf-ke-hal');
+    isi.value = '2';
+    document.querySelector('#b-pdf-ke-hal').click();
+    await new Promise((s) => setTimeout(s, 400));
+    return {
+      no: document.querySelector('#b-pdf-nav-no').textContent,
+      panelTutup: document.querySelector('#pdf-alat').classList.contains('sembunyi'),
+      masihPenuh: document.body.classList.contains('pdf-penuh')
+    };
+  });
+  cek('mengetik nomor halaman benar-benar memindahkannya',
+      ketik.no === '2 / 2', JSON.stringify(ketik));
+  cek('dan panelnya menutup sendiri sesudah dipakai, tanpa keluar layar penuh',
+      ketik.panelTutup === true && ketik.masihPenuh === true, JSON.stringify(ketik));
+
+  /* Nomor di luar jangkauan DIJEPIT, bukan ditolak: yang mengetik 999 di
+     dokumen 2 halaman sedang bilang "ke belakang" - menolaknya berarti dia
+     harus menebak sendiri jumlah halamannya. */
+  const jepit = await hal.evaluate(async () => {
+    TAlur.alatPdfUji(true);
+    document.querySelector('#pdf-ke-hal').value = '999';
+    document.querySelector('#b-pdf-ke-hal').click();
+    await new Promise((s) => setTimeout(s, 400));
+    return document.querySelector('#b-pdf-nav-no').textContent;
+  });
+  cek('nomor di luar jangkauan dijepit ke halaman terakhir, bukan ditolak',
+      jepit === '2 / 2', String(jepit));
+
+  /* Tombol menunya CUMA hidup di layar penuh - di mode normal semua ini sudah
+     punya tempatnya di dok, dan tombol melayang yang menutupi halaman untuk
+     sesuatu yang sudah ada di bawahnya cuma kebisingan. */
+  const tombolAlat = await hal.evaluate(() => {
+    TAlur.alatPdfUji(false);
+    TAlur.penuhPdfUji(true);
+    const diPenuh = getComputedStyle(document.querySelector('#b-pdf-alat')).display !== 'none';
+    TAlur.penuhPdfUji(false);
+    return { diPenuh: diPenuh,
+             diNormal: getComputedStyle(document.querySelector('#b-pdf-alat')).display !== 'none',
+             panelIkutTutup: document.querySelector('#pdf-alat').classList.contains('sembunyi') };
+  });
+  cek('tombol menu melayang cuma ada di layar penuh',
+      tombolAlat.diPenuh === true && tombolAlat.diNormal === false,
+      JSON.stringify(tombolAlat));
+  cek('dan keluar layar penuh ikut menutup panelnya',
+      tombolAlat.panelIkutTutup === true, JSON.stringify(tombolAlat));
+
+  /* ===== LAYAR DIPUTAR: HALAMANNYA DIUKUR ULANG =====
+     Skala "muat lebar" dihitung dari lebar yang tersedia, dan lebar itu
+     hampir dua kali lipat waktu HP diputar. Tanpa pengukuran ulang, halaman
+     tetap selebar potret - pita kosong di kiri-kanan, dan teks yang tetap
+     sekecil tadi. Padahal landscape ditempuh justru supaya terbaca.
+
+     DIUKUR DI LAYAR PENUH, dan itu bukan pilihan sembarang: di mode normal
+     aplikasinya kolom 620px bertopi 'max-width', jadi layar selebar apa pun
+     tidak menambah satu piksel pun - dan memang begitu seharusnya (baris teks
+     yang lebih lebar berhenti nyaman dibaca). Yang melepas topi itu
+     'body.pdf-penuh #l-pdf{max-width:none}', dan layar penuh memang tempat
+     landscape ditempuh.
+
+     UKURAN ASALNYA DIBACA DULU, tidak dipatok angka: blok-blok sesudah ini
+     memakai halaman yang sama, dan mengembalikannya ke angka yang ditebak
+     berarti mereka berjalan di layar yang bukan miliknya - cacatnya muncul
+     jauh di bawah, di uji yang sama sekali tidak menyebut PDF. */
+  const ukuranAsal = hal.viewportSize();
+  await hal.evaluate(() => TAlur.penuhPdfUji(true));
+  /* DIMULAI DARI POTRET SUNGGUHAN. Uji ini berjalan di halaman selebar
+     desktop, dan "memutar" dari situ ke 915 justru MENYEMPITKAN layarnya -
+     ujinya lulus atau gagal karena ukuran halaman ujinya, bukan karena
+     kodenya. Yang ditiru HP yang diputar, jadi potretnya dipasang dulu. */
+  await hal.setViewportSize({ width: 412, height: 915 });
+  await hal.waitForTimeout(700);
+  const putar = await hal.evaluate(() => TAlur.lebarPdfUji());
+  await hal.setViewportSize({ width: 915, height: 412 });
+  await hal.waitForTimeout(700);
+  const sesudahPutar = await hal.evaluate(() => {
+    const k = document.querySelector('#pdf-lembar .pdf-lembar-satu canvas');
+    return {
+      lebar: TAlur.lebarPdfUji(),
+      kanvas: k ? Math.round(k.getBoundingClientRect().width) : 0
+    };
+  });
+  cek('memutar layar menambah lebar yang tersedia',
+      sesudahPutar.lebar > putar + 100, putar + ' -> ' + sesudahPutar.lebar);
+  cek('dan halamannya ikut melebar, bukan tetap selebar potret',
+      sesudahPutar.kanvas > putar + 50, JSON.stringify(sesudahPutar));
+  await hal.evaluate(() => TAlur.penuhPdfUji(false));
+  await hal.setViewportSize(ukuranAsal);
+  await hal.waitForTimeout(700);
 
   /* ===== BENTUK API PELEPASANNYA DIJAGA DI SINI =====
      Kodenya dulu memanggil 'dok.destroy()' di dalam try/catch, dan

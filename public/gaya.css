@@ -2428,15 +2428,70 @@ body.pdf-penuh .pdf-lembar-satu{box-shadow:none}
 .pdf-keluar .ik{width:20px;height:20px}
 body.pdf-penuh .pdf-keluar.sembunyi{display:inline-flex !important}
 
+/* Kembarannya di sudut KANAN atas: satu tombol untuk seluruh menu tambahan.
+   Kiri atas sudah milik tombol keluar; bawah milik jempol yang menggulir. */
+.pdf-alat-tbl{
+  position:absolute;top:10px;right:10px;z-index:8;
+  width:40px;height:40px;min-height:40px;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  border:none;border-radius:50%;cursor:pointer;
+  background:rgba(0,0,0,.55);color:#fff;
+}
+.pdf-alat-tbl .ik{width:20px;height:20px}
+body.pdf-penuh .pdf-alat-tbl.sembunyi{display:inline-flex !important}
+.pdf-alat-tbl.buka{background:var(--a)}
+
+.pdf-alat{
+  position:absolute;top:56px;right:10px;z-index:9;
+  display:flex;flex-direction:column;gap:8px;
+  padding:10px;border-radius:12px;
+  background:rgba(20,20,19,.95);
+  box-shadow:0 4px 16px rgba(0,0,0,.4);
+}
+.pdf-alat-baris{display:flex;align-items:center;gap:6px}
+.pdf-alat-label{font-size:11.5px;color:#cfcfc9}
+/* Kotaknya CUKUP untuk empat angka dan tidak lebih: dokumen seribu halaman
+   masih muat, dan kotak yang lebih lebar cuma memakan lebar panel yang
+   melayang di atas halamannya. */
+.pdf-alat-isi{
+  width:56px;min-height:36px;padding:0 8px;text-align:center;
+  border:1px solid #4a4a46;border-radius:8px;
+  background:#2a2a28;color:#fff;font-size:14px;font-weight:700;
+}
+.pdf-alat-dari{font-size:11.5px;color:#9a9a94}
+.pdf-alat-ok{
+  min-height:36px;padding:0 12px;
+  border:none;border-radius:8px;cursor:pointer;
+  background:var(--a);color:#fff;font-size:12.5px;font-weight:700;
+}
+.pdf-alat-pilih{
+  min-height:36px;padding:0 10px;text-align:left;
+  border:1px solid #4a4a46;border-radius:8px;cursor:pointer;
+  background:none;color:#fff;font-size:12.5px;font-weight:600;
+}
+.pdf-alat-pilih.nyala{background:var(--a);border-color:transparent}
+
 /* ===== STRIP HALAMAN KECIL =====
    Mendatar di bawah dok, bukan panel tegak di samping: panel samping merampas
    LEBAR, dan lebar itu persis yang sedang diperebutkan waktu halamannya tidak
    terbaca. Ditutup dan dibuka satu tombol - dia jalan pintas, bukan keadaan. */
 .pdf-mini{
-  display:flex;gap:8px;flex:0 0 auto;
-  padding:8px 10px;background:var(--p);border-bottom:1px solid var(--l);
+  display:flex;gap:5px;flex:0 0 auto;
+  padding:6px 8px;background:var(--p);border-bottom:1px solid var(--l);
   overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;
+  /* Guliran mendatar di strip ini SATU-SATUNYA arti geseran mendatar di
+     sini, jadi peramban boleh menanganinya sendiri - dan hanya itu. */
+  touch-action:pan-x;
 }
+/* DI LAYAR PENUH RUPANYA GELAP, dan ini laporan lapangan: strip beralas
+   terang di tepi atas terbaca sebagai "kepala mode normal sudah kembali" -
+   bentuknya persis sama dengan dok yang baru saja disembunyikan. Yang
+   dilaporkan "layarnya kembali ke mode normal" padahal layar penuhnya tidak
+   pernah dimatikan; yang berubah cuma rupanya. */
+body.pdf-penuh .pdf-mini{
+  background:rgba(20,20,19,.94);border-bottom-color:#3a3a36;
+}
+body.pdf-penuh .pdf-mini-satu{border-color:#4a4a46}
 .pdf-mini::-webkit-scrollbar{display:none}
 .pdf-mini-satu{
   flex:0 0 auto;border:1px solid var(--l);border-radius:4px;
