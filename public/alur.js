@@ -705,6 +705,41 @@
     pasang();
   }
 
+  /* ===== KUNCI PUTARNYA DILEPAS, DAN MANIFEST SAJA TIDAK CUKUP =====
+     Laporan lapangannya: "belum bisa rotate saat HP aku putar 90 derajat,
+     mode HP sudah auto rotate". Yang mengunci bukan kode PDF-nya sama
+     sekali - manifestnya menulis 'orientation: portrait', dan di Android itu
+     dipasang sebagai kunci di tingkat ACTIVITY waktu WebAPK-nya dicetak.
+     Setelan auto-rotate HP tidak punya suara di situ, dan tidak ada satu
+     baris JavaScript pun yang bisa dilanggar - layarnya memang tidak pernah
+     berputar, jadi penangan putar layar tidak pernah punya apa pun untuk
+     ditangani.
+
+     Manifestnya sudah diperbaiki jadi 'any', TAPI ITU CUMA BERLAKU UNTUK
+     PEMASANGAN BARU: Android membaca manifest sekali waktu ikonnya dipasang
+     lalu mencetak WebAPK yang isinya tidak berubah lagi sampai dia kebetulan
+     memeriksanya lagi (harian, dan tidak dijanjikan). Jadi yang sudah
+     terpasang tetap terkunci sampai dipasang ulang.
+     unlock() melepas kunci itu SEKARANG, di pemasangan yang sudah terlanjur
+     ada - itu memang gunanya. Usaha, bukan jaminan: yang tidak
+     mendukungnya diam saja, dan pemasangan ulang tetap jalan keluarnya.
+
+     DILEPAS SELURUHNYA, bukan cuma di layar PDF. Mengunci dan melepas per
+     layar berarti ada keadaan yang bisa tertinggal - keluar dari PDF selagi
+     rebah, lalu seluruh aplikasi terjebak rebah. Dan HP yang auto-rotate-nya
+     menyala memang sedang bilang "aku mau aplikasi ikut berputar";
+     aplikasi yang menolak justru yang ganjil. Jendela pendek sudah punya
+     gayanya sendiri di ekor gaya.css - landscape HP persis kasus itu. */
+  function lepasKunciPutar() {
+    if (!global.screen || !screen.orientation || !screen.orientation.unlock) return;
+    try {
+      var j = screen.orientation.unlock();
+      /* Sebagian peramban memulangkan janji, sebagian melempar, sebagian
+         tidak memulangkan apa-apa. Ketiganya sah dan ketiganya diam. */
+      if (j && typeof j.catch === 'function') j.catch(function () {});
+    } catch (e) { /* tidak didukung - pemasangan ulang jalan keluarnya */ }
+  }
+
   function keTab(id) {
     /* Tools BUKAN layar - dia menu. Ditangani di sini, bukan di penangan
        kliknya, supaya jalur mana pun yang memanggil keTab ikut benar. */
@@ -9098,6 +9133,7 @@
     pasangGeser($('#hasil-depan'));
     pasangGeserPintu();
     pasangTinggiTampak();
+    lepasKunciPutar();
     pasangPdf();
     pasangSisanya();
   }

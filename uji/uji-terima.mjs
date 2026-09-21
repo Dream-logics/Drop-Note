@@ -812,6 +812,18 @@ console.log('\nsetelan & pwa');
 
   const manifes = JSON.parse(fs.readFileSync(path.join(AKAR, 'manifest.webmanifest'), 'utf8'));
   cek('manifest berdiri sendiri', manifes.display === 'standalone' && manifes.start_url === './');
+  /* MANIFESTNYA TIDAK BOLEH MENGUNCI PUTARAN LAYAR. 'orientation: portrait'
+     dipasang Android sebagai kunci di tingkat ACTIVITY waktu WebAPK-nya
+     dicetak - setelan auto-rotate HP tidak punya suara di situ, dan tidak ada
+     satu baris JavaScript pun yang bisa melanggarnya. Yang terbaca pemakainya
+     "rotate-nya rusak", dan penyebabnya tidak kelihatan dari kode layar mana
+     pun. Dijaga di sini karena satu kata di berkas ini bisa mematikannya lagi
+     tanpa satu galat pun. */
+  cek('manifest tidak mengunci putaran layar',
+      !manifes.orientation || manifes.orientation === 'any',
+      String(manifes.orientation));
+  cek('dan kunci yang terlanjur terpasang dilepas waktu memuat',
+      /screen\.orientation\.unlock/.test(fs.readFileSync(path.join(AKAR, 'alur.js'), 'utf8')));
   cek('share_target lewat POST + berkas',
       manifes.share_target.method === 'POST' && Array.isArray(manifes.share_target.params.files));
   cek('nama aplikasi ikut satu sumber',
