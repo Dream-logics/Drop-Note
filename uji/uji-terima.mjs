@@ -4388,6 +4388,103 @@ console.log('\npembaca PDF: dokumen sungguhan, dari muat sampai navigasi');
       (await hal.locator('#pdf-lembar .pdf-lembar-satu').count()) === 0);
 }
 
+console.log('\npembaca PDF: buku tebal - hanya yang terlihat yang digambar');
+{
+  /* ===== INI YANG MENENTUKAN APLIKASI INI BISA MEMBACA EBOOK ATAU TIDAK =====
+     Dulu SEMUA halaman digambar. Memori kanvas per halaman A5 muat-lebar
+     2,7 MB, jadi buku 500 halaman = 1,35 GB - dan di zoom 300% jadi 12 GB.
+     Chrome di Android membunuh tab di kisaran 300-500 MB, jadi bukunya tidak
+     pernah sempat terbuka. Yang membunuh MEMORINYA, bukan kecepatannya.
+
+     Yang dijaga di sini BUKAN "halamannya tergambar" tapi "memorinya tidak
+     ikut tebal dokumennya". Uji yang cuma memastikan halamannya muncul akan
+     lulus sempurna pada versi yang menggambar semuanya - dan versi itu yang
+     membunuh tab-nya. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-pdf'));
+  await hal.waitForTimeout(300);
+
+  const buku = await hal.evaluate(async () => {
+    let objs = '', kids = [], no = 5;
+    const HAL = 120;
+    for (let h = 0; h < HAL; h++) {
+      let isi = 'BT /F1 9 Tf\n';
+      for (let x = 0; x < 30; x++) {
+        isi += '1 0 0 1 40 ' + (555 - x * 11) + ' Tm (Energi kinetik dan momentum, halaman ' +
+               (h + 1) + ' baris ' + x + ') Tj\n';
+      }
+      isi += 'ET\n';
+      kids.push(no + ' 0 R');
+      objs += no + ' 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 420 595]' +
+              '/Resources<</Font<</F1 3 0 R>>>>/Contents ' + (no + 1) + ' 0 R>>endobj\n';
+      objs += (no + 1) + ' 0 obj<</Length ' + isi.length + '>>stream\n' + isi + 'endstream\nendobj\n';
+      no += 2;
+    }
+    const t = '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n' +
+      '2 0 obj<</Type/Pages/Kids[' + kids.join(' ') + ']/Count ' + HAL + '>>endobj\n' +
+      '3 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\n' + objs +
+      'trailer<</Root 1 0 R/Size ' + no + '>>\n%%EOF\n';
+    const bita = new Uint8Array(t.length);
+    for (let i = 0; i < t.length; i++) bita[i] = t.charCodeAt(i);
+    await TAlur.bukaPdfUji(bita, 'Buku-120.pdf');
+    return HAL;
+  });
+  await hal.waitForTimeout(900);
+
+  const ukur = () => hal.evaluate(() => {
+    let byte = 0, tergambar = 0;
+    document.querySelectorAll('#pdf-lembar canvas').forEach((c) => {
+      byte += c.width * c.height * 4;
+      if (c.width) tergambar++;
+    });
+    return { mb: +(byte / 1048576).toFixed(1), tergambar: tergambar,
+             petak: document.querySelectorAll('#pdf-lembar .pdf-lembar-satu').length };
+  });
+
+  const awal = await ukur();
+  /* KERANGKANYA UTUH: tiap halaman punya bungkusnya sendiri, setinggi ukuran
+     finalnya. Itu yang membuat gulirannya benar sejak bingkai pertama -
+     termasuk melompat ke halaman terakhir di dokumen yang baru dibuka. */
+  cek('kerangka seluruh halaman dibangun, bukan cuma yang terlihat',
+      awal.petak === buku, JSON.stringify(awal));
+  /* Tapi kanvasnya cuma segelintir. Inilah seluruh perbaikannya. */
+  cek('yang benar-benar digambar cuma segelintir halaman',
+      awal.tergambar > 0 && awal.tergambar <= 8,
+      JSON.stringify(awal));
+  cek('dan memorinya tidak mengikuti tebal dokumennya',
+      awal.mb < 40, JSON.stringify(awal));
+
+  /* Melompat jauh: yang diuji DUA hal sekaligus - tujuannya benar-benar
+     tergambar (kalau tidak, yang terlihat kertas kosong), DAN yang
+     ditinggalkan benar-benar dilepas (kalau tidak, memori menumpuk sampai
+     tab-nya mati, dan itu justru cacat yang sedang ditutup). */
+  await hal.evaluate(() => TAlur.keHalamanPdfUji(100));
+  await hal.waitForTimeout(1100);
+  const jauh = await ukur();
+  cek('lompat ke halaman jauh menggambar tujuannya',
+      (await hal.evaluate(() => {
+        const b = document.querySelector('#pdf-lembar .pdf-lembar-satu[data-hal="100"] canvas');
+        return !!(b && b.width > 0);
+      })) === true);
+  cek('dan yang ditinggalkan dilepas, bukan ditumpuk',
+      jauh.tergambar <= 8 && jauh.mb < 40, JSON.stringify(jauh));
+  cek('nomor halamannya ikut benar',
+      (await hal.locator('#b-pdf-nav-no').textContent()) === '100 / ' + buku);
+
+  /* Zoom di tengah buku tebal - keadaan yang dulu berarti belasan gigabyte. */
+  await hal.evaluate(() => TAlur.zumPdfUji(3));
+  await hal.waitForTimeout(1500);
+  const zum = await ukur();
+  cek('zoom 300% di buku tebal tetap memegang segelintir halaman saja',
+      zum.tergambar <= 8, JSON.stringify(zum));
+  cek('dan memorinya tetap jauh di bawah batas tab HP',
+      zum.mb < 200, JSON.stringify(zum));
+
+  await hal.evaluate(() => { TAlur.zumPdfUji(1); TAlur.keLayarUji('l-utama'); });
+  await hal.waitForTimeout(300);
+  cek('menutupnya melepas seluruh kanvasnya',
+      (await hal.evaluate(() => document.querySelectorAll('#pdf-lembar canvas').length)) === 0);
+}
+
 console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan');
 {
   await hal.evaluate(() => { TAlur.keLayarUji('l-utama'); TAlur.tutupHasilDepanUji(); });
