@@ -6412,22 +6412,54 @@
      menembak waktu PAPAN KETIK naik - dan papan ketik naik persis waktu kamu
      mengetik nomor halaman di panel. Menggambar ulang di situ berarti
      halamannya melompat di tengah kamu mengetik. Yang berubah waktu papan
-     ketik naik cuma tingginya. */
+     ketik naik cuma tingginya.
+
+     DIA MELENTINGKAN, TIDAK MEMBANGUN ULANG, dan ini laporan lapangan:
+     "licin lagi, layar kedip-kedip, blank screen saat zoom in out". Versi
+     pertamanya memanggil gambarPdf(), dan gambarPdf() MENGOSONGKAN
+     '#pdf-lembar' sebelum mengisinya lagi - seluruh halaman dibuang lalu
+     dilahirkan kembali. Itu persis layar kosong sesaat, kedipnya, dan
+     jangkar yang meleset.
+     Yang memicunya di HP: 'resize' TIDAK cuma menembak waktu layarnya
+     diputar. Di Android bilah sistem dan layout viewport bergeser waktu
+     kamu mencubit, dan tiap geseran itu satu resize - jadi tiap cubitan
+     membangun ulang seluruh kerangkanya. Diukur: satu resize dengan lebar
+     berubah = seluruh halaman dibuang dari kerangkanya.
+     Padahal melentingkan sudah cukup: lentingPdf() membaca pdfLebar() SEGAR
+     dan menyetel ulang tiap bungkus dari 'data-rasio'-nya sendiri, jadi
+     kerangkanya sudah benar ukurannya tanpa satu node pun disentuh. Jalur
+     yang sama persis dengan cubitan - dan cubitan memang yang sudah terbukti
+     mulus.
+
+     AMBANGNYA PDF_PUTAR_MIN, BUKAN "berbeda satu piksel". Bilah sistem yang
+     muncul, batang gulir yang berganti, satu reflow - semuanya menggeser
+     lebar beberapa piksel, dan memperlakukan itu sebagai "layarnya diputar"
+     berarti menggambar ulang di tengah gerakan jari. Putaran sungguhan
+     menggeser RATUSAN piksel, jadi tidak ada putaran yang terlewat. */
+  var PDF_PUTAR_MIN = 40;
   var pdfLebarTerakhir = 0;
   var pdfTundaPutar = null;
 
   function tanganiPutarPdf() {
     if (layarSaat !== 'l-pdf' || !pdfDok) return;
+    /* DIAM SELAMA JARINYA MASIH DI LAYAR. Waktu mencubit, lebarnya memang
+       sedang berubah-ubah - itu pekerjaan cubitannya, bukan putaran layar. */
+    var badan = $('#pdf-badan');
+    if (badan && badan.classList.contains('mencubit')) return;
     var lebar = pdfLebar();
-    if (!lebar || lebar === pdfLebarTerakhir) return;
+    if (!lebar || Math.abs(lebar - pdfLebarTerakhir) < PDF_PUTAR_MIN) return;
     pdfLebarTerakhir = lebar;
     if (pdfTundaPutar) clearTimeout(pdfTundaPutar);
     /* Ditunda: peramban menembakkan beberapa 'resize' berturut-turut selama
-       animasi putarnya, dan menggambar ulang di tiap tembakan berarti
-       membayar berkali-kali untuk satu putaran. */
+       animasi putarnya, dan mengukur ulang di tiap tembakan berarti membayar
+       berkali-kali untuk satu putaran. */
     pdfTundaPutar = setTimeout(function () {
       pdfTundaPutar = null;
-      gambarPdf();
+      if (!pdfDok) return;
+      var j = jangkarTengahPdf();
+      lentingPdf();
+      pulihkanJangkarPdf(j);
+      segarkanTampakPdf();
     }, 180);
   }
 
