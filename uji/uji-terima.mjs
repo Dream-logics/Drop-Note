@@ -4569,6 +4569,62 @@ console.log('\npembaca PDF: dokumen sungguhan, dari muat sampai navigasi');
   await hal.setViewportSize(ukuranAsal);
   await hal.waitForTimeout(700);
 
+  /* ===== KANVAS YANG TERLIHAT TIDAK PERNAH DIKOSONGKAN DULU =====
+     Laporan lapangannya berulang dua kali: "layar blank dan berkedip-kedip
+     saat zoom in out".
+
+     Sebabnya satu baris yang tidak kelihatan sebagai kekeliruan:
+     'kanvas.width = ...' MENGHAPUS isi kanvas seketika, bahkan kalau
+     angkanya sama persis. Jadi kanvas yang sedang dipandangi dikosongkan
+     lebih dulu, lalu PDF.js mengisinya - dan di antara keduanya ada jeda
+     20 ms (teks) sampai 3 detik (CAD). Selama jeda itu halamannya PUTIH.
+     Mencubit memicunya puluhan kali, jadi yang terlihat kedipan beruntun.
+
+     YANG DIUJI INVARIANNYA, BUKAN "layarnya kelihatan benar": halaman uji di
+     sini memang kosong isinya, jadi membandingkan piksel tidak bisa
+     membedakan "belum digambar" dari "sudah digambar". Yang bisa dibedakan:
+     kanvas sasaran TIDAK BOLEH disentuh sebelum penggambarannya selesai. */
+  const kedip = await hal.evaluate(async () => {
+    const t = '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n' +
+      '2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n' +
+      '3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 300]/Contents 4 0 R>>endobj\n' +
+      '4 0 obj<</Length 0>>stream\nendstream\nendobj\ntrailer<</Root 1 0 R/Size 5>>\n%%EOF\n';
+    const b = new Uint8Array(t.length);
+    for (let i = 0; i < t.length; i++) b[i] = t.charCodeAt(i);
+    const dok = await TPdf.bukaBlob(new Blob([b], { type: 'application/pdf' }));
+    const hlm = await dok.getPage(1);
+
+    /* Kanvas sasaran ditandai ukuran ganjil yang tidak mungkin dipilih
+       penggambarnya - jadi "masih 7" berarti benar-benar belum disentuh. */
+    const k = document.createElement('canvas');
+    k.width = 7; k.height = 11;
+    document.body.appendChild(k);
+    const janji = TPdf.gambarHalaman(hlm, k, 300, 1);
+    const saatMenggambar = k.width;
+    await janji;
+    const sesudah = k.width;
+
+    /* Yang DIBATALKAN tidak boleh meninggalkan kanvasnya kosong. Versi lama
+       sudah terlanjur menghapusnya sebelum membatalkan, jadi halamannya
+       tinggal putih sampai ada yang kebetulan menggambarnya lagi - dan
+       menggulir cepat sambil mencubit persis memicu itu. */
+    const k2 = document.createElement('canvas');
+    k2.width = 7; k2.height = 11;
+    document.body.appendChild(k2);
+    await TPdf.gambarHalaman(hlm, k2, 300, 1, (tg) => tg.cancel());
+    const sesudahBatal = k2.width;
+
+    k.remove(); k2.remove();
+    TPdf.lepas(dok);
+    return { saatMenggambar, sesudah, sesudahBatal };
+  });
+  cek('kanvas yang terlihat TIDAK dikosongkan selagi halamannya digambar',
+      kedip.saatMenggambar === 7, JSON.stringify(kedip));
+  cek('dan isinya baru dipindahkan sesudah penggambarannya selesai',
+      kedip.sesudah > 7, JSON.stringify(kedip));
+  cek('penggambaran yang dibatalkan tidak menyentuh kanvasnya sama sekali',
+      kedip.sesudahBatal === 7, JSON.stringify(kedip));
+
   /* ===== BENTUK API PELEPASANNYA DIJAGA DI SINI =====
      Kodenya dulu memanggil 'dok.destroy()' di dalam try/catch, dan
      'PDFDocumentProxy' TIDAK PUNYA 'destroy' sama sekali di PDF.js v6 - yang

@@ -140,22 +140,50 @@
      mengantre di depan halaman yang SEDANG kamu lihat. Di dokumen 500
      halaman, menggulir cepat tanpa pembatalan berarti antrean panjang berisi
      halaman yang sudah lama lewat. */
+  /* ===== DIGAMBAR DI LUAR LAYAR DULU, BARU DIPINDAHKAN =====
+     Ini laporan lapangan yang berulang: "layar blank dan berkedip-kedip saat
+     zoom in out".
+
+     Sebabnya satu baris, dan tidak kelihatan sebagai kekeliruan:
+     'kanvas.width = ...' MENGHAPUS ISI KANVAS SEKETIKA - bahkan kalau
+     angkanya sama persis dengan yang sekarang. Jadi versi sebelumnya
+     mengosongkan kanvas yang SEDANG KAMU PANDANGI, lalu menyuruh PDF.js
+     mengisinya. Di antara keduanya ada jeda penggambaran: 20 ms untuk
+     halaman teks, sampai 3 detik untuk gambar kerja CAD. Selama jeda itu
+     halamannya PUTIH.
+     Tiap langkah cubitan yang melewati batas ketajaman memicunya sekali, dan
+     mencubit itu puluhan langkah - jadi yang terlihat bukan satu kedipan
+     tapi kedipan beruntun.
+
+     Yang lebih buruk lagi: penggambaran yang DIBATALKAN meninggalkan
+     kanvasnya kosong selamanya, sampai ada yang kebetulan menggambarnya
+     lagi. Menggulir cepat sambil mencubit persis memicu itu.
+
+     Sekarang halamannya digambar ke kanvas LEPAS (tidak ada di DOM, tidak
+     terlihat siapa pun), dan baru dipindahkan ke kanvas aslinya sesudah
+     selesai. Pemindahannya satu 'drawImage' yang berjalan di tugas yang sama
+     dengan penghapusannya, jadi tidak pernah ada satu bingkai pun yang
+     ditampilkan dalam keadaan kosong. Selama menunggu, yang terlihat gambar
+     LAMA yang dilarkan CSS - persis yang membuat cubitan terasa seketika.
+     Yang dibatalkan tidak menyentuh kanvas aslinya sama sekali.
+
+     Ongkosnya satu kanvas tambahan selama penggambaran berlangsung. Itu
+     aman: penggambarannya BERURUTAN (satu rantai di segarkanTampakPdf), jadi
+     yang hidup pada satu waktu cuma satu - bukan delapan - dan dia dilepas
+     begitu dipindahkan. */
   function gambarHalaman(halaman, kanvas, lebarTersedia, zoom, lapor) {
     var skala = skalaMuat(halaman, lebarTersedia, zoom);
     var lihat = halaman.getViewport({ scale: skala });
     var dpr = Math.min(global.devicePixelRatio || 1, DPR_MAKS);
+    var w = Math.floor(lihat.width * dpr);
+    var h = Math.floor(lihat.height * dpr);
 
-    kanvas.width = Math.floor(lihat.width * dpr);
-    kanvas.height = Math.floor(lihat.height * dpr);
-    /* Ukuran CSS-nya yang menentukan tata letak; ukuran piksel di atas cuma
-       menentukan ketajamannya. Dua-duanya wajib, dan lupa yang kedua adalah
-       cara paling cepat mendapat PDF yang buram di HP. */
-    kanvas.style.width = Math.floor(lihat.width) + 'px';
-    kanvas.style.height = Math.floor(lihat.height) + 'px';
+    var luar = document.createElement('canvas');
+    luar.width = w;
+    luar.height = h;
 
-    var ktx = kanvas.getContext('2d');
     var tugas = halaman.render({
-      canvasContext: ktx,
+      canvasContext: luar.getContext('2d'),
       viewport: lihat,
       transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null
     });
@@ -164,7 +192,24 @@
        jawaban yang benar untuk halaman yang sudah tergulir lewat, jadi dia
        ditelan di sini - kalau tidak, tiap geseran cepat menumpahkan galat
        yang tidak menandakan apa pun. Galat LAIN tetap dilempar. */
-    return tugas.promise.catch(function (e) {
+    return tugas.promise.then(function () {
+      /* Kanvasnya bisa sudah dilepas dari DOM selagi ini berjalan. Menulis
+         ke situ bukan galat, cuma pekerjaan yang dibuang - tapi bufernya
+         tetap wajib dilepas. */
+      if (kanvas.isConnected) {
+        kanvas.width = w;
+        kanvas.height = h;
+        kanvas.getContext('2d').drawImage(luar, 0, 0);
+        /* Ukuran CSS-nya yang menentukan tata letak; ukuran piksel di atas
+           cuma menentukan ketajamannya. Dua-duanya wajib, dan lupa yang
+           kedua adalah cara paling cepat mendapat PDF yang buram di HP. */
+        kanvas.style.width = Math.floor(lihat.width) + 'px';
+        kanvas.style.height = Math.floor(lihat.height) + 'px';
+      }
+      luar.width = 0; luar.height = 0;
+      return null;
+    }).catch(function (e) {
+      luar.width = 0; luar.height = 0;
       if (e && e.name === 'RenderingCancelledException') return null;
       throw e;
     });
