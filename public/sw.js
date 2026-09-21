@@ -24,7 +24,7 @@
    singgahan yang baru, HP yang sudah memasang aplikasinya akan terus
    memakai versi lama SELAMANYA - terbitan baru tidak akan pernah sampai.
    'activate' membuang singgahan bernama lain, jadi menaikkannya sudah cukup. */
-var SINGGAH = 'singgahan-v155';
+var SINGGAH = 'singgahan-v156';
 
 /* ===== PUSTAKA BERAT PUNYA EMBER SENDIRI, DAN ITU BUKAN KERAPIAN =====
    PDF.js = 1,8 MB; seluruh aplikasi ini 936 KB. Kalau dia ikut KERANGKA,

@@ -5774,11 +5774,9 @@
      dinolkan - elemen yang dibuang dari DOM tetap memegang bufer pikselnya
      sampai pemulung datang, dan di HP pemulungnya sering datang terlambat. */
   function tutupPdf() {
+    if (pdfTundaTampak) { cancelAnimationFrame(pdfTundaTampak); pdfTundaTampak = 0; }
     var lembar = $('#pdf-lembar');
-    if (lembar) {
-      $$('#pdf-lembar canvas').forEach(function (k) { k.width = 0; k.height = 0; });
-      lembar.innerHTML = '';
-    }
+    if (lembar) { lepasSemuaKanvasPdf(); lembar.innerHTML = ''; }
     if (pdfDok && global.TPdf) TPdf.lepas(pdfDok);
     pdfDok = null;
     pdfNamaSaat = '';
@@ -5788,8 +5786,9 @@
        aplikasi tanpa kepala dan tanpa baris pintu - dan yang terlihat bukan
        "PDF-nya tertutup" tapi "aplikasinya hilang". */
     setelPenuhPdf(false);
+    if (pdfMiniPantau) { pdfMiniPantau.disconnect(); pdfMiniPantau = null; }
     var mini = $('#pdf-mini');
-    if (mini) { mini.innerHTML = ''; mini.removeAttribute('data-untuk'); mini.classList.add('sembunyi'); }
+    if (mini) { $$('#pdf-mini canvas').forEach(lepasKanvasPdf); mini.innerHTML = ''; mini.removeAttribute('data-untuk'); mini.classList.add('sembunyi'); }
     pdfMiniBuka = false;
     var nama = $('#pdf-nama');
     if (nama) nama.textContent = '';
@@ -5885,71 +5884,168 @@
      sudah diketahui), dipasang SEKALI lewat fragment, jangkarnya dipulihkan,
      baru kanvasnya digambar berurutan. Tinggi isinya tidak pernah berubah
      lagi sesudah itu, jadi tidak ada satu pun pemotongan yang bisa terjadi. */
+  /* ===== HANYA YANG TERLIHAT YANG DIGAMBAR =====
+     Ini yang menentukan aplikasi ini bisa dipakai untuk ebook atau tidak,
+     dan angkanya diukur, bukan ditebak.
+
+     Dulu SEMUA halaman digambar. Memori kanvas per halaman A5 muat-lebar
+     2,7 MB; buku 500 halaman = 1,35 GB, dan di zoom 300% jadi 12 GB. Chrome
+     di Android membunuh tab di kisaran 300-500 MB, jadi bukunya tidak pernah
+     sempat terbuka. Yang membunuh MEMORINYA, bukan kecepatannya: waktu
+     menggambarnya sendiri cuma 21 ms per halaman teks, dan 500 halaman = 10
+     detik - lambat, tapi hidup.
+
+     Sekarang kerangkanya dibangun seluruhnya (tiap halaman dapat bungkus
+     setinggi ukuran finalnya, dihitung dari rasio) tapi KANVASNYA cuma diisi
+     untuk halaman di sekitar layar. Yang jauh dikosongkan
+     ('canvas.width = 0' melepas bufer pikselnya; 'style.width' tetap, jadi
+     tata letaknya tidak bergerak satu piksel pun).
+
+     Akibatnya memori berhenti mengikuti tebal dokumen: berapa pun halamannya,
+     yang dipegang cuma beberapa. Buku 500 halaman jadi buka < 0,5 detik dan
+     gulir 21 ms per halaman; gambar kerja CAD 200 lembar jadi mungkin, walau
+     tiap lembar baru tetap menunggu 0,5-3 detik - itu biaya vektornya
+     sendiri, bukan biaya arsitekturnya. */
+
+  /* Berapa layar di atas dan di bawah yang ikut digambar. SATU, bukan nol:
+     tanpa tetangga, tiap geseran jempol mendarat di halaman kosong dan
+     menunggu - dan menunggu di tengah gerakan terbaca sebagai tersendat.
+     Bukan dua: tiap tambahan layar dibayar memori, dan di zoom tinggi satu
+     halaman saja sudah 24 MB. */
+  var PDF_TEPI_LAYAR = 1;
+  /* Pagar terakhir. Di zoom kecil satu layar bisa memuat banyak halaman
+     sekaligus, dan tanpa batas ini dokumen bergambar kecil bisa menggambar
+     puluhan halaman sekaligus. */
+  var PDF_GAMBAR_MAKS_HAL = 8;
+
+  var pdfTundaTampak = 0;
+
+  /* Kerangkanya saja: tiap halaman dapat bungkus dengan tinggi FINAL, tanpa
+     satu piksel pun digambar. Inilah yang membuat gulirannya benar sejak
+     bingkai pertama - termasuk lompat ke halaman 400 di dokumen yang baru
+     saja dibuka. */
   function gambarPdf() {
     if (!pdfDok) return Promise.resolve(false);
     var giliran = pdfGiliran;
     var lembar = $('#pdf-lembar');
     var lebar = pdfLebar();
-    /* Digambar paling tinggi PDF_GAMBAR_MAKS; selebihnya CSS yang melar.
-       Alasannya memori - lihat catatan di atas konstanta itu. */
-    var gambarZum = Math.min(pdfZum, PDF_GAMBAR_MAKS);
-    /* JANGKARNYA DICATAT SEBELUM LEMBARNYA DIBONGKAR. Wadah yang isinya
-       dikosongkan memulangkan 'scrollTop' ke NOL. */
     var jangkar = jangkarTengahPdf();
 
     return rasioPdf().then(function (rasio) {
       if (giliran !== pdfGiliran || !pdfDok) return false;
       var lebarTampil = Math.round(lebar * pdfZum);
       var frag = document.createDocumentFragment();
-      var kanvas = [];
       for (var n = 0; n < pdfDok.numPages; n++) {
         var bungkus = document.createElement('div');
         bungkus.className = 'pdf-lembar-satu';
         bungkus.setAttribute('data-hal', String(n + 1));
         bungkus.setAttribute('data-rasio', String(rasio[n]));
         var k = document.createElement('canvas');
-        /* Ukuran TAMPILNYA dipasang sekarang, sebelum ada isinya - inilah
-           yang membuat tinggi wadahnya final sejak bingkai pertama. */
         k.style.width = lebarTampil + 'px';
         k.style.height = Math.round(lebarTampil * rasio[n]) + 'px';
         bungkus.appendChild(k);
         frag.appendChild(bungkus);
-        kanvas.push(k);
       }
-      $$('#pdf-lembar canvas').forEach(function (c) { c.width = 0; c.height = 0; });
+      lepasSemuaKanvasPdf();
       lembar.innerHTML = '';
       lembar.appendChild(frag);
       pulihkanJangkarPdf(jangkar);
       perbaruiHalamanPdf();
-
-      var rantai = Promise.resolve();
-      for (var i = 0; i < kanvas.length; i++) {
-        (function (nomor, k, r) {
-          rantai = rantai.then(function () {
-            if (giliran !== pdfGiliran || !pdfDok) return null;
-            return pdfDok.getPage(nomor).then(function (hal) {
-              if (giliran !== pdfGiliran) return null;
-              return TPdf.gambarHalaman(hal, k, lebar, gambarZum).then(function () {
-                /* UKURAN TAMPILNYA DIKEMBALIKAN SEKETIKA, per halaman.
-                   gambarHalaman() menulis 'style.width' menurut skala yang
-                   DIGAMBAR, dan di atas 3x skala itu lebih kecil daripada
-                   zoom yang diminta - jadi tanpa baris ini tiap halaman
-                   MENYUSUT tepat pada saat dia selesai digambar, satu per
-                   satu, dan tinggi isinya berubah sepanjang penggambaran.
-                   Itu persis pemotongan scrollTop yang baru saja ditutup di
-                   atas, masuk lagi lewat pintu belakang. */
-                k.style.width = lebarTampil + 'px';
-                k.style.height = Math.round(lebarTampil * r) + 'px';
-              });
-            });
-          });
-        })(i + 1, kanvas[i], rasio[i]);
-      }
-      return rantai.then(function () {
-        if (giliran !== pdfGiliran) return false;
-        if (pdfMiniBuka) gambarMiniPdf();
-        return true;
+      if (pdfMiniBuka) gambarMiniPdf();
+      return segarkanTampakPdf().then(function () {
+        return giliran === pdfGiliran;
       });
+    });
+  }
+
+  /* Membatalkan penggambaran yang sedang berjalan DAN melepas bufernya.
+     Pembatalan itu wajib, bukan kerapian: halaman yang tergulir lewat waktu
+     jarimu cepat masih punya pekerjaan di worker, dan pekerjaan yang tidak
+     pernah dibatalkan mengantre di depan halaman yang SEDANG kamu lihat. */
+  function lepasKanvasPdf(k) {
+    if (!k) return;
+    if (k._tugas) { try { k._tugas.cancel(); } catch (e) {} k._tugas = null; }
+    k.width = 0; k.height = 0;
+    k.removeAttribute('data-siap');
+  }
+
+  function lepasSemuaKanvasPdf() {
+    $$('#pdf-lembar canvas').forEach(lepasKanvasPdf);
+  }
+
+  /* Digambar ulang kalau BELUM pernah, atau kalau zoomnya sudah berganti
+     sejak terakhir digambar - itu sebabnya skalanya dicatat di kanvasnya
+     sendiri, bukan disimpan sebagai satu keadaan global. Satu keadaan global
+     tidak bisa menjawab "halaman INI sudah setajam yang diminta belum". */
+  function segarkanTampakPdf() {
+    if (!pdfDok) return Promise.resolve(false);
+    var badan = $('#pdf-badan');
+    var semua = $$('#pdf-lembar .pdf-lembar-satu');
+    if (!badan || !semua.length) return Promise.resolve(false);
+
+    var giliran = pdfGiliran;
+    var lebar = pdfLebar();
+    var lebarTampil = Math.round(lebar * pdfZum);
+    var gambarZum = Math.min(pdfZum, PDF_GAMBAR_MAKS);
+    var cap = String(Math.round(lebar * gambarZum));
+
+    var atas = badan.scrollTop - badan.clientHeight * PDF_TEPI_LAYAR;
+    var bawah = badan.scrollTop + badan.clientHeight * (1 + PDF_TEPI_LAYAR);
+
+    var perlu = [];
+    semua.forEach(function (b, i) {
+      var y0 = b.offsetTop, y1 = y0 + b.offsetHeight;
+      var k = b.querySelector('canvas');
+      if (y1 < atas || y0 > bawah) { lepasKanvasPdf(k); return; }
+      if (k && k.getAttribute('data-siap') !== cap) perlu.push({ no: i + 1, k: k, r: Number(b.getAttribute('data-rasio')) || 1.414 });
+    });
+
+    /* Yang paling dekat ke tengah layar digambar DULUAN. Tanpa urutan ini,
+       melompat ke halaman 400 menggambar tetangga di atasnya lebih dulu -
+       dan yang menunggu justru halaman yang kamu tuju. */
+    var tengah = badan.scrollTop + badan.clientHeight / 2;
+    perlu.sort(function (a, b) {
+      var pa = semua[a.no - 1], pb = semua[b.no - 1];
+      return Math.abs(pa.offsetTop + pa.offsetHeight / 2 - tengah) -
+             Math.abs(pb.offsetTop + pb.offsetHeight / 2 - tengah);
+    });
+    perlu = perlu.slice(0, PDF_GAMBAR_MAKS_HAL);
+
+    var rantai = Promise.resolve();
+    perlu.forEach(function (x) {
+      rantai = rantai.then(function () {
+        if (giliran !== pdfGiliran || !pdfDok) return null;
+        /* Diperiksa LAGI sebelum berangkat: antara masuk antrean dan giliran
+           dijalankan, jarinya mungkin sudah menggulir jauh dan halaman ini
+           sudah dilepas. Menggambarnya tetap berarti membayar penuh untuk
+           sesuatu yang langsung dibuang. */
+        if (!x.k.isConnected || x.k.getAttribute('data-siap') === cap) return null;
+        return pdfDok.getPage(x.no).then(function (hal) {
+          if (giliran !== pdfGiliran || !x.k.isConnected) return null;
+          var tugas = TPdf.gambarHalaman(hal, x.k, lebar, gambarZum, function (t) { x.k._tugas = t; });
+          return tugas.then(function () {
+            x.k._tugas = null;
+            x.k.setAttribute('data-siap', cap);
+            /* Ukuran tampilnya dikembalikan: gambarHalaman() menulisnya
+               menurut skala yang DIGAMBAR, dan di atas batas gambar skala itu
+               lebih kecil daripada zoom yang diminta. */
+            x.k.style.width = lebarTampil + 'px';
+            x.k.style.height = Math.round(lebarTampil * x.r) + 'px';
+          }).catch(function () { x.k._tugas = null; });
+        });
+      });
+    });
+    return rantai.then(function () { return true; });
+  }
+
+  /* Dipanggil dari guliran, jadi DITAHAN satu bingkai: 'scroll' menembak
+     jauh lebih cepat daripada layar bisa menggambar, dan tiap panggilan
+     menyapu seluruh daftar halaman. */
+  function sundulTampakPdf() {
+    if (pdfTundaTampak) return;
+    pdfTundaTampak = requestAnimationFrame(function () {
+      pdfTundaTampak = 0;
+      segarkanTampakPdf();
     });
   }
 
@@ -6081,7 +6177,15 @@
        gerakan jari, dan yang terasa layar yang membeku. Yang di layar sudah
        benar ukurannya lewat CSS; penggambaran ulang cuma menajamkannya. */
     if (pdfTundaGambar) clearTimeout(pdfTundaGambar);
-    pdfTundaGambar = setTimeout(function () { pdfTundaGambar = null; gambarPdf(); }, 260);
+    /* SEGARKAN yang terlihat, JANGAN bangun ulang kerangkanya. Membangun
+       ulang berarti melepas seluruh kanvas dan memulihkan jangkar lagi -
+       untuk 500 halaman itu menyapu 500 node demi beberapa yang terlihat.
+       Kerangkanya sudah benar ukurannya; lentingPdf() di atas sudah
+       menyesuaikannya. Yang tersisa cuma menajamkan yang di depan mata. */
+    pdfTundaGambar = setTimeout(function () {
+      pdfTundaGambar = null;
+      segarkanTampakPdf();
+    }, 260);
   }
 
   /* Melarkan yang SUDAH tergambar, tanpa menyentuh PDF.js sama sekali. Ini
@@ -6097,6 +6201,12 @@
       k.style.width = w + 'px';
       k.style.height = Math.round(w * rasio) + 'px';
     });
+    /* Yang di luar layar DILEPAS di sini juga, bukan ditunggu sampai
+       penggambaran berikutnya: melarkan kanvas lewat CSS tidak mengubah
+       bufer pikselnya, jadi tanpa ini memori tetap dipegang halaman yang
+       sudah lama tergulir lewat - dan cubitan justru saat memori paling
+       mahal. */
+    sundulTampakPdf();
   }
 
   /* ---------------------------------------------- mode 2: layar penuh */
@@ -6133,6 +6243,21 @@
      halaman kecil tidak ada hubungannya dengan zoom halaman besar, dan
      menggambarnya lagi tiap cubitan berarti membayar dua kali untuk satu
      gerakan. */
+  /* ===== HALAMAN KECIL JUGA DIVIRTUALISASI =====
+     Versi sebelumnya menggambar SEMUA petak berurutan. Di buku 500 halaman
+     itu 500 penggambaran di worker yang sama - sekitar tujuh detik - dan
+     selama itu halaman besar yang SEDANG kamu baca mengantre di belakangnya.
+     Jadi yang dibayar bukan cuma waktunya, tapi tertundanya hal yang kamu
+     tunggu.
+
+     Sekarang seluruh petaknya dibuat KOSONG dengan ukuran final lebih dulu
+     (lebarnya tetap, tingginya dari rasio halamannya), lalu diisi waktu
+     benar-benar tergulir ke dalam pandangan. Stripnya tetap bisa digulir
+     sepanjang dokumennya sejak detik pertama - yang belum terisi cuma petak
+     putih, dan petak putih berukuran benar jauh lebih jujur daripada strip
+     yang panjangnya tumbuh sendiri sambil kamu menggulirnya. */
+  var pdfMiniPantau = null;
+
   function gambarMiniPdf() {
     var wadah = $('#pdf-mini');
     if (!wadah || !pdfDok) return;
@@ -6141,31 +6266,69 @@
       return;
     }
     wadah.setAttribute('data-untuk', pdfNamaSaat + '|' + pdfDok.numPages);
+    if (pdfMiniPantau) { pdfMiniPantau.disconnect(); pdfMiniPantau = null; }
+    $$('#pdf-mini canvas').forEach(lepasKanvasPdf);
     wadah.innerHTML = '';
+
+    var besar = $$('#pdf-lembar .pdf-lembar-satu');
+    var frag = document.createDocumentFragment();
+    for (var n = 1; n <= pdfDok.numPages; n++) {
+      var rasio = besar[n - 1] ? (Number(besar[n - 1].getAttribute('data-rasio')) || 1.414) : 1.414;
+      var tbl = document.createElement('button');
+      tbl.className = 'pdf-mini-satu';
+      tbl.setAttribute('data-ke-hal', String(n));
+      tbl.setAttribute('data-rasio', String(rasio));
+      var k = document.createElement('canvas');
+      k.style.width = MINI_LEBAR + 'px';
+      k.style.height = Math.round(MINI_LEBAR * rasio) + 'px';
+      tbl.appendChild(k);
+      var no = document.createElement('span');
+      no.className = 'pdf-mini-no';
+      no.textContent = String(n);
+      tbl.appendChild(no);
+      frag.appendChild(tbl);
+    }
+    wadah.appendChild(frag);
+    tandaiMiniPdf();
+
+    /* 'root' = stripnya sendiri, karena dia yang menggulir - bukan halaman.
+       'rootMargin' satu layar strip ke kiri dan kanan supaya petaknya sudah
+       terisi sebelum sampai di depan mata. */
+    if (!global.IntersectionObserver) { isiSemuaMiniPdf(); return; }
+    var giliran = pdfGiliran;
+    pdfMiniPantau = new IntersectionObserver(function (masuk) {
+      masuk.forEach(function (x) {
+        if (!x.isIntersecting) return;
+        isiMiniPdf(x.target, giliran);
+      });
+    }, { root: wadah, rootMargin: '200px 0px' });
+    $$('#pdf-mini .pdf-mini-satu').forEach(function (t) { pdfMiniPantau.observe(t); });
+  }
+
+  /* Satu petak. Dijaga 'data-siap' supaya petak yang keluar-masuk pandangan
+     berkali-kali tidak digambar berkali-kali. */
+  function isiMiniPdf(tbl, giliran) {
+    if (!pdfDok || giliran !== pdfGiliran) return null;
+    var k = tbl.querySelector('canvas');
+    if (!k || k.getAttribute('data-siap') === 'mini') return null;
+    k.setAttribute('data-siap', 'mini');
+    var no = Number(tbl.getAttribute('data-ke-hal'));
+    return pdfDok.getPage(no).then(function (hal) {
+      if (giliran !== pdfGiliran || !k.isConnected) return null;
+      return TPdf.gambarHalaman(hal, k, MINI_LEBAR, 1);
+    }).catch(function () { k.removeAttribute('data-siap'); });
+  }
+
+  /* Jalan mundur untuk peramban tanpa IntersectionObserver. Dibatasi karena
+     tanpa pemantaunya tidak ada yang bisa memberi tahu kapan sisanya perlu -
+     dan menggambar lima ratus petak sekaligus persis yang dihindari di atas. */
+  function isiSemuaMiniPdf() {
     var giliran = pdfGiliran;
     var rantai = Promise.resolve();
-    for (var n = 1; n <= pdfDok.numPages; n++) {
-      (function (nomor) {
-        rantai = rantai.then(function () {
-          if (giliran !== pdfGiliran || !pdfDok) return null;
-          return pdfDok.getPage(nomor).then(function (hal) {
-            if (giliran !== pdfGiliran) return null;
-            var tbl = document.createElement('button');
-            tbl.className = 'pdf-mini-satu';
-            tbl.setAttribute('data-ke-hal', String(nomor));
-            var k = document.createElement('canvas');
-            tbl.appendChild(k);
-            var no = document.createElement('span');
-            no.className = 'pdf-mini-no';
-            no.textContent = String(nomor);
-            tbl.appendChild(no);
-            wadah.appendChild(tbl);
-            return TPdf.gambarHalaman(hal, k, MINI_LEBAR, 1);
-          });
-        });
-      })(n);
-    }
-    return rantai.then(tandaiMiniPdf);
+    $$('#pdf-mini .pdf-mini-satu').slice(0, 30).forEach(function (t) {
+      rantai = rantai.then(function () { return isiMiniPdf(t, giliran); });
+    });
+    return rantai;
   }
 
   function tandaiMiniPdf() {
@@ -6181,6 +6344,10 @@
     if (!target || !badan) return;
     badan.scrollTop = target.offsetTop - 8;
     perbaruiHalamanPdf();
+    /* Halaman tujuan hampir pasti BELUM tergambar - itu seluruh gunanya
+       virtualisasi. Tanpa baris ini, melompat ke halaman 400 mendarat di
+       kertas kosong dan baru terisi kalau kamu kebetulan menggeser sedikit. */
+    segarkanTampakPdf();
   }
 
   function pasangPdf() {
@@ -6231,7 +6398,10 @@
     /* Gulirnya didengar di badannya, bukan di window: layar ini dipatok ke
        tinggi yang terlihat, jadi yang menggulir kotak di dalamnya. */
     var badan = $('#pdf-badan');
-    badan.addEventListener('scroll', perbaruiHalamanPdf, { passive: true });
+    badan.addEventListener('scroll', function () {
+      perbaruiHalamanPdf();
+      sundulTampakPdf();
+    }, { passive: true });
 
     /* ===== CUBIT-ZOOM =====
        Ini gerakan yang dicoba jari LEBIH DULU daripada tombol mana pun di
@@ -9253,6 +9423,7 @@
     penuhPdfUji: setelPenuhPdf,
     miniPdfUji: setelMiniPdf,
     zumPdfUji: function (n, j) { setelZumPdf(n, j); },
+    keHalamanPdfUji: keHalamanPdf,
     geserLewatUji: function () { return GESER_LEWAT; },
     halamanKiniPdfUji: halamanKiniPdf,
     perbaruiHalamanPdfUji: perbaruiHalamanPdf,

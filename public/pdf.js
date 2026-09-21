@@ -134,7 +134,13 @@
      tab-nya jelas terlihat. */
   var DPR_MAKS = 2;
 
-  function gambarHalaman(halaman, kanvas, lebarTersedia, zoom) {
+  /* 'lapor' menerima RenderTask-nya supaya pemanggil bisa MEMBATALKAN.
+     Itu bukan kerapian: halaman yang tergulir lewat waktu jarimu cepat masih
+     punya pekerjaan di worker, dan pekerjaan yang tidak pernah dibatalkan
+     mengantre di depan halaman yang SEDANG kamu lihat. Di dokumen 500
+     halaman, menggulir cepat tanpa pembatalan berarti antrean panjang berisi
+     halaman yang sudah lama lewat. */
+  function gambarHalaman(halaman, kanvas, lebarTersedia, zoom, lapor) {
     var skala = skalaMuat(halaman, lebarTersedia, zoom);
     var lihat = halaman.getViewport({ scale: skala });
     var dpr = Math.min(global.devicePixelRatio || 1, DPR_MAKS);
@@ -148,11 +154,20 @@
     kanvas.style.height = Math.floor(lihat.height) + 'px';
 
     var ktx = kanvas.getContext('2d');
-    return halaman.render({
+    var tugas = halaman.render({
       canvasContext: ktx,
       viewport: lihat,
       transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null
-    }).promise;
+    });
+    if (typeof lapor === 'function') lapor(tugas);
+    /* Pembatalan BUKAN kegagalan. 'RenderingCancelledException' adalah
+       jawaban yang benar untuk halaman yang sudah tergulir lewat, jadi dia
+       ditelan di sini - kalau tidak, tiap geseran cepat menumpahkan galat
+       yang tidak menandakan apa pun. Galat LAIN tetap dilempar. */
+    return tugas.promise.catch(function (e) {
+      if (e && e.name === 'RenderingCancelledException') return null;
+      throw e;
+    });
   }
 
   global.TPdf = {

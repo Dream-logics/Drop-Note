@@ -1939,6 +1939,56 @@ public/pdf.js       PEMBACA PDF, dan mesinnya DIMUAT MALAS - itu aturan,
                     tab-nya dibunuh sistem tanpa pesan apa pun. Selisih 2
                     lawan 3 hampir tidak terlihat mata; selisih hidup dan mati
                     tab-nya jelas terlihat.
+                    HANYA YANG TERLIHAT YANG DIGAMBAR, dan ini yang menentukan
+                    aplikasi ini bisa membaca ebook atau tidak. Dulu SEMUA
+                    halaman digambar: memori kanvas per halaman A5 muat-lebar
+                    2,7 MB, jadi buku 500 halaman = 1,35 GB dan di zoom 300%
+                    jadi 12 GB - sementara Chrome di Android membunuh tab di
+                    kisaran 300-500 MB. Yang membunuh MEMORINYA, bukan
+                    kecepatannya: menggambar satu halaman teks cuma 21 ms, dan
+                    500 halaman = 10 detik. Lambat, tapi hidup.
+                    Sekarang KERANGKANYA dibangun seluruhnya (tiap halaman
+                    dapat bungkus setinggi ukuran finalnya, dihitung dari
+                    rasio) tapi KANVASNYA cuma diisi di sekitar layar
+                    (PDF_TEPI_LAYAR = 1 layar ke atas dan ke bawah, dibatasi
+                    PDF_GAMBAR_MAKS_HAL = 8). Diukur sesudahnya: buku 500
+                    halaman buka 646 ms dengan 3 kanvas = 8 MB; zoom 300% di
+                    tengah buku 72 MB; lompat ke halaman 480 tetap 48 MB -
+                    memorinya BERHENTI mengikuti tebal dokumen.
+                    KERANGKANYA WAJIB UTUH, bukan ikut divirtualisasi: tinggi
+                    tiap bungkus itu yang membuat gulirannya benar sejak
+                    bingkai pertama, termasuk melompat ke halaman 400 di
+                    dokumen yang baru dibuka. Yang dilepas cuma bufer
+                    pikselnya ('canvas.width = 0'; 'style.width' tetap, jadi
+                    tata letaknya tidak bergerak satu piksel pun).
+                    PENGGAMBARAN YANG SUDAH LEWAT WAJIB DIBATALKAN
+                    (RenderTask.cancel lewat 'lapor' di TPdf.gambarHalaman).
+                    Halaman yang tergulir lewat waktu jarimu cepat masih punya
+                    pekerjaan di worker, dan pekerjaan yang tidak dibatalkan
+                    MENGANTRE DI DEPAN halaman yang sedang kamu lihat.
+                    'RenderingCancelledException' ditelan di pdf.js - dia
+                    jawaban yang benar, bukan kegagalan.
+                    YANG TERDEKAT KE TENGAH LAYAR DIGAMBAR DULUAN. Tanpa
+                    urutan itu, melompat ke halaman 400 menggambar tetangga di
+                    atasnya lebih dulu, dan yang menunggu justru halaman yang
+                    kamu tuju.
+                    UJINYA MENJAGA MEMORINYA, BUKAN TAMPILANNYA: uji yang cuma
+                    memastikan halamannya muncul akan LULUS SEMPURNA pada
+                    versi yang menggambar semuanya - dan versi itu yang
+                    membunuh tab-nya.
+                    HALAMAN KECIL IKUT DIVIRTUALISASI (IntersectionObserver di
+                    stripnya). Dulu 500 petak digambar berurutan: tujuh detik
+                    di worker yang sama, dan selama itu halaman besar yang
+                    sedang dibaca mengantre di belakangnya.
+                    ANGKA UNTUK GAMBAR KERJA CAD, diukur terpisah: biayanya
+                    JUMLAH GARIS, bukan luas halaman atau zoom. Satu lembar A1
+                    dengan 5k segmen 82 ms, 25k 278 ms, 100k 1,1 dtk, 300k
+                    3,2 dtk - dan angkanya hampir sama di muat-lebar maupun
+                    300%, karena penafsir vektornya tetap menyusuri seluruh
+                    isi halaman. Jadi 200 lembar CAD bisa dibuka sesudah
+                    virtualisasi, tapi tiap lembar baru tetap menunggu 0,5-3
+                    detik. Itu biaya vektornya, bukan biaya arsitekturnya, dan
+                    tidak akan pernah menyamai Adobe yang perendernya native.
                     Halamannya digambar BERURUTAN, bukan Promise.all: dua ratus
                     permintaan serentak ke satu worker bukan lebih cepat, cuma
                     kehabisan memori - dan berurutan berarti halaman pertama
