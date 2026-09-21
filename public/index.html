@@ -736,10 +736,24 @@
     </button>
   </div>
 
-  <!-- Nomor halaman MENUMPANG di atas halamannya, tidak memakan satu baris
-       sendiri: di jendela pendek tiap baris dok dibayar dari tinggi yang
-       justru dipakai membaca. Dia meredup sendiri waktu diam. -->
-  <div class="pdf-halaman-kabar sembunyi" id="pdf-halaman-kabar" data-asli></div>
+  <!-- NAVIGASI HALAMAN, MENUMPANG di atas halamannya - tidak memakan satu
+       baris sendiri. Di LAYAR PENUH dia satu-satunya kendali yang tersisa
+       (dok dan baris pintu sedang disembunyikan), dan di situlah dia paling
+       dibutuhkan: layar penuh justru tempat orang bekerja lama.
+       DI BAWAH, bukan di atas: jempol sudah ada di situ, dan kepala layar
+       adalah ujung terjauh darinya.
+       Angkanya BISA DIKETUK dan itu membuka halaman kecil - tombolnya sendiri
+       tinggal di dok yang hilang waktu layar penuh, jadi tanpa ini satu-satunya
+       cara melihat halaman kecil adalah keluar dulu dari layar penuh. -->
+  <div class="pdf-nav sembunyi" id="pdf-nav">
+    <button class="pdf-nav-tbl" id="b-pdf-mundur" aria-label="Halaman sebelumnya">
+      <svg viewBox="0 0 24 24" class="ik"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <button class="pdf-nav-no" id="b-pdf-nav-no" data-asli></button>
+    <button class="pdf-nav-tbl" id="b-pdf-maju" aria-label="Halaman berikutnya">
+      <svg viewBox="0 0 24 24" class="ik"><path d="M9 5l7 7-7 7"/></svg>
+    </button>
+  </div>
 
   <!-- JALAN KELUAR DARI LAYAR PENUH YANG SELALU TERLIHAT. Adobe memakai
        "ketuk di mana saja untuk keluar", dan ketukan itu ikut kupasang - tapi

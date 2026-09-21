@@ -5793,8 +5793,8 @@
     pdfMiniBuka = false;
     var nama = $('#pdf-nama');
     if (nama) nama.textContent = '';
-    var kabar = $('#pdf-halaman-kabar');
-    if (kabar) kabar.classList.add('sembunyi');
+    var nav = $('#pdf-nav');
+    if (nav) nav.classList.add('sembunyi');
     pdfKabar('Belum ada PDF yang dibuka.', true);
   }
 
@@ -5969,14 +5969,20 @@
   }
 
   function perbaruiHalamanPdf() {
-    var kabar = $('#pdf-halaman-kabar');
-    if (!kabar || !pdfDok) return;
+    var nav = $('#pdf-nav');
+    if (!nav || !pdfDok) return;
     if (!$$('#pdf-lembar .pdf-lembar-satu').length) {
-      kabar.classList.add('sembunyi');
+      nav.classList.add('sembunyi');
       return;
     }
-    kabar.textContent = halamanKiniPdf() + ' / ' + pdfDok.numPages;
-    kabar.classList.remove('sembunyi');
+    var kini = halamanKiniPdf();
+    $('#b-pdf-nav-no').textContent = kini + ' / ' + pdfDok.numPages;
+    /* Yang mentok DIREDUPKAN, bukan dihilangkan: tombol yang lenyap
+       memindahkan dua tetangganya, dan jari yang sudah hafal tempatnya jadi
+       salah tekan tepat di halaman pertama dan terakhir. */
+    $('#b-pdf-mundur').disabled = kini <= 1;
+    $('#b-pdf-maju').disabled = kini >= pdfDok.numPages;
+    nav.classList.remove('sembunyi');
     if (pdfMiniBuka) tandaiMiniPdf();
   }
 
@@ -6194,6 +6200,25 @@
 
     $('#b-pdf-kecil').addEventListener('click', function () { zumPdf(-1); });
     $('#b-pdf-besar').addEventListener('click', function () { zumPdf(1); });
+    /* Lompat satu halaman, BUKAN gulir satu layar. Di zoom tinggi satu
+       halaman jauh lebih tinggi daripada layarnya, dan tombol yang menggulir
+       satu layar berarti menekannya lima kali untuk pindah satu halaman -
+       yang menekan panah sedang bilang "halaman berikutnya", bukan "turun
+       sedikit". Untuk turun sedikit dia sudah punya jempolnya. */
+    $('#b-pdf-mundur').addEventListener('click', function () {
+      keHalamanPdf(Math.max(1, halamanKiniPdf() - 1));
+    });
+    $('#b-pdf-maju').addEventListener('click', function () {
+      if (pdfDok) keHalamanPdf(Math.min(pdfDok.numPages, halamanKiniPdf() + 1));
+    });
+    /* Mengetuk angkanya membuka halaman kecil. Tombolnya sendiri tinggal di
+       dok, dan dok HILANG di layar penuh - jadi tanpa jalan ini, satu-satunya
+       cara melihat halaman kecil adalah keluar dulu dari layar penuh, dan itu
+       kebalikan dari gunanya layar penuh. */
+    $('#b-pdf-nav-no').addEventListener('click', function () {
+      setelMiniPdf(!pdfMiniBuka);
+    });
+
     $('#b-pdf-penuh').addEventListener('click', function () { setelPenuhPdf(true); });
     $('#b-pdf-keluar').addEventListener('click', function () { setelPenuhPdf(false); });
     $('#b-pdf-mini').addEventListener('click', function () { setelMiniPdf(!pdfMiniBuka); });
@@ -9230,6 +9255,10 @@
     zumPdfUji: function (n, j) { setelZumPdf(n, j); },
     geserLewatUji: function () { return GESER_LEWAT; },
     halamanKiniPdfUji: halamanKiniPdf,
+    perbaruiHalamanPdfUji: perbaruiHalamanPdf,
+    bukaPdfUji: function (bita, nama) {
+      return bukaPdfBlob(new Blob([bita], { type: 'application/pdf' }), nama || 'uji.pdf');
+    },
     /* Cuma untuk uji: setelan yang HIDUP di memori, bukan salinannya - menulis
        ke basis data saja tidak mengubah apa yang sedang dipakai layar. */
     setelanUji: function () { return setelanSaat; },

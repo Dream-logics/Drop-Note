@@ -226,6 +226,8 @@
     'Perkecil': 'Zoom out',
     'Perbesar': 'Zoom in',
     'Halaman kecil': 'Page thumbnails',
+    'Halaman sebelumnya': 'Previous page',
+    'Halaman berikutnya': 'Next page',
     'Layar penuh': 'Full screen',
     'Keluar layar penuh': 'Exit full screen',
     'Belum ada PDF yang dibuka.': 'No PDF open yet.',

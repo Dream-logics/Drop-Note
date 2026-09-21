@@ -2339,12 +2339,45 @@ body:has(.layar.pas-layar.aktif){height:var(--tampak, 100%);overflow:hidden}
 /* MENUMPANG di atas halamannya, tidak memakan satu baris sendiri - kosakata
    yang sama dengan angka di cip saringan. Di jendela pendek tiap baris dok
    dibayar dari tinggi yang justru dipakai membaca. */
-.pdf-halaman-kabar{
+/* ===== NAVIGASI HALAMAN =====
+   Satu pil melayang di bawah-tengah. Di LAYAR PENUH dia satu-satunya kendali
+   yang tersisa, dan layar penuh justru tempat orang bekerja lama - jadi dia
+   tidak boleh cuma kabar pasif seperti dulu ('pointer-events:none'), dia
+   harus bisa ditekan.
+   DI BAWAH: jempol sudah ada di situ. Kepala layar ujung terjauh darinya. */
+.pdf-nav{
   position:absolute;left:50%;transform:translateX(-50%);
-  bottom:14px;z-index:5;pointer-events:none;
-  padding:4px 10px;border-radius:12px;
-  background:rgba(0,0,0,.62);color:#fff;font-size:11.5px;font-weight:600;
+  bottom:14px;z-index:6;
+  display:flex;align-items:center;gap:2px;
+  padding:3px;border-radius:20px;
+  background:rgba(0,0,0,.66);
+  /* Di atas kertas putih yang terang, pil gelap tanpa tepi terbaca menempel
+     pada halamannya. Cincin tipis memisahkannya sebagai benda sendiri. */
+  box-shadow:0 1px 6px rgba(0,0,0,.3);
 }
+.pdf-nav-tbl{
+  width:40px;height:34px;min-height:0;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  border:none;background:none;color:#fff;cursor:pointer;border-radius:17px;
+}
+.pdf-nav-tbl .ik{width:18px;height:18px}
+.pdf-nav-tbl:active{background:rgba(255,255,255,.18)}
+/* Yang mentok diredupkan, TIDAK dihilangkan: tombol yang lenyap memindahkan
+   dua tetangganya, dan jari yang sudah hafal tempatnya jadi salah tekan
+   tepat di halaman pertama dan terakhir - dua tempat yang paling sering
+   didatangi. */
+.pdf-nav-tbl[disabled]{opacity:.35;cursor:default}
+.pdf-nav-no{
+  min-width:56px;height:34px;padding:0 8px;
+  border:none;background:none;color:#fff;cursor:pointer;
+  font-size:12px;font-weight:700;border-radius:17px;
+  /* Garis bawah putus-putus: kosakata "jalan pintas" yang sudah dipakai
+     Reset dan "+ Folder", jadi angka yang bisa diketuk tidak perlu dipelajari
+     sebagai bentuk baru. Tanpa penanda apa pun dia terbaca sebagai label. */
+  text-decoration:underline dotted rgba(255,255,255,.55);
+  text-underline-offset:3px;
+}
+.pdf-nav-no:active{background:rgba(255,255,255,.18)}
 #l-pdf{position:relative}
 .pdf-kosong{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
