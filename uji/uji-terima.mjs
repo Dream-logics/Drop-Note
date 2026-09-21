@@ -4507,6 +4507,24 @@ console.log('\npembaca PDF: dokumen sungguhan, dari muat sampai navigasi');
      jauh di bawah, di uji yang sama sekali tidak menyebut PDF. */
   const ukuranAsal = hal.viewportSize();
   await hal.evaluate(() => TAlur.penuhPdfUji(true));
+  /* MENGUKUR ULANG TIDAK BOLEH MEMBANGUN ULANG KERANGKANYA, dan ini yang
+     dijaga paling keras di blok ini - laporan lapangannya: "licin lagi,
+     layar kedip-kedip, blank screen saat zoom in out". Versi pertama
+     memanggil gambarPdf(), dan gambarPdf() mengosongkan '#pdf-lembar' dulu:
+     seluruh halaman dibuang lalu dilahirkan kembali. Di HP 'resize' tidak
+     cuma menembak waktu layarnya diputar - bilah sistem bergeser tiap kali
+     kamu mencubit - jadi tiap cubitan membangun ulang semuanya.
+     Yang dihitung node yang DIBUANG, bukan keadaan akhir: callback
+     MutationObserver berjalan di akhir microtask, SESUDAH innerHTML=''
+     disusul appendChild, jadi memeriksa children.length di situ selalu
+     melihat kerangka yang sudah utuh lagi - detektornya diam terus dan
+     ujinya lulus di atas cacat yang masih ada. */
+  await hal.evaluate(() => {
+    window.__pdfDibuang = 0;
+    new MutationObserver((m) => {
+      m.forEach((r) => { window.__pdfDibuang += r.removedNodes.length; });
+    }).observe(document.querySelector('#pdf-lembar'), { childList: true });
+  });
   /* DIMULAI DARI POTRET SUNGGUHAN. Uji ini berjalan di halaman selebar
      desktop, dan "memutar" dari situ ke 915 justru MENYEMPITKAN layarnya -
      ujinya lulus atau gagal karena ukuran halaman ujinya, bukan karena
@@ -4527,6 +4545,26 @@ console.log('\npembaca PDF: dokumen sungguhan, dari muat sampai navigasi');
       sesudahPutar.lebar > putar + 100, putar + ' -> ' + sesudahPutar.lebar);
   cek('dan halamannya ikut melebar, bukan tetap selebar potret',
       sesudahPutar.kanvas > putar + 50, JSON.stringify(sesudahPutar));
+  cek('dan itu dicapai dengan MELENTINGKAN, tanpa satu halaman pun dibuang',
+      (await hal.evaluate(() => window.__pdfDibuang)) === 0,
+      'dibuang: ' + (await hal.evaluate(() => window.__pdfDibuang)));
+
+  /* PERGESERAN KECIL DIABAIKAN SELURUHNYA. Bilah sistem yang muncul, batang
+     gulir yang berganti, satu reflow - semuanya menggeser lebar beberapa
+     piksel, dan memperlakukan itu sebagai "layarnya diputar" berarti
+     mengukur ulang di tengah gerakan jari. */
+  const sebelumGeser = await hal.evaluate(() => ({
+    kanvas: Math.round(
+      document.querySelector('#pdf-lembar .pdf-lembar-satu canvas').getBoundingClientRect().width)
+  }));
+  await hal.setViewportSize({ width: 895, height: 412 });
+  await hal.waitForTimeout(700);
+  cek('geseran lebar beberapa piksel tidak memicu pengukuran ulang',
+      (await hal.evaluate(() =>
+        Math.round(document.querySelector('#pdf-lembar .pdf-lembar-satu canvas')
+          .getBoundingClientRect().width))) === sebelumGeser.kanvas,
+      JSON.stringify(sebelumGeser));
+
   await hal.evaluate(() => TAlur.penuhPdfUji(false));
   await hal.setViewportSize(ukuranAsal);
   await hal.waitForTimeout(700);
