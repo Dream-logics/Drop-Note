@@ -4396,16 +4396,25 @@ console.log('\npembaca PDF: dokumen sungguhan, dari muat sampai navigasi');
   cek('panah mundur mengembalikannya',
       (await hal.locator('#b-pdf-nav-no').textContent()) === '1 / 2');
 
-  /* Angkanya membuka halaman kecil - tombolnya sendiri tinggal di dok, dan
-     dok HILANG di layar penuh. Tanpa jalan ini, satu-satunya cara melihat
-     halaman kecil adalah keluar dulu dari layar penuh, dan itu kebalikan
-     dari gunanya layar penuh. */
-  await hal.click('#b-pdf-nav-no');
+  /* HALAMAN KECIL TETAP BISA DICAPAI DI LAYAR PENUH - tombolnya sendiri
+     tinggal di dok, dan dok HILANG di situ. Tanpa satu jalan pun, cara
+     melihatnya cuma keluar dulu dari layar penuh, dan itu kebalikan dari
+     gunanya layar penuh. Jalannya sekarang lewat menu melayang, BUKAN lewat
+     ketukan nomor halaman: yang mengetuk ANGKA sedang memikirkan angka, dan
+     strip beralas terang yang muncul di tepi atas terbaca sebagai "mode
+     normal sudah kembali" (lihat blok berikutnya). */
+  await hal.click('#b-pdf-alat');
+  await hal.waitForTimeout(200);
+  await hal.click('#b-pdf-alat-mini');
   await hal.waitForTimeout(400);
-  cek('mengetuk nomornya membuka halaman kecil, walau doknya sedang hilang',
+  cek('halaman kecil tetap bisa dibuka di layar penuh, walau doknya hilang',
       (await hal.locator('#pdf-mini').evaluate((n) => !n.classList.contains('sembunyi'))) === true);
   cek('dan halaman kecilnya berisi satu petak per halaman',
       (await hal.locator('#pdf-mini .pdf-mini-satu').count()) === 2);
+  /* Ditutup lagi: strip yang tertinggal terbuka mengubah tinggi badan
+     halamannya, dan blok putar layar di bawah mengukur lebar kanvasnya. */
+  await hal.evaluate(() => { TAlur.miniPdfUji(false); TAlur.alatPdfUji(false); });
+  await hal.waitForTimeout(200);
 
   /* ===== MENGETUK NOMOR HALAMAN TIDAK PERNAH MEMINDAHKAN LAYAR =====
      Laporan lapangannya: "klik nomor halaman, layarnya kembali ke mode
@@ -4483,21 +4492,38 @@ console.log('\npembaca PDF: dokumen sungguhan, dari muat sampai navigasi');
      Skala "muat lebar" dihitung dari lebar yang tersedia, dan lebar itu
      hampir dua kali lipat waktu HP diputar. Tanpa pengukuran ulang, halaman
      tetap selebar potret - pita kosong di kiri-kanan, dan teks yang tetap
-     sekecil tadi. Padahal landscape ditempuh justru supaya terbaca. */
+     sekecil tadi. Padahal landscape ditempuh justru supaya terbaca.
+
+     DIUKUR DI LAYAR PENUH, dan itu bukan pilihan sembarang: di mode normal
+     aplikasinya kolom 620px bertopi 'max-width', jadi layar selebar apa pun
+     tidak menambah satu piksel pun - dan memang begitu seharusnya (baris teks
+     yang lebih lebar berhenti nyaman dibaca). Yang melepas topi itu
+     'body.pdf-penuh #l-pdf{max-width:none}', dan layar penuh memang tempat
+     landscape ditempuh.
+
+     UKURAN ASALNYA DIBACA DULU, tidak dipatok angka: blok-blok sesudah ini
+     memakai halaman yang sama, dan mengembalikannya ke angka yang ditebak
+     berarti mereka berjalan di layar yang bukan miliknya - cacatnya muncul
+     jauh di bawah, di uji yang sama sekali tidak menyebut PDF. */
+  const ukuranAsal = hal.viewportSize();
+  await hal.evaluate(() => TAlur.penuhPdfUji(true));
+  await hal.waitForTimeout(300);
   const putar = await hal.evaluate(() => TAlur.lebarPdfUji());
   await hal.setViewportSize({ width: 915, height: 412 });
   await hal.waitForTimeout(700);
-  const sesudahPutar = await hal.evaluate(() => ({
-    lebar: TAlur.lebarPdfUji(),
-    kanvas: Math.round(
-      (document.querySelector('#pdf-lembar .pdf-lembar-satu canvas') || {}).getBoundingClientRect
-        ? document.querySelector('#pdf-lembar .pdf-lembar-satu canvas').getBoundingClientRect().width : 0)
-  }));
+  const sesudahPutar = await hal.evaluate(() => {
+    const k = document.querySelector('#pdf-lembar .pdf-lembar-satu canvas');
+    return {
+      lebar: TAlur.lebarPdfUji(),
+      kanvas: k ? Math.round(k.getBoundingClientRect().width) : 0
+    };
+  });
   cek('memutar layar menambah lebar yang tersedia',
       sesudahPutar.lebar > putar + 100, putar + ' -> ' + sesudahPutar.lebar);
   cek('dan halamannya ikut melebar, bukan tetap selebar potret',
       sesudahPutar.kanvas > putar + 50, JSON.stringify(sesudahPutar));
-  await hal.setViewportSize({ width: 412, height: 915 });
+  await hal.evaluate(() => TAlur.penuhPdfUji(false));
+  await hal.setViewportSize(ukuranAsal);
   await hal.waitForTimeout(700);
 
   /* ===== BENTUK API PELEPASANNYA DIJAGA DI SINI =====
