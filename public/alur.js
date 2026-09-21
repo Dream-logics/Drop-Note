@@ -5779,7 +5779,7 @@
       $$('#pdf-lembar canvas').forEach(function (k) { k.width = 0; k.height = 0; });
       lembar.innerHTML = '';
     }
-    if (pdfDok) { try { pdfDok.destroy(); } catch (e) {} }
+    if (pdfDok && global.TPdf) TPdf.lepas(pdfDok);
     pdfDok = null;
     pdfNamaSaat = '';
     pdfGiliran++;
@@ -5826,7 +5826,7 @@
       /* Dokumen yang datang terlambat untuk pembukaan yang SUDAH dibatalkan
          dibuang di sini. Tanpa penjaga ini, membuka dua PDF cepat-cepat
          menggambar keduanya bertumpuk di lembar yang sama. */
-      if (giliran !== pdfGiliran) { try { dok.destroy(); } catch (e) {} return false; }
+      if (giliran !== pdfGiliran) { TPdf.lepas(dok); return false; }
       pdfDok = dok;
       var nm = $('#pdf-nama');
       if (nm) nm.textContent = pdfNamaSaat;
@@ -9256,6 +9256,13 @@
     geserLewatUji: function () { return GESER_LEWAT; },
     halamanKiniPdfUji: halamanKiniPdf,
     perbaruiHalamanPdfUji: perbaruiHalamanPdf,
+    bentukLepasPdfUji: function () {
+      return {
+        adaLoadingTask: !!(pdfDok && pdfDok.loadingTask),
+        destroyTugas: pdfDok && pdfDok.loadingTask ? typeof pdfDok.loadingTask.destroy : 'n/a',
+        destroyDok: pdfDok ? typeof pdfDok.destroy : 'n/a'
+      };
+    },
     bukaPdfUji: function (bita, nama) {
       return bukaPdfBlob(new Blob([bita], { type: 'application/pdf' }), nama || 'uji.pdf');
     },

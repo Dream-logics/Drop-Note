@@ -4362,6 +4362,24 @@ console.log('\npembaca PDF: dokumen sungguhan, dari muat sampai navigasi');
   cek('dan halaman kecilnya berisi satu petak per halaman',
       (await hal.locator('#pdf-mini .pdf-mini-satu').count()) === 2);
 
+  /* ===== BENTUK API PELEPASANNYA DIJAGA DI SINI =====
+     Kodenya dulu memanggil 'dok.destroy()' di dalam try/catch, dan
+     'PDFDocumentProxy' TIDAK PUNYA 'destroy' sama sekali di PDF.js v6 - yang
+     punya 'loadingTask'-nya. Jadi panggilannya melempar TypeError, ditelan
+     catch-nya, dan dokumennya TIDAK PERNAH DILEPAS: tinggal utuh di memori
+     bersama worker-nya sampai tab-nya mati. Tanpa satu galat pun di mana pun.
+
+     Di lima halaman itu tidak terlihat. Di dua ratus lembar gambar kerja CAD
+     itu fatal - dan ketahuannya cuma lewat pengukuran, tidak dari layar mana
+     pun. Jadi yang dijaga BENTUK API-nya, bukan akibatnya: kalau PDF.js
+     memindahkannya lagi, uji ini yang gagal, bukan memori pemakainya. */
+  const bentukLepas = await hal.evaluate(() => TAlur.bentukLepasPdfUji());
+  cek('dokumen PDF punya loadingTask yang bisa di-destroy',
+      bentukLepas.adaLoadingTask === true && bentukLepas.destroyTugas === 'function',
+      JSON.stringify(bentukLepas));
+  cek('dan pelepasannya TIDAK bergantung pada dok.destroy yang memang tidak ada',
+      bentukLepas.destroyDok === 'undefined', JSON.stringify(bentukLepas));
+
   await hal.evaluate(() => { TAlur.penuhPdfUji(false); TAlur.keLayarUji('l-utama'); });
   await hal.waitForTimeout(250);
   /* Meninggalkan layarnya melepas dokumennya - satu PDF yang sudah digambar
