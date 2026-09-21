@@ -84,6 +84,36 @@
     });
   }
 
+  /* ===== MELEPAS DOKUMEN LEWAT 'loadingTask', BUKAN LEWAT DOKUMENNYA =====
+     Ini bekas luka, dan dia ditemukan dengan mengukur - tidak dari layar mana
+     pun. Kodenya dulu memanggil 'dok.destroy()' di dalam try/catch, dan
+     'PDFDocumentProxy' TIDAK PUNYA 'destroy' sama sekali di PDF.js v6: yang
+     punya 'loadingTask'-nya. Jadi panggilannya melempar TypeError, ditelan
+     catch-nya, dan pelepasannya tidak pernah terjadi - tanpa satu galat pun
+     di mana pun.
+
+     Akibatnya sebanding dengan dokumennya: di lima halaman tidak terlihat,
+     di dua ratus lembar gambar kerja CAD setiap dokumen yang pernah dibuka
+     tinggal utuh di memori bersama worker-nya sampai tab-nya mati.
+
+     Pelajarannya bukan "jangan pakai try/catch" tapi "jangan menelan galat
+     dari panggilan yang KAMU yang menentukan bentuknya". catch di sini cuma
+     untuk dokumen yang sudah terlanjur rusak, bukan untuk menutupi API yang
+     salah panggil - jadi keberadaan fungsinya dijaga uji terima, bukan
+     diserahkan ke catch. */
+  function lepas(dok) {
+    if (!dok) return;
+    var tugas = dok.loadingTask;
+    if (tugas && typeof tugas.destroy === 'function') {
+      try { tugas.destroy(); } catch (e) {}
+      return;
+    }
+    /* Jalan mundur kalau suatu hari bentuknya berubah lagi: 'cleanup' tidak
+       mematikan worker-nya, tapi dia melepas halaman yang sudah terurai -
+       separuh jalan jauh lebih baik daripada tidak sama sekali. */
+    if (dok.cleanup) { try { dok.cleanup(); } catch (e) {} }
+  }
+
   /* --------------------------------------------------------------- gambar */
 
   /* SKALA DIHITUNG DARI LEBAR YANG TERSEDIA, bukan dipatok angka. Satu PDF
@@ -131,6 +161,7 @@
     siap: siap,
     muat: muat,
     bukaBlob: bukaBlob,
+    lepas: lepas,
     gambarHalaman: gambarHalaman,
     skalaMuatUji: skalaMuat
   };
