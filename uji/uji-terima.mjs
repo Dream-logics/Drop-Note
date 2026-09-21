@@ -4507,7 +4507,12 @@ console.log('\npembaca PDF: dokumen sungguhan, dari muat sampai navigasi');
      jauh di bawah, di uji yang sama sekali tidak menyebut PDF. */
   const ukuranAsal = hal.viewportSize();
   await hal.evaluate(() => TAlur.penuhPdfUji(true));
-  await hal.waitForTimeout(300);
+  /* DIMULAI DARI POTRET SUNGGUHAN. Uji ini berjalan di halaman selebar
+     desktop, dan "memutar" dari situ ke 915 justru MENYEMPITKAN layarnya -
+     ujinya lulus atau gagal karena ukuran halaman ujinya, bukan karena
+     kodenya. Yang ditiru HP yang diputar, jadi potretnya dipasang dulu. */
+  await hal.setViewportSize({ width: 412, height: 915 });
+  await hal.waitForTimeout(700);
   const putar = await hal.evaluate(() => TAlur.lebarPdfUji());
   await hal.setViewportSize({ width: 915, height: 412 });
   await hal.waitForTimeout(700);
