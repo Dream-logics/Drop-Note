@@ -1989,6 +1989,46 @@ public/pdf.js       PEMBACA PDF, dan mesinnya DIMUAT MALAS - itu aturan,
                     virtualisasi, tapi tiap lembar baru tetap menunggu 0,5-3
                     detik. Itu biaya vektornya, bukan biaya arsitekturnya, dan
                     tidak akan pernah menyamai Adobe yang perendernya native.
+                    DIGAMBAR DI LUAR LAYAR DULU, BARU DIPINDAHKAN, dan ini
+                    sebab sebenarnya dari "layar blank dan berkedip-kedip saat
+                    zoom in out" - laporan yang masuk DUA KALI, dan yang
+                    pertama kujawab dengan memperbaiki organ yang salah
+                    (bangun ulang kerangka waktu resize; itu cacat betulan,
+                    tapi bukan yang ini).
+                    Sebabnya satu baris yang tidak kelihatan sebagai
+                    kekeliruan: 'kanvas.width = ...' MENGHAPUS isi kanvas
+                    seketika, bahkan kalau angkanya sama persis dengan yang
+                    sekarang. Jadi gambarHalaman mengosongkan kanvas yang
+                    SEDANG DIPANDANGI, lalu menyuruh PDF.js mengisinya - dan
+                    di antara keduanya ada jeda penggambaran: 20 ms untuk
+                    halaman teks, sampai 3 detik untuk gambar kerja CAD.
+                    Selama jeda itu halamannya PUTIH. Tiap langkah cubitan
+                    yang melewati batas ketajaman memicunya sekali, dan
+                    mencubit itu puluhan langkah - jadi yang terlihat bukan
+                    satu kedipan tapi kedipan beruntun.
+                    Yang lebih buruk: penggambaran yang DIBATALKAN
+                    meninggalkan kanvasnya kosong SELAMANYA, sampai ada yang
+                    kebetulan menggambarnya lagi. Menggulir cepat sambil
+                    mencubit persis memicu itu - dan pembatalan justru sering
+                    di situ.
+                    Sekarang halamannya digambar ke kanvas LEPAS (tidak ada di
+                    DOM), dan baru dipindahkan sesudah selesai. Pemindahannya
+                    satu 'drawImage' di tugas yang SAMA dengan penghapusannya,
+                    jadi tidak pernah ada satu bingkai pun yang ditampilkan
+                    kosong. Selama menunggu, yang terlihat gambar LAMA yang
+                    dilarkan CSS - persis yang membuat cubitan terasa seketika.
+                    Yang dibatalkan tidak menyentuh kanvas aslinya sama sekali.
+                    Ongkosnya satu kanvas tambahan SELAMA penggambaran
+                    berlangsung, dan itu aman justru karena penggambarannya
+                    berurutan: yang hidup pada satu waktu cuma satu, bukan
+                    delapan, dan dia dilepas begitu dipindahkan.
+                    UJINYA MENGUJI INVARIANNYA, BUKAN "layarnya kelihatan
+                    benar": halaman uji di sini kosong isinya, jadi
+                    membandingkan piksel tidak bisa membedakan "belum
+                    digambar" dari "sudah digambar" - dan uji begitu akan
+                    LULUS SEMPURNA di atas cacat ini. Yang bisa dibedakan:
+                    kanvas sasaran ditandai ukuran ganjil (7x11) lalu
+                    diperiksa TIDAK tersentuh sampai janjinya selesai.
                     Halamannya digambar BERURUTAN, bukan Promise.all: dua ratus
                     permintaan serentak ke satu worker bukan lebih cepat, cuma
                     kehabisan memori - dan berurutan berarti halaman pertama
