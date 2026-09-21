@@ -34,6 +34,13 @@ const { chromium } = muatPlaywright();
 const AKAR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const TIPE = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+  /* '.mjs' WAJIB ADA, dan ketiadaannya menghabiskan satu putaran penuh untuk
+     dicari: peramban MENOLAK 'import()' modul yang disajikan dengan tipe
+     selain JavaScript - itu aturan keamanan, bukan kerewelan. Tanpa baris
+     ini pustaka PDF disajikan 'text/plain', impornya diblokir, dan yang
+     terlihat di uji cuma "PDF gagal dibuka" tanpa satu petunjuk pun tentang
+     sebabnya. Cacatnya di HARNESS, bukan di aplikasinya. */
+  '.mjs': 'text/javascript',
   '.json': 'application/json', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json'
 };
 
@@ -4251,12 +4258,116 @@ console.log('\npembaca PDF: mesinnya diam sampai diminta');
       penuh.badanSebelum + ' -> ' + penuh.badanSesudah);
   cek('jalan keluarnya kelihatan, bukan cuma ketukan yang harus ditebak',
       penuh.keluarTampak === true);
+
   cek('dan keluar mengembalikan semuanya',
       penuh.kembali === true && penuh.dokKembali === true);
 
   await hal.evaluate(() => TAlur.keLayarUji('l-utama'));
   await hal.waitForTimeout(250);
   cek('meninggalkan layarnya tetap tidak mengunduh apa pun', diminta.length === 0);
+}
+
+console.log('\npembaca PDF: dokumen sungguhan, dari muat sampai navigasi');
+{
+  /* SATU-SATUNYA BLOK YANG BOLEH MENGUNDUH PUSTAKANYA, dan dia sengaja
+     ditaruh SESUDAH blok di atas - kalau dibalik, uji "mesinnya diam sampai
+     diminta" akan melihat unduhan yang sah lalu gagal untuk alasan yang
+     salah.
+
+     Sampai sekarang jalur sungguhannya tidak pernah diuji sama sekali: yang
+     diuji cuma tata letak dengan kanvas palsu. Uji yang tidak pernah
+     menjalankan mesinnya tidak bisa melihat satu pun kekeliruan di dalam
+     mesinnya - dan cacat navigasi kemarin lolos persis lewat celah itu. */
+  await hal.evaluate(() => TAlur.keLayarUji('l-pdf'));
+  await hal.waitForTimeout(300);
+
+  /* PDF dua halaman, ditulis tangan. PDF.js memulihkan berkas tanpa xref
+     sendiri, jadi yang minimum begini sudah cukup untuk menguji jalurnya -
+     dan jauh lebih jujur daripada kanvas palsu. */
+  const dibuka = await hal.evaluate(async () => {
+    const t = '%PDF-1.4\n' +
+      '1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n' +
+      '2 0 obj<</Type/Pages/Kids[3 0 R 5 0 R]/Count 2>>endobj\n' +
+      '3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 300]/Contents 4 0 R>>endobj\n' +
+      '4 0 obj<</Length 0>>stream\nendstream\nendobj\n' +
+      '5 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 300]/Contents 6 0 R>>endobj\n' +
+      '6 0 obj<</Length 0>>stream\nendstream\nendobj\n' +
+      'trailer<</Root 1 0 R/Size 7>>\n%%EOF\n';
+    const b = new Uint8Array(t.length);
+    for (let i = 0; i < t.length; i++) b[i] = t.charCodeAt(i);
+    return TAlur.bukaPdfUji(b, 'Uji-2-Halaman.pdf');
+  });
+  cek('PDF sungguhan terbuka dan tergambar', dibuka === true, String(dibuka));
+  cek('mesinnya baru dimuat SEKARANG, sesudah ada PDF yang dibuka',
+      (await hal.evaluate(() => TPdf.siap())) === true);
+  cek('dua halamannya benar-benar digambar',
+      (await hal.locator('#pdf-lembar .pdf-lembar-satu').count()) === 2);
+
+  /* ===== NAVIGASI HALAMAN HIDUP DI LAYAR PENUH =====
+     Di layar penuh dok dan baris pintu disembunyikan, jadi pil ini
+     satu-satunya kendali yang tersisa - dan layar penuh justru tempat orang
+     bekerja lama. Sebelum ini tempatnya cuma kabar pasif: angkanya terbaca
+     tapi tidak ada satu pun cara pindah halaman selain menggulir, dan di
+     dokumen panjang itu berarti tidak ada navigasi sama sekali. */
+  const nav = await hal.evaluate(() => {
+    TAlur.penuhPdfUji(true);
+    document.querySelector('#pdf-badan').scrollTop = 0;
+    TAlur.perbaruiHalamanPdfUji();
+    const g = getComputedStyle(document.querySelector('#pdf-nav'));
+    return {
+      tampak: g.display !== 'none',
+      bisaDiketuk: g.pointerEvents !== 'none',
+      dokTersembunyi: getComputedStyle(document.querySelector('#pdf-dok')).display === 'none',
+      awal: document.querySelector('#b-pdf-nav-no').textContent,
+      mundurMati: document.querySelector('#b-pdf-mundur').disabled,
+      majuMati: document.querySelector('#b-pdf-maju').disabled
+    };
+  });
+  cek('navigasi halaman tetap ada dan bisa ditekan di layar penuh',
+      nav.tampak === true && nav.bisaDiketuk === true && nav.dokTersembunyi === true,
+      JSON.stringify(nav));
+  cek('nomornya benar sejak halaman pertama', nav.awal === '1 / 2', JSON.stringify(nav));
+  /* Yang mentok DIREDUPKAN, bukan dihilangkan: tombol yang lenyap memindahkan
+     dua tetangganya, dan jari yang sudah hafal tempatnya jadi salah tekan
+     tepat di halaman pertama dan terakhir - dua tempat yang paling sering
+     didatangi. */
+  cek('di halaman pertama panah mundur mati tapi tetap di tempatnya',
+      nav.mundurMati === true && nav.majuMati === false, JSON.stringify(nav));
+
+  await hal.click('#b-pdf-maju');
+  await hal.waitForTimeout(250);
+  const majuKe = await hal.evaluate(() => ({
+    no: document.querySelector('#b-pdf-nav-no').textContent,
+    gulir: Math.round(document.querySelector('#pdf-badan').scrollTop),
+    majuMati: document.querySelector('#b-pdf-maju').disabled
+  }));
+  cek('panah maju benar-benar pindah halaman, bukan cuma mengubah angkanya',
+      majuKe.no === '2 / 2' && majuKe.gulir > 0, JSON.stringify(majuKe));
+  cek('dan di halaman terakhir giliran panah maju yang mati',
+      majuKe.majuMati === true, JSON.stringify(majuKe));
+
+  await hal.click('#b-pdf-mundur');
+  await hal.waitForTimeout(250);
+  cek('panah mundur mengembalikannya',
+      (await hal.locator('#b-pdf-nav-no').textContent()) === '1 / 2');
+
+  /* Angkanya membuka halaman kecil - tombolnya sendiri tinggal di dok, dan
+     dok HILANG di layar penuh. Tanpa jalan ini, satu-satunya cara melihat
+     halaman kecil adalah keluar dulu dari layar penuh, dan itu kebalikan
+     dari gunanya layar penuh. */
+  await hal.click('#b-pdf-nav-no');
+  await hal.waitForTimeout(400);
+  cek('mengetuk nomornya membuka halaman kecil, walau doknya sedang hilang',
+      (await hal.locator('#pdf-mini').evaluate((n) => !n.classList.contains('sembunyi'))) === true);
+  cek('dan halaman kecilnya berisi satu petak per halaman',
+      (await hal.locator('#pdf-mini .pdf-mini-satu').count()) === 2);
+
+  await hal.evaluate(() => { TAlur.penuhPdfUji(false); TAlur.keLayarUji('l-utama'); });
+  await hal.waitForTimeout(250);
+  /* Meninggalkan layarnya melepas dokumennya - satu PDF yang sudah digambar
+     memegang puluhan kanvas plus penguraiannya di worker. */
+  cek('meninggalkan layarnya melepas dokumennya',
+      (await hal.locator('#pdf-lembar .pdf-lembar-satu').count()) === 0);
 }
 
 console.log('\nsatu baris saja: saringan, gudang, dan kepala yang dirampingkan');
